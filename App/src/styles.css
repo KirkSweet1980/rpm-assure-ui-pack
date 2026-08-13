@@ -71,22 +71,28 @@ body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-fg);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.45;
 }
 @layer base {
   button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+  html, body, button, input, select, textarea {
+    font-family: var(--font-sans);
+  }
   h1, h2, h3, h4 {
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: var(--font-sans);
     text-wrap: balance;
     overflow-wrap: anywhere;
     line-height: 1.25;
   }
+  code, kbd, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
 }
 
-.dk-shell, .dk-content, .rpma-glass, .rpma-exco, .rpma-eco-visuals, .rpma-card, .rpma-list, .rpma-pillar-rail {
-  font-family: "Inter", system-ui, sans-serif;
+.dk-shell, .dk-content, .rpma-glass, .rpma-exco, .rpma-eco-visuals, .rpma-card, .rpma-list, .rpma-pillar-rail, .rpma-dd, .rpma-modbtn {
+  font-family: var(--font-sans);
 }
 .dk-pagehead h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--pc-heading-color); overflow-wrap: anywhere; }
 .dk-pagehead p { margin: 4px 0 14px; color: var(--color-muted); font-size: 12px; }
@@ -257,6 +263,10 @@ html[data-theme="dark"] .rpma-exco-tile { background: #222b38; }
 .rpma-heat-grid { display: grid; grid-template-columns: 28px repeat(3, 1fr); gap: 4px; }
 .rpma-heat-axis { font-size: 9px; font-weight: 700; text-align: center; color: #6b7785; }
 .rpma-heat-axis.is-y { text-align: right; padding-right: 4px; }
+
+.recharts-wrapper, .recharts-text, .recharts-cartesian-axis-tick-value, .recharts-legend-item-text {
+  font-family: var(--font-sans) !important;
+}
 
 @media (max-width: 1023px) {
   .rpma-d3-workspace, .rpma-d3-workspace.is-inspect, .rpma-d3-workspace.is-tool { grid-template-columns: 1fr; }
