@@ -12,6 +12,15 @@ import { buildExcoPillarSla, hasSlaCover } from "@/lib/data/exco-sla-stats";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { cn, formatSastDateTime } from "@/lib/utils";
 import { ChevronRight, RefreshCw } from "lucide-react";
+import {
+  ESTATE_VIEWS,
+  allEstateViews,
+  persistActiveEstateView,
+  persistCustomEstateViews,
+  readActiveEstateView,
+  readCustomEstateViews,
+  type EstateView,
+} from "@/lib/estate-views";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -85,6 +94,7 @@ type DrillKind =
   | "stale"
   | "risks"
   | "incidents"
+  | "sla"
   | `matrix-${RiskAxis}-${RiskAxis}`;
 
 type RiskPoint = {
@@ -702,6 +712,19 @@ function ExcoInsightPage() {
         : "red";
 
   const [drill, setDrill] = useState<DrillKind | null>(null);
+  const [customViews, setCustomViews] = useState<EstateView[]>([]);
+  const [activeView, setActiveView] = useState<string>("all");
+
+  useEffect(() => {
+    const custom = readCustomEstateViews();
+    setCustomViews(custom);
+    const saved = readActiveEstateView();
+    const hit = allEstateViews(custom).find((v) => v.id === saved);
+    if (hit) {
+      setActiveView(hit.id);
+      setDrill((hit.drill as DrillKind) ?? null);
+    }
+  }, []);
 
   const rag = useMemo(() => {
     let green = 0;
@@ -816,6 +839,8 @@ function ExcoInsightPage() {
       return scoreboard.filter((b) => b.backupHealthy === false);
     if (drill === "stale")
       return scoreboard.filter((b) => b.coverSyspro && !b.collectFresh);
+    if (drill === "sla")
+      return scoreboard.filter((b) => b.slaOverallPct != null && (b.slaOverallPct as number) < 80);
     if (drill === "risks")
       return scoreboard.filter(
         (b) => (b.openRiskCount || 0) > 0 || (b.openIssueCount || 0) > 0,
@@ -853,6 +878,7 @@ function ExcoInsightPage() {
       "rmm-critical": "RMM critical alerts",
       backup: "Backup issues",
       stale: "Stale SYSPRO collect",
+      sla: "SLA below 80%",
       risks: "Open risks & issues",
       incidents: "Major incidents",
     };
@@ -865,7 +891,43 @@ function ExcoInsightPage() {
   }, [drill]);
 
   const toggleDrill = (k: DrillKind) =>
-    setDrill((cur) => (cur === k ? null : k));
+    setDrill((cur) => {
+      const next = cur === k ? null : k;
+      const match = allEstateViews(customViews).find((v) => v.drill === next);
+      const id = match?.id ?? (next ? "custom" : "all");
+      setActiveView(id);
+      persistActiveEstateView(id === "custom" ? "all" : id);
+      return next;
+    });
+
+  function applyView(v: EstateView) {
+    setActiveView(v.id);
+    setDrill((v.drill as DrillKind) ?? null);
+    persistActiveEstateView(v.id);
+  }
+
+  function saveCurrentView() {
+    if (!drill) return;
+    const label = window.prompt("Name this view", drillTitle || "My view");
+    if (!label?.trim()) return;
+    const next: EstateView = {
+      id: `v-${Date.now()}`,
+      label: label.trim().slice(0, 32),
+      drill,
+    };
+    const list = [...customViews, next];
+    setCustomViews(list);
+    persistCustomEstateViews(list);
+    setActiveView(next.id);
+    persistActiveEstateView(next.id);
+  }
+
+  function removeView(id: string) {
+    const list = customViews.filter((v) => v.id !== id);
+    setCustomViews(list);
+    persistCustomEstateViews(list);
+    if (activeView === id) applyView(ESTATE_VIEWS[0]);
+  }
 
   const slaAvg = (() => {
     const withSla = scoreboard.filter((b) => b.slaOverallPct != null);
@@ -919,10 +981,58 @@ function ExcoInsightPage() {
     ];
   }, [rows]);
 
+  const viewCounts: Record<string, number> = {
+    all: scoreboard.length,
+    attention: attention.length,
+    finsight: scoreboard.filter((b) => (b.dtrVarianceLines || 0) > 0).length,
+    sla: scoreboard.filter((b) => b.slaOverallPct != null && (b.slaOverallPct as number) < 80).length,
+    stale: scoreboard.filter((b) => b.coverSyspro && !b.collectFresh).length,
+  };
+
   return (
     <RequireAuth>
       <AppShell subtitle={`${source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · ${formatSastDateTime(exco.generatedAt || summary.generatedAt)}`}>
         <div className="rpma-exco rpma-exco-compact space-y-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {allEstateViews(customViews).map((v) => (
+              <span key={v.id} className="inline-flex items-center">
+                <button
+                  type="button"
+                  onClick={() => applyView(v)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-[11px] font-semibold",
+                    activeView === v.id
+                      ? "bg-[#263544] text-white"
+                      : "bg-surface-2 text-muted hover:text-fg",
+                  )}
+                >
+                  {v.label}
+                  {viewCounts[v.id] != null ? (
+                    <span className="ml-1 font-mono tabular-nums opacity-80">{viewCounts[v.id]}</span>
+                  ) : null}
+                </button>
+                {!v.builtin ? (
+                  <button
+                    type="button"
+                    className="ml-0.5 px-1 text-[10px] text-muted hover:text-rag-red"
+                    title="Remove view"
+                    onClick={() => removeView(v.id)}
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </span>
+            ))}
+            {drill && !ESTATE_VIEWS.some((v) => v.drill === drill) ? (
+              <button
+                type="button"
+                onClick={saveCurrentView}
+                className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-muted hover:text-fg"
+              >
+                Save this view
+              </button>
+            ) : null}
+          </div>
           <section className="rpma-glass px-3 py-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
@@ -1152,12 +1262,16 @@ function ExcoInsightPage() {
 
           <div className="grid grid-cols-1 gap-2 xl:grid-cols-12">
             <section className="rpma-glass px-3 py-2.5 xl:col-span-5">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">Who Needs A Decision</h2>
-              {attention.length === 0 ? (
-                <p className="mt-2 text-[12px] text-muted">Estate is clear.</p>
+              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">
+                {drill ? drillTitle : "Who Needs A Decision"}
+              </h2>
+              {(drill ? drillRows : attention).length === 0 ? (
+                <p className="mt-2 text-[12px] text-muted">
+                  {drill ? "No customers in this view." : "Estate is clear."}
+                </p>
               ) : (
                 <ul className="mt-1 space-y-0.5">
-                  {attention.slice(0, 7).map((b) => (
+                  {(drill ? drillRows : attention).slice(0, 8).map((b) => (
                     <li key={b.customerCode}>
                       <Link to="/customers/$code" params={{ code: b.customerCode }} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
                         <RagBadge rag={b.healthRag} />
