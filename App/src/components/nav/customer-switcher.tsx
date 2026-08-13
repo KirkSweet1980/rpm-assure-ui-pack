@@ -179,7 +179,7 @@ export function CustomerSwitcher({
         type="button"
         className={cn(
           variant === "nav" &&
-            "rpma-top-link inline-flex max-w-[14rem] items-center gap-1.5",
+            "dk-link max-w-[16rem] " + (currentCode || open ? "is-active" : ""),
           variant === "inline" && "rpma-switcher-inline rpma-saas-switcher",
           isEcosystem &&
             "rpma-ecosystem-dd-trigger flex w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-left shadow-sm transition hover:border-accent/40 hover:bg-surface-2/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
@@ -192,7 +192,7 @@ export function CustomerSwitcher({
         onClick={() => setOpen((v) => !v)}
       >
         {!isEcosystem ? (
-          <Building2 className="h-3.5 w-3.5 shrink-0 opacity-90" />
+          <Building2 className={cn("shrink-0", variant === "nav" ? "dk-ico" : "h-3.5 w-3.5 opacity-90")} />
         ) : (
           <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
         )}

@@ -1,11 +1,13 @@
 import { FileText, Home, Settings } from "lucide-react";
+import { CustomerSwitcher, type SwitcherCustomer } from "@/components/nav/customer-switcher";
 import { SpaLink } from "@/components/nav/spa-link";
 import { cn } from "@/lib/utils";
 import { SETTINGS_MENU_ENABLED } from "@/lib/auth/features";
-import type { SwitcherCustomer } from "@/components/nav/customer-switcher";
 
 export function DkSidebarNav({
   pathname,
+  customers = [],
+  currentCode,
 }: {
   pathname: string;
   customers?: SwitcherCustomer[];
@@ -20,6 +22,11 @@ export function DkSidebarNav({
         <Home className="dk-ico" />
         <span className="dk-text">Estate</span>
       </SpaLink>
+      <CustomerSwitcher
+        customers={customers}
+        currentCode={currentCode}
+        variant="nav"
+      />
       <SpaLink
         href="/reports"
         className={cn("dk-link", path.startsWith("/reports") && "is-active")}

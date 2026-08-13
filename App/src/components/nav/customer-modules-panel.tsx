@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Cloud,
+  Database,
+  Mail,
+  Server,
+  Shield,
+} from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 import type { CustomerCover } from "@/lib/data/types";
 
 type Props = {
@@ -22,13 +31,15 @@ export const CUSTOMER_PILLARS: {
   id: keyof CustomerCover;
   title: string;
   overview: string;
+  icon: LucideIcon;
   covered: (c: CustomerCover | null | undefined) => boolean;
   modules: { label: string; path: string }[];
 }[] = [
   {
     id: "syspro",
-    title: "SYSPRO",
+    title: "SYSPRO EcoSystem",
     overview: "/syspro",
+    icon: Database,
     covered: (c) => Boolean(c?.syspro),
     modules: [
       { label: "Overview", path: "/syspro" },
@@ -47,6 +58,7 @@ export const CUSTOMER_PILLARS: {
     id: "rmm",
     title: "RPM Remote Management",
     overview: "/rmm",
+    icon: Server,
     covered: (c) => Boolean(c?.rmm),
     modules: [
       { label: "Overview", path: "/rmm" },
@@ -60,6 +72,7 @@ export const CUSTOMER_PILLARS: {
     id: "cove",
     title: "RPM Cloud Backup",
     overview: "/cove",
+    icon: Cloud,
     covered: (c) => Boolean(c?.cove),
     modules: [
       { label: "Overview", path: "/cove" },
@@ -72,6 +85,7 @@ export const CUSTOMER_PILLARS: {
     id: "epp",
     title: "RPM Endpoint Security",
     overview: "/epp",
+    icon: Shield,
     covered: (c) => Boolean(c?.epp),
     modules: [
       { label: "Overview", path: "/epp" },
@@ -85,6 +99,7 @@ export const CUSTOMER_PILLARS: {
     id: "csp",
     title: "Microsoft 365 CSP",
     overview: "/csp",
+    icon: Mail,
     covered: (c) => Boolean(c?.csp),
     modules: [
       { label: "Tenant", path: "/csp" },
@@ -111,6 +126,7 @@ function NavDropdown({
   tone,
   open,
   onToggle,
+  icon: Icon,
   children,
 }: {
   title: string;
@@ -119,6 +135,7 @@ function NavDropdown({
   tone: "cover" | "nocover" | "neutral";
   open: boolean;
   onToggle: () => void;
+  icon?: LucideIcon;
   children: ReactNode;
 }) {
   return (
@@ -133,7 +150,7 @@ function NavDropdown({
           aria-expanded={open}
           onClick={onToggle}
         >
-          <i className={cn("rpma-dd-pip", `is-${tone}`)} aria-hidden />
+          {Icon ? <Icon className="rpma-svc-glyph" aria-hidden /> : <i className={cn("rpma-dd-pip", `is-${tone}`)} aria-hidden />}
           <span className={cn("truncate", !value && "is-ph")}>{value ?? placeholder}</span>
           <ChevronDown className={cn("rpma-dd-chev", open && "rot")} />
         </button>
@@ -204,16 +221,54 @@ export function CustomerPillarRail({ code, cover }: Props) {
         </div>
       </section>
 
+      <section className="rpma-nav-block">
+        <div className="rpma-pillar-rail-head">
+          <h2>RPM Services</h2>
+        </div>
+        <div className="rpma-svc-icons" role="navigation" aria-label="RPM Services">
+          {CUSTOMER_PILLARS.map((p) => {
+            const on = p.covered(cover);
+            const Icon = p.icon;
+            const short =
+              p.id === "syspro" ? "SYSPRO" :
+              p.id === "rmm" ? "RMM" :
+              p.id === "cove" ? "Backup" :
+              p.id === "epp" ? "EPP" : "M365";
+            return (
+              <SpaLink
+                key={`vis-${p.id}`}
+                href={`${base}${p.overview}`}
+                title={`${p.title} — ${on ? "Cover" : "No cover"}`}
+                className={cn(
+                  "rpma-svc-ico",
+                  picked === p.id && "is-on",
+                  on ? "is-cover" : "is-nocover",
+                )}
+                onClick={() => {
+                  setPicked(p.id);
+                  setOpen("mod");
+                }}
+              >
+                <Icon aria-hidden />
+                <em>{short}</em>
+              </SpaLink>
+            );
+          })}
+        </div>
+      </section>
+
       <NavDropdown
-        title="RPM Services"
+        title="Service"
         value={active?.title ?? null}
         placeholder="Select a service"
         tone={active ? (svcOn ? "cover" : "nocover") : "neutral"}
+        icon={active?.icon}
         open={open === "svc"}
         onToggle={() => setOpen((v) => (v === "svc" ? null : "svc"))}
       >
         {CUSTOMER_PILLARS.map((p) => {
           const on = p.covered(cover);
+          const Icon = p.icon;
           return (
             <SpaLink
               key={p.id}
@@ -226,7 +281,10 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 setOpen("mod");
               }}
             >
-              <span className="rpma-dd-name">{p.title}</span>
+              <span className="rpma-dd-name">
+                <Icon className="rpma-svc-glyph" aria-hidden />
+                {p.title}
+              </span>
               <span className="rpma-dd-meta">
                 <span className={cn("rpma-dd-status", on ? "is-cover" : "is-nocover")}>
                   {on ? "Cover" : "No cover"}

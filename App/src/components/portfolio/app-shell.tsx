@@ -12,7 +12,6 @@ import {
 import { useIdleLogout } from "@/lib/auth/idle-logout";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import {
-  CustomerSwitcher,
   rememberRecentCustomer,
   type SwitcherCustomer,
 } from "@/components/nav/customer-switcher";
@@ -205,12 +204,7 @@ export function AppShell({
                 <em>DashboardKit</em>
               </span>
             </Link>
-            <div className="dk-header-mid">
-              <CustomerSwitcher
-                customers={switcherCustomers}
-                currentCode={currentCustomerCode}
-              />
-            </div>
+            <div className="dk-header-mid" />
             <div className="dk-header-right">
               <ThemeToggle compact />
               <button
