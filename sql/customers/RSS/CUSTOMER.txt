@@ -1,0 +1,4 @@
+CustomerCode=RSS
+DisplayName=Remote Site Solutions
+InstanceName=RSS-PROD
+LocalSqlUser=rpmassure

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RPM Assure theme tokens</title>
+<style>
+  body { margin: 0; background: #e8eef3; color: #12293c; font-family: Inter, Segoe UI, system-ui, sans-serif; }
+  .page { padding: 22px 24px 32px; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.02em; }
+  .sub { margin: 0 0 16px; color: #3d5568; font-size: 13px; }
+  .flow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .flow span { border: 2px solid #8aa6bc; background: #fff; border-radius: 8px; padding: 8px 10px; font-size: 12px; font-weight: 600; }
+  .flow .arr { border: 0; background: transparent; padding: 8px 0; color: #5f7588; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card { background: #fff; border: 2px solid #8aa6bc; border-radius: 10px; padding: 12px; }
+  .card h2 { margin: 0 0 8px; font-size: 13px; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 11px; }
+  .sw { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #b4c6d6; flex-shrink: 0; }
+  code { font-family: ui-monospace, SF Mono, Consolas, monospace; font-size: 10px; color: #5f7588; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Theme = CSS variables</h1>
+  <p class="sub">Change a token once. Surfaces, frames, selected chrome, and RAG follow. Light and dark each have a map.</p>
+  <div class="flow">
+    <span>1. Brand (fixed)</span>
+    <span class="arr">→</span>
+    <span>2. Surfaces + ink</span>
+    <span class="arr">→</span>
+    <span>3. Frames</span>
+    <span class="arr">→</span>
+    <span>4. Selected chrome</span>
+    <span class="arr">→</span>
+    <span>5. RAG / charts</span>
+  </div>
+  <div class="grid">
+    <article class="card">
+      <h2>Surfaces</h2>
+      <div class="row"><i class="sw" style="background:#f0f4f8"></i>--color-bg <code>page</code></div>
+      <div class="row"><i class="sw" style="background:#fff"></i>--color-surface <code>card</code></div>
+      <div class="row"><i class="sw" style="background:#f0f6fa"></i>--color-surface-2 <code>raised</code></div>
+    </article>
+    <article class="card">
+      <h2>Ink</h2>
+      <div class="row"><i class="sw" style="background:#12293c"></i>--color-fg <code>body</code></div>
+      <div class="row"><i class="sw" style="background:#3d5568"></i>--color-muted</div>
+      <div class="row"><i class="sw" style="background:#5f7588"></i>--color-subtle</div>
+    </article>
+    <article class="card">
+      <h2>Frames</h2>
+      <div class="row"><i class="sw" style="background:#b4c6d6"></i>--color-border</div>
+      <div class="row"><i class="sw" style="background:#8aa6bc"></i>--color-border-strong</div>
+      <div class="row"><i class="sw" style="background:#2b6fae"></i>--ui-stroke <code>2px</code></div>
+    </article>
+    <article class="card">
+      <h2>Selected (Ocean)</h2>
+      <div class="row"><i class="sw" style="background:#2b6fae"></i>--ui-nav-link-active-bg</div>
+      <div class="row"><i class="sw" style="background:#8ec5f0"></i>--ui-nav-link-active-border</div>
+      <div class="row"><i class="sw" style="background:#dceaf6"></i>--ui-tab-active-bg</div>
+    </article>
+    <article class="card">
+      <h2>RAG</h2>
+      <div class="row"><i class="sw" style="background:#2f9e5f"></i>--color-rag-green</div>
+      <div class="row"><i class="sw" style="background:#d4a017"></i>--color-rag-amber</div>
+      <div class="row"><i class="sw" style="background:#d14b4b"></i>--color-rag-red</div>
+    </article>
+    <article class="card">
+      <h2>Palettes</h2>
+      <div class="row"><i class="sw" style="background:#2b6fae"></i>Ocean — default</div>
+      <div class="row"><i class="sw" style="background:#1bb8a6"></i>Teal — original brand</div>
+      <div class="row"><i class="sw" style="background:#1a4d7a"></i>Ink — colour only on RAG</div>
+      <div class="row"><i class="sw" style="background:#163f68"></i>High contrast — heavier frames</div>
+    </article>
+  </div>
+</div>
+</body>
+</html>

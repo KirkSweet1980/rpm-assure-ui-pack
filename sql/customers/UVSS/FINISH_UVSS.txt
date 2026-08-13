@@ -1,0 +1,64 @@
+UVSS finish checklist (Unique Ventilation Systems)
+=================================================
+
+CustomerCode: UVSS
+Display name: Unique Ventilation Systems
+SQL host:     UVSS-SYSPRO
+Password:     <YOUR_COLLECT_PASSWORD>  (same as AHIC; no quotes)
+
+------------------------------------------------
+A) CENTRAL (app SQL 102.222.21.220,14333)
+------------------------------------------------
+1) Register customer:
+   sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -E -C -b -i "C:\RPM-Assure\Sql\customers\UVSS\301_Central_Register_UVSS.sql"
+
+   (If -E fails, use -U Rpm_collect -P "<YOUR_COLLECT_PASSWORD>")
+
+2) Optional AMS panel seed:
+   sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -E -C -b -i "C:\RPM-Assure\Sql\customers\UVSS\305_Seed_UVSS_FactAms.sql"
+
+------------------------------------------------
+B) UVSS-SYSPRO (customer server)
+------------------------------------------------
+1) Copy folder to:
+   C:\RPM-Assure\Sql\customers\UVSS\
+
+2) If first time only (as sa):
+   sqlcmd -S "." -U sa -P "YOUR_SA" -C -b -i "C:\RPM-Assure\Sql\customers\UVSS\302_UVSS_Create_Rpm_collect_Local.sql"
+   sqlcmd -S "." -U sa -P "YOUR_SA" -C -b -i "C:\RPM-Assure\Sql\customers\UVSS\303_UVSS_LinkedServer_Central.sql"
+   (or 303b if MSOLEDBSQL fails)
+
+3) Full collect once:
+   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\UVSS\Finish-UVSS-OnCustomer.ps1"
+
+   Expect operators, license, tasks, health, DTR, security, jobs.
+
+4) Schedule (Administrator):
+   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\UVSS\Install-UVSS-Schedule.ps1"
+   Start-ScheduledTask -TaskName "RPMAssure-UVSS-SysproCollect"
+
+   Core = every 15 min
+   Jobs = daily 03:00
+
+------------------------------------------------
+C) CENTRAL verify
+------------------------------------------------
+   sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -U "Rpm_collect" -P "<YOUR_COLLECT_PASSWORD>" -C -i "C:\RPM-Assure\Sql\customers\UVSS\304_Verify_UVSS_Central.sql"
+
+Healthy example:
+  Operators > 0, LastAt today
+  DtrInv or DtrAllModules > 0 after 217
+  Jobs may be 0 if no recent errors (OK)
+
+------------------------------------------------
+D) APP UI
+------------------------------------------------
+1) Hard-refresh Assure Insight
+2) Customers menu -> Unique Ventilation Systems
+3) Global Overview should list UVSS with Live SQL
+4) Check: operators, jobs, DTR modules, license
+
+Done when:
+  - Schedule Ready
+  - Verify shows fresh LastAt
+  - Customer dashboard not empty for ops/DTR

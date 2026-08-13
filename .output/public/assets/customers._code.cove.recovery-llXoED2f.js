@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-B-hcVAMW.js";import{t}from"./index-bTdCDKAr.js";import{a as n}from"./customer-sections-CFEgpO4P.js";var r=e(),i=function(){let e=t.useLoaderData();return e?.customer?(0,r.jsx)(n,{data:e}):(0,r.jsx)(`p`,{className:`text-sm text-muted`,children:`Loading…`})};export{i as component};

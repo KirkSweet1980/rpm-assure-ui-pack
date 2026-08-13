@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RPM Assure colour menus</title>
+<style>
+  body { margin: 0; background: #d9e4ee; color: #12293c; font-family: Inter, Segoe UI, system-ui, sans-serif; }
+  .page { padding: 20px 22px 32px; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.02em; }
+  .sub { margin: 0 0 16px; color: #3d5568; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .card { background: #fff; border: 2px solid #7a97ad; border-radius: 10px; overflow: hidden; }
+  .card h2 { margin: 0; padding: 10px 12px 2px; font-size: 13px; }
+  .card p { margin: 0; padding: 0 12px 8px; font-size: 11px; color: #5f7588; }
+  .nav { background: linear-gradient(180deg, #0a1628, #12365a); padding: 8px 10px; display: flex; gap: 5px; }
+  .chip { border: 2px solid transparent; border-radius: 6px; padding: 5px 8px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.78); }
+  .tabs { display: flex; gap: 5px; padding: 8px 10px; background: #eef4f8; }
+  .tab { border: 2px solid transparent; border-radius: 6px; padding: 5px 8px; font-size: 11px; font-weight: 600; color: #5f7588; }
+  /* E lime */
+  .lime .chip.on { background: #8fce4a; color: #14300a; border-color: #d4f0a8; }
+  .lime .tab.on { background: #8fce4a; color: #14300a; border-color: #5ea01e; }
+  /* F cyan */
+  .cyan .chip.on { background: #3ecfbf; color: #04201c; border-color: #b8f4ee; }
+  .cyan .tab.on { background: #3ecfbf; color: #04201c; border-color: #1a8f84; }
+  /* G punch */
+  .punch .chip.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; box-shadow: inset 0 -3px 0 #8fce4a; }
+  .punch .tab.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; box-shadow: inset 0 -3px 0 #8fce4a; }
+  /* H spectrum */
+  .spectrum .chip.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; }
+  .spectrum .tab { opacity: .45; }
+  .spectrum .tab.t1 { background: #2b6fae; color: #fff; border-color: #163f68; }
+  .spectrum .tab.t2 { background: #1bb8a6; color: #04201c; border-color: #0d6e64; opacity: 1; }
+  .spectrum .tab.t3 { background: #2b6fae; color: #fff; }
+  .spectrum .tab.t4 { background: #3ecfbf; color: #04201c; }
+  /* I ocean */
+  .ocean .chip.on { background: #2b6fae; color: #fff; border-color: #8ec5f0; }
+  .ocean .tab.on { background: #2b6fae; color: #fff; border-color: #1a4d7a; }
+  /* J amber */
+  .amber .chip.on { background: #d4a017; color: #2a1e00; border-color: #f3dd8a; }
+  .amber .tab.on { background: #d4a017; color: #2a1e00; border-color: #a37a0c; }
+  /* K sunset */
+  .sunset .chip.on { background: #1bb8a6; color: #04201c; border-color: #d4a017; box-shadow: inset 0 -3px 0 #d4a017; }
+  .sunset .tab.on { background: #1bb8a6; color: #04201c; border-color: #d4a017; box-shadow: inset 0 -3px 0 #d4a017; }
+  /* L pills */
+  .pills .chip { border-color: rgba(62,207,191,.5); }
+  .pills .chip.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; }
+  .pills .tab.t1 { border-color: #2b6fae; color: #1a4d7a; }
+  .pills .tab.t2 { background: #1bb8a6; color: #04201c; border-color: #0d6e64; }
+  .pills .tab.t3 { border-color: #2b6fae; color: #1a4d7a; }
+  .pills .tab.t4 { border-color: #3ecfbf; color: #178f84; }
+  /* M candy */
+  .candy .chip { background: rgba(27,184,166,.25); color: #e8f7f4; border-color: rgba(143,206,74,.5); }
+  .candy .chip.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; }
+  .candy .tab.t1 { background: #dceaf6; color: #1a4d7a; }
+  .candy .tab.t2 { background: #1bb8a6; color: #04201c; border-color: #0d6e64; }
+  .candy .tab.t3 { background: #dceaf6; color: #1a4d7a; }
+  .candy .tab.t4 { background: #d7f6f2; color: #178f84; }
+  /* N flag */
+  .flag .chip.on { background: #12365a; color: #fff; border-color: #8fce4a; box-shadow: inset 0 -3px 0 #1bb8a6, inset 0 -6px 0 #8fce4a, inset 0 -9px 0 #2b6fae; }
+  .flag .tab.on { background: #fff; color: #12293c; border-color: #2b6fae; box-shadow: inset 0 -3px 0 #1bb8a6, inset 0 -6px 0 #8fce4a, inset 0 -9px 0 #2b6fae; }
+  /* O coral */
+  .coral .chip.on { background: #e07a5f; color: #2a1008; border-color: #f3c4b6; }
+  .coral .tab.on { background: #e07a5f; color: #2a1008; border-color: #b84f36; }
+  /* P mosaic */
+  .mosaic .chip.c1 { background: rgba(27,184,166,.45); color: #fff; }
+  .mosaic .chip.c2 { background: rgba(43,111,174,.45); color: #fff; }
+  .mosaic .chip.c3 { background: rgba(143,206,74,.4); color: #fff; }
+  .mosaic .chip.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; }
+  .mosaic .tab.t1 { background: #c5daf0; color: #12365a; }
+  .mosaic .tab.t2 { background: #1bb8a6; color: #04201c; border-color: #04201c; }
+  .mosaic .tab.t3 { background: #8fb8de; color: #0d2744; }
+  .mosaic .tab.t4 { background: #7fddd3; color: #0d3d36; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>More colour — pick a letter</h1>
+  <p class="sub">These sit on top of A–D. Click the matching card in Configuration → Menu style, or reply with the letter.</p>
+  <div class="grid">
+    <article class="card lime"><h2>E — Lime punch</h2><p>Bright lime selected. Highest energy.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card cyan"><h2>F — Cyan ice</h2><p>Cool cyan, navy type. Fresh, less green.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card punch"><h2>G — Teal + lime</h2><p>Teal fill, thick lime bar. Brand pair.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card spectrum"><h2>H — Spectrum</h2><p>Each pillar keeps its own colour.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab t1">Ecosystem</span><span class="tab t2">SYSPRO</span><span class="tab t3">RMM</span><span class="tab t4">Backup</span></div>
+    </article>
+    <article class="card ocean"><h2>I — Ocean blue</h2><p>Brand blue fill. Cool, board-ready.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card amber"><h2>J — Amber signal</h2><p>Warm amber on the navy bar.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card sunset"><h2>K — Teal + amber</h2><p>Teal fill, amber bar. Two colours.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card pills"><h2>L — Colour pills</h2><p>Tinted outlines. Selected goes full.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab t1">Ecosystem</span><span class="tab t2">SYSPRO</span><span class="tab t3">RMM</span><span class="tab t4">Backup</span></div>
+    </article>
+    <article class="card candy"><h2>M — Candy row</h2><p>Every tab keeps a pastel fill.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab t1">Ecosystem</span><span class="tab t2">SYSPRO</span><span class="tab t3">RMM</span><span class="tab t4">Backup</span></div>
+    </article>
+    <article class="card flag"><h2>N — Brand flag</h2><p>Teal / lime / blue stripe under selected.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card coral"><h2>O — Coral</h2><p>Warm coral. Biggest colour shift.</p>
+      <div class="nav"><span class="chip on">Exco Insight</span><span class="chip">Reports</span><span class="chip">Configuration</span></div>
+      <div class="tabs"><span class="tab">Ecosystem</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span><span class="tab">Backup</span></div>
+    </article>
+    <article class="card mosaic"><h2>P — Mosaic</h2><p>Idle tabs filled. Selected is the bold one.</p>
+      <div class="nav"><span class="chip on c1">Exco Insight</span><span class="chip c2">Reports</span><span class="chip c3">Configuration</span></div>
+      <div class="tabs"><span class="tab t1">Ecosystem</span><span class="tab t2">SYSPRO</span><span class="tab t3">RMM</span><span class="tab t4">Backup</span></div>
+    </article>
+  </div>
+</div>
+</body>
+</html>

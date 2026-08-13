@@ -1,0 +1,13 @@
+RPM Assure — standard collect login (all new customers)
+======================================================
+Username : rpmassure
+Password : @ssuR3me!
+
+Use for:
+  - Local sqlcmd collect on customer SYSPRO SQL
+  - Linked server RPM_CENTRAL remote mapping (write to RPMAssure_App)
+  - Same password both hops (simplest)
+
+Create/update:
+  CENTRAL : 208_Central_Create_rpmassure.sql  (on 102.222.21.220,14333)
+  CUSTOMER: generated 302_*_Create_Collect_Login.sql

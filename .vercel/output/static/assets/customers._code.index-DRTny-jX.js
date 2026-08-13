@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-B-hcVAMW.js";import{t}from"./index-BURxCbA6.js";import{c as n}from"./customer-sections-CFEgpO4P.js";var r=e();function i(){let e=t.useLoaderData();return(0,r.jsx)(n,{data:e})}export{i as component};

@@ -1,0 +1,63 @@
+RPM Assure — Track A (Data): SQL backups + SYSPRO version/hotfix
+================================================================
+Do in order. All installers pull from %USERPROFILE%\Downloads.
+
+STEP 0 — Download
+  Place TrackA_Data.zip in Downloads and expand:
+    Expand-Archive $env:USERPROFILE\Downloads\TrackA_Data.zip $env:USERPROFILE\Downloads -Force
+
+STEP 1 — CENTRAL (once) — tables for backups + version
+  Host that can reach 102.222.21.220,14333 (or Windows auth on instance):
+    sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -E -C -b -i "%USERPROFILE%\Downloads\TrackA_Data\central\310_Ensure_Backups_Version_Tables.sql"
+  Optional NOLOCK KPI pack:
+    sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -E -C -b -i "%USERPROFILE%\Downloads\TrackA_Data\central\311_Nolock_Kpi_Views.sql"
+
+STEP 2 — UVSS customer server (UVSS-SYSPRO)
+  Copy pack:
+    $src = Join-Path $env:USERPROFILE 'Downloads\TrackA_Data\customers\UVSS'
+    New-Item -ItemType Directory -Force -Path 'C:\RPM-Assure\Sql\customers\UVSS' | Out-Null
+    Copy-Item "$src\*" 'C:\RPM-Assure\Sql\customers\UVSS\' -Force
+
+  2a) msdb grants (as sa / SYSPROAdmin) — needed for failure history:
+    sqlcmd -S "." -U "sa" -P "YOUR_SA_PASSWORD" -C -b -i "C:\RPM-Assure\Sql\customers\UVSS\226_Grant_msdb_Rpm_collect.sql"
+    (or use SYSPROAdmin / your admin login)
+
+  2b) Collect:
+    powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\UVSS\Run-UVSS-Notes14.ps1"
+
+  Expect:
+    Backup status rows: > 0
+    Version rows: 0 or 1 (map line shows which license columns exist)
+    Hotfix/module rows: 0+ (OK if 0 — depends on tables)
+
+STEP 3 — AHIC customer server (AHIC-SSQL-SRV)
+  $src = Join-Path $env:USERPROFILE 'Downloads\TrackA_Data\customers\AHIC'
+  New-Item -ItemType Directory -Force -Path 'C:\RPM-Assure\Sql\customers\AHIC' | Out-Null
+  Copy-Item "$src\*" 'C:\RPM-Assure\Sql\customers\AHIC\' -Force
+
+  sqlcmd -S "." -U "sa" -P "YOUR_SA_PASSWORD" -C -b -i "C:\RPM-Assure\Sql\customers\AHIC\226_Grant_msdb_Rpm_collect.sql"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\AHIC\Run-AHIC-Notes14.ps1"
+
+  Also copy 224/225 into collect if AHIC still uses C:\RPM-Assure\Sql\collect:
+    Copy-Item "C:\RPM-Assure\Sql\customers\AHIC\224*.sql","C:\RPM-Assure\Sql\customers\AHIC\225*.sql" "C:\RPM-Assure\Sql\collect\" -Force
+
+STEP 4 — VERIFY on central
+  sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -U "Rpm_collect" -P "RpmCollect#AHIC2026" -C -i "%USERPROFILE%\Downloads\TrackA_Data\central\330_Verify_TrackA_Backups_Version.sql"
+
+  Or one-liners:
+    sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -U "Rpm_collect" -P "RpmCollect#AHIC2026" -C -Q "SELECT InstanceName, COUNT(*) Cnt, MAX(ImportedAt) LastAt FROM Sql_Backups GROUP BY InstanceName; SELECT InstanceName, ProductVersion, BuildNumber, ImportedAt FROM Syspro_VersionInfo; SELECT InstanceName, COUNT(*) Cnt FROM Syspro_Hotfix GROUP BY InstanceName;"
+
+STEP 5 — Schedule (append to existing collect)
+  UVSS: edit Run-UVSS-Collect-Scheduled.ps1 to also run 224 + 225 (or call Run-UVSS-Notes14.ps1 daily).
+  AHIC: same for AHIC schedule.
+
+STEP 6 — UI
+  App already has:
+    Customer → SYSPRO → SQL   = backups + failures
+    Customer → SYSPRO → License = version / build / modules
+  Hard refresh (private window) after data lands.
+
+Done when:
+  - Sql_Backups has rows for UVSS-SYSPRO and AHIC-SSQL-SRV
+  - Syspro_VersionInfo has a row per instance (or explicit Version FAIL reason in log)
+  - UI panels show numbers instead of empty

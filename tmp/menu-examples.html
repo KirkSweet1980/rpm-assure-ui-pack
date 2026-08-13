@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RPM Assure menu styles</title>
+<style>
+  :root { font-family: Inter, Segoe UI, system-ui, sans-serif; }
+  body { margin: 0; background: #e8eef3; color: #12293c; }
+  .page { padding: 24px 28px 40px; }
+  h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: -0.02em; }
+  .sub { margin: 0 0 22px; color: #3d5568; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card { background: #fff; border: 2px solid #8aa6bc; border-radius: 10px; overflow: hidden; }
+  .card h2 { margin: 0; padding: 12px 14px 4px; font-size: 15px; }
+  .card p { margin: 0; padding: 0 14px 12px; font-size: 12px; color: #5f7588; }
+  .nav { background: linear-gradient(180deg, #0a1628, #12365a); padding: 10px 12px; display: flex; gap: 6px; align-items: center; }
+  .chip { border: 2px solid transparent; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.78); }
+  .tabs { display: flex; gap: 6px; padding: 10px 12px; background: #f0f6fa; border-top: 2px solid #b4c6d6; border-bottom: 2px solid #b4c6d6; }
+  .tab { border: 2px solid transparent; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: #5f7588; background: transparent; }
+  .mods { display: flex; gap: 6px; padding: 10px 12px; }
+  .mod { border: 2px solid transparent; border-radius: 6px; padding: 5px 9px; font-size: 11px; font-weight: 600; color: #5f7588; }
+  .dd { margin: 10px 12px 14px; border: 2px solid #8aa6bc; border-radius: 8px; overflow: hidden; }
+  .dd div { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #d0dde8; }
+  .dd div:last-child { border-bottom: 0; }
+  .idle { color: #12293c; }
+  /* A teal */
+  .a .chip.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; }
+  .a .tab.on, .a .mod.on { background: #d8f4ef; color: #0d3d36; border-color: #1bb8a6; box-shadow: inset 0 -2px 0 #1bb8a6; }
+  .a .dd .on { background: #d8f4ef; color: #0d3d36; font-weight: 700; box-shadow: inset 3px 0 0 #1bb8a6; }
+  /* B underline */
+  .b .chip.on { color: #fff; box-shadow: inset 0 -3px 0 #1bb8a6; }
+  .b .tab.on, .b .mod.on { color: #12293c; box-shadow: inset 0 -3px 0 #1bb8a6; }
+  .b .dd .on { font-weight: 700; box-shadow: inset 0 -2px 0 #1bb8a6; }
+  /* C navy */
+  .c .chip.on { background: #0a1628; color: #f0faf8; border-color: #8fce4a; }
+  .c .tab.on, .c .mod.on { background: #1a4d7a; color: #f0faf8; border-color: #12365a; }
+  .c .dd .on { background: #1a4d7a; color: #fff; font-weight: 700; }
+  /* D rail */
+  .d .chip.on { background: rgba(255,255,255,.1); color: #fff; box-shadow: inset 4px 0 0 #1bb8a6; }
+  .d .tab.on, .d .mod.on { background: #fff; color: #12293c; border-color: #8aa6bc; box-shadow: inset 4px 0 0 #1bb8a6; }
+  .d .dd .on { font-weight: 700; box-shadow: inset 4px 0 0 #1bb8a6; background: #f0f6fa; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>RPM Assure — menu styles</h1>
+  <p class="sub">Same chrome, four selected-state languages. Tell me A, B, C or D.</p>
+  <div class="grid">
+    <article class="card a">
+      <h2>A — Teal chip</h2>
+      <p>Solid teal selected chip, lime edge. Loudest, easiest to spot.</p>
+      <div class="nav">
+        <span class="chip on">Exco Insight</span>
+        <span class="chip">Reports</span>
+        <span class="chip">Select customer</span>
+        <span class="chip">Configuration</span>
+      </div>
+      <div class="tabs">
+        <span class="tab">Ecosystem</span>
+        <span class="tab on">SYSPRO</span>
+        <span class="tab">RMM</span>
+        <span class="tab">Backup</span>
+      </div>
+      <div class="mods">
+        <span class="mod">Overview</span>
+        <span class="mod on">Jobs</span>
+        <span class="mod">Day end</span>
+        <span class="mod">Health</span>
+      </div>
+      <div class="dd">
+        <div class="idle">Open Settings</div>
+        <div class="idle">SQL Server</div>
+        <div class="on">Dashboard Configuration</div>
+        <div class="idle">Users</div>
+      </div>
+    </article>
+    <article class="card b">
+      <h2>B — Ink underline</h2>
+      <p>No fill. A 3px teal bar under the label. Quiet, editorial.</p>
+      <div class="nav">
+        <span class="chip on">Exco Insight</span>
+        <span class="chip">Reports</span>
+        <span class="chip">Select customer</span>
+        <span class="chip">Configuration</span>
+      </div>
+      <div class="tabs">
+        <span class="tab">Ecosystem</span>
+        <span class="tab on">SYSPRO</span>
+        <span class="tab">RMM</span>
+        <span class="tab">Backup</span>
+      </div>
+      <div class="mods">
+        <span class="mod">Overview</span>
+        <span class="mod on">Jobs</span>
+        <span class="mod">Day end</span>
+        <span class="mod">Health</span>
+      </div>
+      <div class="dd">
+        <div class="idle">Open Settings</div>
+        <div class="idle">SQL Server</div>
+        <div class="on">Dashboard Configuration</div>
+        <div class="idle">Users</div>
+      </div>
+    </article>
+    <article class="card c">
+      <h2>C — Navy block</h2>
+      <p>Solid navy + white type. Most corporate / board-pack.</p>
+      <div class="nav">
+        <span class="chip on">Exco Insight</span>
+        <span class="chip">Reports</span>
+        <span class="chip">Select customer</span>
+        <span class="chip">Configuration</span>
+      </div>
+      <div class="tabs">
+        <span class="tab">Ecosystem</span>
+        <span class="tab on">SYSPRO</span>
+        <span class="tab">RMM</span>
+        <span class="tab">Backup</span>
+      </div>
+      <div class="mods">
+        <span class="mod">Overview</span>
+        <span class="mod on">Jobs</span>
+        <span class="mod">Day end</span>
+        <span class="mod">Health</span>
+      </div>
+      <div class="dd">
+        <div class="idle">Open Settings</div>
+        <div class="idle">SQL Server</div>
+        <div class="on">Dashboard Configuration</div>
+        <div class="idle">Users</div>
+      </div>
+    </article>
+    <article class="card d">
+      <h2>D — Left rail</h2>
+      <p>4px teal bar on the left, no fill. Closest to a console.</p>
+      <div class="nav">
+        <span class="chip on">Exco Insight</span>
+        <span class="chip">Reports</span>
+        <span class="chip">Select customer</span>
+        <span class="chip">Configuration</span>
+      </div>
+      <div class="tabs">
+        <span class="tab">Ecosystem</span>
+        <span class="tab on">SYSPRO</span>
+        <span class="tab">RMM</span>
+        <span class="tab">Backup</span>
+      </div>
+      <div class="mods">
+        <span class="mod">Overview</span>
+        <span class="mod on">Jobs</span>
+        <span class="mod">Day end</span>
+        <span class="mod">Health</span>
+      </div>
+      <div class="dd">
+        <div class="idle">Open Settings</div>
+        <div class="idle">SQL Server</div>
+        <div class="on">Dashboard Configuration</div>
+        <div class="idle">Users</div>
+      </div>
+    </article>
+  </div>
+</div>
+</body>
+</html>

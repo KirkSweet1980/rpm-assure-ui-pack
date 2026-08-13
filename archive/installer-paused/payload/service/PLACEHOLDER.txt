@@ -1,0 +1,1 @@
+Place WinSW as RPMAssure-App.exe here (Prepare-Payload downloads it).

@@ -1,0 +1,28 @@
+RPM Assure — collect schedule hardening
+=======================================
+
+Default (dev / quick start)
+  schtasks ... /RU SYSTEM
+  Works, but SYSTEM has broad rights. Prefer a dedicated account in production.
+
+Recommended
+  1) Create domain or local user e.g. RPM-COLLECT-SVC (not an admin)
+  2) Grant "Log on as a batch job" (secpol.msc or GPO)
+  3) Grant NTFS Read+Execute on C:\RPM-Assure
+  4) Keep SQL login rpmassure for local + central (SQL auth) — service account only runs PowerShell
+  5) Install:
+       powershell -NoProfile -ExecutionPolicy Bypass -File `
+         C:\RPM-Assure\Sql\base\syspro-direct\Install-Schedule.ps1 `
+         -ConfigPath C:\RPM-Assure\Sql\customers\RSS\Customer.Config.ps1 `
+         -RunAsUser ".\RPM-COLLECT-SVC" -RunAsPassword "***"
+
+Log rotation
+  Lib-Sqlcmd Initialize-RpmaCollect deletes:
+    - *.log older than 14 days
+    - excess logs beyond 200 files
+    - tmp\ query files older than 1 day
+
+Verify
+  Get-ScheduledTask -TaskName "RPMAssure-RSS-SysproCollect" | Format-List *
+  Get-ScheduledTaskInfo -TaskName "RPMAssure-RSS-SysproCollect"
+  dir C:\RPM-Assure\Sql\customers\RSS\logs | Sort LastWriteTime -Desc | Select -First 5

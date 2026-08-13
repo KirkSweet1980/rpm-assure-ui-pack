@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-B-hcVAMW.js";import{a as t}from"./app-shell-BkbQOl_d.js";import{c as n}from"./index-bTdCDKAr.js";import{t as r}from"./use-staff-profile-BVfwMPXq.js";var i=e();function a(){let{profile:e}=r();return t({select:e=>e.location.pathname}),e?.permissions.canAccessPlatformSettings,(0,i.jsx)(n,{to:`/`})}export{a as component};

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Theme examples</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, Segoe UI, system-ui, sans-serif; background: #d5dee7; color: #12293c; }
+  .page { padding: 20px 22px 28px; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.02em; }
+  .lede { margin: 0 0 16px; font-size: 13px; color: #3d5568; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pair { border: 2px solid #7a97ad; border-radius: 12px; overflow: hidden; background: #fff; }
+  .pair h2 { margin: 0; padding: 10px 12px 2px; font-size: 14px; }
+  .pair .blurb { margin: 0; padding: 0 12px 10px; font-size: 11px; color: #5f7588; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; }
+  .pane { padding: 10px; }
+  .pane.light { background: #e8eef3; }
+  .pane.dark { background: #0b1220; color: #e8eef6; }
+  .label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 6px; opacity: .7; }
+  .nav { display: flex; gap: 5px; padding: 8px; border-radius: 8px 8px 0 0; }
+  .chip { border: 2px solid transparent; border-radius: 6px; padding: 5px 8px; font-size: 11px; font-weight: 600; }
+  .tabs { display: flex; gap: 5px; padding: 8px; }
+  .tab { border: 2px solid transparent; border-radius: 6px; padding: 5px 8px; font-size: 11px; font-weight: 600; }
+  .mods { display: flex; gap: 5px; padding: 0 8px 8px; }
+  .mod { border: 2px solid transparent; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: 600; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 0 8px 8px; }
+  .kpi { border: 2px solid; border-radius: 6px; padding: 6px 7px; }
+  .kpi b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .kpi s { display: block; font-size: 9px; text-decoration: none; opacity: .7; }
+  .dd { margin: 0 8px 8px; border: 2px solid; border-radius: 6px; overflow: hidden; font-size: 11px; }
+  .dd div { padding: 6px 8px; }
+  /* shared navy bar */
+  .nav { background: linear-gradient(180deg, #0a1628, #12365a); }
+  .chip.idle { color: rgba(255,255,255,.75); }
+
+  /* OCEAN */
+  .ocean .chip.on { background: #2b6fae; color: #fff; border-color: #8ec5f0; }
+  .ocean .light .tab.on, .ocean .light .mod.on { background: #2b6fae; color: #fff; border-color: #1a4d7a; }
+  .ocean .light .tabs { background: #f0f6fa; }
+  .ocean .light .tab, .ocean .light .mod { color: #5f7588; }
+  .ocean .light .kpi { background: #fff; border-color: #8aa6bc; }
+  .ocean .light .dd { border-color: #8aa6bc; background: #fff; }
+  .ocean .light .dd .on { background: #dceaf6; color: #12365a; font-weight: 700; box-shadow: inset 3px 0 0 #2b6fae; }
+  .ocean .dark .chip.on { background: #3d7ec4; color: #f4f8fc; border-color: #9fd0f5; }
+  .ocean .dark .tabs { background: #0f1729; }
+  .ocean .dark .tab, .ocean .dark .mod { color: #7b8da3; }
+  .ocean .dark .tab.on, .ocean .dark .mod.on { background: #2b6fae; color: #f4f8fc; border-color: #8ec5f0; }
+  .ocean .dark .kpi { background: #121a2b; border-color: #54708a; color: #e8eef6; }
+  .ocean .dark .dd { border-color: #54708a; background: #121a2b; }
+  .ocean .dark .dd .on { background: #16324f; color: #e8eef6; font-weight: 700; box-shadow: inset 3px 0 0 #8ec5f0; }
+
+  /* TEAL */
+  .teal .chip.on { background: #1bb8a6; color: #04201c; border-color: #8fce4a; }
+  .teal .light .tabs { background: #eef8f6; }
+  .teal .light .tab, .teal .light .mod { color: #5f7588; }
+  .teal .light .tab.on, .teal .light .mod.on { background: #d8f4ef; color: #0d3d36; border-color: #1bb8a6; }
+  .teal .light .kpi { background: #fff; border-color: #8aa6bc; }
+  .teal .light .dd { border-color: #8aa6bc; background: #fff; }
+  .teal .light .dd .on { background: #d8f4ef; color: #0d3d36; font-weight: 700; box-shadow: inset 3px 0 0 #1bb8a6; }
+  .teal .dark .tabs { background: #0d1a18; }
+  .teal .dark .tab, .teal .dark .mod { color: #7b8da3; }
+  .teal .dark .tab.on, .teal .dark .mod.on { background: #12362f; color: #e8f7f4; border-color: #3ecfbf; }
+  .teal .dark .kpi { background: #101a24; border-color: #4a6580; color: #e6eef5; }
+  .teal .dark .dd { border-color: #4a6580; background: #101a24; }
+  .teal .dark .dd .on { background: #12362f; color: #e8f7f4; font-weight: 700; box-shadow: inset 3px 0 0 #3ecfbf; }
+
+  /* INK */
+  .ink .chip.on { background: #0a1628; color: #f0faf8; border-color: #8aa6bc; }
+  .ink .light .tabs { background: #eef1f4; }
+  .ink .light .tab, .ink .light .mod { color: #5f7588; }
+  .ink .light .tab.on, .ink .light .mod.on { background: #e8eef3; color: #12293c; border-color: #8aa6bc; box-shadow: inset 0 -2px 0 #1a4d7a; }
+  .ink .light .kpi { background: #fff; border-color: #8aa6bc; }
+  .ink .light .dd { border-color: #8aa6bc; background: #fff; }
+  .ink .light .dd .on { background: #e8eef3; color: #12293c; font-weight: 700; box-shadow: inset 3px 0 0 #1a4d7a; }
+  .ink .dark .tabs { background: #121820; }
+  .ink .dark .tab, .ink .dark .mod { color: #7b8da3; }
+  .ink .dark .tab.on, .ink .dark .mod.on { background: #1a2430; color: #e6eef5; border-color: #4a6580; box-shadow: inset 0 -2px 0 #8aa6bc; }
+  .ink .dark .kpi { background: #121820; border-color: #4a6580; color: #e6eef5; }
+  .ink .dark .dd { border-color: #4a6580; background: #121820; }
+  .ink .dark .dd .on { background: #1a2430; color: #e6eef5; font-weight: 700; box-shadow: inset 3px 0 0 #8aa6bc; }
+
+  /* CONTRAST */
+  .contrast .chip.on { background: #163f68; color: #fff; border-color: #fff; }
+  .contrast .light .tabs { background: #dce6ee; }
+  .contrast .light .tab, .contrast .light .mod { color: #243848; }
+  .contrast .light .tab.on, .contrast .light .mod.on { background: #c5daf0; color: #0a1628; border-color: #163f68; }
+  .contrast .light .kpi { background: #fff; border-color: #4d6b82; }
+  .contrast .light .dd { border-color: #4d6b82; background: #fff; }
+  .contrast .light .dd .on { background: #c5daf0; color: #0a1628; font-weight: 700; box-shadow: inset 3px 0 0 #163f68; }
+  .contrast .dark .tabs { background: #0a1420; }
+  .contrast .dark .tab, .contrast .dark .mod { color: #c5d4e0; }
+  .contrast .dark .tab.on, .contrast .dark .mod.on { background: #0f2740; color: #f4f8fc; border-color: #8ec5f0; }
+  .contrast .dark .kpi { background: #0f1720; border-color: #8aa6bc; color: #f4f8fc; }
+  .contrast .dark .dd { border-color: #8aa6bc; background: #0f1720; }
+  .contrast .dark .dd .on { background: #0f2740; color: #f4f8fc; font-weight: 700; box-shadow: inset 3px 0 0 #8ec5f0; }
+
+  /* LIME */
+  .lime .chip.on { background: #8fce4a; color: #14300a; border-color: #d4f0a8; }
+  .lime .light .tabs { background: #f3f8ea; }
+  .lime .light .tab, .lime .light .mod { color: #5f7588; }
+  .lime .light .tab.on, .lime .light .mod.on { background: #8fce4a; color: #14300a; border-color: #5ea01e; }
+  .lime .light .kpi { background: #fff; border-color: #8aa6bc; }
+  .lime .light .dd { border-color: #8aa6bc; background: #fff; }
+  .lime .light .dd .on { background: #eaf7d4; color: #14300a; font-weight: 700; box-shadow: inset 3px 0 0 #8fce4a; }
+  .lime .dark .tabs { background: #141a10; }
+  .lime .dark .tab, .lime .dark .mod { color: #7b8da3; }
+  .lime .dark .tab.on, .lime .dark .mod.on { background: #3d6b12; color: #eaf7d4; border-color: #8fce4a; }
+  .lime .dark .kpi { background: #12180e; border-color: #4a6580; color: #e6eef5; }
+  .lime .dark .dd { border-color: #4a6580; background: #12180e; }
+  .lime .dark .dd .on { background: #3d6b12; color: #eaf7d4; font-weight: 700; box-shadow: inset 3px 0 0 #8fce4a; }
+
+  /* DUSK */
+  .dusk .chip.on { background: #5b4b8a; color: #f4f0ff; border-color: #c4b5e8; }
+  .dusk .light .tabs { background: #f3eef8; }
+  .dusk .light .tab, .dusk .light .mod { color: #5f7588; }
+  .dusk .light .tab.on, .dusk .light .mod.on { background: #5b4b8a; color: #fff; border-color: #3d3260; }
+  .dusk .light .kpi { background: #fff; border-color: #8aa6bc; }
+  .dusk .light .dd { border-color: #8aa6bc; background: #fff; }
+  .dusk .light .dd .on { background: #ece6f7; color: #2a2044; font-weight: 700; box-shadow: inset 3px 0 0 #5b4b8a; }
+  .dusk .dark .tabs { background: #14101c; }
+  .dusk .dark .tab, .dusk .dark .mod { color: #9aa3b5; }
+  .dusk .dark .tab.on, .dusk .dark .mod.on { background: #3d3260; color: #f4f0ff; border-color: #c4b5e8; }
+  .dusk .dark .kpi { background: #16121f; border-color: #5a4e78; color: #e8eef6; }
+  .dusk .dark .dd { border-color: #5a4e78; background: #16121f; }
+  .dusk .dark .dd .on { background: #3d3260; color: #f4f0ff; font-weight: 700; box-shadow: inset 3px 0 0 #c4b5e8; }
+
+  .rag { display: flex; gap: 4px; padding: 0 8px 8px; }
+  .rag i { flex: 1; height: 6px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>More theme examples</h1>
+  <p class="lede">Each card is light (left) and dark (right). Same chrome, different CSS variables. Ocean is on now.</p>
+  <div class="grid">
+
+    <article class="pair ocean">
+      <h2>1 — Ocean</h2>
+      <p class="blurb">On now. Brand blue selected. Board-ready.</p>
+      <div class="split">
+        <div class="pane light">
+          <p class="label">Light</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#2f9e5f"></i><i style="background:#d4a017"></i><i style="background:#d14b4b"></i></div>
+        </div>
+        <div class="pane dark">
+          <p class="label">Dark</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#3ecf8e"></i><i style="background:#e5b84a"></i><i style="background:#f07171"></i></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="pair teal">
+      <h2>2 — Teal</h2>
+      <p class="blurb">Original RPM mint. Lime edge on the navy bar.</p>
+      <div class="split">
+        <div class="pane light">
+          <p class="label">Light</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#2f9e5f"></i><i style="background:#d4a017"></i><i style="background:#d14b4b"></i></div>
+        </div>
+        <div class="pane dark">
+          <p class="label">Dark</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#3ecf8e"></i><i style="background:#e5b84a"></i><i style="background:#f07171"></i></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="pair ink">
+      <h2>3 — Ink</h2>
+      <p class="blurb">Almost no colour on chrome. RAG still speaks.</p>
+      <div class="split">
+        <div class="pane light">
+          <p class="label">Light</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#2f9e5f"></i><i style="background:#d4a017"></i><i style="background:#d14b4b"></i></div>
+        </div>
+        <div class="pane dark">
+          <p class="label">Dark</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#3ecf8e"></i><i style="background:#e5b84a"></i><i style="background:#f07171"></i></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="pair contrast">
+      <h2>4 — High contrast</h2>
+      <p class="blurb">White edge on navy. Heavier frames. Ops-desk readable.</p>
+      <div class="split">
+        <div class="pane light">
+          <p class="label">Light</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#2f9e5f"></i><i style="background:#d4a017"></i><i style="background:#d14b4b"></i></div>
+        </div>
+        <div class="pane dark">
+          <p class="label">Dark</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#3ecf8e"></i><i style="background:#e5b84a"></i><i style="background:#f07171"></i></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="pair lime">
+      <h2>5 — Lime</h2>
+      <p class="blurb">Not a preset yet. Highest energy. Good for a war-room feel.</p>
+      <div class="split">
+        <div class="pane light">
+          <p class="label">Light</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#2f9e5f"></i><i style="background:#d4a017"></i><i style="background:#d14b4b"></i></div>
+        </div>
+        <div class="pane dark">
+          <p class="label">Dark</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#3ecf8e"></i><i style="background:#e5b84a"></i><i style="background:#f07171"></i></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="pair dusk">
+      <h2>6 — Dusk</h2>
+      <p class="blurb">Not a preset yet. Slate-violet. Distinct from the blue family.</p>
+      <div class="split">
+        <div class="pane light">
+          <p class="label">Light</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#2f9e5f"></i><i style="background:#d4a017"></i><i style="background:#d14b4b"></i></div>
+        </div>
+        <div class="pane dark">
+          <p class="label">Dark</p>
+          <div class="nav"><span class="chip on">Exco</span><span class="chip idle">Reports</span><span class="chip idle">Config</span></div>
+          <div class="tabs"><span class="tab">Eco</span><span class="tab on">SYSPRO</span><span class="tab">RMM</span></div>
+          <div class="mods"><span class="mod">Overview</span><span class="mod on">Jobs</span><span class="mod">Health</span></div>
+          <div class="cards"><div class="kpi"><s>RAG</s><b>8</b></div><div class="kpi"><s>SLA</s><b>96%</b></div><div class="kpi"><s>Risks</s><b>3</b></div></div>
+          <div class="dd"><div>SQL Server</div><div class="on">Theme tokens</div><div>Users</div></div>
+          <div class="rag"><i style="background:#3ecf8e"></i><i style="background:#e5b84a"></i><i style="background:#f07171"></i></div>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</div>
+</body>
+</html>

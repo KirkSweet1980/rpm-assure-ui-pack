@@ -1,0 +1,89 @@
+
+/** OPTION_A_INLINE_SKIN **/
+.rpma-login-hero--option-a{
+  position:relative!important;min-height:100dvh!important;width:100%!important;
+  overflow:hidden!important;display:flex!important;align-items:center!important;
+  justify-content:center!important;background:#050d18!important;color:#e8f4ff!important;
+  isolation:isolate!important;
+}
+.rpma-login-hero--option-a .rpma-login-brand-words,
+.rpma-login-hero--option-a .rpma-login-ps-stage,
+.rpma-login-hero--option-a .rpma-login-hero-grid,
+.rpma-login-hero--option-a .rpma-login-word-wm-layer{display:none!important}
+
+/* SQL full bleed - deliberately strong so change is obvious */
+.rpma-login-hero--option-a .rpma-login-sql-bg{
+  position:absolute!important;inset:0!important;z-index:0!important;
+  display:grid!important;grid-template-columns:1fr 1fr 1fr!important;
+  overflow:hidden!important;pointer-events:none!important;
+  font-family:Consolas,"Courier New",ui-monospace,monospace!important;
+  opacity:1!important;
+}
+.rpma-login-hero--option-a .rpma-login-sql-col{opacity:.55!important;overflow:hidden!important;position:relative!important}
+.rpma-login-hero--option-a .rpma-login-sql-col--2{opacity:.4!important}
+.rpma-login-hero--option-a .rpma-login-sql-col--3{opacity:.48!important}
+.rpma-login-hero--option-a .rpma-login-sql-track{
+  padding:1rem .75rem 2rem!important;
+  animation:rpmaOptASql 48s linear infinite!important;will-change:transform!important;
+}
+.rpma-login-hero--option-a .rpma-login-sql-col--2 .rpma-login-sql-track{animation-duration:62s!important;animation-direction:reverse!important;padding-top:3rem!important}
+.rpma-login-hero--option-a .rpma-login-sql-col--3 .rpma-login-sql-track{animation-duration:54s!important;padding-top:1.5rem!important}
+@keyframes rpmaOptASql{0%{transform:translateY(0)}100%{transform:translateY(-33.333%)}}
+.rpma-login-hero--option-a .rpma-login-sql-line{display:flex!important;gap:.55rem!important;font-size:11px!important;line-height:1.5!important;white-space:pre!important}
+.rpma-login-hero--option-a .rpma-login-sql-gutter{flex:0 0 1.75rem!important;text-align:right!important;color:rgba(120,150,170,.4)!important}
+.rpma-login-hero--option-a .rpma-login-sql-text{color:rgba(170,205,230,.65)!important}
+.rpma-login-hero--option-a .rpma-login-sql-line.is-kw .rpma-login-sql-text{color:rgba(100,170,230,.95)!important;font-weight:700!important}
+.rpma-login-hero--option-a .rpma-login-sql-line.is-comment .rpma-login-sql-text{color:rgba(120,180,100,.75)!important;font-style:italic!important}
+.rpma-login-hero--option-a .rpma-login-sql-line.is-str .rpma-login-sql-text{color:rgba(220,160,130,.8)!important}
+.rpma-login-hero--option-a .rpma-login-sql-bg-fade{
+  position:absolute!important;inset:0!important;z-index:2!important;pointer-events:none!important;
+  background:linear-gradient(90deg,rgba(5,12,22,.5) 0%,transparent 20%,transparent 80%,rgba(5,12,22,.5) 100%)!important;
+}
+.rpma-login-hero--option-a .rpma-login-sql-vignette{
+  position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important;
+  background:radial-gradient(ellipse 46% 52% at 50% 44%,rgba(5,12,22,.9) 0%,rgba(5,12,22,.65) 42%,rgba(5,12,22,.2) 72%,transparent 100%)!important;
+}
+
+/* Edge chips - large and obvious */
+.rpma-login-hero--option-a .rpma-login-page-words{
+  position:absolute!important;inset:0!important;z-index:3!important;pointer-events:none!important;overflow:hidden!important;
+}
+.rpma-login-hero--option-a .rpma-lw{
+  position:absolute!important;display:inline-flex!important;align-items:center!important;gap:.5rem!important;
+  padding:.5rem 1rem .5rem .75rem!important;border-radius:999px!important;
+  border:1px solid rgba(27,184,166,.65)!important;background:rgba(6,30,50,.92)!important;
+  color:#b8fff4!important;font-size:.95rem!important;font-weight:700!important;
+  letter-spacing:.03em!important;text-transform:lowercase!important;white-space:nowrap!important;
+  box-shadow:0 6px 24px rgba(0,0,0,.45),0 0 0 1px rgba(27,184,166,.15),0 0 20px rgba(27,184,166,.15)!important;
+  animation:rpmaOptAChip 5.5s ease-in-out infinite!important;
+}
+.rpma-login-hero--option-a .rpma-lw-dot{
+  width:.55rem!important;height:.55rem!important;border-radius:50%!important;
+  background:#1bb8a6!important;box-shadow:0 0 10px #1bb8a6!important;flex:0 0 auto!important;
+}
+.rpma-login-hero--option-a .rpma-lw--L1{top:18%!important;left:2%!important;animation-delay:0s!important}
+.rpma-login-hero--option-a .rpma-lw--L2{top:42%!important;left:1.25%!important;animation-delay:.7s!important}
+.rpma-login-hero--option-a .rpma-lw--L3{top:66%!important;left:2%!important;animation-delay:1.4s!important}
+.rpma-login-hero--option-a .rpma-lw--R1{top:18%!important;right:2%!important;animation-delay:.35s!important}
+.rpma-login-hero--option-a .rpma-lw--R2{top:42%!important;right:1.25%!important;animation-delay:1s!important}
+.rpma-login-hero--option-a .rpma-lw--R3{top:66%!important;right:2%!important;animation-delay:1.7s!important}
+@keyframes rpmaOptAChip{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.rpma-login-hero--option-a .rpma-login-hero-center{
+  position:relative!important;z-index:10!important;width:min(420px,92vw)!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;gap:1.1rem!important;
+}
+.rpma-login-hero--option-a .rpma-login-hero-rpm{color:#fff!important;-webkit-text-fill-color:#fff!important}
+.rpma-login-hero--option-a .rpma-login-hero-assure{color:#1bb8a6!important;-webkit-text-fill-color:#1bb8a6!important}
+.rpma-login-hero--option-a .rpma-login-glass{width:100%!important;max-width:24rem!important;z-index:2!important}
+.rpma-login-hero--option-a .rpma-login-hero-footer{
+  position:absolute!important;bottom:1rem!important;left:0!important;right:0!important;z-index:10!important;
+  text-align:center!important;color:rgba(180,210,230,.55)!important;font-size:.78rem!important;margin:0!important;
+}
+@media (max-width:700px){
+  .rpma-login-hero--option-a .rpma-login-page-words{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){
+  .rpma-login-hero--option-a .rpma-lw,
+  .rpma-login-hero--option-a .rpma-login-sql-track{animation:none!important}
+}

@@ -1,0 +1,7 @@
+CustomerCode=RSR
+DisplayName=Redsun Raisins
+InstanceName=RSR-SQLSRV-DB
+SysproDB=SysproDB
+Companies=SysproCompanyRSL,SysproCompanyRST
+Bootstrap=SYSPROAdmin
+Collect=rpmassure

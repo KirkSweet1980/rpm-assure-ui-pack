@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Ocean blue — light and dark</title>
+<style>
+  body { margin: 0; font-family: Inter, Segoe UI, system-ui, sans-serif; }
+  .wrap { display: grid; grid-template-columns: 1fr 1fr; }
+  .pane { padding: 18px 18px 22px; }
+  .light { background: #e8eef3; color: #12293c; }
+  .dark { background: #0b1220; color: #e8eef6; }
+  h2 { margin: 0 0 4px; font-size: 16px; }
+  p { margin: 0 0 12px; font-size: 12px; opacity: .75; }
+  .card { border: 2px solid #8aa6bc; border-radius: 10px; overflow: hidden; background: #fff; }
+  .dark .card { background: #121a2b; border-color: #54708a; }
+  .nav { background: linear-gradient(180deg, #0a1628, #12365a); padding: 10px 12px; display: flex; gap: 6px; }
+  .chip { border: 2px solid transparent; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.78); }
+  .chip.on { background: #2b6fae; color: #fff; border-color: #8ec5f0; }
+  .dark .chip.on { background: #3d7ec4; color: #f4f8fc; border-color: #9fd0f5; }
+  .tabs { display: flex; gap: 6px; padding: 10px 12px; background: #f0f6fa; }
+  .dark .tabs { background: #0f1729; }
+  .tab { border: 2px solid transparent; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: #5f7588; }
+  .dark .tab { color: #7b8da3; }
+  .tab.on { background: #2b6fae; color: #fff; border-color: #1a4d7a; }
+  .dark .tab.on { background: #2b6fae; color: #f4f8fc; border-color: #8ec5f0; }
+  .mods { display: flex; gap: 6px; padding: 10px 12px; }
+  .mod { border: 2px solid transparent; border-radius: 6px; padding: 5px 9px; font-size: 11px; font-weight: 600; color: #5f7588; }
+  .dark .mod { color: #7b8da3; }
+  .mod.on { background: #2b6fae; color: #fff; border-color: #1a4d7a; }
+  .dark .mod.on { background: #2b6fae; color: #f4f8fc; border-color: #8ec5f0; }
+  .dd { margin: 0 12px 14px; border: 2px solid #8aa6bc; border-radius: 8px; overflow: hidden; }
+  .dark .dd { border-color: #54708a; }
+  .dd div { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #d0dde8; }
+  .dark .dd div { border-bottom-color: #3a5168; }
+  .dd .on { background: #dceaf6; color: #12365a; font-weight: 700; box-shadow: inset 3px 0 0 #2b6fae; }
+  .dark .dd .on { background: #16324f; color: #e8eef6; box-shadow: inset 3px 0 0 #8ec5f0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="pane light">
+    <h2>I — Ocean blue · Light</h2>
+    <p>Brand blue selected. White type. Ice-blue edge.</p>
+    <div class="card">
+      <div class="nav">
+        <span class="chip on">Exco Insight</span>
+        <span class="chip">Reports</span>
+        <span class="chip">Select customer</span>
+        <span class="chip">Configuration</span>
+      </div>
+      <div class="tabs">
+        <span class="tab">Ecosystem</span>
+        <span class="tab on">SYSPRO</span>
+        <span class="tab">RMM</span>
+        <span class="tab">Backup</span>
+      </div>
+      <div class="mods">
+        <span class="mod">Overview</span>
+        <span class="mod on">Jobs</span>
+        <span class="mod">Day end</span>
+        <span class="mod">Health</span>
+      </div>
+      <div class="dd">
+        <div>Open Settings</div>
+        <div>SQL Server</div>
+        <div class="on">Dashboard Configuration</div>
+        <div>Users</div>
+      </div>
+    </div>
+  </section>
+  <section class="pane dark">
+    <h2>I — Ocean blue · Dark</h2>
+    <p>Brighter blue chip. Ice edge. Deep navy selected row.</p>
+    <div class="card">
+      <div class="nav">
+        <span class="chip on">Exco Insight</span>
+        <span class="chip">Reports</span>
+        <span class="chip">Select customer</span>
+        <span class="chip">Configuration</span>
+      </div>
+      <div class="tabs">
+        <span class="tab">Ecosystem</span>
+        <span class="tab on">SYSPRO</span>
+        <span class="tab">RMM</span>
+        <span class="tab">Backup</span>
+      </div>
+      <div class="mods">
+        <span class="mod">Overview</span>
+        <span class="mod on">Jobs</span>
+        <span class="mod">Day end</span>
+        <span class="mod">Health</span>
+      </div>
+      <div class="dd">
+        <div>Open Settings</div>
+        <div>SQL Server</div>
+        <div class="on">Dashboard Configuration</div>
+        <div>Users</div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

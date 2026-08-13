@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="RegistryComponents" Directory="INSTALLFOLDER">
+      <Component Id="Cmp_Registry" Guid="99887766-5544-3322-1100-FFEEDDCCBBAA">
+        <RegistryKey Root="HKLM" Key="Software\RPM Resources\RPM Assure">
+          <RegistryValue Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+          <RegistryValue Name="Version" Type="string" Value="$(var.ProductVersion)" />
+          <RegistryValue Name="ConfigDir" Type="string" Value="[ConfigFolder]" />
+          <RegistryValue Name="Publisher" Type="string" Value="RPM Resources" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

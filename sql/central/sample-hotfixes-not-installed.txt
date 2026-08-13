@@ -1,0 +1,5 @@
+# Sample — replace with Syspro Installer export
+# Formats accepted: KB######## title | code,title,severity | 12345 - title
+KB8100663 Crystal Reports prerequisite for SYSPRO 8 2023+
+KB8101001,Sample ledger query fix,Mandatory
+8101002 - Sample optional stock take performance

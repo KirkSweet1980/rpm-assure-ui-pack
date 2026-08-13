@@ -1,0 +1,1 @@
+Windows MSI/Setup installer work paused 2026-08-12. Sources in archive/installer-paused. Resume later.

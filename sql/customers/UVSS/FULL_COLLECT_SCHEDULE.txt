@@ -1,0 +1,31 @@
+UVSS — Full collect + schedule
+==============================
+
+1) Manual FULL core (no jobs):
+   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\UVSS\Run-UVSS-Collect-Scheduled.ps1"
+
+2) Manual jobs only:
+   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\UVSS\Run-UVSS-Collect-Scheduled.ps1" -JobsOnly
+
+3) Core + jobs once:
+   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\UVSS\Run-UVSS-Collect-Scheduled.ps1" -IncludeJobs
+
+4) Install schedules (Administrator):
+   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Sql\customers\UVSS\Install-UVSS-Schedule.ps1"
+
+   RPMAssure-UVSS-SysproCollect  = every 15 minutes (core)
+   RPMAssure-UVSS-SysproJobs     = daily 03:00 (job logging)
+
+5) Force run schedule now:
+   Start-ScheduledTask -TaskName "RPMAssure-UVSS-SysproCollect"
+   Start-Sleep 20
+   Get-ScheduledTaskInfo -TaskName "RPMAssure-UVSS-SysproCollect" | Format-List LastRunTime, LastTaskResult, NextRunTime
+
+6) Logs:
+   C:\RPM-Assure\Sql\customers\UVSS\logs\sched_*.log
+
+7) Central verify:
+   sqlcmd -S "102.222.21.220,14333" -d "RPMAssure_App" -U "Rpm_collect" -P "<YOUR_COLLECT_PASSWORD>" -C -Q "SELECT 'Ops' t, COUNT(*) c, MAX(ImportedAt) m FROM Syspro_Operators WHERE InstanceName='UVSS-SYSPRO' UNION ALL SELECT 'Jobs', COUNT(*), MAX(ImportedAt) FROM Syspro_JobLogging WHERE InstanceName='UVSS-SYSPRO' UNION ALL SELECT 'Lic', COUNT(*), MAX(ImportedAt) FROM Syspro_SystemLicense WHERE InstanceName='UVSS-SYSPRO'"
+
+Core scripts: 212, 214, 215, 216, 217, 218
+Jobs script:  213

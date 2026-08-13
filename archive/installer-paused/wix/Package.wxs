@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <?define UpgradeCode = "B7E2C4A1-9F3D-4E8B-A6C1-0D5F2E9B8A74" ?>
+  <?define ProductName = "RPM Assure" ?>
+  <?define Manufacturer = "RPM Resources" ?>
+
+  <Package
+      Name="$(var.ProductName)"
+      Manufacturer="$(var.Manufacturer)"
+      Version="$(var.ProductVersion)"
+      UpgradeCode="$(var.UpgradeCode)"
+      Scope="perMachine"
+      Language="1033"
+      Compressed="yes"
+      InstallerVersion="500">
+
+    <SummaryInformation
+        Description="RPM Assure - customer estate assurance platform"
+        Manufacturer="$(var.Manufacturer)" />
+
+    <MajorUpgrade
+        DowngradeErrorMessage="A newer version of RPM Assure is already installed."
+        Schedule="afterInstallInitialize"
+        AllowSameVersionUpgrades="no" />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Property Id="SQLSERVER" Secure="yes" />
+    <Property Id="SQLDATABASE" Value="RPMAssure_App" Secure="yes" />
+    <Property Id="SQLUSER" Secure="yes" />
+    <Property Id="SQLPASSWORD" Hidden="yes" Secure="yes" />
+    <Property Id="SQLTRUSTCERT" Value="true" Secure="yes" />
+    <Property Id="APPURL" Value="https://assure.rpmresources.co.za" Secure="yes" />
+
+    <Property Id="INSTALLFOLDER">
+      <RegistrySearch Id="FindInstallFolder"
+          Root="HKLM"
+          Key="Software\RPM Resources\RPM Assure"
+          Name="InstallDir"
+          Type="raw" />
+    </Property>
+
+    <Property Id="ARPHELPLINK" Value="https://assure.rpmresources.co.za" />
+    <Property Id="ARPURLINFOABOUT" Value="https://www.rpmresources.co.za" />
+
+    <CustomAction Id="ExpandPayload"
+        Directory="INSTALLFOLDER"
+        ExeCommand='powershell.exe -NoProfile -ExecutionPolicy Bypass -File "[INSTALLFOLDER]service\Expand-Payload.ps1" -InstallDir "[INSTALLFOLDER]"'
+        Execute="deferred"
+        Impersonate="no"
+        Return="check" />
+
+    <CustomAction Id="WriteConfigFromProperties"
+        Directory="INSTALLFOLDER"
+        ExeCommand='powershell.exe -NoProfile -ExecutionPolicy Bypass -File "[INSTALLFOLDER]wizard\Apply-SilentConfig.ps1" -InstallDir "[INSTALLFOLDER]" -SqlServer "[SQLSERVER]" -SqlDatabase "[SQLDATABASE]" -SqlUser "[SQLUSER]" -SqlPassword "[SQLPASSWORD]" -SqlTrustCert "[SQLTRUSTCERT]" -AppUrl "[APPURL]"'
+        Execute="deferred"
+        Impersonate="no"
+        Return="check" />
+
+    <CustomAction Id="StartAppService"
+        Directory="INSTALLFOLDER"
+        ExeCommand='powershell.exe -NoProfile -ExecutionPolicy Bypass -File "[INSTALLFOLDER]service\Start-Service.ps1"'
+        Execute="deferred"
+        Impersonate="no"
+        Return="ignore" />
+
+    <CustomAction Id="StopAppService"
+        Directory="INSTALLFOLDER"
+        ExeCommand='powershell.exe -NoProfile -ExecutionPolicy Bypass -File "[INSTALLFOLDER]service\Stop-Service.ps1"'
+        Execute="deferred"
+        Impersonate="no"
+        Return="ignore" />
+
+    <CustomAction Id="LaunchConfigWizard"
+        Directory="INSTALLFOLDER"
+        ExeCommand='powershell.exe -NoProfile -ExecutionPolicy Bypass -File "[INSTALLFOLDER]wizard\RpmAssure-ConfigWizard.ps1" -InstallDir "[INSTALLFOLDER]"'
+        Execute="immediate"
+        Impersonate="yes"
+        Return="asyncNoWait" />
+    <InstallExecuteSequence>
+      <Custom Action="StopAppService" Before="RemoveFiles" Condition="Installed AND (REMOVE OR REINSTALL OR UPGRADINGPRODUCTCODE)" />
+      <Custom Action="ExpandPayload" After="InstallFiles" Condition="NOT REMOVE" />
+      <Custom Action="WriteConfigFromProperties" After="ExpandPayload" Condition="SQLSERVER AND NOT REMOVE" />
+      <Custom Action="StartAppService" After="ExpandPayload" Condition="NOT REMOVE" />
+    </InstallExecuteSequence>
+
+    <InstallUISequence>
+      <Custom Action="LaunchConfigWizard" After="ExecuteAction" Condition="NOT Installed AND NOT UPGRADINGPRODUCTCODE AND NOT SQLSERVER" />
+    </InstallUISequence>
+
+    <Feature Id="MainFeature" Title="RPM Assure" Level="1" ConfigurableDirectory="INSTALLFOLDER" Description="Application, service, and configuration tools">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ServiceComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
+      <ComponentGroupRef Id="RegistryComponents" />
+      <ComponentGroupRef Id="PayloadComponents" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="CompanyFolder" Name="RPM Resources">
+        <Directory Id="INSTALLFOLDER" Name="RPM Assure" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="CompanyDataFolder" Name="RPM Resources">
+        <Directory Id="RpmaDataRoot" Name="RPM Assure">
+          <Directory Id="ConfigFolder" Name="config" />
+          <Directory Id="LogsFolder" Name="logs" />
+          <Directory Id="DataFolder" Name="data" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="RPM Assure" />
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="Cmp_Readme" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+        <File Id="File_Readme" Source="payload\README.txt" KeyPath="yes" />
+      </Component>
+
+      <Component Id="Cmp_Wizard" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901" Directory="WizardDir">
+        <File Id="File_Wizard" Source="wizard\RpmAssure-ConfigWizard.ps1" KeyPath="yes" />
+        <File Id="File_SilentConfig" Source="wizard\Apply-SilentConfig.ps1" />
+        <File Id="File_TestSql" Source="wizard\Test-SqlConnection.ps1" />
+      </Component>
+
+      <Component Id="Cmp_ServiceScripts" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012" Directory="ServiceDir">
+        <File Id="File_SvcXml" Source="winsw\RPMAssure-App.xml" KeyPath="yes" />
+        <File Id="File_StartSvc" Source="service\Start-Service.ps1" />
+        <File Id="File_StopSvc" Source="service\Stop-Service.ps1" />
+        <File Id="File_InstallSvc" Source="service\Install-Service.ps1" />
+        <File Id="File_UninstallSvc" Source="service\Uninstall-Service.ps1" />
+        <File Id="File_ExpandPayload" Source="service\Expand-Payload.ps1" />
+      </Component>
+
+      <Component Id="Cmp_ConfigDir" Guid="D4E5F6A7-B8C9-0123-DEF0-234567890123" Directory="ConfigFolder">
+        <CreateFolder />
+        <File Id="File_EnvExample" Source="resources\app.env.example" Name="app.env.example" KeyPath="yes" />
+      </Component>
+
+      <Component Id="Cmp_LogsDir" Guid="E5F6A7B8-C9D0-1234-EF01-345678901234" Directory="LogsFolder">
+        <CreateFolder />
+        <RegistryValue Root="HKLM" Key="Software\RPM Resources\RPM Assure" Name="LogsDir" Type="string" Value="[LogsFolder]" KeyPath="yes" />
+      </Component>
+
+      <Component Id="Cmp_DataDir" Guid="F6A7B8C9-D0E1-2345-F012-456789012345" Directory="DataFolder">
+        <CreateFolder />
+        <RegistryValue Root="HKLM" Key="Software\RPM Resources\RPM Assure" Name="DataDir" Type="string" Value="[DataFolder]" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Directory Id="WizardDir" Name="wizard" />
+      <Directory Id="ServiceDir" Name="service" />
+      <Directory Id="AppDir" Name="app" />
+      <Directory Id="RuntimeDir" Name="runtime" />
+      <Directory Id="ToolsDir" Name="tools" />
+    </DirectoryRef>
+  </Fragment>
+</Wix>

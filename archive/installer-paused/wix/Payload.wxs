@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="PayloadComponents" Directory="INSTALLFOLDER">
+      <Component Id="Cmp_PayloadZip" Guid="0A1B2C3D-4E5F-6789-ABCD-EF0123456789">
+        <File Id="File_PayloadZip" Source="payload/payload.zip" Name="payload.zip" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

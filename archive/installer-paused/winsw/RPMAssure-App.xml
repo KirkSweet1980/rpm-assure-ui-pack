@@ -1,0 +1,26 @@
+<!-- WinSW service definition for RPM Assure production node-server -->
+<service>
+  <id>RPMAssure-App</id>
+  <name>RPM Assure Application</name>
+  <description>RPM Assure production web application (listens on 8081; Caddy fronts HTTPS)</description>
+  <executable>%BASE%\..\runtime\node\node.exe</executable>
+  <arguments>"%BASE%\..\app\.output\server\index.mjs"</arguments>
+  <workingdirectory>%BASE%\..\app</workingdirectory>
+  <log mode="roll-by-size">
+    <sizeThreshold>8192</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+  <logpath>%ProgramData%\RPM Resources\RPM Assure\logs</logpath>
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="20 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <priority>Normal</priority>
+  <stoptimeout>15 sec</stoptimeout>
+  <env name="PORT" value="8081"/>
+  <env name="NITRO_PORT" value="8081"/>
+  <env name="HOST" value="0.0.0.0"/>
+  <env name="RPM_ASSURE_DATA_MODE" value="auto"/>
+  <!-- Load secrets from ProgramData via wrapper start script if needed -->
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+</service>

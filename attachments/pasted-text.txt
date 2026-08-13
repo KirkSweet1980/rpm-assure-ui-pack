@@ -1,0 +1,2195 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+                                                                                                                        Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows                                                                                                                                                       PS C:\Users\Administrator> $zip = Get-ChildItem $env:USERPROFILE\Downloads\RPMAssure-FinSight-Phase13*.zip |            >>   Sort-Object LastWriteTime -Descending | Select-Object -First 1                                                     PS C:\Users\Administrator> $tmp = Join-Path $env:TEMP ('p13_' + [guid]::NewGuid().ToString('N'))                        PS C:\Users\Administrator> Expand-Archive -LiteralPath $zip.FullName -DestinationPath $tmp -Force
+PS C:\Users\Administrator> powershell -NoProfile -ExecutionPolicy Bypass `
+>>   -File "$tmp\Apply-Phase13-Host.ps1" `
+>>   -CustomerCode AHIC
+=== Phase 1-3 Host CustomerCode=AHIC Host=AHIC-SSQL-SRV ===
+Zip: C:\Users\Administrator\Downloads\RPMAssure-FinSight-Phase13.zip 08/12/2026 03:18:01
+SQL tree updated
+OK CompanyDatabases=@('AHICAR_I','AHICAR_Y','AHICAR_Z')
+--- 1) Install schedule (needs Admin) ---
+Creating RPMAssure-AHIC-SysproCollect (every 15 min)...
+SUCCESS: The scheduled task "RPMAssure-AHIC-SysproCollect" has successfully been created.
+Created task: RPMAssure-AHIC-SysproCollect
+Creating RPMAssure-AHIC-SysproJobs (daily 02:30)...
+SUCCESS: The scheduled task "RPMAssure-AHIC-SysproJobs" has successfully been created.
+Created task: RPMAssure-AHIC-SysproJobs
+Installed: RPMAssure-AHIC-SysproCollect (every 15 min, errors-only jobs)
+Installed: RPMAssure-AHIC-SysproJobs (daily 02:30, full jobs cap)
+RunAs: SYSTEM
+Logs: under customer logs\ folder
+
+TaskName                       State
+--------                       -----
+RPMAssure-AHIC-SysproCollect Running
+RPMAssure-AHIC-SysproJobs      Ready
+
+
+Creating RPMAssure-AHIC-SysproNative (every 15 min)...
+SUCCESS: The scheduled task "RPMAssure-AHIC-SysproNative" has successfully been created.
+Created task: RPMAssure-AHIC-SysproNative
+Installed: RPMAssure-AHIC-SysproNative
+Schedule install OK
+--- 2) GL control map (discover + ApplyCentral) ---
+2026-08-12 01:18:00Z sqlcmd=D:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE
+2026-08-12 01:18:01Z logKeepDays=14
+=== GL suggest customer=AHIC instance=AHIC-SSQL-SRV ApplyCentral=True ===
+Rpm_collect|AHIC-SSQL-SRV
+
+Online DBs (7): AHICAR_I, AHICAR_I_SRS, AHICAR_Y, AHICAR_Z, AHICAR_Z_SRS, SYSPRODeployment, Sysprodb
+Company DBs: AHICAR_I, AHICAR_Y, AHICAR_Z
+
+=== AHICAR_I ===
+GenMaster=HASGEN
+raw lines: 60
+01-2400|STOCK ALL WAREHOUSES|85476904.85|Y|CTL
+01-1000|RETAINED INCOME|-53527969.16|Y|CTL
+11-3100|SALES - CMS|-34803737.15|Y|CTL
+11-4100|COS - CMS|26933899.90|Y|CTL
+01-1020|SHARE PREMIUM|-20874000.15|Y|CTL
+12-3200|SALES - TOSHIBA|-17304928.78|Y|CTL
+12-4200|COS - TOSHIBA - PRODUCT|13898398.24|Y|CTL
+01-2210|NEDBANK CFC USD$|12414013.06|Y|CTL
+01-2230|NEDBANK -EURO|11031784.14|Y|CTL
+01-2600|TRADE DEBTORS - ALL BRANCHES|10696162.75|Y|CTL
+01-2220|NEDBANK CALL ACCOUNT|10053090.05|Y|CTL
+13-3300|SALES - SPARES|-9965240.63|Y|CTL
+15-3500|SALES - REPAIR|-8867392.78|Y|CTL
+21-3100|SALES - CMS|-8806600.00|Y|CTL
+01-2980|DEFERRED TAXATION|8677096.39|Y|CTL
+01-2450|PROV FOR EXCESS INVENTORY-CMS|-8236584.79|Y|CTL
+01-2921|RIGHT OF USE ASSET - PROPERTY|7962667.23|Y|CTL
+15-3600|SALES - MAINTENANCE|-7033614.44|Y|CTL
+01-2920|RIGHT OF USE ASSET - VEHICLES|6114190.59|Y|CTL
+21-4100|COS - CMS|5850486.30|Y|CTL
+19-3200|CARRIER RLC SALES|-5075710.28|Y|CTL
+13-4300|COS - PARTS LOCAL|4933872.35|Y|CTL
+35-3500|SALES - REPAIR|-4694684.68|Y|CTL
+01-2926|ROU - ACCUM AMORT - PROPERTY|-4089932.83|Y|CTL
+01-1091|LEASE LIABILITY - PROPERTY|-4060716.72|Y|CTL
+01-2925|ROU - ACCUM AMORT - VEHICLES|-3999083.58|Y|CTL
+15-5810|LABOUR SERVICE RECOVERY|-3828129.44|Y|CTL
+15-4500|COS - REPAIR|3775017.35|Y|CTL
+01-1420|CMS SERVICE COMMISSIONING|-3509247.28|Y|CTL
+19-4200|CARRIER RLC COS|3268106.43|Y|CTL
+15-4600|COS - MAINTENANCE|3073161.65|Y|CTL
+25-3500|SALES - REPAIR|-2949088.60|Y|CTL
+35-4500|COS - REPAIR|2582322.49|Y|CTL
+01-1110|GRN CONTROL ACCOUNT|-2464049.19|Y|AP
+01-1090|LEASE LIABILITY - VEHICLES|-2386319.89|Y|CTL
+35-5810|LABOUR SERVICE RECOVERY|-2087814.85|Y|CTL
+25-3600|SALES - MAINTENANCE|-2070290.12|Y|CTL
+70-9800|NORMAL TAXATION|2036300.00|Y|CTL
+01-2040|IMPROVEMENTS TO LEASED PROP|1951904.68|Y|CTL
+25-5810|LABOUR SERVICE RECOVERY|-1903296.63|Y|CTL
+01-2030|COMPUTER EQUIPMENT|1854711.80|Y|CTL
+22-3200|SALES - TOSHIBA|-1841406.86|Y|CTL
+35-3600|SALES - MAINTENANCE|-1784708.46|Y|CTL
+01-2140|ACC DEP - IMPROVE LEASE|-1742724.37|Y|CTL
+25-4500|COS - REPAIR|1721013.49|Y|CTL
+01-2010|PLANT|1560576.73|Y|CTL
+01-1140|AP TRANSLATION|-1509489.21|Y|CTL
+22-4200|COS - TOSHIBA - PRODUCT|1455777.50|Y|CTL
+17-3705|SALES MODERNIZATION - BLOCK 6|-1333981.45|Y|CTL
+25-4600|COS - MAINTENANCE|1246297.31|Y|CTL
+17-4700|COS - MODERNISATION|1227263.00|Y|CTL
+35-4800|COS - COMMISSIONING|1191889.87|Y|CTL
+35-4850|COS - COMMISSIONING ADJ|-1162531.67|Y|CTL
+35-3550|SALES - SERVICE EXPORT|-1042316.44|Y|CTL
+01-2110|ACC DEP - PLANT|-1009773.46|Y|CTL
+18-3200|SALES - CIAT RLC|-985038.91|Y|CTL
+35-4600|COS - MAINTENANCE|869523.47|Y|CTL
+01-2410|WIP CONTROL ACCOUNT|846664.84|Y|WIP
+01-1530|PROV FOR W C A|-759432.55|Y|CTL
+18-4200|COS - CIAT RLC|690139.53|Y|CTL
+
+=== AHICAR_Y ===
+GenMaster=HASGEN
+raw lines: 60
+01-2400|STOCK ALL WAREHOUSES                   01.3010.00|61291169.93|Y|CTL
+01-1100|TRADE CREDITORS - CONTROL              01.4000.01|-51762511.69|Y|CTL
+01-2600|TRADE DEBTORS - ALL BRANCHES           01.3400.00|31396994.04|Y|CTL
+01-2220|NEDBANK CALL ACCOUNT                   01.3800.05|28623953.50|Y|CTL
+11-3100|SALES - CMS LOCAL                      87.6000.50|-26364607.25|Y|CTL
+21-3100|SALES - CMS                            84.6000.50|-26102022.25|Y|CTL
+01-2450|PROV FOR EXCESS INVENTORY-CMS          01.4500.18|-23228947.31|Y|CTL
+12-3200|SALES - TOSHIBA LOCAL                  88.6000.20|-21396371.13|Y|CTL
+11-4100|COS - CMS LOCAL                        87.6100.50|20953796.16|Y|CTL
+01-1020|SHARE PREMIUM                          01.1110.00|-20874000.15|Y|CTL
+21-4100|COS - CMS                              84.6100.50|19923343.07|Y|CTL
+12-4200|COS - TOSHIBA - PRODUCT                88.6100.20|17870496.31|Y|CTL
+01-2920|RIGHT OF USE ASSET                     01.3510.94|15202905.50|Y|CTL
+17-3700|SALES - MODERNISATION                  17.6000.00|-11028282.70|Y|CTL
+17-4700|COS - MODERNISATION                    17.6100.00|10149326.73|Y|CTL
+15-3500|SALES - REPAIR                         91.6000.40|-9887801.37|Y|CTL
+12-3250|SALES - TOSHIBA EXPORT                 88.6000.21|-8709283.24|Y|CTL
+15-3600|SALES - MAINTENANCE                    91.6000.60|-8685138.65|Y|CTL
+12-4250|COS - TOSHIBA EXPORT                   88.6100.21|8629782.24|Y|CTL
+01-1090|LEASE LIABILITY                        01.4215.01|-8502732.89|Y|CTL
+13-3300|SALES - SPARES                         86.6000.20|-8411252.90|Y|CTL
+01-2925|RIGHT OF USE - ACCUM AMORTIZATION|-7130507.91|Y|CTL
+01-1000|RETAINED INCOME                        01.1151.00|-6877517.76|Y|CTL
+01-1110|GRN CONTROL ACCOUNT                    01.4000.02|-6795170.52|Y|AP
+15-5810|LABOUR SERVICE RECOVERY                91.5000.00|-6676673.85|Y|CTL
+01-2460|LCM-CMS                                01.4500.19|6495543.58|Y|CTL
+22-3200|SALES - TOSHIBA                        85.6000.20|-6282740.10|Y|CTL
+01-2980|DEFERRED TAXATION                      01.6000.02|5839043.66|Y|CTL
+15-4500|COS - REPAIR                           91.6100.40|5543556.11|Y|CTL
+35-3500|SALES - REPAIR                         90.6000.40|-5344982.24|Y|CTL
+22-4200|COS - TOSHIBA - PRODUCT                85.6100.20|5213162.37|Y|CTL
+31-3100|SALES - CMS                            81.6000.50|-4852761.05|Y|CTL
+13-4300|COS - PARTS LOCAL                      86.6100.70|4255854.83|Y|CTL
+31-4100|COS - CMS                              81.6100.50|3909544.30|Y|CTL
+15-4600|COS - MAINTENANCE                      91.6100.60|3870850.22|Y|CTL
+35-5810|LABOUR SERVICE RECOVERY                90.5000.00|-3454232.50|Y|CTL
+11-3150|SALES - CMS EXPORT                     87.6000.51|3090908.02|Y|CTL
+11-4150|COS - CMS EXPORT                       87.6100.51|-3015384.12|Y|CTL
+35-3600|SALES - MAINTENANCE                    90.6000.60|-3009068.21|Y|CTL
+35-4500|COS - REPAIR                           90.6100.40|2956126.25|Y|CTL
+25-3500|SALES - REPAIR                         92.6000.40|-2610347.40|Y|CTL
+25-3600|SALES - MAINTENANCE                    92.6000.60|-2536749.85|Y|CTL
+25-5810|LABOUR SERVICE RECOVERY                92.5000.00|-2197748.30|Y|CTL
+25-4500|COS - REPAIR                           92.6100.40|1522583.69|Y|CTL
+35-4600|COS - MAINTENANCE                      90.6100.60|1470369.63|Y|CTL
+25-4600|COS - MAINTENANCE                      92.6100.60|1374006.57|Y|CTL
+01-2030|COMPUTER EQUIPMENT                     01.2325.00|1198884.35|Y|CTL
+70-9720|UNREALISED FX GAINS/LOSSES             04.9930.00|-989067.85|Y|CTL
+01-2410|WIP CONTROL ACCOUNT                    01.3007.00|775432.91|Y|WIP
+01-2040|IMPROVEMENTS TO LEASED PROP            01.2400.00|760462.35|Y|CTL
+01-2140|ACC DEP - IMPROVE LEASE                01.2450.00|-686536.74|Y|CTL
+01-1420|CMS SERVICE COMMISSIONING              01.4600.02|-680025.17|Y|CTL
+01-1140|AP TRANSLATION                         01.4000.12|-614511.17|Y|CTL
+25-4850|COS - COMMISSIONING ADJ                92.6100.55|-610543.50|Y|CTL
+25-4800|COS - COMMISSIONING                    92.6100.50|608020.33|Y|CTL
+01-1520|PROV FOR COMMISSION                    01.4500.09|-589432.45|Y|CTL
+35-3550|SALES - SERVICE EXPORT                 90.6000.70|-558463.70|Y|CTL
+15-4850|COS - COMMISSIONING ADJ                91.6100.55|-553505.33|Y|CTL
+12-4800|COMMISSIOINING                         88.6100.40|394134.05|Y|CTL
+01-1010|P/L CONTROL                            01.9940.00|373465.64|Y|CTL
+
+=== AHICAR_Z ===
+GenMaster=HASGEN
+raw lines: 60
+01-1100|TRADE CREDITORS - CONTROL|-58266138.50|Y|CTL
+01-2400|STOCK ALL WAREHOUSES|54601379.19|Y|CTL
+01-2600|TRADE DEBTORS - ALL BRANCHES|42460716.82|Y|CTL
+01-2220|NEDBANK CALL ACCOUNT|26678950.68|Y|CTL
+01-2450|PROV FOR EXCESS INVENTORY-CMS|-24740467.06|Y|CTL
+01-1020|SHARE PREMIUM|-20874000.15|Y|CTL
+01-2920|RIGHT OF USE ASSET|12106299.48|Y|CTL
+01-2200|NEDBANK CURRENT ACC|10802638.02|Y|CTL
+01-2460|LCM-CMS|8604208.05|Y|CTL
+11-3100|SALES - CMS|-6592612.00|Y|CTL
+01-2925|RIGHT OF USE - ACCUM AMORTIZATION|-6554969.96|Y|CTL
+01-1090|LEASE LIABILITY|-6228410.87|Y|CTL
+01-2980|DEFERRED TAXATION|5839043.66|Y|CTL
+11-4100|COS - CMS|5253250.61|Y|CTL
+12-3200|SALES - TOSHIBA|-4763796.04|Y|CTL
+12-4200|COS - TOSHIBA - PRODUCT|4194682.12|Y|CTL
+01-1000|RETAINED INCOME|-4125515.79|Y|CTL
+21-3100|SALES - CMS|-3604421.40|Y|CTL
+17-3705|SALES MODERNIZATION - BLOCK 6|-3576273.75|Y|CTL
+17-3750|SALES - BOTSWANA - POC costs|3576273.00|Y|CTL
+01-1110|GRN CONTROL ACCOUNT|-3455512.06|Y|AP
+01-2210|NEDBANK CFC USD$|-3439607.22|Y|CTL
+21-4100|COS - CMS|2654675.84|Y|CTL
+01-1610|DEFERRED REVENUE|-2513944.89|Y|CTL
+15-3500|SALES - REPAIR|-2303449.22|Y|CTL
+01-1710|VAT OUTPUT ON SALES|-2060139.85|Y|CTL
+13-3300|SALES - SPARES|-2042595.53|Y|CTL
+15-3600|SALES - MAINTENANCE|-1835454.20|Y|CTL
+15-5810|LABOUR SERVICE RECOVERY|-1498406.00|Y|CTL
+01-2030|COMPUTER EQUIPMENT|1480485.05|Y|CTL
+31-3100|SALES - CMS|-1362114.00|Y|CTL
+35-3500|SALES - REPAIR|-1267939.41|Y|CTL
+15-4500|COS - REPAIR|1224813.74|Y|CTL
+01-1420|CMS SERVICE COMMISSIONING|-1195460.89|Y|CTL
+25-3500|SALES - REPAIR|-1188347.66|Y|CTL
+31-4100|COS - CMS|1057857.10|Y|CTL
+13-4300|COS - PARTS LOCAL|1013206.11|Y|CTL
+01-1600|EXTERNAL DERIVATIVES LIABILITY|-909668.28|Y|CTL
+01-2410|WIP CONTROL ACCOUNT|818523.02|Y|WIP
+01-2040|IMPROVEMENTS TO LEASED PROP|815492.06|Y|CTL
+01-1750|VAT INPUT - ON IMPORTS|809793.90|Y|CTL
+15-4600|COS - MAINTENANCE|805204.29|Y|CTL
+01-2140|ACC DEP - IMPROVE LEASE|-687824.25|Y|CTL
+25-4500|COS - REPAIR|653362.31|Y|CTL
+01-1140|AP TRANSLATION|-645981.67|Y|CTL
+01-1410|CMS COMMISSIONING|-588864.00|Y|CTL
+35-4500|COS - REPAIR|587101.22|Y|CTL
+35-3600|SALES - MAINTENANCE|-577835.12|Y|CTL
+22-3200|SALES - TOSHIBA|-528808.91|Y|CTL
+35-5810|LABOUR SERVICE RECOVERY|-513617.50|Y|CTL
+25-5810|LABOUR SERVICE RECOVERY|-497720.00|Y|CTL
+22-4200|COS - TOSHIBA - PRODUCT|485053.94|Y|CTL
+01-1520|PROV FOR COMMISSION|-449905.89|Y|CTL
+25-3600|SALES - MAINTENANCE|-445290.18|Y|CTL
+01-1510|PROV FOR BONUS - STAFF|-344637.76|Y|CTL
+70-9720|UNREALISED FX GAINS/LOSSES|-312717.10|Y|CTL
+01-2010|PLANT|292951.66|Y|CTL
+25-4600|COS - MAINTENANCE|238890.15|Y|CTL
+01-2110|ACC DEP - PLANT|-228672.99|Y|CTL
+35-4600|COS - MAINTENANCE|220109.84|Y|CTL
+
+=== Suggested INSERTs (6) ===
+INSERT dbo.Dim_FinSight_GlControlMap (CustomerCode,CompanyDb,ModuleCode,GlCode,Notes) VALUES (N'AHIC',N'AHICAR_I',N'AP',N'01-1110',N'GRN CONTROL ACCOUNT');
+INSERT dbo.Dim_FinSight_GlControlMap (CustomerCode,CompanyDb,ModuleCode,GlCode,Notes) VALUES (N'AHIC',N'AHICAR_I',N'WIP',N'01-2410',N'WIP CONTROL ACCOUNT');
+INSERT dbo.Dim_FinSight_GlControlMap (CustomerCode,CompanyDb,ModuleCode,GlCode,Notes) VALUES (N'AHIC',N'AHICAR_Y',N'AP',N'01-1110',N'GRN CONTROL ACCOUNT                    01.4000.02');
+INSERT dbo.Dim_FinSight_GlControlMap (CustomerCode,CompanyDb,ModuleCode,GlCode,Notes) VALUES (N'AHIC',N'AHICAR_Y',N'WIP',N'01-2410',N'WIP CONTROL ACCOUNT                    01.3007.00');
+INSERT dbo.Dim_FinSight_GlControlMap (CustomerCode,CompanyDb,ModuleCode,GlCode,Notes) VALUES (N'AHIC',N'AHICAR_Z',N'AP',N'01-1110',N'GRN CONTROL ACCOUNT');
+INSERT dbo.Dim_FinSight_GlControlMap (CustomerCode,CompanyDb,ModuleCode,GlCode,Notes) VALUES (N'AHIC',N'AHICAR_Z',N'WIP',N'01-2410',N'WIP CONTROL ACCOUNT');
+=== ApplyCentral: writing map to 102.222.21.220,14333 ===
+AHIC|AHICAR_I|AP|01-1110
+AHIC|AHICAR_I|WIP|01-2410
+AHIC|AHICAR_Y|AP|01-1110
+AHIC|AHICAR_Y|WIP|01-2410
+AHIC|AHICAR_Z|AP|01-1110
+AHIC|AHICAR_Z|WIP|01-2410
+
+ApplyCentral OK rows=6
+Native: Collect-Dtr-Native-Fallback.ps1 -ConfigPath C:\RPM-Assure\Sql\customers\AHIC\Customer.Config.ps1
+=== Done ===
+--- 3) AR/WIP probe ---
+2026-08-12 01:18:04Z sqlcmd=D:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE
+2026-08-12 01:18:04Z logKeepDays=14
+Company DBs: AHICAR_I, AHICAR_Y, AHICAR_Z
+
+=== AHICAR_I ===
+T|ArAmendmentJnl
+T|ArBalanceCor
+T|ArCollector
+T|ArCollectorRunDet
+T|ArCollectorRunHdr
+T|ArControl
+T|ArCshJnlCtl
+T|ArCshJnlDet
+T|ArCshJnlDetPos
+T|ArCshJnlPay
+T|ArCstStkPrc
+T|ArCtlHealthBal
+T|ArCtlHealthFix
+T|ArCustHealthBal
+T|ArCustHealthFix
+T|ArCustLabelFormat
+T|ArCustStkXref
+T|ArCustomer
+T|ArCustomer+
+T|ArCustomerBal
+T|ArCustomerGroup
+T|ArDiscDrCrDet
+T|ArDiscDrCrHdr
+T|ArDiscountFormat
+T|ArDocumentFormat
+T|ArDunningFormat
+T|ArDunningGroup
+T|ArDunningInvoices
+T|ArDunningStatus
+T|ArIntegrationCtl
+T|ArIntegrationDet
+T|ArInterCoPayGl
+T|ArInvHealthBal
+T|ArInvHealthFix
+T|ArInvoice
+T|ArInvoicePay
+T|ArInvoicePayPos
+T|ArInvoiceReference
+T|ArInvoiceReval
+T|ArMasterSub
+T|ArMultAddress
+T|ArNarration
+T|ArNarrationHdr
+T|ArNextKeyAudit
+T|ArNextKeys
+T|ArPayHistory
+T|ArPayRunCus
+T|ArPayRunDet
+T|ArPayRunHdr
+T|ArPayRunPdc
+T|ArPermEntries
+T|ArPermEntryFormat
+T|ArPermReprint
+T|ArPostDatedCh
+T|ArPostDatedChInv
+T|ArPostDatedChSta
+T|ArRegisterRef
+T|ArSalesMove
+T|ArTaxSuspDetail
+T|ArTaxSuspHeader
+T|ArTermsDate
+T|ArTermsHeadings
+T|ArTrnDetail
+T|ArTrnGst
+T|ArTrnSummary
+T|ArTrnTax
+T|ArTrnTaxCode
+T|ArTrnTaxCodeUkVat
+T|ArTrnTaxUkVat
+T|ArcBomRef
+T|ArcControl
+T|ArcJobRef
+T|ArcMaster
+T|ArcRecallRef
+T|ArcSalesOrderRef
+T|WipAllMatBin
+T|WipAllMatLot
+T|WipAllMatSer
+T|WipArcCoPrdMatCst
+T|WipArcCoPrdOpCost
+T|WipArcCoProducts
+T|WipArcJobAllLab
+T|WipArcJobAllMat
+T|WipArcJobPost
+T|WipArcJobPostBin
+T|WipArcJobPostSer
+T|WipArcMaster
+T|WipArcPartBook
+T|WipBranch
+T|WipBranchTransfer
+T|WipCapacityDyn
+T|WipCoPrdMatCost
+T|WipCoPrdOpCost
+T|WipCoProducts
+T|WipControl
+T|WipCopBal
+T|WipCopBalFix
+T|WipDistrMat
+T|WipDocumentFormat
+T|WipInspect
+T|WipInspectBal
+T|WipInspectBalFix
+T|WipInspectDet
+T|WipInspectDoc
+T|WipInspectDocSer
+T|WipInspectFormat
+T|WipInspectSerial
+T|WipJobAllLab
+T|WipJobAllMat
+T|WipJobAmendJnl
+T|WipJobClass
+T|WipJobNest
+T|WipJobPost
+T|WipJobPostBin
+T|WipJobPostSer
+T|WipLabBal
+T|WipLabBalFix
+T|WipLabJnl
+T|WipLabJnlCtl
+T|WipLabJnlStat
+T|WipMasBal
+T|WipMasBalFix
+T|WipMaster
+T|WipMaster+
+T|WipMasterSub
+T|WipMatBal
+T|WipMatBalFix
+T|WipNestCost
+T|WipNestMap
+T|WipNestMapMaster
+T|WipNextKeyAudit
+T|WipNextKeys
+T|WipOverload
+T|WipOverloadCtl
+T|WipPartBill
+T|WipPartBook
+T|WipPromptCtl
+T|WipPromptDet
+T|WipResLotBal
+T|WipResLotBalFix
+T|WipReservedLots
+T|WipReservedSerial
+T|WipScrapCode
+T|WipScrapDet
+T|WipSplitLabAll
+T|WipTrialLockCtl
+C|ArCustomer|Customer|varchar
+C|ArCustomer|Name|varchar
+C|ArCustomer|ShortName|varchar
+C|ArCustomer|ExemptFinChg|char
+C|ArCustomer|MaintHistory|char
+C|ArCustomer|CustomerType|char
+C|ArCustomer|MasterAccount|varchar
+C|ArCustomer|StoreNumber|varchar
+C|ArCustomer|PrtMasterAdd|char
+C|ArCustomer|CreditStatus|char
+C|ArCustomer|CreditLimit|decimal
+C|ArCustomer|InvoiceCount|decimal
+C|ArCustomer|Salesperson|varchar
+C|ArCustomer|Salesperson1|varchar
+C|ArCustomer|Salesperson2|varchar
+C|ArCustomer|Salesperson3|varchar
+C|ArCustomer|PriceCode|varchar
+C|ArCustomer|CustomerClass|varchar
+C|ArCustomer|Branch|varchar
+C|ArCustomer|TermsCode|char
+C|ArCustomer|InvDiscCode|varchar
+C|ArCustomer|BalanceType|char
+C|ArCustomer|Area|varchar
+C|ArCustomer|LineDiscCode|varchar
+C|ArCustomer|TaxStatus|char
+C|ArCustomer|TaxExemptNumber|varchar
+C|ArCustomer|SpecialInstrs|varchar
+C|ArCustomer|PriceCategoryTable|varchar
+C|ArCustomer|DateLastSale|datetime
+C|ArCustomer|DateLastPay|datetime
+C|ArCustomer|OutstOrdVal|decimal
+C|ArCustomer|NumOutstOrd|decimal
+C|ArCustomer|Telephone|varchar
+C|ArCustomer|Contact|varchar
+C|ArCustomer|AddTelephone|varchar
+C|ArCustomer|Fax|varchar
+C|ArCustomer|Telex|varchar
+C|ArCustomer|TelephoneExtn|char
+C|ArCustomer|Currency|char
+C|ArCustomer|UserField1|varchar
+C|ArCustomer|UserField2|decimal
+C|ArCustomer|GstExemptFlag|char
+C|ArCustomer|GstExemptNum|varchar
+C|ArCustomer|GstLevel|char
+C|ArCustomer|DetailMoveReqd|char
+C|ArCustomer|InterfaceFlag|char
+C|ArCustomer|ContractPrcReqd|char
+C|ArCustomer|BuyingGroup1|varchar
+C|ArCustomer|BuyingGroup2|varchar
+C|ArCustomer|BuyingGroup3|varchar
+C|ArCustomer|BuyingGroup4|varchar
+C|ArCustomer|BuyingGroup5|varchar
+C|ArCustomer|StatementReqd|char
+C|ArCustomer|BackOrdReqd|char
+C|ArCustomer|ShippingInstrs|varchar
+C|ArCustomer|ShippingInstrsCod|varchar
+C|ArCustomer|StateCode|char
+C|ArCustomer|DateCustAdded|datetime
+C|ArCustomer|StockInterchange|char
+C|ArCustomer|MaintLastPrcPaid|char
+C|ArCustomer|IbtCustomer|char
+C|ArCustomer|SoDefaultDoc|char
+C|ArCustomer|CounterSlsOnly|char
+C|ArCustomer|PaymentStatus|char
+C|ArCustomer|Nationality|char
+C|ArCustomer|HighestBalance|decimal
+C|ArCustomer|CustomerOnHold|char
+C|ArCustomer|InvCommentCode|varchar
+C|ArCustomer|EdiSenderCode|varchar
+C|ArCustomer|RelOrdOsValue|decimal
+C|ArCustomer|EdiFlag|char
+C|ArCustomer|SoDefaultType|char
+C|ArCustomer|Email|varchar
+C|ArCustomer|ApplyOrdDisc|char
+C|ArCustomer|ApplyLineDisc|char
+C|ArCustomer|FaxInvoices|char
+C|ArCustomer|FaxStatements|char
+C|ArCustomer|HighInvDays|decimal
+C|ArCustomer|HighInv|varchar
+C|ArCustomer|DocFax|varchar
+C|ArCustomer|DocFaxContact|varchar
+C|ArCustomer|SoldToAddr1|varchar
+C|ArCustomer|SoldToAddr2|varchar
+C|ArCustomer|SoldToAddr3|varchar
+C|ArCustomer|SoldToAddr3Loc|varchar
+C|ArCustomer|SoldToAddr4|varchar
+C|ArCustomer|SoldToAddr5|varchar
+C|ArCustomer|SoldPostalCode|varchar
+C|ArCustomer|SoldToGpsLat|decimal
+C|ArCustomer|SoldToGpsLong|decimal
+C|ArCustomer|ShipToAddr1|varchar
+C|ArCustomer|ShipToAddr2|varchar
+C|ArCustomer|ShipToAddr3|varchar
+C|ArCustomer|ShipToAddr3Loc|varchar
+C|ArCustomer|ShipToAddr4|varchar
+C|ArCustomer|ShipToAddr5|varchar
+C|ArCustomer|ShipPostalCode|varchar
+C|ArCustomer|ShipToGpsLat|decimal
+C|ArCustomer|ShipToGpsLong|decimal
+C|ArCustomer|State|char
+C|ArCustomer|CountyZip|char
+C|ArCustomer|City|char
+C|ArCustomer|State1|char
+C|ArCustomer|CountyZip1|char
+C|ArCustomer|City1|char
+C|ArCustomer|DefaultOrdType|char
+C|ArCustomer|PoNumberMandatory|char
+C|ArCustomer|CreditCheckFlag|char
+C|ArCustomer|CompanyTaxNumber|varchar
+C|ArCustomer|DeliveryTerms|char
+C|ArCustomer|TransactionNature|decimal
+C|ArCustomer|DeliveryTermsC|char
+C|ArCustomer|TransactionNatureC|decimal
+C|ArCustomer|RouteCode|varchar
+C|ArCustomer|FaxQuotes|char
+C|ArCustomer|RouteDistance|decimal
+C|ArCustomer|TpmCustomerFlag|char
+C|ArCustomer|SalesWarehouse|varchar
+C|ArCustomer|TpmPricingFlag|char
+C|ArCustomer|ArStatementNo|char
+C|ArCustomer|TpmCreditCheck|char
+C|ArCustomer|WholeOrderShipFlag|char
+C|ArCustomer|MinimumOrderValue|decimal
+C|ArCustomer|MinimumOrderChgCod|varchar
+C|ArCustomer|UkVatFlag|char
+C|ArCustomer|UkCurrency|char
+C|ArCustomer|LanguageCode|char
+C|ArCustomer|ShippingLocation|varchar
+C|ArCustomer|TimeStamp|timestamp
+C|ArCustomer|AltMethodFlag|char
+C|ArCustomer|SalesAllowed|char
+C|ArCustomer|UnappPayAllowed|char
+C|ArCustomer|PaymentsAllowed|char
+C|ArCustomer|QuotesAllowed|char
+C|ArCustomer|CrNotesAllowed|char
+C|ArCustomer|DrNotesAllowed|char
+C|ArCustomer|QueryAllowed|char
+C|ArCustomer|ss_New|char
+C|ArCustomer|DunningGroup|varchar
+C|ArCustomer|DunningFax|varchar
+C|ArCustomer|DunningEmail|varchar
+C|ArCustomer|PrimaryCustomer|char
+C|ArCustomer|PriceGroup|varchar
+C|ArCustomer|ThirdPartyTaxInteg|char
+C|ArCustomer|PickMarshalling|char
+C|ArCustomerBal|Customer|varchar
+C|ArCustomerBal|CurrentBalance1|decimal
+C|ArCustomerBal|CurrentBalance2|decimal
+C|ArCustomerBal|CurrentBalance3|decimal
+C|ArCustomerBal|BalBroughtFwd1|decimal
+C|ArCustomerBal|BalBroughtFwd2|decimal
+C|ArCustomerBal|BalBroughtFwd3|decimal
+C|ArCustomerBal|MtdSales1|decimal
+C|ArCustomerBal|MtdSales2|decimal
+C|ArCustomerBal|MtdSales3|decimal
+C|ArCustomerBal|MtdProfit1|decimal
+C|ArCustomerBal|MtdProfit2|decimal
+C|ArCustomerBal|MtdProfit3|decimal
+C|ArCustomerBal|MtdNumInvoices1|decimal
+C|ArCustomerBal|MtdNumInvoices2|decimal
+C|ArCustomerBal|MtdNumInvoices3|decimal
+C|ArCustomerBal|MtdInvoiceVal1|decimal
+C|ArCustomerBal|MtdInvoiceVal2|decimal
+C|ArCustomerBal|MtdInvoiceVal3|decimal
+C|ArCustomerBal|MtdNumPaymVal1|decimal
+C|ArCustomerBal|MtdNumPaymVal2|decimal
+C|ArCustomerBal|MtdNumPaymVal3|decimal
+C|ArCustomerBal|MtdPaymVal1|decimal
+C|ArCustomerBal|MtdPaymVal2|decimal
+C|ArCustomerBal|MtdPaymVal3|decimal
+C|ArCustomerBal|MtdNumDiscount1|decimal
+C|ArCustomerBal|MtdNumDiscount2|decimal
+C|ArCustomerBal|MtdNumDiscount3|decimal
+C|ArCustomerBal|MtdDiscountVal1|decimal
+C|ArCustomerBal|MtdDiscountVal2|decimal
+C|ArCustomerBal|MtdDiscountVal3|decimal
+C|ArCustomerBal|MtdNumAdjs1|decimal
+C|ArCustomerBal|MtdNumAdjs2|decimal
+C|ArCustomerBal|MtdNumAdjs3|decimal
+C|ArCustomerBal|MtdAdjVal1|decimal
+C|ArCustomerBal|MtdAdjVal2|decimal
+C|ArCustomerBal|MtdAdjVal3|decimal
+C|ArCustomerBal|MtdNumCrMemos1|decimal
+C|ArCustomerBal|MtdNumCrMemos2|decimal
+C|ArCustomerBal|MtdNumCrMemos3|decimal
+C|ArCustomerBal|MtdCrMemoVal1|decimal
+C|ArCustomerBal|MtdCrMemoVal2|decimal
+C|ArCustomerBal|MtdCrMemoVal3|decimal
+C|ArCustomerBal|MtdNumDrMemos1|decimal
+C|ArCustomerBal|MtdNumDrMemos2|decimal
+C|ArCustomerBal|MtdNumDrMemos3|decimal
+C|ArCustomerBal|MtdDrMemoVal1|decimal
+C|ArCustomerBal|MtdDrMemoVal2|decimal
+C|ArCustomerBal|MtdDrMemoVal3|decimal
+C|ArCustomerBal|MtdFinCharges1|decimal
+C|ArCustomerBal|MtdFinCharges2|decimal
+C|ArCustomerBal|MtdFinCharges3|decimal
+C|ArCustomerBal|YtdSales|decimal
+C|ArCustomerBal|YtdProfit|decimal
+C|ArCustomerBal|PrevYearSales|decimal
+C|ArCustomerBal|PrevYearProfit|decimal
+C|ArCustomerBal|AveragePayDays|decimal
+C|ArCustomerBal|ValFutureInv|decimal
+C|ArCustomerBal|NumFutureInv|decimal
+C|ArCustomerBal|ValCurrentInv|decimal
+C|ArCustomerBal|NumCurrentInv|decimal
+C|ArCustomerBal|Val30daysInv|decimal
+C|ArCustomerBal|Num30daysInv|decimal
+C|ArCustomerBal|Val60daysInv|decimal
+C|ArCustomerBal|Num60daysInv|decimal
+C|ArCustomerBal|Val90daysInv|decimal
+C|ArCustomerBal|Num90daysInv|decimal
+C|ArCustomerBal|Val120daysInv|decimal
+C|ArCustomerBal|Num120daysInv|decimal
+C|ArCustomerBal|ValCreditsInv|decimal
+C|ArCustomerBal|NumCreditsInv|decimal
+C|ArCustomerBal|SalesValMth1|decimal
+C|ArCustomerBal|SalesValMth2|decimal
+C|ArCustomerBal|SalesValMth3|decimal
+C|ArCustomerBal|SalesValMth4|decimal
+C|ArCustomerBal|SalesValMth5|decimal
+C|ArCustomerBal|SalesValMth6|decimal
+C|ArCustomerBal|SalesValMth7|decimal
+C|ArCustomerBal|SalesValMth8|decimal
+C|ArCustomerBal|SalesValMth9|decimal
+C|ArCustomerBal|SalesValMth10|decimal
+C|ArCustomerBal|SalesValMth11|decimal
+C|ArCustomerBal|SalesValMth12|decimal
+C|ArCustomerBal|SalesValMth13|decimal
+C|ArCustomerBal|SalesValMth14|decimal
+C|ArCustomerBal|SalesValMth15|decimal
+C|ArCustomerBal|SalesValMth16|decimal
+C|ArCustomerBal|SalesValMth17|decimal
+C|ArCustomerBal|SalesValMth18|decimal
+C|ArCustomerBal|SalesValMth19|decimal
+C|ArCustomerBal|SalesValMth20|decimal
+C|ArCustomerBal|SalesValMth21|decimal
+C|ArCustomerBal|SalesValMth22|decimal
+C|ArCustomerBal|SalesValMth23|decimal
+C|ArCustomerBal|SalesValMth24|decimal
+C|ArCustomerBal|SalesValMth25|decimal
+C|ArCustomerBal|SalesValMth26|decimal
+C|ArCustomerBal|NumZeroInvoices|decimal
+C|ArCustomerBal|NumZeroDays|decimal
+C|ArCustomerBal|TaxPortion|decimal
+C|ArCustomerBal|TimeStamp|timestamp
+C|ArCustomerBal|MtdNumTaxRelief1|decimal
+C|ArCustomerBal|MtdNumTaxRelief2|decimal
+C|ArCustomerBal|MtdNumTaxRelief3|decimal
+C|ArCustomerBal|MtdTaxReliefVal1|decimal
+C|ArCustomerBal|MtdTaxReliefVal2|decimal
+C|ArCustomerBal|MtdTaxReliefVal3|decimal
+C|ArInvoice|Customer|varchar
+C|ArInvoice|Invoice|varchar
+C|ArInvoice|DocumentType|char
+C|ArInvoice|NextPaymEntry|decimal
+C|ArInvoice|InvoiceDate|datetime
+C|ArInvoice|SalesOrder|varchar
+C|ArInvoice|CustomerPoNumber|varchar
+C|ArInvoice|Salesperson|varchar
+C|ArInvoice|Branch|varchar
+C|ArInvoice|Area|varchar
+C|ArInvoice|TermsCode|char
+C|ArInvoice|OrigDiscValue|decimal
+C|ArInvoice|InvoiceBal1|decimal
+C|ArInvoice|InvoiceBal2|decimal
+C|ArInvoice|InvoiceBal3|decimal
+C|ArInvoice|InvoiceYear|decimal
+C|ArInvoice|InvoiceMonth|decimal
+C|ArInvoice|YearInvBalZero|decimal
+C|ArInvoice|MonthInvBalZero|decimal
+C|ArInvoice|LastDelNote|varchar
+C|ArInvoice|StoreNumber|varchar
+C|ArInvoice|ProofOfDelivery|char
+C|ArInvoice|PodEntryDate|datetime
+C|ArInvoice|PodReference|varchar
+C|ArInvoice|CurrencyValue|decimal
+C|ArInvoice|PostCurrency|char
+C|ArInvoice|ConvRate|decimal
+C|ArInvoice|MulDiv|char
+C|ArInvoice|AccountCur|char
+C|ArInvoice|AccConvRate|decimal
+C|ArInvoice|AccMulDiv|char
+C|ArInvoice|TriangCurrency|char
+C|ArInvoice|TriangRate|decimal
+C|ArInvoice|TriangMulDiv|char
+C|ArInvoice|RetentionInv|char
+C|ArInvoice|TaxStatus|char
+C|ArInvoice|TaxPortion|decimal
+C|ArInvoice|FixExchangeRate|char
+C|ArInvoice|NextRevalNo|decimal
+C|ArInvoice|TaxCode|char
+C|ArInvoice|DiscBal|decimal
+C|ArInvoice|TimeStamp|timestamp
+C|ArInvoice|PaymentRunFlag|char
+C|ArInvoice|CollectionRunFlag|char
+C|ArInvoice|InvoicePdcFlag|char
+C|ArInvoice|OrigInvRate|decimal
+C|ArInvoice|ss_New|char
+C|ArInvoice|DunningGroup|varchar
+C|ArInvoice|DunningStatus|decimal
+C|ArInvoice|DunningDate|datetime
+C|ArInvoice|OrigTaxableAmt|decimal
+C|ArInvoice|OrigTaxOnDisc|decimal
+C|ArInvoice|DrCrInvoiceValue|decimal
+C|ArInvoice|DrCrDiscValue|decimal
+C|ArInvoice|DrCrTaxPortion|decimal
+C|ArInvoice|OrigTaxableDisc|decimal
+C|ArInvoice|DrCrTaxDiscPortion|decimal
+C|GenMaster|Company|char
+C|GenMaster|GlCode|varchar
+C|GenMaster|Description|varchar
+C|GenMaster|NextGlLine|decimal
+C|GenMaster|NextGlLinePyr|decimal
+C|GenMaster|NextLine|char
+C|GenMaster|NextLinePyr|char
+C|GenMaster|ReportIndex1|varchar
+C|GenMaster|ReportIndex2|varchar
+C|GenMaster|AccountType|char
+C|GenMaster|ExpenseType|char
+C|GenMaster|PtdDrValue|decimal
+C|GenMaster|PtdCrValue|decimal
+C|GenMaster|CurrentBalance|decimal
+C|GenMaster|PrevPerEndBal|decimal
+C|GenMaster|GlGroup|varchar
+C|GenMaster|BudgetMethod|char
+C|GenMaster|ControlAccFlag|char
+C|GenMaster|AccOnHldFlag|char
+C|GenMaster|TaxCode|char
+C|GenMaster|NumDetailCurYr|decimal
+C|GenMaster|NumDetailPrvYr|decimal
+C|GenMaster|IntegrationMethod|char
+C|GenMaster|AltDescription|varchar
+C|GenMaster|Historical|decimal
+C|GenMaster|Tax2Code|char
+C|GenMaster|RevalCategory|char
+C|GenMaster|AltCurIndicator|char
+C|GenMaster|GlUnitOfMeasure|varchar
+C|GenMaster|BusinessProcess1|char
+C|GenMaster|BusinessProcess2|char
+C|GenMaster|BusinessProcess3|char
+C|GenMaster|BusinessProcess4|char
+C|GenMaster|BusinessProcess5|char
+C|GenMaster|BusinessProcess6|char
+C|GenMaster|BusinessProcess7|char
+C|GenMaster|BusinessProcess8|char
+C|GenMaster|BusinessProcess9|char
+C|GenMaster|BusinessProcess10|char
+C|GenMaster|AnalysisRequired|char
+C|GenMaster|AnalysisCategory|varchar
+C|GenMaster|CurrentInd|char
+C|GenMaster|RetEarnsAccount|varchar
+C|GenMaster|TaxAccount|char
+C|GenMaster|InterestAccount|char
+C|GenMaster|TimeStamp|timestamp
+C|WipMaster|Job|varchar
+C|WipMaster|JobDescription|varchar
+C|WipMaster|JobClassification|varchar
+C|WipMaster|JobType|char
+C|WipMaster|MasterJob|varchar
+C|WipMaster|Priority|decimal
+C|WipMaster|StockCode|varchar
+C|WipMaster|StockDescription|varchar
+C|WipMaster|Warehouse|varchar
+C|WipMaster|Customer|varchar
+C|WipMaster|CustomerName|varchar
+C|WipMaster|JobTenderDate|datetime
+C|WipMaster|JobDeliveryDate|datetime
+C|WipMaster|JobStartDate|datetime
+C|WipMaster|ActCompleteDate|datetime
+C|WipMaster|Complete|char
+C|WipMaster|SeqCheckReq|char
+C|WipMaster|DateCalcMethod|char
+C|WipMaster|ExpLabour|decimal
+C|WipMaster|ExpMaterial|decimal
+C|WipMaster|QtyToMake|decimal
+C|WipMaster|QtyManufactured|decimal
+C|WipMaster|Source|char
+C|WipMaster|EstSourceNum|varchar
+C|WipMaster|NextDetailLine|decimal
+C|WipMaster|PctCompleteFlag|decimal
+C|WipMaster|PrtFactDoc1|char
+C|WipMaster|PrtFactDoc2|char
+C|WipMaster|PrtFactDoc3|char
+C|WipMaster|PrtFactDoc4|char
+C|WipMaster|SellingPrice|decimal
+C|WipMaster|AddLabPct|decimal
+C|WipMaster|AddMatPct|decimal
+C|WipMaster|ProfitPct|decimal
+C|WipMaster|SalesOrder|varchar
+C|WipMaster|MaterialBilled|decimal
+C|WipMaster|LabourBilled|decimal
+C|WipMaster|NextOpForAll|decimal
+C|WipMaster|HighestOpPosted|decimal
+C|WipMaster|TotalQtyScrapped|decimal
+C|WipMaster|ConfirmedFlag|char
+C|WipMaster|HoldFlag|char
+C|WipMaster|JobCreatedStruc|char
+C|WipMaster|LstOrderCreated|varchar
+C|WipMaster|TraceableType|char
+C|WipMaster|NxtLinePartBook|decimal
+C|WipMaster|Route|char
+C|WipMaster|WipCtlGlCode|varchar
+C|WipMaster|Decimals|decimal
+C|WipMaster|SalesOrderLine|decimal
+C|WipMaster|MatCostToDate1|decimal
+C|WipMaster|MatCostToDate2|decimal
+C|WipMaster|MatCostToDate3|decimal
+C|WipMaster|LabCostToDate1|decimal
+C|WipMaster|LabCostToDate2|decimal
+C|WipMaster|LabCostToDate3|decimal
+C|WipMaster|HrsBookToDate1|decimal
+C|WipMaster|HrsBookToDate2|decimal
+C|WipMaster|HrsBookToDate3|decimal
+C|WipMaster|MatValueIssues1|decimal
+C|WipMaster|MatValueIssues2|decimal
+C|WipMaster|MatValueIssues3|decimal
+C|WipMaster|LabValueIssues1|decimal
+C|WipMaster|LabValueIssues2|decimal
+C|WipMaster|LabValueIssues3|decimal
+C|WipMaster|NarrationNum|decimal
+C|WipMaster|ReqPlnFlag|char
+C|WipMaster|DateJobLstUpd|datetime
+C|WipMaster|TimeJobLstUpd|decimal
+C|WipMaster|HierarchyFlag|char
+C|WipMaster|NextLineHier|decimal
+C|WipMaster|EstTrailLoad|char
+C|WipMaster|OrdEntSource|char
+C|WipMaster|Version|char
+C|WipMaster|Release|char
+C|WipMaster|AllocationLine|char
+C|WipMaster|PurgeJob|char
+C|WipMaster|HierarchyJob|varchar
+C|WipMaster|MrpFromJob|varchar
+C|WipMaster|MrpToJob|varchar
+C|WipMaster|OrigDueDate|datetime
+C|WipMaster|GrossFlg|char
+C|WipMaster|GrossQty|decimal
+C|WipMaster|ExpLabCurrent|decimal
+C|WipMaster|ExpMatCurrent|decimal
+C|WipMaster|ReservedLotSerFlag|char
+C|WipMaster|NotionalPart|char
+C|WipMaster|CoProductCostMet|char
+C|WipMaster|CoProductCostVal|char
+C|WipMaster|CoProductType|char
+C|WipMaster|CapexCode|varchar
+C|WipMaster|CapexLine|decimal
+C|WipMaster|UomFlag|char
+C|WipMaster|ConvFactUom|decimal
+C|WipMaster|ConvMulDiv|char
+C|WipMaster|ScheduleFlag|char
+C|WipMaster|SchStartDate|datetime
+C|WipMaster|SchStartTime|decimal
+C|WipMaster|SchEndDate|datetime
+C|WipMaster|SchEndTime|decimal
+C|WipMaster|QtyToMakeEnt|decimal
+C|WipMaster|QtyManufacturedEnt|decimal
+C|WipMaster|TotQtyScrappedEnt|decimal
+C|WipMaster|GrossQtyEnt|decimal
+C|WipMaster|TimeStamp|timestamp
+C|WipMaster|ProductCode|varchar
+C|WipMaster|LibraryCode|char
+C|WipMaster|NestAllocs|char
+C|WipMaster|CreatedForNest|char
+C|WipMaster|WipBranch|varchar
+C|WipMaster|WipCurBranch|varchar
+C|WipMaster|WipCtlCurGlCode|varchar
+C|WipMaster|DifWipBranch|char
+C|WipMaster|MaintJob|char
+C|WipMaster|MaintJobType|char
+C|WipMaster|EquipmentCode|varchar
+C|WipMaster|MaintServiceType|varchar
+C|WipMaster|EquipmentType|varchar
+C|WipMaster|TypeOfService|char
+
+=== AHICAR_Y ===
+T|ArAmendmentJnl
+T|ArBalanceCor
+T|ArCollector
+T|ArCollectorRunDet
+T|ArCollectorRunHdr
+T|ArControl
+T|ArCshJnlCtl
+T|ArCshJnlDet
+T|ArCshJnlDetPos
+T|ArCshJnlPay
+T|ArCstStkPrc
+T|ArCtlHealthBal
+T|ArCtlHealthFix
+T|ArCustHealthBal
+T|ArCustHealthFix
+T|ArCustLabelFormat
+T|ArCustStkXref
+T|ArCustomer
+T|ArCustomer+
+T|ArCustomerBal
+T|ArCustomerGroup
+T|ArDiscDrCrDet
+T|ArDiscDrCrHdr
+T|ArDiscountFormat
+T|ArDocumentFormat
+T|ArDunningFormat
+T|ArDunningGroup
+T|ArDunningInvoices
+T|ArDunningStatus
+T|ArIntegrationCtl
+T|ArIntegrationDet
+T|ArInterCoPayGl
+T|ArInvHealthBal
+T|ArInvHealthFix
+T|ArInvoice
+T|ArInvoicePay
+T|ArInvoicePayPos
+T|ArInvoiceReference
+T|ArInvoiceReval
+T|ArMasterSub
+T|ArMultAddress
+T|ArNarration
+T|ArNarrationHdr
+T|ArNextKeyAudit
+T|ArNextKeys
+T|ArPayHistory
+T|ArPayRunCus
+T|ArPayRunDet
+T|ArPayRunHdr
+T|ArPayRunPdc
+T|ArPermEntries
+T|ArPermEntryFormat
+T|ArPermReprint
+T|ArPostDatedCh
+T|ArPostDatedChInv
+T|ArPostDatedChSta
+T|ArRegisterRef
+T|ArSalesMove
+T|ArTaxSuspDetail
+T|ArTaxSuspHeader
+T|ArTermsDate
+T|ArTermsHeadings
+T|ArTrnDetail
+T|ArTrnGst
+T|ArTrnSummary
+T|ArTrnTax
+T|ArTrnTaxCode
+T|ArTrnTaxCodeUkVat
+T|ArTrnTaxUkVat
+T|ArcBomRef
+T|ArcControl
+T|ArcJobRef
+T|ArcMaster
+T|ArcRecallRef
+T|ArcSalesOrderRef
+T|WipAllMatBin
+T|WipAllMatLot
+T|WipAllMatSer
+T|WipArcCoPrdMatCst
+T|WipArcCoPrdOpCost
+T|WipArcCoProducts
+T|WipArcJobAllLab
+T|WipArcJobAllMat
+T|WipArcJobPost
+T|WipArcJobPostBin
+T|WipArcJobPostSer
+T|WipArcMaster
+T|WipArcPartBook
+T|WipBranch
+T|WipBranchTransfer
+T|WipCapacityDyn
+T|WipCoPrdMatCost
+T|WipCoPrdOpCost
+T|WipCoProducts
+T|WipControl
+T|WipCopBal
+T|WipCopBalFix
+T|WipDistrMat
+T|WipDocumentFormat
+T|WipInspect
+T|WipInspectBal
+T|WipInspectBalFix
+T|WipInspectDet
+T|WipInspectDoc
+T|WipInspectDocSer
+T|WipInspectFormat
+T|WipInspectSerial
+T|WipJobAllLab
+T|WipJobAllMat
+T|WipJobAmendJnl
+T|WipJobClass
+T|WipJobNest
+T|WipJobPost
+T|WipJobPostBin
+T|WipJobPostSer
+T|WipLabBal
+T|WipLabBalFix
+T|WipLabJnl
+T|WipLabJnlCtl
+T|WipLabJnlStat
+T|WipMasBal
+T|WipMasBalFix
+T|WipMaster
+T|WipMasterSub
+T|WipMatBal
+T|WipMatBalFix
+T|WipNestCost
+T|WipNestMap
+T|WipNestMapMaster
+T|WipNextKeyAudit
+T|WipNextKeys
+T|WipOverload
+T|WipOverloadCtl
+T|WipPartBill
+T|WipPartBook
+T|WipPromptCtl
+T|WipPromptDet
+T|WipResLotBal
+T|WipResLotBalFix
+T|WipReservedLots
+T|WipReservedSerial
+T|WipScrapCode
+T|WipScrapDet
+T|WipSplitLabAll
+T|WipTrialLockCtl
+C|ArCustomer|Customer|varchar
+C|ArCustomer|Name|varchar
+C|ArCustomer|ShortName|varchar
+C|ArCustomer|ExemptFinChg|char
+C|ArCustomer|MaintHistory|char
+C|ArCustomer|CustomerType|char
+C|ArCustomer|MasterAccount|varchar
+C|ArCustomer|StoreNumber|varchar
+C|ArCustomer|PrtMasterAdd|char
+C|ArCustomer|CreditStatus|char
+C|ArCustomer|CreditLimit|decimal
+C|ArCustomer|InvoiceCount|decimal
+C|ArCustomer|Salesperson|varchar
+C|ArCustomer|Salesperson1|varchar
+C|ArCustomer|Salesperson2|varchar
+C|ArCustomer|Salesperson3|varchar
+C|ArCustomer|PriceCode|varchar
+C|ArCustomer|CustomerClass|varchar
+C|ArCustomer|Branch|varchar
+C|ArCustomer|TermsCode|char
+C|ArCustomer|InvDiscCode|varchar
+C|ArCustomer|BalanceType|char
+C|ArCustomer|Area|varchar
+C|ArCustomer|LineDiscCode|varchar
+C|ArCustomer|TaxStatus|char
+C|ArCustomer|TaxExemptNumber|varchar
+C|ArCustomer|SpecialInstrs|varchar
+C|ArCustomer|PriceCategoryTable|varchar
+C|ArCustomer|DateLastSale|datetime
+C|ArCustomer|DateLastPay|datetime
+C|ArCustomer|OutstOrdVal|decimal
+C|ArCustomer|NumOutstOrd|decimal
+C|ArCustomer|Telephone|varchar
+C|ArCustomer|Contact|varchar
+C|ArCustomer|AddTelephone|varchar
+C|ArCustomer|Fax|varchar
+C|ArCustomer|Telex|varchar
+C|ArCustomer|TelephoneExtn|char
+C|ArCustomer|Currency|char
+C|ArCustomer|UserField1|varchar
+C|ArCustomer|UserField2|decimal
+C|ArCustomer|GstExemptFlag|char
+C|ArCustomer|GstExemptNum|varchar
+C|ArCustomer|GstLevel|char
+C|ArCustomer|DetailMoveReqd|char
+C|ArCustomer|InterfaceFlag|char
+C|ArCustomer|ContractPrcReqd|char
+C|ArCustomer|BuyingGroup1|varchar
+C|ArCustomer|BuyingGroup2|varchar
+C|ArCustomer|BuyingGroup3|varchar
+C|ArCustomer|BuyingGroup4|varchar
+C|ArCustomer|BuyingGroup5|varchar
+C|ArCustomer|StatementReqd|char
+C|ArCustomer|BackOrdReqd|char
+C|ArCustomer|ShippingInstrs|varchar
+C|ArCustomer|ShippingInstrsCod|varchar
+C|ArCustomer|StateCode|char
+C|ArCustomer|DateCustAdded|datetime
+C|ArCustomer|StockInterchange|char
+C|ArCustomer|MaintLastPrcPaid|char
+C|ArCustomer|IbtCustomer|char
+C|ArCustomer|SoDefaultDoc|char
+C|ArCustomer|CounterSlsOnly|char
+C|ArCustomer|PaymentStatus|char
+C|ArCustomer|Nationality|char
+C|ArCustomer|HighestBalance|decimal
+C|ArCustomer|CustomerOnHold|char
+C|ArCustomer|InvCommentCode|varchar
+C|ArCustomer|EdiSenderCode|varchar
+C|ArCustomer|RelOrdOsValue|decimal
+C|ArCustomer|EdiFlag|char
+C|ArCustomer|SoDefaultType|char
+C|ArCustomer|Email|varchar
+C|ArCustomer|ApplyOrdDisc|char
+C|ArCustomer|ApplyLineDisc|char
+C|ArCustomer|FaxInvoices|char
+C|ArCustomer|FaxStatements|char
+C|ArCustomer|HighInvDays|decimal
+C|ArCustomer|HighInv|varchar
+C|ArCustomer|DocFax|varchar
+C|ArCustomer|DocFaxContact|varchar
+C|ArCustomer|SoldToAddr1|varchar
+C|ArCustomer|SoldToAddr2|varchar
+C|ArCustomer|SoldToAddr3|varchar
+C|ArCustomer|SoldToAddr3Loc|varchar
+C|ArCustomer|SoldToAddr4|varchar
+C|ArCustomer|SoldToAddr5|varchar
+C|ArCustomer|SoldPostalCode|varchar
+C|ArCustomer|SoldToGpsLat|decimal
+C|ArCustomer|SoldToGpsLong|decimal
+C|ArCustomer|ShipToAddr1|varchar
+C|ArCustomer|ShipToAddr2|varchar
+C|ArCustomer|ShipToAddr3|varchar
+C|ArCustomer|ShipToAddr3Loc|varchar
+C|ArCustomer|ShipToAddr4|varchar
+C|ArCustomer|ShipToAddr5|varchar
+C|ArCustomer|ShipPostalCode|varchar
+C|ArCustomer|ShipToGpsLat|decimal
+C|ArCustomer|ShipToGpsLong|decimal
+C|ArCustomer|State|char
+C|ArCustomer|CountyZip|char
+C|ArCustomer|City|char
+C|ArCustomer|State1|char
+C|ArCustomer|CountyZip1|char
+C|ArCustomer|City1|char
+C|ArCustomer|DefaultOrdType|char
+C|ArCustomer|PoNumberMandatory|char
+C|ArCustomer|CreditCheckFlag|char
+C|ArCustomer|CompanyTaxNumber|varchar
+C|ArCustomer|DeliveryTerms|char
+C|ArCustomer|TransactionNature|decimal
+C|ArCustomer|DeliveryTermsC|char
+C|ArCustomer|TransactionNatureC|decimal
+C|ArCustomer|RouteCode|varchar
+C|ArCustomer|FaxQuotes|char
+C|ArCustomer|RouteDistance|decimal
+C|ArCustomer|TpmCustomerFlag|char
+C|ArCustomer|SalesWarehouse|varchar
+C|ArCustomer|TpmPricingFlag|char
+C|ArCustomer|ArStatementNo|char
+C|ArCustomer|TpmCreditCheck|char
+C|ArCustomer|WholeOrderShipFlag|char
+C|ArCustomer|MinimumOrderValue|decimal
+C|ArCustomer|MinimumOrderChgCod|varchar
+C|ArCustomer|UkVatFlag|char
+C|ArCustomer|UkCurrency|char
+C|ArCustomer|LanguageCode|char
+C|ArCustomer|ShippingLocation|varchar
+C|ArCustomer|TimeStamp|timestamp
+C|ArCustomer|AltMethodFlag|char
+C|ArCustomer|SalesAllowed|char
+C|ArCustomer|UnappPayAllowed|char
+C|ArCustomer|PaymentsAllowed|char
+C|ArCustomer|QuotesAllowed|char
+C|ArCustomer|CrNotesAllowed|char
+C|ArCustomer|DrNotesAllowed|char
+C|ArCustomer|QueryAllowed|char
+C|ArCustomer|ss_New|char
+C|ArCustomer|DunningGroup|varchar
+C|ArCustomer|DunningFax|varchar
+C|ArCustomer|DunningEmail|varchar
+C|ArCustomer|PrimaryCustomer|char
+C|ArCustomer|PriceGroup|varchar
+C|ArCustomer|ThirdPartyTaxInteg|char
+C|ArCustomer|PickMarshalling|char
+C|ArCustomerBal|Customer|varchar
+C|ArCustomerBal|CurrentBalance1|decimal
+C|ArCustomerBal|CurrentBalance2|decimal
+C|ArCustomerBal|CurrentBalance3|decimal
+C|ArCustomerBal|BalBroughtFwd1|decimal
+C|ArCustomerBal|BalBroughtFwd2|decimal
+C|ArCustomerBal|BalBroughtFwd3|decimal
+C|ArCustomerBal|MtdSales1|decimal
+C|ArCustomerBal|MtdSales2|decimal
+C|ArCustomerBal|MtdSales3|decimal
+C|ArCustomerBal|MtdProfit1|decimal
+C|ArCustomerBal|MtdProfit2|decimal
+C|ArCustomerBal|MtdProfit3|decimal
+C|ArCustomerBal|MtdNumInvoices1|decimal
+C|ArCustomerBal|MtdNumInvoices2|decimal
+C|ArCustomerBal|MtdNumInvoices3|decimal
+C|ArCustomerBal|MtdInvoiceVal1|decimal
+C|ArCustomerBal|MtdInvoiceVal2|decimal
+C|ArCustomerBal|MtdInvoiceVal3|decimal
+C|ArCustomerBal|MtdNumPaymVal1|decimal
+C|ArCustomerBal|MtdNumPaymVal2|decimal
+C|ArCustomerBal|MtdNumPaymVal3|decimal
+C|ArCustomerBal|MtdPaymVal1|decimal
+C|ArCustomerBal|MtdPaymVal2|decimal
+C|ArCustomerBal|MtdPaymVal3|decimal
+C|ArCustomerBal|MtdNumDiscount1|decimal
+C|ArCustomerBal|MtdNumDiscount2|decimal
+C|ArCustomerBal|MtdNumDiscount3|decimal
+C|ArCustomerBal|MtdDiscountVal1|decimal
+C|ArCustomerBal|MtdDiscountVal2|decimal
+C|ArCustomerBal|MtdDiscountVal3|decimal
+C|ArCustomerBal|MtdNumAdjs1|decimal
+C|ArCustomerBal|MtdNumAdjs2|decimal
+C|ArCustomerBal|MtdNumAdjs3|decimal
+C|ArCustomerBal|MtdAdjVal1|decimal
+C|ArCustomerBal|MtdAdjVal2|decimal
+C|ArCustomerBal|MtdAdjVal3|decimal
+C|ArCustomerBal|MtdNumCrMemos1|decimal
+C|ArCustomerBal|MtdNumCrMemos2|decimal
+C|ArCustomerBal|MtdNumCrMemos3|decimal
+C|ArCustomerBal|MtdCrMemoVal1|decimal
+C|ArCustomerBal|MtdCrMemoVal2|decimal
+C|ArCustomerBal|MtdCrMemoVal3|decimal
+C|ArCustomerBal|MtdNumDrMemos1|decimal
+C|ArCustomerBal|MtdNumDrMemos2|decimal
+C|ArCustomerBal|MtdNumDrMemos3|decimal
+C|ArCustomerBal|MtdDrMemoVal1|decimal
+C|ArCustomerBal|MtdDrMemoVal2|decimal
+C|ArCustomerBal|MtdDrMemoVal3|decimal
+C|ArCustomerBal|MtdFinCharges1|decimal
+C|ArCustomerBal|MtdFinCharges2|decimal
+C|ArCustomerBal|MtdFinCharges3|decimal
+C|ArCustomerBal|YtdSales|decimal
+C|ArCustomerBal|YtdProfit|decimal
+C|ArCustomerBal|PrevYearSales|decimal
+C|ArCustomerBal|PrevYearProfit|decimal
+C|ArCustomerBal|AveragePayDays|decimal
+C|ArCustomerBal|ValFutureInv|decimal
+C|ArCustomerBal|NumFutureInv|decimal
+C|ArCustomerBal|ValCurrentInv|decimal
+C|ArCustomerBal|NumCurrentInv|decimal
+C|ArCustomerBal|Val30daysInv|decimal
+C|ArCustomerBal|Num30daysInv|decimal
+C|ArCustomerBal|Val60daysInv|decimal
+C|ArCustomerBal|Num60daysInv|decimal
+C|ArCustomerBal|Val90daysInv|decimal
+C|ArCustomerBal|Num90daysInv|decimal
+C|ArCustomerBal|Val120daysInv|decimal
+C|ArCustomerBal|Num120daysInv|decimal
+C|ArCustomerBal|ValCreditsInv|decimal
+C|ArCustomerBal|NumCreditsInv|decimal
+C|ArCustomerBal|SalesValMth1|decimal
+C|ArCustomerBal|SalesValMth2|decimal
+C|ArCustomerBal|SalesValMth3|decimal
+C|ArCustomerBal|SalesValMth4|decimal
+C|ArCustomerBal|SalesValMth5|decimal
+C|ArCustomerBal|SalesValMth6|decimal
+C|ArCustomerBal|SalesValMth7|decimal
+C|ArCustomerBal|SalesValMth8|decimal
+C|ArCustomerBal|SalesValMth9|decimal
+C|ArCustomerBal|SalesValMth10|decimal
+C|ArCustomerBal|SalesValMth11|decimal
+C|ArCustomerBal|SalesValMth12|decimal
+C|ArCustomerBal|SalesValMth13|decimal
+C|ArCustomerBal|SalesValMth14|decimal
+C|ArCustomerBal|SalesValMth15|decimal
+C|ArCustomerBal|SalesValMth16|decimal
+C|ArCustomerBal|SalesValMth17|decimal
+C|ArCustomerBal|SalesValMth18|decimal
+C|ArCustomerBal|SalesValMth19|decimal
+C|ArCustomerBal|SalesValMth20|decimal
+C|ArCustomerBal|SalesValMth21|decimal
+C|ArCustomerBal|SalesValMth22|decimal
+C|ArCustomerBal|SalesValMth23|decimal
+C|ArCustomerBal|SalesValMth24|decimal
+C|ArCustomerBal|SalesValMth25|decimal
+C|ArCustomerBal|SalesValMth26|decimal
+C|ArCustomerBal|NumZeroInvoices|decimal
+C|ArCustomerBal|NumZeroDays|decimal
+C|ArCustomerBal|TaxPortion|decimal
+C|ArCustomerBal|TimeStamp|timestamp
+C|ArCustomerBal|MtdNumTaxRelief1|decimal
+C|ArCustomerBal|MtdNumTaxRelief2|decimal
+C|ArCustomerBal|MtdNumTaxRelief3|decimal
+C|ArCustomerBal|MtdTaxReliefVal1|decimal
+C|ArCustomerBal|MtdTaxReliefVal2|decimal
+C|ArCustomerBal|MtdTaxReliefVal3|decimal
+C|ArInvoice|Customer|varchar
+C|ArInvoice|Invoice|varchar
+C|ArInvoice|DocumentType|char
+C|ArInvoice|NextPaymEntry|decimal
+C|ArInvoice|InvoiceDate|datetime
+C|ArInvoice|SalesOrder|varchar
+C|ArInvoice|CustomerPoNumber|varchar
+C|ArInvoice|Salesperson|varchar
+C|ArInvoice|Branch|varchar
+C|ArInvoice|Area|varchar
+C|ArInvoice|TermsCode|char
+C|ArInvoice|OrigDiscValue|decimal
+C|ArInvoice|InvoiceBal1|decimal
+C|ArInvoice|InvoiceBal2|decimal
+C|ArInvoice|InvoiceBal3|decimal
+C|ArInvoice|InvoiceYear|decimal
+C|ArInvoice|InvoiceMonth|decimal
+C|ArInvoice|YearInvBalZero|decimal
+C|ArInvoice|MonthInvBalZero|decimal
+C|ArInvoice|LastDelNote|varchar
+C|ArInvoice|StoreNumber|varchar
+C|ArInvoice|ProofOfDelivery|char
+C|ArInvoice|PodEntryDate|datetime
+C|ArInvoice|PodReference|varchar
+C|ArInvoice|CurrencyValue|decimal
+C|ArInvoice|PostCurrency|char
+C|ArInvoice|ConvRate|decimal
+C|ArInvoice|MulDiv|char
+C|ArInvoice|AccountCur|char
+C|ArInvoice|AccConvRate|decimal
+C|ArInvoice|AccMulDiv|char
+C|ArInvoice|TriangCurrency|char
+C|ArInvoice|TriangRate|decimal
+C|ArInvoice|TriangMulDiv|char
+C|ArInvoice|RetentionInv|char
+C|ArInvoice|TaxStatus|char
+C|ArInvoice|TaxPortion|decimal
+C|ArInvoice|FixExchangeRate|char
+C|ArInvoice|NextRevalNo|decimal
+C|ArInvoice|TaxCode|char
+C|ArInvoice|DiscBal|decimal
+C|ArInvoice|TimeStamp|timestamp
+C|ArInvoice|PaymentRunFlag|char
+C|ArInvoice|CollectionRunFlag|char
+C|ArInvoice|InvoicePdcFlag|char
+C|ArInvoice|OrigInvRate|decimal
+C|ArInvoice|ss_New|char
+C|ArInvoice|DunningGroup|varchar
+C|ArInvoice|DunningStatus|decimal
+C|ArInvoice|DunningDate|datetime
+C|ArInvoice|OrigTaxableAmt|decimal
+C|ArInvoice|OrigTaxOnDisc|decimal
+C|ArInvoice|DrCrInvoiceValue|decimal
+C|ArInvoice|DrCrDiscValue|decimal
+C|ArInvoice|DrCrTaxPortion|decimal
+C|ArInvoice|OrigTaxableDisc|decimal
+C|ArInvoice|DrCrTaxDiscPortion|decimal
+C|GenMaster|Company|char
+C|GenMaster|GlCode|varchar
+C|GenMaster|Description|varchar
+C|GenMaster|NextGlLine|decimal
+C|GenMaster|NextGlLinePyr|decimal
+C|GenMaster|NextLine|char
+C|GenMaster|NextLinePyr|char
+C|GenMaster|ReportIndex1|varchar
+C|GenMaster|ReportIndex2|varchar
+C|GenMaster|AccountType|char
+C|GenMaster|ExpenseType|char
+C|GenMaster|PtdDrValue|decimal
+C|GenMaster|PtdCrValue|decimal
+C|GenMaster|CurrentBalance|decimal
+C|GenMaster|PrevPerEndBal|decimal
+C|GenMaster|GlGroup|varchar
+C|GenMaster|BudgetMethod|char
+C|GenMaster|ControlAccFlag|char
+C|GenMaster|AccOnHldFlag|char
+C|GenMaster|TaxCode|char
+C|GenMaster|NumDetailCurYr|decimal
+C|GenMaster|NumDetailPrvYr|decimal
+C|GenMaster|IntegrationMethod|char
+C|GenMaster|AltDescription|varchar
+C|GenMaster|Historical|decimal
+C|GenMaster|Tax2Code|char
+C|GenMaster|RevalCategory|char
+C|GenMaster|AltCurIndicator|char
+C|GenMaster|GlUnitOfMeasure|varchar
+C|GenMaster|BusinessProcess1|char
+C|GenMaster|BusinessProcess2|char
+C|GenMaster|BusinessProcess3|char
+C|GenMaster|BusinessProcess4|char
+C|GenMaster|BusinessProcess5|char
+C|GenMaster|BusinessProcess6|char
+C|GenMaster|BusinessProcess7|char
+C|GenMaster|BusinessProcess8|char
+C|GenMaster|BusinessProcess9|char
+C|GenMaster|BusinessProcess10|char
+C|GenMaster|AnalysisRequired|char
+C|GenMaster|AnalysisCategory|varchar
+C|GenMaster|CurrentInd|char
+C|GenMaster|RetEarnsAccount|varchar
+C|GenMaster|TaxAccount|char
+C|GenMaster|InterestAccount|char
+C|GenMaster|TimeStamp|timestamp
+C|WipMaster|Job|varchar
+C|WipMaster|JobDescription|varchar
+C|WipMaster|JobClassification|varchar
+C|WipMaster|JobType|char
+C|WipMaster|MasterJob|varchar
+C|WipMaster|Priority|decimal
+C|WipMaster|StockCode|varchar
+C|WipMaster|StockDescription|varchar
+C|WipMaster|Warehouse|varchar
+C|WipMaster|Customer|varchar
+C|WipMaster|CustomerName|varchar
+C|WipMaster|JobTenderDate|datetime
+C|WipMaster|JobDeliveryDate|datetime
+C|WipMaster|JobStartDate|datetime
+C|WipMaster|ActCompleteDate|datetime
+C|WipMaster|Complete|char
+C|WipMaster|SeqCheckReq|char
+C|WipMaster|DateCalcMethod|char
+C|WipMaster|ExpLabour|decimal
+C|WipMaster|ExpMaterial|decimal
+C|WipMaster|QtyToMake|decimal
+C|WipMaster|QtyManufactured|decimal
+C|WipMaster|Source|char
+C|WipMaster|EstSourceNum|varchar
+C|WipMaster|NextDetailLine|decimal
+C|WipMaster|PctCompleteFlag|decimal
+C|WipMaster|PrtFactDoc1|char
+C|WipMaster|PrtFactDoc2|char
+C|WipMaster|PrtFactDoc3|char
+C|WipMaster|PrtFactDoc4|char
+C|WipMaster|SellingPrice|decimal
+C|WipMaster|AddLabPct|decimal
+C|WipMaster|AddMatPct|decimal
+C|WipMaster|ProfitPct|decimal
+C|WipMaster|SalesOrder|varchar
+C|WipMaster|MaterialBilled|decimal
+C|WipMaster|LabourBilled|decimal
+C|WipMaster|NextOpForAll|decimal
+C|WipMaster|HighestOpPosted|decimal
+C|WipMaster|TotalQtyScrapped|decimal
+C|WipMaster|ConfirmedFlag|char
+C|WipMaster|HoldFlag|char
+C|WipMaster|JobCreatedStruc|char
+C|WipMaster|LstOrderCreated|varchar
+C|WipMaster|TraceableType|char
+C|WipMaster|NxtLinePartBook|decimal
+C|WipMaster|Route|char
+C|WipMaster|WipCtlGlCode|varchar
+C|WipMaster|Decimals|decimal
+C|WipMaster|SalesOrderLine|decimal
+C|WipMaster|MatCostToDate1|decimal
+C|WipMaster|MatCostToDate2|decimal
+C|WipMaster|MatCostToDate3|decimal
+C|WipMaster|LabCostToDate1|decimal
+C|WipMaster|LabCostToDate2|decimal
+C|WipMaster|LabCostToDate3|decimal
+C|WipMaster|HrsBookToDate1|decimal
+C|WipMaster|HrsBookToDate2|decimal
+C|WipMaster|HrsBookToDate3|decimal
+C|WipMaster|MatValueIssues1|decimal
+C|WipMaster|MatValueIssues2|decimal
+C|WipMaster|MatValueIssues3|decimal
+C|WipMaster|LabValueIssues1|decimal
+C|WipMaster|LabValueIssues2|decimal
+C|WipMaster|LabValueIssues3|decimal
+C|WipMaster|NarrationNum|decimal
+C|WipMaster|ReqPlnFlag|char
+C|WipMaster|DateJobLstUpd|datetime
+C|WipMaster|TimeJobLstUpd|decimal
+C|WipMaster|HierarchyFlag|char
+C|WipMaster|NextLineHier|decimal
+C|WipMaster|EstTrailLoad|char
+C|WipMaster|OrdEntSource|char
+C|WipMaster|Version|char
+C|WipMaster|Release|char
+C|WipMaster|AllocationLine|char
+C|WipMaster|PurgeJob|char
+C|WipMaster|HierarchyJob|varchar
+C|WipMaster|MrpFromJob|varchar
+C|WipMaster|MrpToJob|varchar
+C|WipMaster|OrigDueDate|datetime
+C|WipMaster|GrossFlg|char
+C|WipMaster|GrossQty|decimal
+C|WipMaster|ExpLabCurrent|decimal
+C|WipMaster|ExpMatCurrent|decimal
+C|WipMaster|ReservedLotSerFlag|char
+C|WipMaster|NotionalPart|char
+C|WipMaster|CoProductCostMet|char
+C|WipMaster|CoProductCostVal|char
+C|WipMaster|CoProductType|char
+C|WipMaster|CapexCode|varchar
+C|WipMaster|CapexLine|decimal
+C|WipMaster|UomFlag|char
+C|WipMaster|ConvFactUom|decimal
+C|WipMaster|ConvMulDiv|char
+C|WipMaster|ScheduleFlag|char
+C|WipMaster|SchStartDate|datetime
+C|WipMaster|SchStartTime|decimal
+C|WipMaster|SchEndDate|datetime
+C|WipMaster|SchEndTime|decimal
+C|WipMaster|QtyToMakeEnt|decimal
+C|WipMaster|QtyManufacturedEnt|decimal
+C|WipMaster|TotQtyScrappedEnt|decimal
+C|WipMaster|GrossQtyEnt|decimal
+C|WipMaster|TimeStamp|timestamp
+C|WipMaster|ProductCode|varchar
+C|WipMaster|LibraryCode|char
+C|WipMaster|NestAllocs|char
+C|WipMaster|CreatedForNest|char
+C|WipMaster|WipBranch|varchar
+C|WipMaster|WipCurBranch|varchar
+C|WipMaster|WipCtlCurGlCode|varchar
+C|WipMaster|DifWipBranch|char
+C|WipMaster|MaintJob|char
+C|WipMaster|MaintJobType|char
+C|WipMaster|EquipmentCode|varchar
+C|WipMaster|MaintServiceType|varchar
+C|WipMaster|EquipmentType|varchar
+C|WipMaster|TypeOfService|char
+
+=== AHICAR_Z ===
+T|ArAmendmentJnl
+T|ArBalanceCor
+T|ArCollector
+T|ArCollectorRunDet
+T|ArCollectorRunHdr
+T|ArControl
+T|ArCshJnlCtl
+T|ArCshJnlDet
+T|ArCshJnlDetPos
+T|ArCshJnlPay
+T|ArCstStkPrc
+T|ArCtlHealthBal
+T|ArCtlHealthFix
+T|ArCustHealthBal
+T|ArCustHealthFix
+T|ArCustLabelFormat
+T|ArCustStkXref
+T|ArCustomer
+T|ArCustomer+
+T|ArCustomerBal
+T|ArCustomerGroup
+T|ArDiscDrCrDet
+T|ArDiscDrCrHdr
+T|ArDiscountFormat
+T|ArDocumentFormat
+T|ArDunningFormat
+T|ArDunningGroup
+T|ArDunningInvoices
+T|ArDunningStatus
+T|ArIntegrationCtl
+T|ArIntegrationDet
+T|ArInterCoPayGl
+T|ArInvHealthBal
+T|ArInvHealthFix
+T|ArInvoice
+T|ArInvoicePay
+T|ArInvoicePayPos
+T|ArInvoiceReference
+T|ArInvoiceReval
+T|ArMasterSub
+T|ArMultAddress
+T|ArNarration
+T|ArNarrationHdr
+T|ArNextKeyAudit
+T|ArNextKeys
+T|ArPayHistory
+T|ArPayRunCus
+T|ArPayRunDet
+T|ArPayRunHdr
+T|ArPayRunPdc
+T|ArPermEntries
+T|ArPermEntryFormat
+T|ArPermReprint
+T|ArPostDatedCh
+T|ArPostDatedChInv
+T|ArPostDatedChSta
+T|ArRegisterRef
+T|ArSalesMove
+T|ArTaxSuspDetail
+T|ArTaxSuspHeader
+T|ArTermsDate
+T|ArTermsHeadings
+T|ArTrnDetail
+T|ArTrnGst
+T|ArTrnSummary
+T|ArTrnTax
+T|ArTrnTaxCode
+T|ArTrnTaxCodeUkVat
+T|ArTrnTaxUkVat
+T|ArcBomRef
+T|ArcControl
+T|ArcJobRef
+T|ArcMaster
+T|ArcRecallRef
+T|ArcSalesOrderRef
+T|WipAllMatBin
+T|WipAllMatLot
+T|WipAllMatSer
+T|WipArcCoPrdMatCst
+T|WipArcCoPrdOpCost
+T|WipArcCoProducts
+T|WipArcJobAllLab
+T|WipArcJobAllMat
+T|WipArcJobPost
+T|WipArcJobPostBin
+T|WipArcJobPostSer
+T|WipArcMaster
+T|WipArcPartBook
+T|WipBranch
+T|WipBranchTransfer
+T|WipCapacityDyn
+T|WipCoPrdMatCost
+T|WipCoPrdOpCost
+T|WipCoProducts
+T|WipControl
+T|WipCopBal
+T|WipCopBalFix
+T|WipDistrMat
+T|WipDocumentFormat
+T|WipInspect
+T|WipInspectBal
+T|WipInspectBalFix
+T|WipInspectDet
+T|WipInspectDoc
+T|WipInspectDocSer
+T|WipInspectFormat
+T|WipInspectSerial
+T|WipJobAllLab
+T|WipJobAllMat
+T|WipJobAmendJnl
+T|WipJobClass
+T|WipJobNest
+T|WipJobPost
+T|WipJobPostBin
+T|WipJobPostSer
+T|WipLabBal
+T|WipLabBalFix
+T|WipLabJnl
+T|WipLabJnlCtl
+T|WipLabJnlStat
+T|WipMasBal
+T|WipMasBalFix
+T|WipMaster
+T|WipMasterSub
+T|WipMatBal
+T|WipMatBalFix
+T|WipNestCost
+T|WipNestMap
+T|WipNestMapMaster
+T|WipNextKeyAudit
+T|WipNextKeys
+T|WipOverload
+T|WipOverloadCtl
+T|WipPartBill
+T|WipPartBook
+T|WipPromptCtl
+T|WipPromptDet
+T|WipResLotBal
+T|WipResLotBalFix
+T|WipReservedLots
+T|WipReservedSerial
+T|WipScrapCode
+T|WipScrapDet
+T|WipSplitLabAll
+T|WipTrialLockCtl
+C|ArCustomer|Customer|varchar
+C|ArCustomer|Name|varchar
+C|ArCustomer|ShortName|varchar
+C|ArCustomer|ExemptFinChg|char
+C|ArCustomer|MaintHistory|char
+C|ArCustomer|CustomerType|char
+C|ArCustomer|MasterAccount|varchar
+C|ArCustomer|StoreNumber|varchar
+C|ArCustomer|PrtMasterAdd|char
+C|ArCustomer|CreditStatus|char
+C|ArCustomer|CreditLimit|decimal
+C|ArCustomer|InvoiceCount|decimal
+C|ArCustomer|Salesperson|varchar
+C|ArCustomer|Salesperson1|varchar
+C|ArCustomer|Salesperson2|varchar
+C|ArCustomer|Salesperson3|varchar
+C|ArCustomer|PriceCode|varchar
+C|ArCustomer|CustomerClass|varchar
+C|ArCustomer|Branch|varchar
+C|ArCustomer|TermsCode|char
+C|ArCustomer|InvDiscCode|varchar
+C|ArCustomer|BalanceType|char
+C|ArCustomer|Area|varchar
+C|ArCustomer|LineDiscCode|varchar
+C|ArCustomer|TaxStatus|char
+C|ArCustomer|TaxExemptNumber|varchar
+C|ArCustomer|SpecialInstrs|varchar
+C|ArCustomer|PriceCategoryTable|varchar
+C|ArCustomer|DateLastSale|datetime
+C|ArCustomer|DateLastPay|datetime
+C|ArCustomer|OutstOrdVal|decimal
+C|ArCustomer|NumOutstOrd|decimal
+C|ArCustomer|Telephone|varchar
+C|ArCustomer|Contact|varchar
+C|ArCustomer|AddTelephone|varchar
+C|ArCustomer|Fax|varchar
+C|ArCustomer|Telex|varchar
+C|ArCustomer|TelephoneExtn|char
+C|ArCustomer|Currency|char
+C|ArCustomer|UserField1|varchar
+C|ArCustomer|UserField2|decimal
+C|ArCustomer|GstExemptFlag|char
+C|ArCustomer|GstExemptNum|varchar
+C|ArCustomer|GstLevel|char
+C|ArCustomer|DetailMoveReqd|char
+C|ArCustomer|InterfaceFlag|char
+C|ArCustomer|ContractPrcReqd|char
+C|ArCustomer|BuyingGroup1|varchar
+C|ArCustomer|BuyingGroup2|varchar
+C|ArCustomer|BuyingGroup3|varchar
+C|ArCustomer|BuyingGroup4|varchar
+C|ArCustomer|BuyingGroup5|varchar
+C|ArCustomer|StatementReqd|char
+C|ArCustomer|BackOrdReqd|char
+C|ArCustomer|ShippingInstrs|varchar
+C|ArCustomer|ShippingInstrsCod|varchar
+C|ArCustomer|StateCode|char
+C|ArCustomer|DateCustAdded|datetime
+C|ArCustomer|StockInterchange|char
+C|ArCustomer|MaintLastPrcPaid|char
+C|ArCustomer|IbtCustomer|char
+C|ArCustomer|SoDefaultDoc|char
+C|ArCustomer|CounterSlsOnly|char
+C|ArCustomer|PaymentStatus|char
+C|ArCustomer|Nationality|char
+C|ArCustomer|HighestBalance|decimal
+C|ArCustomer|CustomerOnHold|char
+C|ArCustomer|InvCommentCode|varchar
+C|ArCustomer|EdiSenderCode|varchar
+C|ArCustomer|RelOrdOsValue|decimal
+C|ArCustomer|EdiFlag|char
+C|ArCustomer|SoDefaultType|char
+C|ArCustomer|Email|varchar
+C|ArCustomer|ApplyOrdDisc|char
+C|ArCustomer|ApplyLineDisc|char
+C|ArCustomer|FaxInvoices|char
+C|ArCustomer|FaxStatements|char
+C|ArCustomer|HighInvDays|decimal
+C|ArCustomer|HighInv|varchar
+C|ArCustomer|DocFax|varchar
+C|ArCustomer|DocFaxContact|varchar
+C|ArCustomer|SoldToAddr1|varchar
+C|ArCustomer|SoldToAddr2|varchar
+C|ArCustomer|SoldToAddr3|varchar
+C|ArCustomer|SoldToAddr3Loc|varchar
+C|ArCustomer|SoldToAddr4|varchar
+C|ArCustomer|SoldToAddr5|varchar
+C|ArCustomer|SoldPostalCode|varchar
+C|ArCustomer|SoldToGpsLat|decimal
+C|ArCustomer|SoldToGpsLong|decimal
+C|ArCustomer|ShipToAddr1|varchar
+C|ArCustomer|ShipToAddr2|varchar
+C|ArCustomer|ShipToAddr3|varchar
+C|ArCustomer|ShipToAddr3Loc|varchar
+C|ArCustomer|ShipToAddr4|varchar
+C|ArCustomer|ShipToAddr5|varchar
+C|ArCustomer|ShipPostalCode|varchar
+C|ArCustomer|ShipToGpsLat|decimal
+C|ArCustomer|ShipToGpsLong|decimal
+C|ArCustomer|State|char
+C|ArCustomer|CountyZip|char
+C|ArCustomer|City|char
+C|ArCustomer|State1|char
+C|ArCustomer|CountyZip1|char
+C|ArCustomer|City1|char
+C|ArCustomer|DefaultOrdType|char
+C|ArCustomer|PoNumberMandatory|char
+C|ArCustomer|CreditCheckFlag|char
+C|ArCustomer|CompanyTaxNumber|varchar
+C|ArCustomer|DeliveryTerms|char
+C|ArCustomer|TransactionNature|decimal
+C|ArCustomer|DeliveryTermsC|char
+C|ArCustomer|TransactionNatureC|decimal
+C|ArCustomer|RouteCode|varchar
+C|ArCustomer|FaxQuotes|char
+C|ArCustomer|RouteDistance|decimal
+C|ArCustomer|TpmCustomerFlag|char
+C|ArCustomer|SalesWarehouse|varchar
+C|ArCustomer|TpmPricingFlag|char
+C|ArCustomer|ArStatementNo|char
+C|ArCustomer|TpmCreditCheck|char
+C|ArCustomer|WholeOrderShipFlag|char
+C|ArCustomer|MinimumOrderValue|decimal
+C|ArCustomer|MinimumOrderChgCod|varchar
+C|ArCustomer|UkVatFlag|char
+C|ArCustomer|UkCurrency|char
+C|ArCustomer|LanguageCode|char
+C|ArCustomer|ShippingLocation|varchar
+C|ArCustomer|TimeStamp|timestamp
+C|ArCustomer|AltMethodFlag|char
+C|ArCustomer|SalesAllowed|char
+C|ArCustomer|UnappPayAllowed|char
+C|ArCustomer|PaymentsAllowed|char
+C|ArCustomer|QuotesAllowed|char
+C|ArCustomer|CrNotesAllowed|char
+C|ArCustomer|DrNotesAllowed|char
+C|ArCustomer|QueryAllowed|char
+C|ArCustomer|ss_New|char
+C|ArCustomer|DunningGroup|varchar
+C|ArCustomer|DunningFax|varchar
+C|ArCustomer|DunningEmail|varchar
+C|ArCustomer|PrimaryCustomer|char
+C|ArCustomer|PriceGroup|varchar
+C|ArCustomer|ThirdPartyTaxInteg|char
+C|ArCustomer|PickMarshalling|char
+C|ArCustomerBal|Customer|varchar
+C|ArCustomerBal|CurrentBalance1|decimal
+C|ArCustomerBal|CurrentBalance2|decimal
+C|ArCustomerBal|CurrentBalance3|decimal
+C|ArCustomerBal|BalBroughtFwd1|decimal
+C|ArCustomerBal|BalBroughtFwd2|decimal
+C|ArCustomerBal|BalBroughtFwd3|decimal
+C|ArCustomerBal|MtdSales1|decimal
+C|ArCustomerBal|MtdSales2|decimal
+C|ArCustomerBal|MtdSales3|decimal
+C|ArCustomerBal|MtdProfit1|decimal
+C|ArCustomerBal|MtdProfit2|decimal
+C|ArCustomerBal|MtdProfit3|decimal
+C|ArCustomerBal|MtdNumInvoices1|decimal
+C|ArCustomerBal|MtdNumInvoices2|decimal
+C|ArCustomerBal|MtdNumInvoices3|decimal
+C|ArCustomerBal|MtdInvoiceVal1|decimal
+C|ArCustomerBal|MtdInvoiceVal2|decimal
+C|ArCustomerBal|MtdInvoiceVal3|decimal
+C|ArCustomerBal|MtdNumPaymVal1|decimal
+C|ArCustomerBal|MtdNumPaymVal2|decimal
+C|ArCustomerBal|MtdNumPaymVal3|decimal
+C|ArCustomerBal|MtdPaymVal1|decimal
+C|ArCustomerBal|MtdPaymVal2|decimal
+C|ArCustomerBal|MtdPaymVal3|decimal
+C|ArCustomerBal|MtdNumDiscount1|decimal
+C|ArCustomerBal|MtdNumDiscount2|decimal
+C|ArCustomerBal|MtdNumDiscount3|decimal
+C|ArCustomerBal|MtdDiscountVal1|decimal
+C|ArCustomerBal|MtdDiscountVal2|decimal
+C|ArCustomerBal|MtdDiscountVal3|decimal
+C|ArCustomerBal|MtdNumAdjs1|decimal
+C|ArCustomerBal|MtdNumAdjs2|decimal
+C|ArCustomerBal|MtdNumAdjs3|decimal
+C|ArCustomerBal|MtdAdjVal1|decimal
+C|ArCustomerBal|MtdAdjVal2|decimal
+C|ArCustomerBal|MtdAdjVal3|decimal
+C|ArCustomerBal|MtdNumCrMemos1|decimal
+C|ArCustomerBal|MtdNumCrMemos2|decimal
+C|ArCustomerBal|MtdNumCrMemos3|decimal
+C|ArCustomerBal|MtdCrMemoVal1|decimal
+C|ArCustomerBal|MtdCrMemoVal2|decimal
+C|ArCustomerBal|MtdCrMemoVal3|decimal
+C|ArCustomerBal|MtdNumDrMemos1|decimal
+C|ArCustomerBal|MtdNumDrMemos2|decimal
+C|ArCustomerBal|MtdNumDrMemos3|decimal
+C|ArCustomerBal|MtdDrMemoVal1|decimal
+C|ArCustomerBal|MtdDrMemoVal2|decimal
+C|ArCustomerBal|MtdDrMemoVal3|decimal
+C|ArCustomerBal|MtdFinCharges1|decimal
+C|ArCustomerBal|MtdFinCharges2|decimal
+C|ArCustomerBal|MtdFinCharges3|decimal
+C|ArCustomerBal|YtdSales|decimal
+C|ArCustomerBal|YtdProfit|decimal
+C|ArCustomerBal|PrevYearSales|decimal
+C|ArCustomerBal|PrevYearProfit|decimal
+C|ArCustomerBal|AveragePayDays|decimal
+C|ArCustomerBal|ValFutureInv|decimal
+C|ArCustomerBal|NumFutureInv|decimal
+C|ArCustomerBal|ValCurrentInv|decimal
+C|ArCustomerBal|NumCurrentInv|decimal
+C|ArCustomerBal|Val30daysInv|decimal
+C|ArCustomerBal|Num30daysInv|decimal
+C|ArCustomerBal|Val60daysInv|decimal
+C|ArCustomerBal|Num60daysInv|decimal
+C|ArCustomerBal|Val90daysInv|decimal
+C|ArCustomerBal|Num90daysInv|decimal
+C|ArCustomerBal|Val120daysInv|decimal
+C|ArCustomerBal|Num120daysInv|decimal
+C|ArCustomerBal|ValCreditsInv|decimal
+C|ArCustomerBal|NumCreditsInv|decimal
+C|ArCustomerBal|SalesValMth1|decimal
+C|ArCustomerBal|SalesValMth2|decimal
+C|ArCustomerBal|SalesValMth3|decimal
+C|ArCustomerBal|SalesValMth4|decimal
+C|ArCustomerBal|SalesValMth5|decimal
+C|ArCustomerBal|SalesValMth6|decimal
+C|ArCustomerBal|SalesValMth7|decimal
+C|ArCustomerBal|SalesValMth8|decimal
+C|ArCustomerBal|SalesValMth9|decimal
+C|ArCustomerBal|SalesValMth10|decimal
+C|ArCustomerBal|SalesValMth11|decimal
+C|ArCustomerBal|SalesValMth12|decimal
+C|ArCustomerBal|SalesValMth13|decimal
+C|ArCustomerBal|SalesValMth14|decimal
+C|ArCustomerBal|SalesValMth15|decimal
+C|ArCustomerBal|SalesValMth16|decimal
+C|ArCustomerBal|SalesValMth17|decimal
+C|ArCustomerBal|SalesValMth18|decimal
+C|ArCustomerBal|SalesValMth19|decimal
+C|ArCustomerBal|SalesValMth20|decimal
+C|ArCustomerBal|SalesValMth21|decimal
+C|ArCustomerBal|SalesValMth22|decimal
+C|ArCustomerBal|SalesValMth23|decimal
+C|ArCustomerBal|SalesValMth24|decimal
+C|ArCustomerBal|SalesValMth25|decimal
+C|ArCustomerBal|SalesValMth26|decimal
+C|ArCustomerBal|NumZeroInvoices|decimal
+C|ArCustomerBal|NumZeroDays|decimal
+C|ArCustomerBal|TaxPortion|decimal
+C|ArCustomerBal|TimeStamp|timestamp
+C|ArCustomerBal|MtdNumTaxRelief1|decimal
+C|ArCustomerBal|MtdNumTaxRelief2|decimal
+C|ArCustomerBal|MtdNumTaxRelief3|decimal
+C|ArCustomerBal|MtdTaxReliefVal1|decimal
+C|ArCustomerBal|MtdTaxReliefVal2|decimal
+C|ArCustomerBal|MtdTaxReliefVal3|decimal
+C|ArInvoice|Customer|varchar
+C|ArInvoice|Invoice|varchar
+C|ArInvoice|DocumentType|char
+C|ArInvoice|NextPaymEntry|decimal
+C|ArInvoice|InvoiceDate|datetime
+C|ArInvoice|SalesOrder|varchar
+C|ArInvoice|CustomerPoNumber|varchar
+C|ArInvoice|Salesperson|varchar
+C|ArInvoice|Branch|varchar
+C|ArInvoice|Area|varchar
+C|ArInvoice|TermsCode|char
+C|ArInvoice|OrigDiscValue|decimal
+C|ArInvoice|InvoiceBal1|decimal
+C|ArInvoice|InvoiceBal2|decimal
+C|ArInvoice|InvoiceBal3|decimal
+C|ArInvoice|InvoiceYear|decimal
+C|ArInvoice|InvoiceMonth|decimal
+C|ArInvoice|YearInvBalZero|decimal
+C|ArInvoice|MonthInvBalZero|decimal
+C|ArInvoice|LastDelNote|varchar
+C|ArInvoice|StoreNumber|varchar
+C|ArInvoice|ProofOfDelivery|char
+C|ArInvoice|PodEntryDate|datetime
+C|ArInvoice|PodReference|varchar
+C|ArInvoice|CurrencyValue|decimal
+C|ArInvoice|PostCurrency|char
+C|ArInvoice|ConvRate|decimal
+C|ArInvoice|MulDiv|char
+C|ArInvoice|AccountCur|char
+C|ArInvoice|AccConvRate|decimal
+C|ArInvoice|AccMulDiv|char
+C|ArInvoice|TriangCurrency|char
+C|ArInvoice|TriangRate|decimal
+C|ArInvoice|TriangMulDiv|char
+C|ArInvoice|RetentionInv|char
+C|ArInvoice|TaxStatus|char
+C|ArInvoice|TaxPortion|decimal
+C|ArInvoice|FixExchangeRate|char
+C|ArInvoice|NextRevalNo|decimal
+C|ArInvoice|TaxCode|char
+C|ArInvoice|DiscBal|decimal
+C|ArInvoice|TimeStamp|timestamp
+C|ArInvoice|PaymentRunFlag|char
+C|ArInvoice|CollectionRunFlag|char
+C|ArInvoice|InvoicePdcFlag|char
+C|ArInvoice|OrigInvRate|decimal
+C|ArInvoice|ss_New|char
+C|ArInvoice|DunningGroup|varchar
+C|ArInvoice|DunningStatus|decimal
+C|ArInvoice|DunningDate|datetime
+C|ArInvoice|OrigTaxableAmt|decimal
+C|ArInvoice|OrigTaxOnDisc|decimal
+C|ArInvoice|DrCrInvoiceValue|decimal
+C|ArInvoice|DrCrDiscValue|decimal
+C|ArInvoice|DrCrTaxPortion|decimal
+C|ArInvoice|OrigTaxableDisc|decimal
+C|ArInvoice|DrCrTaxDiscPortion|decimal
+C|GenMaster|Company|char
+C|GenMaster|GlCode|varchar
+C|GenMaster|Description|varchar
+C|GenMaster|NextGlLine|decimal
+C|GenMaster|NextGlLinePyr|decimal
+C|GenMaster|NextLine|char
+C|GenMaster|NextLinePyr|char
+C|GenMaster|ReportIndex1|varchar
+C|GenMaster|ReportIndex2|varchar
+C|GenMaster|AccountType|char
+C|GenMaster|ExpenseType|char
+C|GenMaster|PtdDrValue|decimal
+C|GenMaster|PtdCrValue|decimal
+C|GenMaster|CurrentBalance|decimal
+C|GenMaster|PrevPerEndBal|decimal
+C|GenMaster|GlGroup|varchar
+C|GenMaster|BudgetMethod|char
+C|GenMaster|ControlAccFlag|char
+C|GenMaster|AccOnHldFlag|char
+C|GenMaster|TaxCode|char
+C|GenMaster|NumDetailCurYr|decimal
+C|GenMaster|NumDetailPrvYr|decimal
+C|GenMaster|IntegrationMethod|char
+C|GenMaster|AltDescription|varchar
+C|GenMaster|Historical|decimal
+C|GenMaster|Tax2Code|char
+C|GenMaster|RevalCategory|char
+C|GenMaster|AltCurIndicator|char
+C|GenMaster|GlUnitOfMeasure|varchar
+C|GenMaster|BusinessProcess1|char
+C|GenMaster|BusinessProcess2|char
+C|GenMaster|BusinessProcess3|char
+C|GenMaster|BusinessProcess4|char
+C|GenMaster|BusinessProcess5|char
+C|GenMaster|BusinessProcess6|char
+C|GenMaster|BusinessProcess7|char
+C|GenMaster|BusinessProcess8|char
+C|GenMaster|BusinessProcess9|char
+C|GenMaster|BusinessProcess10|char
+C|GenMaster|AnalysisRequired|char
+C|GenMaster|AnalysisCategory|varchar
+C|GenMaster|CurrentInd|char
+C|GenMaster|RetEarnsAccount|varchar
+C|GenMaster|TaxAccount|char
+C|GenMaster|InterestAccount|char
+C|GenMaster|TimeStamp|timestamp
+C|WipMaster|Job|varchar
+C|WipMaster|JobDescription|varchar
+C|WipMaster|JobClassification|varchar
+C|WipMaster|JobType|char
+C|WipMaster|MasterJob|varchar
+C|WipMaster|Priority|decimal
+C|WipMaster|StockCode|varchar
+C|WipMaster|StockDescription|varchar
+C|WipMaster|Warehouse|varchar
+C|WipMaster|Customer|varchar
+C|WipMaster|CustomerName|varchar
+C|WipMaster|JobTenderDate|datetime
+C|WipMaster|JobDeliveryDate|datetime
+C|WipMaster|JobStartDate|datetime
+C|WipMaster|ActCompleteDate|datetime
+C|WipMaster|Complete|char
+C|WipMaster|SeqCheckReq|char
+C|WipMaster|DateCalcMethod|char
+C|WipMaster|ExpLabour|decimal
+C|WipMaster|ExpMaterial|decimal
+C|WipMaster|QtyToMake|decimal
+C|WipMaster|QtyManufactured|decimal
+C|WipMaster|Source|char
+C|WipMaster|EstSourceNum|varchar
+C|WipMaster|NextDetailLine|decimal
+C|WipMaster|PctCompleteFlag|decimal
+C|WipMaster|PrtFactDoc1|char
+C|WipMaster|PrtFactDoc2|char
+C|WipMaster|PrtFactDoc3|char
+C|WipMaster|PrtFactDoc4|char
+C|WipMaster|SellingPrice|decimal
+C|WipMaster|AddLabPct|decimal
+C|WipMaster|AddMatPct|decimal
+C|WipMaster|ProfitPct|decimal
+C|WipMaster|SalesOrder|varchar
+C|WipMaster|MaterialBilled|decimal
+C|WipMaster|LabourBilled|decimal
+C|WipMaster|NextOpForAll|decimal
+C|WipMaster|HighestOpPosted|decimal
+C|WipMaster|TotalQtyScrapped|decimal
+C|WipMaster|ConfirmedFlag|char
+C|WipMaster|HoldFlag|char
+C|WipMaster|JobCreatedStruc|char
+C|WipMaster|LstOrderCreated|varchar
+C|WipMaster|TraceableType|char
+C|WipMaster|NxtLinePartBook|decimal
+C|WipMaster|Route|char
+C|WipMaster|WipCtlGlCode|varchar
+C|WipMaster|Decimals|decimal
+C|WipMaster|SalesOrderLine|decimal
+C|WipMaster|MatCostToDate1|decimal
+C|WipMaster|MatCostToDate2|decimal
+C|WipMaster|MatCostToDate3|decimal
+C|WipMaster|LabCostToDate1|decimal
+C|WipMaster|LabCostToDate2|decimal
+C|WipMaster|LabCostToDate3|decimal
+C|WipMaster|HrsBookToDate1|decimal
+C|WipMaster|HrsBookToDate2|decimal
+C|WipMaster|HrsBookToDate3|decimal
+C|WipMaster|MatValueIssues1|decimal
+C|WipMaster|MatValueIssues2|decimal
+C|WipMaster|MatValueIssues3|decimal
+C|WipMaster|LabValueIssues1|decimal
+C|WipMaster|LabValueIssues2|decimal
+C|WipMaster|LabValueIssues3|decimal
+C|WipMaster|NarrationNum|decimal
+C|WipMaster|ReqPlnFlag|char
+C|WipMaster|DateJobLstUpd|datetime
+C|WipMaster|TimeJobLstUpd|decimal
+C|WipMaster|HierarchyFlag|char
+C|WipMaster|NextLineHier|decimal
+C|WipMaster|EstTrailLoad|char
+C|WipMaster|OrdEntSource|char
+C|WipMaster|Version|char
+C|WipMaster|Release|char
+C|WipMaster|AllocationLine|char
+C|WipMaster|PurgeJob|char
+C|WipMaster|HierarchyJob|varchar
+C|WipMaster|MrpFromJob|varchar
+C|WipMaster|MrpToJob|varchar
+C|WipMaster|OrigDueDate|datetime
+C|WipMaster|GrossFlg|char
+C|WipMaster|GrossQty|decimal
+C|WipMaster|ExpLabCurrent|decimal
+C|WipMaster|ExpMatCurrent|decimal
+C|WipMaster|ReservedLotSerFlag|char
+C|WipMaster|NotionalPart|char
+C|WipMaster|CoProductCostMet|char
+C|WipMaster|CoProductCostVal|char
+C|WipMaster|CoProductType|char
+C|WipMaster|CapexCode|varchar
+C|WipMaster|CapexLine|decimal
+C|WipMaster|UomFlag|char
+C|WipMaster|ConvFactUom|decimal
+C|WipMaster|ConvMulDiv|char
+C|WipMaster|ScheduleFlag|char
+C|WipMaster|SchStartDate|datetime
+C|WipMaster|SchStartTime|decimal
+C|WipMaster|SchEndDate|datetime
+C|WipMaster|SchEndTime|decimal
+C|WipMaster|QtyToMakeEnt|decimal
+C|WipMaster|QtyManufacturedEnt|decimal
+C|WipMaster|TotQtyScrappedEnt|decimal
+C|WipMaster|GrossQtyEnt|decimal
+C|WipMaster|TimeStamp|timestamp
+C|WipMaster|ProductCode|varchar
+C|WipMaster|LibraryCode|char
+C|WipMaster|NestAllocs|char
+C|WipMaster|CreatedForNest|char
+C|WipMaster|WipBranch|varchar
+C|WipMaster|WipCurBranch|varchar
+C|WipMaster|WipCtlCurGlCode|varchar
+C|WipMaster|DifWipBranch|char
+C|WipMaster|MaintJob|char
+C|WipMaster|MaintJobType|char
+C|WipMaster|EquipmentCode|varchar
+C|WipMaster|MaintServiceType|varchar
+C|WipMaster|EquipmentType|varchar
+C|WipMaster|TypeOfService|char
+Done.
+--- 4) Native collect V9 ---
+2026-08-12 01:18:09Z sqlcmd=D:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE
+2026-08-12 01:18:09Z logKeepDays=14
+2026-08-12 01:18:09Z START native+GL+WIP customer=AHIC instance=AHIC-SSQL-SRV SkipWip=False SkipGl=False
+2026-08-12 01:18:09Z MARKER-GL-V9-20260812
+2026-08-12 01:18:09Z SnapshotDate=2026-08-12
+2026-08-12 01:18:10Z GL map entries loaded=6 dbs=AHICAR_I,AHICAR_Y,AHICAR_Z
+2026-08-12 01:18:10Z cleared Syspro_DtrInvBalances
+2026-08-12 01:18:11Z cleared Syspro_DtrApBalances
+2026-08-12 01:18:11Z cleared Syspro_DtrArBalances
+2026-08-12 01:18:12Z cleared Syspro_DtrWipBalances
+2026-08-12 01:18:12Z online DBs (7): AHICAR_I, AHICAR_I_SRS, AHICAR_Y, AHICAR_Z, AHICAR_Z_SRS, SYSPRODeployment, Sysprodb
+2026-08-12 01:18:12Z company DBs: AHICAR_I, AHICAR_Y, AHICAR_Z
+2026-08-12 01:18:12Z === AHICAR_I ===
+2026-08-12 01:18:12Z Write-ModuleRows INV AHICAR_I lines=426
+2026-08-12 01:18:12Z Write-ModuleRows map codes=0
+2026-08-12 01:18:12Z INV AHICAR_I GL=[] glClose=n/a mapHit=0
+2026-08-12 01:18:17Z INV AHICAR_I wrote=426
+2026-08-12 01:18:18Z Write-ModuleRows AP AHICAR_I lines=67
+2026-08-12 01:18:18Z Write-ModuleRows map codes=1
+2026-08-12 01:18:18Z Lookup-GlBalance AHICAR_I col=CurrentBalance ok=-2464049.19
+2026-08-12 01:18:18Z AP AHICAR_I GL=[01-1110] glClose=-2464049.19 mapHit=1
+2026-08-12 01:18:19Z AP AHICAR_I wrote=67
+2026-08-12 01:18:19Z Write-ModuleRows AR AHICAR_I lines=140
+2026-08-12 01:18:19Z Write-ModuleRows map codes=0
+2026-08-12 01:18:19Z AR AHICAR_I GL=[] glClose=n/a mapHit=0
+2026-08-12 01:18:21Z AR AHICAR_I wrote=140
+2026-08-12 01:18:22Z query FAIL Msg 137, Level 15, State 2, Server AHIC-SSQL-SRV, Line 15
+Must declare the scalar variable "@wt".
+
+2026-08-12 01:18:22Z WIP AHICAR_I wrote=0
+2026-08-12 01:18:22Z === AHICAR_Y ===
+2026-08-12 01:18:22Z Write-ModuleRows INV AHICAR_Y lines=420
+2026-08-12 01:18:22Z Write-ModuleRows map codes=0
+2026-08-12 01:18:22Z INV AHICAR_Y GL=[] glClose=n/a mapHit=0
+2026-08-12 01:18:28Z INV AHICAR_Y wrote=420
+2026-08-12 01:18:28Z Write-ModuleRows AP AHICAR_Y lines=66
+2026-08-12 01:18:28Z Write-ModuleRows map codes=1
+2026-08-12 01:18:28Z Lookup-GlBalance AHICAR_Y col=CurrentBalance ok=-6795170.52
+2026-08-12 01:18:28Z AP AHICAR_Y GL=[01-1110] glClose=-6795170.52 mapHit=1
+2026-08-12 01:18:29Z AP AHICAR_Y wrote=66
+2026-08-12 01:18:30Z Write-ModuleRows AR AHICAR_Y lines=158
+2026-08-12 01:18:30Z Write-ModuleRows map codes=0
+2026-08-12 01:18:30Z AR AHICAR_Y GL=[] glClose=n/a mapHit=0
+2026-08-12 01:18:32Z AR AHICAR_Y wrote=158
+2026-08-12 01:18:32Z query FAIL Msg 137, Level 15, State 2, Server AHIC-SSQL-SRV, Line 15
+Must declare the scalar variable "@wt".
+
+2026-08-12 01:18:32Z WIP AHICAR_Y wrote=0
+2026-08-12 01:18:32Z === AHICAR_Z ===
+2026-08-12 01:18:33Z Write-ModuleRows INV AHICAR_Z lines=421
+2026-08-12 01:18:33Z Write-ModuleRows map codes=0
+2026-08-12 01:18:33Z INV AHICAR_Z GL=[] glClose=n/a mapHit=0
+2026-08-12 01:18:39Z INV AHICAR_Z wrote=421
+2026-08-12 01:18:39Z Write-ModuleRows AP AHICAR_Z lines=81
+2026-08-12 01:18:39Z Write-ModuleRows map codes=1
+2026-08-12 01:18:39Z Lookup-GlBalance AHICAR_Z col=CurrentBalance ok=-3455512.06
+2026-08-12 01:18:39Z AP AHICAR_Z GL=[01-1110] glClose=-3455512.06 mapHit=1
+2026-08-12 01:18:41Z AP AHICAR_Z wrote=81
+2026-08-12 01:18:41Z Write-ModuleRows AR AHICAR_Z lines=178
+2026-08-12 01:18:41Z Write-ModuleRows map codes=0
+2026-08-12 01:18:41Z AR AHICAR_Z GL=[] glClose=n/a mapHit=0
+2026-08-12 01:18:44Z AR AHICAR_Z wrote=178
+2026-08-12 01:18:44Z query FAIL Msg 137, Level 15, State 2, Server AHIC-SSQL-SRV, Line 15
+Must declare the scalar variable "@wt".
+
+2026-08-12 01:18:44Z WIP AHICAR_Z wrote=0
+2026-08-12 01:18:44Z DONE native+GL+WIP total=1957
+Native FinSight fallback complete. Rows: 1957
+Map GL: run 463 on central, INSERT Dim_FinSight_GlControlMap, or set $GlControlMap in config, re-run.
+Discover: Discover-Gl-Control-Accounts.ps1 -ConfigPath C:\RPM-Assure\Sql\customers\AHIC\Customer.Config.ps1
+native exit=0
+
+Done host AHIC. Proof on app server after all hosts.

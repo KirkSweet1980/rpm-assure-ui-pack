@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="ServiceComponents" Directory="ServiceDir">
+      <Component Id="Cmp_ServiceMarker" Guid="11223344-5566-7788-99AA-BBCCDDEEFF01">
+        <CreateFolder />
+        <RegistryValue Root="HKLM" Key="Software\RPM Resources\RPM Assure" Name="ServiceDir" Type="string" Value="[ServiceDir]" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
