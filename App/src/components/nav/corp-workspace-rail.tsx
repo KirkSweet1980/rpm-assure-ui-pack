@@ -101,7 +101,7 @@ export function CorpWorkspaceRail({
             className={cn("rpma-modbtn", (path === homeHref || path === `${homeHref}/`) && "is-on")}
             onClick={() => {
               setPicked(null);
-              setOpen("svc");
+              setOpen("mod");
             }}
           >
             Overview
@@ -109,32 +109,26 @@ export function CorpWorkspaceRail({
         </div>
       </section>
 
-      <Drop
-        title="Service"
-        value={active?.title ?? null}
-        placeholder="Select a service"
-        open={open === "svc"}
-        onToggle={() => setOpen((v) => (v === "svc" ? null : "svc"))}
-      >
-        {services.map((s) => (
-          <SpaLink
-            key={s.id}
-            href={s.overview}
-            role="option"
-            aria-selected={picked === s.id}
-            className={cn("rpma-dd-item", picked === s.id && "is-on")}
-            onClick={() => {
-              setPicked(s.id);
-              setOpen("mod");
-            }}
-          >
-            <span className="rpma-dd-name">{s.title}</span>
-            <span className="rpma-dd-meta">
-              {picked === s.id ? <Check className="rpma-dd-check" /> : null}
-            </span>
-          </SpaLink>
-        ))}
-      </Drop>
+      <section className="rpma-nav-block">
+        <div className="rpma-pillar-rail-head">
+          <h2>Services</h2>
+        </div>
+        <div className="rpma-svc-static" role="navigation" aria-label="Services">
+          {services.map((s) => (
+            <SpaLink
+              key={s.id}
+              href={s.overview}
+              className={cn("rpma-svc-row is-cover", picked === s.id && "is-on")}
+              onClick={() => {
+                setPicked(s.id);
+                setOpen("mod");
+              }}
+            >
+              <span className="rpma-svc-row-name">{s.title}</span>
+            </SpaLink>
+          ))}
+        </div>
+      </section>
 
       <Drop
         title="Service Modules"

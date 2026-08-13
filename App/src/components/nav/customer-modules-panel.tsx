@@ -169,17 +169,17 @@ export function CustomerPillarRail({ code, cover }: Props) {
   const base = `/customers/${encodeURIComponent(code)}`;
   const fromUrl = pillarIdFromPath(path, base);
   const [picked, setPicked] = useState<string | null>(fromUrl);
-  const [open, setOpen] = useState<"svc" | "mod" | null>(fromUrl ? "mod" : "svc");
+  const [open, setOpen] = useState(Boolean(fromUrl));
   const rootRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setPicked(fromUrl);
-    setOpen(fromUrl ? "mod" : "svc");
+    setOpen(Boolean(fromUrl));
   }, [fromUrl]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(null);
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -211,7 +211,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 className={cn("rpma-eco-item", selected && "is-on")}
                 onClick={() => {
                   setPicked(null);
-                  setOpen(null);
+                  setOpen(false);
                 }}
               >
                 {m.label}
@@ -225,32 +225,31 @@ export function CustomerPillarRail({ code, cover }: Props) {
         <div className="rpma-pillar-rail-head">
           <h2>RPM Services</h2>
         </div>
-        <div className="rpma-svc-icons" role="navigation" aria-label="RPM Services">
+        <div className="rpma-svc-static" role="navigation" aria-label="RPM Services">
           {CUSTOMER_PILLARS.map((p) => {
             const on = p.covered(cover);
             const Icon = p.icon;
-            const short =
-              p.id === "syspro" ? "SYSPRO" :
-              p.id === "rmm" ? "RMM" :
-              p.id === "cove" ? "Backup" :
-              p.id === "epp" ? "EPP" : "M365";
+            const selected = picked === p.id;
             return (
               <SpaLink
-                key={`vis-${p.id}`}
+                key={p.id}
                 href={`${base}${p.overview}`}
                 title={`${p.title} — ${on ? "Cover" : "No cover"}`}
                 className={cn(
-                  "rpma-svc-ico",
-                  picked === p.id && "is-on",
+                  "rpma-svc-row",
+                  selected && "is-on",
                   on ? "is-cover" : "is-nocover",
                 )}
                 onClick={() => {
                   setPicked(p.id);
-                  setOpen("mod");
+                  setOpen(true);
                 }}
               >
-                <Icon aria-hidden />
-                <em>{short}</em>
+                <Icon className="rpma-svc-glyph" aria-hidden />
+                <span className="rpma-svc-row-name">{p.title}</span>
+                <span className={cn("rpma-dd-status", on ? "is-cover" : "is-nocover")}>
+                  {on ? "Cover" : "No cover"}
+                </span>
               </SpaLink>
             );
           })}
@@ -258,51 +257,12 @@ export function CustomerPillarRail({ code, cover }: Props) {
       </section>
 
       <NavDropdown
-        title="Service"
-        value={active?.title ?? null}
-        placeholder="Select a service"
-        tone={active ? (svcOn ? "cover" : "nocover") : "neutral"}
-        icon={active?.icon}
-        open={open === "svc"}
-        onToggle={() => setOpen((v) => (v === "svc" ? null : "svc"))}
-      >
-        {CUSTOMER_PILLARS.map((p) => {
-          const on = p.covered(cover);
-          const Icon = p.icon;
-          return (
-            <SpaLink
-              key={p.id}
-              href={`${base}${p.overview}`}
-              role="option"
-              aria-selected={picked === p.id}
-              className={cn("rpma-dd-item", picked === p.id && "is-on")}
-              onClick={() => {
-                setPicked(p.id);
-                setOpen("mod");
-              }}
-            >
-              <span className="rpma-dd-name">
-                <Icon className="rpma-svc-glyph" aria-hidden />
-                {p.title}
-              </span>
-              <span className="rpma-dd-meta">
-                <span className={cn("rpma-dd-status", on ? "is-cover" : "is-nocover")}>
-                  {on ? "Cover" : "No cover"}
-                </span>
-                {picked === p.id ? <Check className="rpma-dd-check" /> : null}
-              </span>
-            </SpaLink>
-          );
-        })}
-      </NavDropdown>
-
-      <NavDropdown
         title="Service Modules"
         value={currentMod?.label ?? null}
         placeholder={active ? "Select a service module" : "Select a service first"}
         tone={active ? (svcOn ? "cover" : "nocover") : "neutral"}
-        open={open === "mod"}
-        onToggle={() => active && setOpen((v) => (v === "mod" ? null : "mod"))}
+        open={open}
+        onToggle={() => active && setOpen((v) => !v)}
       >
         {active ? (
           active.modules.map((m) => {
@@ -316,7 +276,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 role="option"
                 aria-selected={selected}
                 className={cn("rpma-dd-item", selected && "is-on")}
-                onClick={() => setOpen(null)}
+                onClick={() => setOpen(false)}
               >
                 <span className="rpma-dd-name">{m.label}</span>
                 <span className="rpma-dd-meta">
