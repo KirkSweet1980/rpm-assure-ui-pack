@@ -364,7 +364,7 @@ export function TwoFactorSetupPanel({ compact = false }: { compact?: boolean }) 
                 Open your authenticator app → Add account → Scan QR code.
               </p>
               <div className="mt-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
+                <div className="rounded-xl border border-border bg-surface p-3 shadow-sm">
                   {qrDataUrl ? (
                     <img
                       src={qrDataUrl}

@@ -44,20 +44,23 @@
   --dk-brand-1: linear-gradient(83.31deg, #1de9b6 21.22%, #1dc4e9 88.54%);
 }
 
-html[data-theme="dark"] {
+html[data-theme="dark"], html.dark {
   color-scheme: dark;
-  --color-bg: #161c25;
-  --color-surface: #1c232f;
-  --color-surface-2: #222b38;
-  --color-fg: #f3f5f7;
-  --color-muted: #b5bdca;
-  --color-subtle: #8996a4;
-  --color-border: #2f3b52;
-  --bs-body-bg: #161c25;
-  --bs-body-color: #ced4dc;
+  --color-bg: #0b0e13;
+  --color-surface: #141a22;
+  --color-surface-2: #1a212c;
+  --color-fg: #e8edf3;
+  --color-muted: #9aa6b4;
+  --color-subtle: #6e7a88;
+  --color-border: #2a3340;
+  --color-border-strong: #3a4554;
+  --bs-body-bg: #0b0e13;
+  --bs-body-color: #e8edf3;
   --pc-heading-color: #f3f5f7;
-  --pc-header-background: rgba(28, 35, 47, 0.72);
-  --pc-header-color: #b5bdca;
+  --pc-header-background: #10151c;
+  --pc-header-color: #c5ced8;
+  --pc-sidebar-background: #10151c;
+  --pc-active-background: #1e2936;
 }
 
 html {
@@ -171,7 +174,7 @@ body {
 .rpma-modbtn {
   display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 4px;
   font-size: 11px; font-weight: 650; text-decoration: none;
-  border: 1px solid #d7dde6; background: #fff; color: #39465a;
+  border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-fg);
 }
 .rpma-modbtn.is-on, html[data-theme="dark"] .rpma-modbtn.is-on { background: #263544; color: #fff; border-color: #263544; }
 
@@ -192,7 +195,7 @@ body {
   display: flex; flex-direction: column; min-height: 0; position: sticky;
   top: calc(var(--pc-header-height) + 12px);
   max-height: calc(100dvh - var(--pc-header-height) - 24px);
-  overflow: auto; border: 1px solid #d0d6de; border-radius: 6px; background: #fff;
+  overflow: auto; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface);
 }
 html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); border-color: var(--color-border); }
 .rpma-nav-block + .rpma-nav-block { border-top: 1px solid #e8edf3; }
@@ -202,7 +205,7 @@ html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); bo
 .rpma-dd-trigger {
   width: 100%; display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 5px 9px;
   border: 1px solid #c5cdd6; border-radius: 4px; font-size: 11px; font-weight: 600;
-  text-align: left; cursor: pointer; background: #fff; color: #1d2630;
+  text-align: left; cursor: pointer; background: var(--color-surface); color: var(--color-fg);
 }
 .rpma-dd-trigger .is-ph { color: #7b8694; font-weight: 500; }
 .rpma-dd-trigger.is-open { border-color: #263544; box-shadow: inset 0 0 0 1px #263544; }
@@ -211,7 +214,7 @@ html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); bo
 .rpma-dd-pip.is-nocover { background: #64748b; }
 .rpma-dd-chev { width: 15px; height: 15px; margin-left: auto; color: #6b7785; }
 .rpma-dd-chev.rot { transform: rotate(180deg); }
-.rpma-dd-menu { margin-top: 6px; display: flex; flex-direction: column; border: 1px solid #d0d6de; border-radius: 4px; background: #fff; }
+.rpma-dd-menu { margin-top: 6px; display: flex; flex-direction: column; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); }
 .rpma-dd-item {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 6px 9px; font-size: 11px; font-weight: 500; text-decoration: none; color: #2a3440;
@@ -227,7 +230,7 @@ html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); bo
   display: flex; flex-direction: column; min-height: 0; position: sticky;
   top: calc(var(--pc-header-height) + 12px);
   max-height: calc(100dvh - var(--pc-header-height) - 24px);
-  overflow: hidden; border: 1px solid #d0d6de; border-radius: 6px; background: #fff;
+  overflow: hidden; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface);
 }
 .rpma-list-head { padding: 0.6rem 0.7rem 0.5rem; border-bottom: 1px solid #e8edf3; }
 .rpma-list-title { margin: 0; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
@@ -265,21 +268,13 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
 .rpma-d3-detail { min-width: 0; }
 
 .rpma-glass, .rpma-exco > section, .rpma-card, .rpma-panel {
-  background: #fff;
-  border: 1px solid #e4e8ee;
-  border-radius: 8px;
-  box-shadow: 0 1px 0 rgba(29, 38, 48, 0.04);
-}
-html[data-theme="dark"] .rpma-glass,
-html[data-theme="dark"] .rpma-exco > section,
-html[data-theme="dark"] .rpma-card,
-html[data-theme="dark"] .rpma-panel {
   background: var(--color-surface);
-  border-color: var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: none;
 }
 .rpma-exco-compact { font-size: 12px; }
-.rpma-exco-tile { border-radius: 6px; background: #f6f8fb; border: 0; }
-html[data-theme="dark"] .rpma-exco-tile { background: #222b38; }
+.rpma-exco-tile { border-radius: 6px; background: var(--color-surface-2); border: 0; }
 .rpma-exco-compact .rpma-heat-cell { min-height: 44px; padding: 6px; }
 .rpma-exco-compact .rpma-heat-n { font-size: 16px; }
 .rpma-heat-cell { min-height: 92px; border: 0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; }
@@ -296,7 +291,7 @@ html[data-theme="dark"] .rpma-exco-tile { background: #222b38; }
 .rpma-impact-bar.is-amber { background: #ffa21d; }
 .rpma-impact-bar.is-red { background: #ea4d4d; }
 .rpma-impact-score { font-size: 11px; font-family: var(--font-mono); font-weight: 700; text-align: right; }
-.rpma-card { border: 1px solid var(--color-border); background: #fff; border-radius: 8px; }
+.rpma-card { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 8px; }
 
 .rpma-heat { display: grid; grid-template-columns: 14px 1fr; gap: 6px; align-items: center; }
 .rpma-heat-ylab { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7785; }
@@ -355,3 +350,56 @@ html[data-theme="dark"] .rpma-mod-row.is-on { background: #222b38; }
   .rpma-d3-workspace, .rpma-d3-workspace.is-inspect, .rpma-d3-workspace.is-tool { grid-template-columns: 1fr; }
   .rpma-d3-master, .rpma-list, .rpma-pillar-rail { position: relative; top: auto; max-height: none; }
 }
+
+html[data-theme="dark"] .rpma-list-row,
+html.dark .rpma-list-row { border-bottom-color: #1e2630; }
+html[data-theme="dark"] .rpma-list-row.is-active,
+html.dark .rpma-list-row.is-active { background: #1a212c; box-shadow: inset 3px 0 0 #0d9488; }
+html[data-theme="dark"] .rpma-list-head,
+html.dark .rpma-list-head,
+html[data-theme="dark"] .rpma-nav-block + .rpma-nav-block,
+html.dark .rpma-nav-block + .rpma-nav-block { border-color: #1e2630; }
+html[data-theme="dark"] .rpma-list-search,
+html.dark .rpma-list-search { border-color: #2a3340; background: #0b0e13; }
+html[data-theme="dark"] .rpma-list-count,
+html.dark .rpma-list-count { background: #1a212c; color: #c5ced8; }
+html[data-theme="dark"] .rpma-eco-item,
+html.dark .rpma-eco-item,
+html[data-theme="dark"] .rpma-mod-row,
+html.dark .rpma-mod-row { color: #d5dde6; }
+html[data-theme="dark"] .rpma-eco-item.is-on,
+html.dark .rpma-eco-item.is-on,
+html[data-theme="dark"] .rpma-mod-row.is-on,
+html.dark .rpma-mod-row.is-on { background: #1a212c; }
+html[data-theme="dark"] .rpma-heat-cell.is-green,
+html.dark .rpma-heat-cell.is-green { background: #123028; color: #d1fae5; }
+html[data-theme="dark"] .rpma-heat-cell.is-amber,
+html.dark .rpma-heat-cell.is-amber { background: #3a2a12; color: #fde68a; }
+html[data-theme="dark"] .rpma-heat-cell.is-red,
+html.dark .rpma-heat-cell.is-red { background: #3a1616; color: #fecaca; }
+html[data-theme="dark"] .rpma-impact-track,
+html.dark .rpma-impact-track { background: #1e2630; }
+html[data-theme="dark"] .rpma-svc-ico,
+html.dark .rpma-svc-ico { background: #1a212c; color: #c5ced8; }
+html[data-theme="dark"] .rpma-svc-row.is-on,
+html.dark .rpma-svc-row.is-on { outline-color: #5eead4; }
+html[data-theme="dark"] .recharts-default-tooltip,
+html.dark .recharts-default-tooltip {
+  background: #141a22 !important;
+  border-color: #2a3340 !important;
+  color: #e8edf3 !important;
+}
+html[data-theme="dark"] input,
+html.dark input,
+html[data-theme="dark"] textarea,
+html.dark textarea,
+html[data-theme="dark"] select,
+html.dark select {
+  background: #0b0e13;
+  color: #e8edf3;
+  border-color: #2a3340;
+}
+html[data-theme="dark"] table thead,
+html.dark table thead { background: #1a212c; }
+html[data-theme="dark"] .bg-white,
+html.dark .bg-white { background-color: #141a22 !important; }
