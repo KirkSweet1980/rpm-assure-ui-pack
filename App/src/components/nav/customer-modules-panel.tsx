@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
-  Check,
-  ChevronDown,
   Cloud,
   Database,
   Mail,
@@ -119,82 +117,20 @@ function pillarIdFromPath(path: string, base: string) {
   return CUSTOMER_PILLARS.some((p) => p.id === first) ? first : null;
 }
 
-function NavDropdown({
-  title,
-  value,
-  placeholder,
-  tone,
-  open,
-  onToggle,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  value: string | null;
-  placeholder: string;
-  tone: "cover" | "nocover" | "neutral";
-  open: boolean;
-  onToggle: () => void;
-  icon?: LucideIcon;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rpma-nav-block">
-      <div className="rpma-pillar-rail-head">
-        <h2>{title}</h2>
-      </div>
-      <div className="rpma-dd">
-        <button
-          type="button"
-          className={cn("rpma-dd-trigger", open && "is-open")}
-          aria-expanded={open}
-          onClick={onToggle}
-        >
-          {Icon ? <Icon className="rpma-svc-glyph" aria-hidden /> : <i className={cn("rpma-dd-pip", `is-${tone}`)} aria-hidden />}
-          <span className={cn("truncate", !value && "is-ph")}>{value ?? placeholder}</span>
-          <ChevronDown className={cn("rpma-dd-chev", open && "rot")} />
-        </button>
-        {open ? (
-          <div className="rpma-dd-menu" role="listbox">
-            {children}
-          </div>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
 export function CustomerPillarRail({ code, cover }: Props) {
   const path = useRouterState({ select: (s) => s.location.pathname }).replace(/\/$/, "");
   const base = `/customers/${encodeURIComponent(code)}`;
   const fromUrl = pillarIdFromPath(path, base);
   const [picked, setPicked] = useState<string | null>(fromUrl);
-  const [open, setOpen] = useState(Boolean(fromUrl));
-  const rootRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setPicked(fromUrl);
-    setOpen(Boolean(fromUrl));
   }, [fromUrl]);
 
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
-
   const active = CUSTOMER_PILLARS.find((p) => p.id === picked);
-  const currentMod =
-    active?.modules.find((m) => {
-      const href = `${base}${m.path}`;
-      return path === href || path === `${href}/`;
-    }) ?? null;
-  const svcOn = active ? active.covered(cover) : true;
 
   return (
-    <aside ref={rootRef} className="rpma-pillar-rail" aria-label="Customer navigation">
+    <aside className="rpma-pillar-rail" aria-label="Customer navigation">
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
           <h2>Ecosystem</h2>
@@ -209,10 +145,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 href={href}
                 title={`${m.label} — Ecosystem`}
                 className={cn("rpma-eco-item", selected && "is-on")}
-                onClick={() => {
-                  setPicked(null);
-                  setOpen(false);
-                }}
+                onClick={() => setPicked(null)}
               >
                 {m.label}
               </SpaLink>
@@ -240,10 +173,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
                   selected && "is-on",
                   on ? "is-cover" : "is-nocover",
                 )}
-                onClick={() => {
-                  setPicked(p.id);
-                  setOpen(true);
-                }}
+                onClick={() => setPicked(p.id)}
               >
                 <Icon className="rpma-svc-glyph" aria-hidden />
                 <span className="rpma-svc-row-name">{p.title}</span>
@@ -256,42 +186,30 @@ export function CustomerPillarRail({ code, cover }: Props) {
         </div>
       </section>
 
-      <NavDropdown
-        title="Service Modules"
-        value={currentMod?.label ?? null}
-        placeholder={active ? "Select a service module" : "Select a service first"}
-        tone={active ? (svcOn ? "cover" : "nocover") : "neutral"}
-        open={open}
-        onToggle={() => active && setOpen((v) => !v)}
-      >
-        {active ? (
-          active.modules.map((m) => {
-            const href = `${base}${m.path}`;
-            const selected = path === href || path === `${href}/`;
-            const on = active.covered(cover);
-            return (
-              <SpaLink
-                key={href}
-                href={href}
-                role="option"
-                aria-selected={selected}
-                className={cn("rpma-dd-item", selected && "is-on")}
-                onClick={() => setOpen(false)}
-              >
-                <span className="rpma-dd-name">{m.label}</span>
-                <span className="rpma-dd-meta">
-                  <span className={cn("rpma-dd-status", on ? "is-cover" : "is-nocover")}>
-                    {on ? "Cover" : "No cover"}
-                  </span>
-                  {selected ? <Check className="rpma-dd-check" /> : null}
-                </span>
-              </SpaLink>
-            );
-          })
-        ) : (
-          <p className="rpma-list-empty">Select an RPM Service</p>
-        )}
-      </NavDropdown>
+      <section className="rpma-nav-block">
+        <div className="rpma-pillar-rail-head">
+          <h2>Service Modules</h2>
+        </div>
+        <div className="rpma-mod-static" role="navigation" aria-label="Service Modules">
+          {active ? (
+            active.modules.map((m) => {
+              const href = `${base}${m.path}`;
+              const selected = path === href || path === `${href}/`;
+              return (
+                <SpaLink
+                  key={href}
+                  href={href}
+                  className={cn("rpma-mod-row", selected && "is-on")}
+                >
+                  {m.label}
+                </SpaLink>
+              );
+            })
+          ) : (
+            <p className="rpma-list-empty">Select an RPM Service</p>
+          )}
+        </div>
+      </section>
     </aside>
   );
 }

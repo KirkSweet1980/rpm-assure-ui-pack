@@ -342,6 +342,14 @@ html[data-theme="dark"] .rpma-exco-tile { background: #222b38; }
 .rpma-svc-ico.is-on { outline: 2px solid #263544; outline-offset: 0; }
 .rpma-svc-glyph { width: 14px; height: 14px; flex: 0 0 auto; }
 .rpma-dd-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.rpma-mod-static { display: flex; flex-direction: column; padding: 0 0.65rem 0.7rem; gap: 1px; }
+.rpma-mod-row {
+  display: block; padding: 5px 8px; font-size: 11px; font-weight: 550;
+  color: #2a3440; text-decoration: none; border-radius: 4px;
+}
+.rpma-mod-row.is-on { background: #f3f5f9; font-weight: 700; box-shadow: inset 3px 0 0 #0d9488; }
+html[data-theme="dark"] .rpma-mod-row { color: var(--color-fg); }
+html[data-theme="dark"] .rpma-mod-row.is-on { background: #222b38; }
 
 @media (max-width: 1023px) {
   .rpma-d3-workspace, .rpma-d3-workspace.is-inspect, .rpma-d3-workspace.is-tool { grid-template-columns: 1fr; }
