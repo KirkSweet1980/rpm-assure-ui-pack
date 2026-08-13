@@ -1,17 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Plug, RefreshCw } from "lucide-react";
+import { Check, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHead } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { fetchIntegrations } from "@/lib/settings/settings-api";
-import { cn } from "@/lib/utils";
+import {
+  fetchConfigHealth,
+  fetchIntegrations,
+  type ConfigHealthItem,
+} from "@/lib/settings/settings-api";
+import { SpaLink } from "@/components/nav/spa-link";
+import { cn, formatSastDateTime } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/integrations")({
   component: IntegrationsPage,
 });
 
-type Row = {
+type ConnRow = {
   connectionCode: string;
   displayName: string;
   sourceKind: string;
@@ -20,28 +23,53 @@ type Row = {
   lastSyncAt: string | null;
 };
 
-const STATUS_CLASS: Record<string, string> = {
-  Active: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
-  Configured: "bg-sky-500/15 text-sky-800 dark:text-sky-200",
-  Planned: "bg-muted text-muted-foreground",
-  Error: "bg-red-500/15 text-red-700 dark:text-red-300",
-  Disabled: "bg-muted text-muted-foreground",
-};
+function HealthTile({ item }: { item: ConfigHealthItem }) {
+  return (
+    <SpaLink
+      href={item.href}
+      className={cn(
+        "rpma-panel flex flex-col gap-1 px-3 py-3 no-underline",
+        item.ok ? "ring-1 ring-rag-green/30" : "ring-1 ring-rag-red/30",
+      )}
+    >
+      <span className="flex items-center gap-2">
+        <span
+          className={cn(
+            "grid h-6 w-6 place-items-center rounded-full",
+            item.ok ? "bg-rag-green text-white" : "bg-rag-red text-white",
+          )}
+          aria-hidden
+        >
+          {item.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+        </span>
+        <span className="min-w-0 truncate text-[13px] font-bold text-fg">{item.label}</span>
+      </span>
+      <span className={cn("text-[12px] font-semibold", item.ok ? "text-rag-green" : "text-rag-red")}>
+        {item.ok ? "Connected" : "Not connected"}
+      </span>
+      <span className="text-[11px] text-muted">{item.detail}</span>
+      {item.lastAt ? (
+        <span className="text-[10px] text-subtle">Last collect {formatSastDateTime(item.lastAt)}</span>
+      ) : null}
+    </SpaLink>
+  );
+}
 
 function IntegrationsPage() {
-  const [rows, setRows] = useState<Row[]>([]);
+  const [health, setHealth] = useState<ConfigHealthItem[]>([]);
+  const [rows, setRows] = useState<ConnRow[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const r = await fetchIntegrations();
+      const [h, r] = await Promise.all([fetchConfigHealth(), fetchIntegrations()]);
+      setHealth(h.items ?? []);
       setRows(r.rows ?? []);
-      setMsg(r.message);
+      setMsg(r.message ?? null);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
-      setRows([]);
     } finally {
       setBusy(false);
     }
@@ -51,69 +79,61 @@ function IntegrationsPage() {
     void load();
   }, [load]);
 
+  const okN = health.filter((i) => i.ok).length;
+
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHead className="flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-2">
-            <Plug className="size-4 text-primary" />
-            Connections
-          </span>
-          <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
-            <RefreshCw className={cn("size-4", busy && "animate-spin")} />
-            Refresh
-          </Button>
-        </CardHead>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted">
-            Live collect under one <strong className="text-fg">Customer</strong> spine:{" "}
-            <strong className="text-fg">SYSPRO Deployment</strong>,{" "}
-            <strong className="text-fg">RPM Remote Management</strong> (Pulseway),{" "}
-            <strong className="text-fg">RPM Cloud Backup</strong> (Cove),{" "}
-            <strong className="text-fg">RPM End Point Protection</strong> (Bitdefender), and{" "}
-            <strong className="text-fg">Microsoft 365 Tenant</strong> (CSP pilot).
-            Status reflects product readiness — not separate domains.
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Configuration health</p>
+          <p className="text-[13px] text-fg">
+            {okN} of {health.length || 6} connected
           </p>
-          {msg ? <p className="text-xs text-muted">{msg}</p> : null}
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">Connection</th>
-                  <th className="px-3 py-2 font-semibold">Kind</th>
-                  <th className="px-3 py-2 font-semibold">Status</th>
-                  <th className="px-3 py-2 font-semibold">Notes</th>
+        </div>
+        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
+          <RefreshCw className={cn("size-4", busy && "animate-spin")} />
+          Recheck
+        </Button>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {health.map((item) => (
+          <HealthTile key={item.id} item={item} />
+        ))}
+      </div>
+
+      <div className="rpma-panel overflow-x-auto p-0">
+        <table className="w-full min-w-[640px] text-left text-[13px]">
+          <thead className="border-b border-border bg-surface-2 text-[10px] uppercase tracking-wide text-muted">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Connection</th>
+              <th className="px-3 py-2 font-semibold">Kind</th>
+              <th className="px-3 py-2 font-semibold">Status</th>
+              <th className="px-3 py-2 font-semibold">Last sync</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-6 text-center text-muted">
+                  {msg || "No Dim_Connection rows. Health tiles above still probe live tables."}
+                </td>
+              </tr>
+            ) : (
+              rows.map((r) => (
+                <tr key={r.connectionCode} className="border-b border-border/70 last:border-0">
+                  <td className="px-3 py-2.5 font-medium text-fg">{r.displayName}</td>
+                  <td className="px-3 py-2.5 text-muted">{r.sourceKind}</td>
+                  <td className="px-3 py-2.5">{r.status}</td>
+                  <td className="px-3 py-2.5 text-[12px] text-muted">
+                    {r.lastSyncAt ? formatSastDateTime(r.lastSyncAt) : "—"}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-3 py-6 text-center text-muted">
-                      No connections loaded. Refresh or check SQL connectivity.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((r) => (
-                    <tr key={r.connectionCode} className="border-b border-border/70 last:border-0">
-                      <td className="px-3 py-2.5">
-                        <div className="font-medium text-fg">{r.displayName}</div>
-                        <div className="font-mono text-[11px] text-muted">{r.connectionCode}</div>
-                      </td>
-                      <td className="px-3 py-2.5 text-muted">{r.sourceKind}</td>
-                      <td className="px-3 py-2.5">
-                        <Badge className={cn("font-medium", STATUS_CLASS[r.status] ?? STATUS_CLASS.Planned)}>
-                          {r.status}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-muted">{r.notes ?? "—"}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

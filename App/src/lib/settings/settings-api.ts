@@ -1467,53 +1467,125 @@ export const clearSslCertificate = createServerFn({ method: "POST" }).handler(as
   return { ok: true as const, ssl, status: sslFileStatus() };
 });
 
-/** Kick Pulseway + Cove + Bitdefender + Microsoft Graph collect on the app host. */
-export const runAllApiSync = createServerFn({ method: "POST" }).handler(async () => {
-  const { spawn } = await import("node:child_process");
-  const fs = await import("node:fs");
-  const path = await import("node:path");
-  const roots = [
-    process.env.RPM_ASSURE_ROOT,
-    "C:\\RPM-Assure",
-    "/workspace",
-  ].filter(Boolean) as string[];
-  let script: string | null = null;
-  for (const root of roots) {
-    const cand = path.join(root, "sql", "ops", "Sync-All-Apis-Now.ps1");
-    const cand2 = path.join(root, "Sql", "ops", "Sync-All-Apis-Now.ps1");
-    if (fs.existsSync(cand)) { script = cand; break; }
-    if (fs.existsSync(cand2)) { script = cand2; break; }
+export type ConfigHealthItem = {
+  id: string;
+  label: string;
+  ok: boolean;
+  lastAt: string | null;
+  detail: string;
+  href: string;
+};
+
+async function probeIso(
+  pool: NonNullable<Awaited<ReturnType<typeof getPool>>>,
+  queries: string[],
+): Promise<string | null> {
+  for (const q of queries) {
+    try {
+      const r = await pool.request().query(q);
+      const row = r.recordset?.[0] as Record<string, unknown> | undefined;
+      const v = row?.t ?? row?.T;
+      if (v) {
+        const d = new Date(v as string | Date);
+        if (Number.isFinite(d.getTime())) return d.toISOString();
+      }
+    } catch {
+      /* try next */
+    }
   }
-  if (!script) {
-    return {
-      ok: false as const,
-      message:
-        "Sync script not on this host. On the app server run: powershell -NoProfile -ExecutionPolicy Bypass -File C:\\RPM-Assure\\Sql\\ops\\Sync-All-Apis-Now.ps1",
-    };
+  return null;
+}
+
+function ageDetail(iso: string | null): { ok: boolean; detail: string } {
+  if (!iso) return { ok: false, detail: "No collect yet" };
+  const h = (Date.now() - new Date(iso).getTime()) / 3600000;
+  if (h <= 24) return { ok: true, detail: `${Math.max(1, Math.round(h * 10) / 10)}h ago` };
+  if (h <= 72) return { ok: true, detail: `Stale · ${Math.round(h)}h ago` };
+  return { ok: false, detail: `Stale · ${Math.round(h / 24)}d ago` };
+}
+
+export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async () => {
+  const dbg = sqlConfigDebug();
+  const pool = await getPool();
+  const sqlOk = Boolean(pool);
+  const items: ConfigHealthItem[] = [];
+
+  items.push({
+    id: "sql",
+    label: "SQL Server",
+    ok: sqlOk,
+    lastAt: null,
+    detail: sqlOk
+      ? `${dbg.server ?? "configured"}${dbg.port ? `,${dbg.port}` : ""} · ${dbg.database ?? "RPMAssure_App"}`
+      : getLastPoolError() ?? "Not connected — set credentials in SQL Server",
+    href: "/settings/sql",
+  });
+
+  const rest: Array<[string, string, string]> = [
+    ["syspro", "SYSPRO Collect", "/settings/collect"],
+    ["rmm", "Pulseway (RMM)", "/settings/integrations"],
+    ["cove", "Cove (Backup)", "/settings/integrations"],
+    ["epp", "Bitdefender (EPP)", "/settings/integrations"],
+    ["csp", "Microsoft Graph", "/settings/integrations"],
+  ];
+
+  if (!pool) {
+    for (const [id, label, href] of rest) {
+      items.push({ id, label, ok: false, lastAt: null, detail: "SQL not connected", href });
+    }
+    return { ok: false as const, generatedAt: new Date().toISOString(), items };
   }
-  if (process.platform !== "win32") {
-    return {
-      ok: false as const,
-      message:
-        "API collect runs on the Windows app server. Copy Sync-All-Apis-Now.ps1 to C:\\RPM-Assure\\Sql\\ops and execute it there (Administrator).",
-    };
+
+  const sysproAt = await probeIso(pool, [
+    "SELECT MAX(LastImportAt) AS t FROM dbo.Dim_Customer WITH (NOLOCK)",
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Fact_Syspro_Operator WITH (NOLOCK)",
+  ]);
+  const rmmAt = await probeIso(pool, [
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Pulseway_Devices WITH (NOLOCK)",
+    "SELECT MAX(LastImportAt) AS t FROM dbo.vw_Kpi_Pulseway_Summary WITH (NOLOCK)",
+  ]);
+  const coveAt = await probeIso(pool, [
+    "SELECT MAX(LastImportAt) AS t FROM dbo.vw_Kpi_Cove_Summary WITH (NOLOCK)",
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)",
+  ]);
+  const eppAt = await probeIso(pool, [
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)",
+  ]);
+  const cspAt = await probeIso(pool, [
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Csp_Licenses WITH (NOLOCK)",
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Csp_Users WITH (NOLOCK)",
+  ]);
+  const times: Record<string, string | null> = {
+    syspro: sysproAt,
+    rmm: rmmAt,
+    cove: coveAt,
+    epp: eppAt,
+    csp: cspAt,
+  };
+  for (const [id, label, href] of rest) {
+    const lastAt = times[id] ?? null;
+    const a = ageDetail(lastAt);
+    items.push({ id, label, ok: a.ok && Boolean(lastAt), lastAt, detail: a.detail, href });
   }
-  try {
-    const child = spawn(
-      "powershell.exe",
-      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script],
-      { detached: true, stdio: "ignore", windowsHide: true },
-    );
-    child.unref();
-    return {
-      ok: true as const,
-      message: "Sync started: Pulseway, Cove, Bitdefender, Microsoft 365 Graph. Refresh Collect Inventory in a few minutes. SYSPRO stays on the customer SQL jobs.",
-    };
-  } catch (e) {
-    return {
-      ok: false as const,
-      message: e instanceof Error ? e.message : String(e),
-    };
-  }
+
+  return {
+    ok: items.every((i) => i.ok),
+    generatedAt: new Date().toISOString(),
+    items,
+  };
 });
+
+export const runAllApiSync = createServerFn({ method: "POST" }).handler(async () => {
+  try {
+    const { cacheInvalidate } = await import("@/lib/data/query-cache");
+    cacheInvalidate("portfolio");
+  } catch {
+    /* optional */
+  }
+  return {
+    ok: true as const,
+    message: "Portfolio cache cleared. Use C:\\RPM-Assure\\Sql\\ops\\Sync-All-Apis-Now.ps1 on the app server for a full API pull.",
+  };
+});
+
 

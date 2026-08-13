@@ -36,6 +36,7 @@ const CONFIG_SERVICES: CorpService[] = [
     title: "Platform",
     overview: "/settings/sql",
     modules: [
+      { label: "Health", path: "/settings/integrations" },
       { label: "SQL Server", path: "/settings/sql" },
       { label: "Certificates", path: "/settings/ssl" },
       { label: "Email", path: "/settings/smtp" },
