@@ -30,12 +30,12 @@ function CoverGlyphs({ cover }: { cover?: CustomerCover }) {
       {COVER_KEYS.map(({ key, label, icon: Icon }) => {
         const on = cover?.[key] === true;
         return (
-          <Icon
-            key={key}
-            className={cn("rpma-d3-cover-ico", on && "is-on")}
-            title={on ? `${label}: Cover` : `${label}: No cover`}
-            aria-label={on ? `${label} cover` : `${label} no cover`}
-          />
+          <span key={key} title={on ? `${label}: Cover` : `${label}: No cover`}>
+            <Icon
+              className={cn("rpma-d3-cover-ico", on && "is-on")}
+              aria-label={on ? `${label} cover` : `${label} no cover`}
+            />
+          </span>
         );
       })}
     </span>
