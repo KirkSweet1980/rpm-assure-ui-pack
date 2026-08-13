@@ -310,12 +310,14 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
   line-height: 1.2;
 }
 .rpma-svc-row-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-.rpma-svc-row.is-cover { color: #fff; background: #0d9488; }
-.rpma-svc-row.is-nocover { color: #fff; background: #64748b; }
-.rpma-svc-row.is-on { outline: 2px solid #1e3a5f; outline-offset: 1px; }
-.rpma-svc-row.is-cover .rpma-dd-status { background: #115e59; color: #ccfbf1; }
-.rpma-svc-row.is-nocover .rpma-dd-status { background: #334155; color: #e2e8f0; }
-.rpma-svc-row .rpma-dd-status { margin-left: auto; flex: 0 0 auto; font-size: 8px; padding: 1px 5px; }
+.rpma-svc-row { color: var(--color-fg); background: transparent; }
+.rpma-svc-row.is-on { background: var(--color-surface-2); box-shadow: inset 3px 0 0 #263544; }
+.rpma-svc-lamp {
+  width: 8px; height: 8px; border-radius: 99px; flex: 0 0 auto; margin-left: auto;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+}
+.rpma-svc-lamp.is-on-cover { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.rpma-svc-lamp.is-off-cover { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
 .rpma-svc-glyph { width: 12px; height: 12px; flex: 0 0 auto; }
 .rpma-svc-ico {
   display: flex;
@@ -332,8 +334,8 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
 }
 .rpma-svc-ico svg { width: 16px; height: 16px; }
 .rpma-svc-ico em { font-style: normal; font-size: 8px; font-weight: 700; letter-spacing: 0.02em; line-height: 1; }
-.rpma-svc-ico.is-cover { color: #fff; background: #0d9488; }
-.rpma-svc-ico.is-nocover { color: #fff; background: #64748b; }
+.rpma-svc-ico.is-cover,
+.rpma-svc-ico.is-nocover { color: var(--color-fg); background: var(--color-surface-2); }
 .rpma-svc-ico.is-on { outline: 2px solid #263544; outline-offset: 0; }
 .rpma-svc-glyph { width: 14px; height: 14px; flex: 0 0 auto; }
 .rpma-dd-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
@@ -382,7 +384,7 @@ html.dark .rpma-impact-track { background: #1e2630; }
 html[data-theme="dark"] .rpma-svc-ico,
 html.dark .rpma-svc-ico { background: #1a212c; color: #c5ced8; }
 html[data-theme="dark"] .rpma-svc-row.is-on,
-html.dark .rpma-svc-row.is-on { outline-color: #5eead4; }
+html.dark .rpma-svc-row.is-on { outline: none; background: #1a212c; box-shadow: inset 3px 0 0 #5eead4; }
 html[data-theme="dark"] .recharts-default-tooltip,
 html.dark .recharts-default-tooltip {
   background: #141a22 !important;

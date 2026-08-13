@@ -168,18 +168,16 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 key={p.id}
                 href={`${base}${p.overview}`}
                 title={`${p.title} — ${on ? "Cover" : "No cover"}`}
-                className={cn(
-                  "rpma-svc-row",
-                  selected && "is-on",
-                  on ? "is-cover" : "is-nocover",
-                )}
+                className={cn("rpma-svc-row", selected && "is-on")}
                 onClick={() => setPicked(p.id)}
               >
                 <Icon className="rpma-svc-glyph" aria-hidden />
                 <span className="rpma-svc-row-name">{p.title}</span>
-                <span className={cn("rpma-dd-status", on ? "is-cover" : "is-nocover")}>
-                  {on ? "Cover" : "No cover"}
-                </span>
+                <span
+                  className={cn("rpma-svc-lamp", on ? "is-on-cover" : "is-off-cover")}
+                  title={on ? "Cover" : "No cover"}
+                  aria-label={on ? "Cover" : "No cover"}
+                />
               </SpaLink>
             );
           })}
