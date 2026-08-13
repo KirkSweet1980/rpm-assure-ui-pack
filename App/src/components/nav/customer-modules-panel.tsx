@@ -338,7 +338,7 @@ export function CustomerPathTrail({
 }: {
   code: string;
   pathname: string;
-  onCustomers: () => void;
+  onCustomers?: () => void;
 }) {
   const { base, pillar, moduleLabel } = customerPathParts(pathname, code);
   const ecoLabel =

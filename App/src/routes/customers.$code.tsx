@@ -1,6 +1,6 @@
 import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
 import { RagBadge } from "@/components/portfolio/rag-badge";
@@ -13,7 +13,6 @@ import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
 import type { CustomerDetailPayload, HealthRag } from "@/lib/data/types";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
-import { cn } from "@/lib/utils";
 import { useRouterState } from "@tanstack/react-router";
 
 function decodeCode(raw: string): string {
@@ -178,13 +177,6 @@ function CustomerLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const go = useSpaNavigate();
   const { profile } = useStaffProfile();
-  const inModule =
-    pathname.replace(/\/$/, "").split("/").filter(Boolean).length > 2;
-  const [railOpen, setRailOpen] = useState(!inModule);
-
-  useEffect(() => {
-    setRailOpen(!inModule);
-  }, [inModule, customer?.customerCode]);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -306,59 +298,18 @@ function CustomerLayout() {
     <RequireAuth>
       <AppShell title={customer.displayName} subtitle={pageTitle}>
         {/* D3 master–detail: left customer rail · right inspector */}
-        <div
-          className={cn(
-            "rpma-d3-workspace",
-            inModule && !railOpen && "is-inspect",
-            railOpen && "is-rail-open",
-          )}
-        >
+        <div className="rpma-d3-workspace">
           <SyncRailHealth
             code={customer.customerCode}
             healthRag={customer.healthRag}
             name={customer.displayName}
           />
-          {railOpen ? (
-            <CustomerMasterRail currentCode={customer.customerCode} />
-          ) : null}
-
-          <button
-            type="button"
-            className="rpma-split-arrow"
-            title={railOpen ? "Hide customers" : "Back to customers"}
-            onClick={() => {
-              if (railOpen) {
-                setRailOpen(false);
-              } else {
-                setRailOpen(true);
-                go(`/customers/${encodeURIComponent(customer.customerCode)}`);
-              }
-            }}
-          >
-            {railOpen ? <ChevronRight /> : <ChevronLeft />}
-          </button>
+          <CustomerMasterRail currentCode={customer.customerCode} />
 
           <CustomerPillarRail
             code={customer.customerCode}
             cover={data.cover ?? customer.cover}
           />
-
-          <button
-            type="button"
-            className="rpma-split-arrow"
-            title="Back to RPM Services"
-            onClick={() => {
-              const bits = customerPathParts(pathname, customer.customerCode);
-              if (bits.isDeepModule) {
-                go(bits.overviewHref);
-              } else {
-                setRailOpen(true);
-                go(bits.base);
-              }
-            }}
-          >
-            <ChevronLeft />
-          </button>
 
           <div className="rpma-d3-detail min-w-0">
             <div className="rpma-modnav">
@@ -375,7 +326,6 @@ function CustomerLayout() {
                     return;
                   }
                   if (bits.pillar) {
-                    setRailOpen(true);
                     go(bits.base);
                     return;
                   }
@@ -388,7 +338,6 @@ function CustomerLayout() {
               <CustomerPathTrail
                 code={customer.customerCode}
                 pathname={pathname}
-                onCustomers={() => setRailOpen(true)}
               />
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
                 <Link to="/">Exco</Link>
