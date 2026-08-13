@@ -15,11 +15,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$Downloads = Join-Path $env:USERPROFILE 'Downloads'
 $App = Join-Path $Root 'App'
 $SvcName = 'RPMAssure-App'
 $Work = Join-Path $Root 'deploy\Full-UI'
 $PackGit = Join-Path $Root 'deploy\ui-pack'
 $LogDir = Join-Path $Root 'deploy\logs'
+$ZipInDownloads = Join-Path $Downloads $ZipName
 
 function W([string]$c, [string]$m) { Write-Host $m -ForegroundColor $c }
 
@@ -30,17 +32,16 @@ function Assert-Admin {
 }
 
 function Find-LocalZip {
-  $hits = @()
   $places = @(
+    $ZipInDownloads,
     (Join-Path $Work $ZipName),
     (Join-Path $PackGit $ZipName),
-    (Join-Path $env:USERPROFILE ("Downloads\" + $ZipName)),
     (Join-Path $PSScriptRoot $ZipName)
   )
   foreach ($p in $places) {
-    if ($p -and (Test-Path -LiteralPath $p)) { $hits += $p }
+    if ($p -and (Test-Path -LiteralPath $p)) { return $p }
   }
-  return $hits | Select-Object -First 1
+  return $null
 }
 
 function Get-GitHubToken {
@@ -56,17 +57,25 @@ function Get-GitHubToken {
   return $null
 }
 
+function Copy-ToDownloads([string]$from) {
+  if (-not $from -or -not (Test-Path -LiteralPath $from)) { return }
+  New-Item -ItemType Directory -Force -Path $Downloads | Out-Null
+  $dest = Join-Path $Downloads (Split-Path $from -Leaf)
+  Copy-Item -LiteralPath $from -Destination $dest -Force
+  W Green ("Downloads: " + $dest)
+}
+
 function Get-ZipFromGitHub([string]$dest) {
   New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
   $tok = Get-GitHubToken
   $gh = Get-Command gh -ErrorAction SilentlyContinue
   if ($gh) {
-    W Cyan '--- Download ZIP via gh ---'
+    W Cyan '--- Download ZIP via gh -> Downloads ---'
     & gh api -H 'Accept: application/vnd.github.raw' ("repos/" + $Repo + "/contents/" + $ZipName) --output $dest
     if ((Test-Path $dest) -and ((Get-Item $dest).Length -gt 10000)) { return $true }
   }
   if ($tok) {
-    W Cyan '--- Download ZIP via GitHub API ---'
+    W Cyan '--- Download ZIP via GitHub API -> Downloads ---'
     $headers = @{
       Authorization = "Bearer $tok"
       Accept = 'application/vnd.github.raw'
@@ -179,20 +188,31 @@ Write-Host '========================================' -ForegroundColor Cyan
 Write-Host ' RPM Assure - automated deploy'
 Write-Host '========================================' -ForegroundColor Cyan
 Assert-Admin
-New-Item -ItemType Directory -Force -Path $Work, $LogDir | Out-Null
+New-Item -ItemType Directory -Force -Path $Downloads, $Work, $LogDir | Out-Null
 
 $zip = $null
 if (-not $SkipDownload) {
-  $dl = Join-Path $Work $ZipName
-  if (Get-ZipFromGitHub $dl) { $zip = $dl }
+  if (Get-ZipFromGitHub $ZipInDownloads) { $zip = $ZipInDownloads }
 }
 if (-not $zip) {
   $zip = Find-LocalZip
-  if ($zip) { W Yellow ("Using local ZIP: " + $zip) }
+  if ($zip) {
+    if ($zip -ne $ZipInDownloads) {
+      Copy-Item -LiteralPath $zip -Destination $ZipInDownloads -Force
+      $zip = $ZipInDownloads
+    }
+    W Yellow ("Using ZIP in Downloads: " + $zip)
+  }
 }
 if (-not $zip) {
   throw 'Could not get RPMAssure-Full-UI.zip. Sign in with gh, set GITHUB_TOKEN, or put the ZIP in Downloads.'
 }
+
+Copy-ToDownloads (Join-Path $PSScriptRoot 'Deploy-RpmAssure.ps1')
+Copy-ToDownloads (Join-Path $PSScriptRoot 'Install-RpmAssure-Full-UI.ps1')
+Copy-ToDownloads (Join-Path $PSScriptRoot 'Sync-All-Apis-Now.ps1')
+Copy-ToDownloads (Join-Path $PSScriptRoot 'Run-Deploy.cmd')
+Copy-ToDownloads $zip
 
 $srcRoot = Expand-Pack $zip
 $bak = Deploy-Ui $srcRoot
