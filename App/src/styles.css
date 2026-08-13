@@ -259,7 +259,7 @@ html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); bo
 .rpma-d3-cover-glyph.is-on { background: #17c666; }
 .rpma-eco-list { display: flex; flex-direction: column; padding: 0 0.7rem 0.7rem; }
 .rpma-eco-item {
-  display: block; padding: 5px 8px; font-size: 11px; font-weight: 550;
+  display: flex; align-items: center; gap: 7px; padding: 5px 8px; font-size: 11px; font-weight: 550;
   color: #2a3440; text-decoration: none; border-radius: 4px;
 }
 .rpma-eco-item.is-on { background: #f3f5f9; font-weight: 700; box-shadow: inset 3px 0 0 #263544; }
@@ -341,9 +341,10 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
 .rpma-dd-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .rpma-mod-static { display: flex; flex-direction: column; padding: 0 0.65rem 0.7rem; gap: 1px; }
 .rpma-mod-row {
-  display: block; padding: 5px 8px; font-size: 11px; font-weight: 550;
+  display: flex; align-items: center; gap: 7px; padding: 5px 8px; font-size: 11px; font-weight: 550;
   color: #2a3440; text-decoration: none; border-radius: 4px;
 }
+.rpma-nav-ico { width: 13px; height: 13px; flex: 0 0 auto; }
 .rpma-mod-row.is-on { background: #f3f5f9; font-weight: 700; box-shadow: inset 3px 0 0 #0d9488; }
 html[data-theme="dark"] .rpma-mod-row { color: var(--color-fg); }
 html[data-theme="dark"] .rpma-mod-row.is-on { background: #222b38; }

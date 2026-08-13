@@ -1,10 +1,34 @@
 import { useEffect, useState } from "react";
 import {
+  Activity,
+  AlertTriangle,
+  Archive,
+  Ban,
+  Bell,
+  Building2,
+  ClipboardList,
   Cloud,
   Database,
+  FileKey2,
+  Gauge,
+  HardDrive,
+  HeartPulse,
+  KeyRound,
+  LayoutDashboard,
+  Lock,
   Mail,
+  Monitor,
+  Moon,
+  Package,
+  RotateCcw,
+  Scale,
   Server,
   Shield,
+  ShieldCheck,
+  Siren,
+  UserCog,
+  Users,
+  Wrench,
 } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
@@ -17,12 +41,14 @@ type Props = {
   cover?: CustomerCover | null;
 };
 
-export const ECOSYSTEM_MODULES: { label: string; path: string }[] = [
-  { label: "Tenant Overview", path: "" },
-  { label: "Customer Assurance", path: "/ams" },
-  { label: "Incidents", path: "/ams/incidents" },
-  { label: "Risks", path: "/ams/risks" },
-  { label: "SLA", path: "/ams/sla" },
+type NavItem = { label: string; path: string; icon: LucideIcon; color: string };
+
+export const ECOSYSTEM_MODULES: NavItem[] = [
+  { label: "Tenant Overview", path: "", icon: LayoutDashboard, color: "#0d9488" },
+  { label: "Customer Assurance", path: "/ams", icon: ShieldCheck, color: "#2563eb" },
+  { label: "Incidents", path: "/ams/incidents", icon: AlertTriangle, color: "#dc2626" },
+  { label: "Risks", path: "/ams/risks", icon: Activity, color: "#d97706" },
+  { label: "SLA", path: "/ams/sla", icon: Gauge, color: "#7c3aed" },
 ];
 
 export const CUSTOMER_PILLARS: {
@@ -30,26 +56,28 @@ export const CUSTOMER_PILLARS: {
   title: string;
   overview: string;
   icon: LucideIcon;
+  color: string;
   covered: (c: CustomerCover | null | undefined) => boolean;
-  modules: { label: string; path: string }[];
+  modules: NavItem[];
 }[] = [
   {
     id: "syspro",
     title: "SYSPRO EcoSystem",
     overview: "/syspro",
     icon: Database,
+    color: "#0d9488",
     covered: (c) => Boolean(c?.syspro),
     modules: [
-      { label: "Overview", path: "/syspro" },
-      { label: "FinSight", path: "/syspro/dtr" },
-      { label: "Licence", path: "/syspro/license" },
-      { label: "Hotfixes", path: "/syspro/hotfixes" },
-      { label: "Operators", path: "/syspro/operators" },
-      { label: "Job Logging", path: "/syspro/jobs" },
-      { label: "Day End", path: "/syspro/day-end" },
-      { label: "Health", path: "/syspro/health" },
-      { label: "Security", path: "/syspro/security" },
-      { label: "SQL", path: "/syspro/sql" },
+      { label: "Overview", path: "/syspro", icon: LayoutDashboard, color: "#0d9488" },
+      { label: "FinSight", path: "/syspro/dtr", icon: Scale, color: "#d97706" },
+      { label: "Licence", path: "/syspro/license", icon: KeyRound, color: "#7c3aed" },
+      { label: "Hotfixes", path: "/syspro/hotfixes", icon: Wrench, color: "#ea580c" },
+      { label: "Operators", path: "/syspro/operators", icon: Users, color: "#2563eb" },
+      { label: "Job Logging", path: "/syspro/jobs", icon: ClipboardList, color: "#dc2626" },
+      { label: "Day End", path: "/syspro/day-end", icon: Moon, color: "#4f46e5" },
+      { label: "Health", path: "/syspro/health", icon: HeartPulse, color: "#16a34a" },
+      { label: "Security", path: "/syspro/security", icon: Lock, color: "#334155" },
+      { label: "SQL", path: "/syspro/sql", icon: Database, color: "#0891b2" },
     ],
   },
   {
@@ -57,13 +85,14 @@ export const CUSTOMER_PILLARS: {
     title: "RPM Remote Management",
     overview: "/rmm",
     icon: Server,
+    color: "#2563eb",
     covered: (c) => Boolean(c?.rmm),
     modules: [
-      { label: "Overview", path: "/rmm" },
-      { label: "Servers", path: "/rmm/devices" },
-      { label: "Workstations", path: "/rmm/workstations" },
-      { label: "Patch Compliance", path: "/rmm/patch" },
-      { label: "Alerts", path: "/rmm/alerts" },
+      { label: "Overview", path: "/rmm", icon: LayoutDashboard, color: "#2563eb" },
+      { label: "Servers", path: "/rmm/devices", icon: Server, color: "#1d4ed8" },
+      { label: "Workstations", path: "/rmm/workstations", icon: Monitor, color: "#0284c7" },
+      { label: "Patch Compliance", path: "/rmm/patch", icon: Package, color: "#059669" },
+      { label: "Alerts", path: "/rmm/alerts", icon: Bell, color: "#dc2626" },
     ],
   },
   {
@@ -71,12 +100,13 @@ export const CUSTOMER_PILLARS: {
     title: "RPM Cloud Backup",
     overview: "/cove",
     icon: Cloud,
+    color: "#7c3aed",
     covered: (c) => Boolean(c?.cove),
     modules: [
-      { label: "Overview", path: "/cove" },
-      { label: "Backup Devices", path: "/cove/devices" },
-      { label: "Recovery", path: "/cove/recovery" },
-      { label: "Retention", path: "/cove/retention" },
+      { label: "Overview", path: "/cove", icon: LayoutDashboard, color: "#7c3aed" },
+      { label: "Backup Devices", path: "/cove/devices", icon: HardDrive, color: "#6d28d9" },
+      { label: "Recovery", path: "/cove/recovery", icon: RotateCcw, color: "#2563eb" },
+      { label: "Retention", path: "/cove/retention", icon: Archive, color: "#d97706" },
     ],
   },
   {
@@ -84,13 +114,14 @@ export const CUSTOMER_PILLARS: {
     title: "RPM Endpoint Security",
     overview: "/epp",
     icon: Shield,
+    color: "#dc2626",
     covered: (c) => Boolean(c?.epp),
     modules: [
-      { label: "Overview", path: "/epp" },
-      { label: "Endpoints", path: "/epp/endpoints" },
-      { label: "Policies", path: "/epp/modules" },
-      { label: "Security Incidents", path: "/epp/incidents" },
-      { label: "Quarantine", path: "/epp/quarantine" },
+      { label: "Overview", path: "/epp", icon: LayoutDashboard, color: "#dc2626" },
+      { label: "Endpoints", path: "/epp/endpoints", icon: Monitor, color: "#b91c1c" },
+      { label: "Policies", path: "/epp/modules", icon: FileKey2, color: "#7c3aed" },
+      { label: "Security Incidents", path: "/epp/incidents", icon: Siren, color: "#ea580c" },
+      { label: "Quarantine", path: "/epp/quarantine", icon: Ban, color: "#334155" },
     ],
   },
   {
@@ -98,14 +129,15 @@ export const CUSTOMER_PILLARS: {
     title: "Microsoft 365 CSP",
     overview: "/csp",
     icon: Mail,
+    color: "#ea580c",
     covered: (c) => Boolean(c?.csp),
     modules: [
-      { label: "Tenant", path: "/csp" },
-      { label: "Secure Score", path: "/csp/secure-score" },
-      { label: "Global Admins", path: "/csp/global-admins" },
-      { label: "MFA", path: "/csp/mfa" },
-      { label: "Users", path: "/csp/users" },
-      { label: "Licences", path: "/csp/licenses" },
+      { label: "Tenant", path: "/csp", icon: Building2, color: "#ea580c" },
+      { label: "Secure Score", path: "/csp/secure-score", icon: ShieldCheck, color: "#16a34a" },
+      { label: "Global Admins", path: "/csp/global-admins", icon: UserCog, color: "#dc2626" },
+      { label: "MFA", path: "/csp/mfa", icon: KeyRound, color: "#2563eb" },
+      { label: "Users", path: "/csp/users", icon: Users, color: "#0891b2" },
+      { label: "Licences", path: "/csp/licenses", icon: KeyRound, color: "#7c3aed" },
     ],
   },
 ];
@@ -139,6 +171,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
           {ECOSYSTEM_MODULES.map((m) => {
             const href = m.path ? `${base}${m.path}` : base;
             const selected = path === href || path === `${href}/`;
+            const Icon = m.icon;
             return (
               <SpaLink
                 key={href}
@@ -147,6 +180,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 className={cn("rpma-eco-item", selected && "is-on")}
                 onClick={() => setPicked(null)}
               >
+                <Icon className="rpma-nav-ico" style={{ color: m.color }} aria-hidden />
                 {m.label}
               </SpaLink>
             );
@@ -171,7 +205,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 className={cn("rpma-svc-row", selected && "is-on")}
                 onClick={() => setPicked(p.id)}
               >
-                <Icon className="rpma-svc-glyph" aria-hidden />
+                <Icon className="rpma-svc-glyph" style={{ color: p.color }} aria-hidden />
                 <span className="rpma-svc-row-name">{p.title}</span>
                 <span
                   className={cn("rpma-svc-lamp", on ? "is-on-cover" : "is-off-cover")}
@@ -193,12 +227,14 @@ export function CustomerPillarRail({ code, cover }: Props) {
             active.modules.map((m) => {
               const href = `${base}${m.path}`;
               const selected = path === href || path === `${href}/`;
+              const Icon = m.icon;
               return (
                 <SpaLink
                   key={href}
                   href={href}
                   className={cn("rpma-mod-row", selected && "is-on")}
                 >
+                  <Icon className="rpma-nav-ico" style={{ color: m.color }} aria-hidden />
                   {m.label}
                 </SpaLink>
               );
