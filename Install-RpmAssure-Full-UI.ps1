@@ -27,6 +27,20 @@ if (-not (Test-Path (Join-Path $srcRoot 'src\routes\index.tsx'))) {
   if (Test-Path $alt) { $srcRoot = $Here }
 }
 if (-not (Test-Path (Join-Path $srcRoot 'src\routes\index.tsx'))) {
+  $zipGuess = @(
+    (Join-Path $Here 'RPMAssure-Full-UI.zip'),
+    (Join-Path $env:USERPROFILE 'Downloads\RPMAssure-Full-UI.zip')
+  ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if ($zipGuess) {
+    W Cyan ("--- Auto-extract " + $zipGuess + " ---")
+    $tmp = Join-Path $env:TEMP 'RPMAssure-Full-UI'
+    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    Expand-Archive -LiteralPath $zipGuess -DestinationPath $tmp -Force
+    $idx = Get-ChildItem $tmp -Recurse -Filter 'index.tsx' | Where-Object { $_.FullName -match 'src\\routes\\index.tsx$' } | Select-Object -First 1
+    if ($idx) { $srcRoot = $idx.Directory.Parent.Parent.FullName }
+  }
+}
+if (-not (Test-Path (Join-Path $srcRoot 'src\routes\index.tsx'))) {
   throw "Missing App\src\routes\index.tsx next to this script. Extract the full ZIP first."
 }
 if (-not (Test-Path $App)) {
