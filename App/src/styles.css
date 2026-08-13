@@ -236,20 +236,32 @@ html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); bo
 .rpma-list-search input { border: 0; outline: 0; width: 100%; background: transparent; color: var(--color-fg); font-size: 12px; }
 .rpma-list-body { overflow-y: auto; }
 .rpma-list-row {
-  display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 12px; gap: 8px; align-items: center;
-  padding: 8px 10px; text-decoration: none; color: inherit; border-bottom: 1px solid #eef1f5;
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto 14px; gap: 8px; align-items: center;
+  padding: 9px 10px; text-decoration: none; color: inherit; border-bottom: 1px solid #eef1f5;
 }
 .rpma-list-row.is-active { background: #f3f5f9; box-shadow: inset 3px 0 0 #263544; }
+.rpma-list-copy { display: flex; flex-direction: column; min-width: 0; }
 .rpma-list-name { font-size: 13px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rpma-list-meta { font-size: 11px; color: var(--color-muted); }
+.rpma-list-meta { display: none; }
 .rpma-list-dot { width: 8px; height: 8px; border-radius: 99px; display: inline-block; }
 .rpma-list-dot.is-green { background: var(--color-rag-green); }
 .rpma-list-dot.is-amber { background: var(--color-rag-amber); }
 .rpma-list-dot.is-red { background: var(--color-rag-red); }
 .rpma-list-empty { padding: 12px; color: var(--color-muted); font-size: 12px; }
 .rpma-d3-cover-glyphs { display: flex; gap: 3px; }
-.rpma-d3-cover-glyph { font-size: 9px; font-weight: 800; color: var(--color-subtle); opacity: 0.45; }
-.rpma-d3-cover-glyph.is-on { color: #263544; opacity: 1; }
+.rpma-d3-cover-glyph {
+  width: 6px; height: 6px; border-radius: 99px; display: inline-block;
+  background: #d0d6de; font-size: 0; line-height: 0;
+}
+.rpma-d3-cover-glyph.is-on { background: #17c666; }
+.rpma-eco-list { display: flex; flex-direction: column; padding: 0 0.7rem 0.7rem; }
+.rpma-eco-item {
+  display: block; padding: 7px 10px; font-size: 13px; font-weight: 550;
+  color: #2a3440; text-decoration: none; border-radius: 4px;
+}
+.rpma-eco-item.is-on { background: #f3f5f9; font-weight: 700; box-shadow: inset 3px 0 0 #263544; }
+html[data-theme="dark"] .rpma-eco-item { color: var(--color-fg); }
+html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
 .rpma-d3-detail { min-width: 0; }
 
 .rpma-glass, .rpma-exco > section, .rpma-card, .rpma-panel {

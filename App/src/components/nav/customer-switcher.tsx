@@ -282,7 +282,7 @@ export function CustomerSwitcher({
                     className="rounded-md border border-border bg-surface px-2 py-0.5 text-[11px] font-medium text-fg transition hover:border-accent/40"
                     onClick={() => go(c.code)}
                   >
-                    {c.name.length > 18 ? c.code : c.name}
+                    {c.name}
                   </button>
                 ))}
               </div>
@@ -316,14 +316,13 @@ export function CustomerSwitcher({
                             <span className="block truncate text-sm font-semibold text-fg">
                               {c.name}
                             </span>
-                            <span className="block text-[10px] text-subtle">
-                              {c.code}
-                              {c.collectFresh === false
-                                ? " · Collect stale / missing"
-                                : c.needsAttention
-                                  ? " · Needs attention"
-                                  : ""}
-                            </span>
+                            {c.collectFresh === false || c.needsAttention ? (
+                              <span className="block text-[10px] text-subtle">
+                                {c.collectFresh === false
+                                  ? "Collect stale / missing"
+                                  : "Needs attention"}
+                              </span>
+                            ) : null}
                           </span>
                         </span>
                       </button>

@@ -9,11 +9,11 @@ import type { CustomerCover, HealthRag } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
 
 const COVER_KEYS: { key: keyof CustomerCover; label: string }[] = [
-  { key: "syspro", label: "S" },
-  { key: "rmm", label: "R" },
-  { key: "cove", label: "B" },
-  { key: "epp", label: "E" },
-  { key: "csp", label: "M" },
+  { key: "syspro", label: "SYSPRO" },
+  { key: "rmm", label: "RMM" },
+  { key: "cove", label: "Backup" },
+  { key: "epp", label: "EPP" },
+  { key: "csp", label: "M365" },
 ];
 
 function healthDot(rag: HealthRag) {
@@ -31,10 +31,8 @@ function CoverGlyphs({ cover }: { cover?: CustomerCover }) {
           <span
             key={key}
             className={cn("rpma-d3-cover-glyph", on && "is-on")}
-            title={on ? `${key}: Cover` : `${key}: No Cover`}
-          >
-            {label}
-          </span>
+            title={on ? `${label}: Cover` : `${label}: No Cover`}
+          />
         );
       })}
     </span>
@@ -48,12 +46,6 @@ function Row({ c, active }: { c: MasterCustomer; active: boolean }) {
       active={active}
       title={c.name}
       lead={<span className={cn("rpma-list-dot", healthDot(c.healthRag))} />}
-      meta={
-        <>
-          <span className="font-mono">{c.code}</span>
-          {c.opsAgeLabel ? <span> · {c.opsAgeLabel}</span> : null}
-        </>
-      }
       trail={<CoverGlyphs cover={c.cover} />}
     />
   );

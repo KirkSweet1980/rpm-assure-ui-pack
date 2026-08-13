@@ -199,7 +199,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
         <div className="rpma-pillar-rail-head">
           <h2>Ecosystem</h2>
         </div>
-        <div className="rpma-pillar-mods is-eco">
+        <div className="rpma-eco-list">
           {ECOSYSTEM_MODULES.map((m) => {
             const href = m.path ? `${base}${m.path}` : base;
             const selected = path === href || path === `${href}/`;
@@ -208,7 +208,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
                 key={href}
                 href={href}
                 title={`${m.label} — Ecosystem`}
-                className={cn("rpma-modbtn is-cover", selected && "is-on")}
+                className={cn("rpma-eco-item", selected && "is-on")}
                 onClick={() => {
                   setPicked(null);
                   setOpen(null);

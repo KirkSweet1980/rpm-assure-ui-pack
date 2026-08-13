@@ -88,6 +88,11 @@ import {
   transitionAmsIncident,
 } from "@/lib/data/ams-incident-api";
 import type { FactIncidentRow } from "@/lib/data/types";
+
+function axisLabel(v: unknown, max = 14) {
+  const s = String(v ?? "").trim();
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
 import type { DtrDetailLine, FinSightReconCase, FinSightReconStatus } from "@/lib/data/types";
 import { FinSightD3Hierarchy } from "@/components/finsight/d3-hierarchy";
 
@@ -307,9 +312,9 @@ function ServiceVisuals({
             <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Signals</p>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 18 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} height={40} angle={-22} textAnchor="end" tickFormatter={(v) => axisLabel(v, 10)} axisLine={false} tickLine={false} />
                   <YAxis allowDecimals={false} width={28} tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={32} isAnimationActive={false}>
@@ -377,10 +382,10 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
   const signalBars = useMemo(
     () =>
       [
-        { name: "Job errors", value: customer.sysproJobErrorCount, fill: CHART.jobs },
-        { name: "FinSight Out of Balance", value: customer.sysproDtrVarianceLines, fill: CHART.dtr },
-        { name: "Open risks", value: openRisks.length, fill: CHART.amber },
-        { name: "Major incidents", value: major.length, fill: CHART.red },
+        { name: "Jobs", value: customer.sysproJobErrorCount, fill: CHART.jobs },
+        { name: "FinSight", value: customer.sysproDtrVarianceLines, fill: CHART.dtr },
+        { name: "Risks", value: openRisks.length, fill: CHART.amber },
+        { name: "Incidents", value: major.length, fill: CHART.red },
       ].filter((d) => d.value > 0 || true),
     [customer.sysproJobErrorCount, customer.sysproDtrVarianceLines, openRisks.length, major.length],
   );
@@ -486,9 +491,9 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">What needs attention</p>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={signalBars} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+              <BarChart data={signalBars} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} axisLine={false} tickLine={false} tickFormatter={(v) => axisLabel(v, 10)} />
                 <YAxis allowDecimals={false} width={28} tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36} isAnimationActive={false}>
@@ -531,12 +536,12 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
       {dtrBars.length > 0 ? (
         <div className="rpma-glass p-3">
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">FinSight · out of balance</p>
-          <div className="h-40">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dtrBars} layout="vertical" margin={{ top: 0, right: 12, left: 8, bottom: 0 }}>
+              <BarChart data={dtrBars} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} horizontal={false} />
                 <XAxis type="number" allowDecimals={false} tick={{ fill: CHART.axis, fontSize: 10 }} />
-                <YAxis type="category" dataKey="name" width={72} tick={{ fill: CHART.axis, fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" width={128} tick={{ fill: CHART.axis, fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => axisLabel(v, 18)} />
                 <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
                 <Bar dataKey="oob" fill={CHART.dtr} radius={[0, 6, 6, 0]} maxBarSize={16} isAnimationActive={false} />
               </BarChart>
@@ -1943,9 +1948,9 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Open items</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mixBars} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <BarChart data={mixBars} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} height={36} angle={-20} textAnchor="end" tickFormatter={(v) => axisLabel(v, 10)} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} width={24} tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={32} isAnimationActive={false}>
@@ -1962,10 +1967,10 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
           <div className="h-48">
             {slaBars.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={slaBars} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 0 }}>
+                <BarChart data={slaBars} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} horizontal={false} />
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: CHART.axis, fontSize: 10 }} />
-                  <YAxis type="category" dataKey="name" width={64} tick={{ fill: CHART.axis, fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="name" width={120} tick={{ fill: CHART.axis, fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => axisLabel(v, 16)} />
                   <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
                   <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={14} isAnimationActive={false}>
                     {slaBars.map((e, i) => (
@@ -2205,9 +2210,9 @@ export function JobsSection({ data }: { data: CustomerDetailPayload }) {
         <Card>
           <CardContent className="h-52 p-3">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={byProg} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <BarChart data={byProg} margin={{ top: 4, right: 8, left: 0, bottom: 18 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} />
+                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} height={40} angle={-24} textAnchor="end" tickFormatter={(v) => axisLabel(v, 10)} />
                 <YAxis allowDecimals={false} width={28} tick={{ fill: CHART.axis, fontSize: 10 }} />
                 <Tooltip
                   content={<ChartTooltip />}
@@ -2747,9 +2752,9 @@ export function DtrSection({ data }: { data: CustomerDetailPayload }) {
           <CardHead>Out-of-balance lines by control module</CardHead>
           <CardContent className="h-56 p-3">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <BarChart data={chart} margin={{ top: 4, right: 8, left: 0, bottom: 22 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} />
+                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} height={44} angle={-24} textAnchor="end" tickFormatter={(v) => axisLabel(v, 12)} />
                 <YAxis allowDecimals={false} width={28} tick={{ fill: CHART.axis, fontSize: 10 }} />
                 <Tooltip
                   content={<ChartTooltip />}

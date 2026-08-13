@@ -396,9 +396,6 @@ function CustomerLayout() {
               <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
                 {customer.displayName}
               </h2>
-              <span className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted">
-                {customer.customerCode}
-              </span>
               <RagBadge rag={customer.healthRag} title={customer.healthSummary} />
               <Badge
                 variant={
