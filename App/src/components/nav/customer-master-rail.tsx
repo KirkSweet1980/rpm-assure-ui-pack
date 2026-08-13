@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Cloud, Database, Mail, Server, Shield } from "lucide-react";
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import {
   filterMasterCustomers,
@@ -7,13 +8,14 @@ import {
 } from "@/lib/nav/customer-list-context";
 import type { CustomerCover, HealthRag } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
-const COVER_KEYS: { key: keyof CustomerCover; label: string }[] = [
-  { key: "syspro", label: "SYSPRO" },
-  { key: "rmm", label: "RMM" },
-  { key: "cove", label: "Backup" },
-  { key: "epp", label: "EPP" },
-  { key: "csp", label: "M365" },
+const COVER_KEYS: { key: keyof CustomerCover; label: string; icon: LucideIcon }[] = [
+  { key: "syspro", label: "SYSPRO", icon: Database },
+  { key: "rmm", label: "RMM", icon: Server },
+  { key: "cove", label: "Backup", icon: Cloud },
+  { key: "epp", label: "EPP", icon: Shield },
+  { key: "csp", label: "M365", icon: Mail },
 ];
 
 function healthDot(rag: HealthRag) {
@@ -24,14 +26,15 @@ function healthDot(rag: HealthRag) {
 
 function CoverGlyphs({ cover }: { cover?: CustomerCover }) {
   return (
-    <span className="rpma-d3-cover-glyphs" aria-hidden>
-      {COVER_KEYS.map(({ key, label }) => {
+    <span className="rpma-d3-cover-glyphs">
+      {COVER_KEYS.map(({ key, label, icon: Icon }) => {
         const on = cover?.[key] === true;
         return (
-          <span
+          <Icon
             key={key}
-            className={cn("rpma-d3-cover-glyph", on && "is-on")}
-            title={on ? `${label}: Cover` : `${label}: No Cover`}
+            className={cn("rpma-d3-cover-ico", on && "is-on")}
+            title={on ? `${label}: Cover` : `${label}: No cover`}
+            aria-label={on ? `${label} cover` : `${label} no cover`}
           />
         );
       })}
