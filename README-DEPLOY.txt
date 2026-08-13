@@ -1,23 +1,25 @@
-RPM Assure - APP SERVER UPDATES (canonical)
-===========================================
+RPM Assure - APP SERVER UPDATES
+===============================
 
-Always this method. Do not use raw.githubusercontent.com.
+Git first. Nothing goes to Downloads.
 
-1) I push the UI to:
-   https://github.com/KirkSweet1980/rpm-assure-ui-pack
+Repo:
+  https://github.com/KirkSweet1980/rpm-assure-ui-pack
 
-2) On the APP server (Administrator PowerShell) run:
+On the APP server (Administrator):
 
-   powershell -NoProfile -ExecutionPolicy Bypass -File $env:USERPROFILE\Downloads\Update-AppServer.ps1
+  powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\Update-AppServer.ps1
 
-   First time only, if that file is missing, paste the Deploy-NoGit / Update-AppServer
-   writer block from chat (writes into Downloads, then runs).
-
-What the script does:
-- git pull if Git is installed, else GitHub zipball (codeload / github.com)
-- Backs up C:\RPM-Assure\App\src
+The script:
+- Installs Git via winget if missing
+- git clone or git pull into C:\RPM-Assure\deploy\ui-pack
+- Backs up App\src
 - Copies new UI
 - Restarts RPMAssure-App
-- ALWAYS copies scripts + zip into Downloads
 
-Never save a GitHub webpage as a .ps1 (that causes xhtml / 503 errors).
+First time only, if Update-AppServer.ps1 is not on the server yet,
+install Git then:
+
+  git clone --depth 1 --branch main https://github.com/KirkSweet1980/rpm-assure-ui-pack.git C:\RPM-Assure\deploy\ui-pack
+  copy C:\RPM-Assure\deploy\ui-pack\Update-AppServer.ps1 C:\RPM-Assure\deploy\Update-AppServer.ps1
+  powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\Update-AppServer.ps1

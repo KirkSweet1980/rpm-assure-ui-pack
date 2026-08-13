@@ -1,72 +1,46 @@
 # Update-AppServer.ps1
-# CANONICAL update for the RPM Assure APP server.
-# Prefers git pull. If git is missing, downloads the GitHub zipball
-# (github.com / codeload — not raw.githubusercontent.com).
-# Always writes scripts + zip to %USERPROFILE%\Downloads.
+# Canonical APP server update: Git first. Nothing is written to Downloads.
+# Clone / pull: C:\RPM-Assure\deploy\ui-pack
+# Then copy App\src and restart RPMAssure-App.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\Update-AppServer.ps1
-#   powershell -NoProfile -ExecutionPolicy Bypass -File $env:USERPROFILE\Downloads\Update-AppServer.ps1
 
 param(
-  [string]$Repo = 'KirkSweet1980/rpm-assure-ui-pack',
+  [string]$RepoUrl = 'https://github.com/KirkSweet1980/rpm-assure-ui-pack.git',
   [string]$Root = 'C:\RPM-Assure',
   [switch]$SyncApis
 )
 
 $ErrorActionPreference = 'Stop'
-$Downloads = Join-Path $env:USERPROFILE 'Downloads'
 $Pack = Join-Path $Root 'deploy\ui-pack'
 $App = Join-Path $Root 'App'
 $SvcName = 'RPMAssure-App'
-$Zip = Join-Path $Downloads 'rpm-assure-ui-pack-main.zip'
-$Extract = Join-Path $Downloads 'rpm-assure-ui-pack-extract'
 
 function W([string]$c, [string]$m) { Write-Host $m -ForegroundColor $c }
 
-function Assert-Admin {
-  $ok = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).
-    IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-  if (-not $ok) { throw 'Run this in an Administrator PowerShell.' }
-}
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).
+  IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) { throw 'Run this in an Administrator PowerShell.' }
 
-function Get-SourceFromGit {
-  $git = Get-Command git -ErrorAction SilentlyContinue
-  if (-not $git) { return $null }
-  $url = "https://github.com/$Repo.git"
-  if (Test-Path (Join-Path $Pack '.git')) {
-    W Cyan ("git pull " + $Pack)
-    & git -C $Pack fetch --all --prune
-    if ($LASTEXITCODE -ne 0) { return $null }
-    & git -C $Pack reset --hard origin/main
-    if ($LASTEXITCODE -ne 0) { return $null }
-  } else {
-    W Cyan ("git clone " + $url)
-    if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
-    & git clone --depth 1 --branch main $url $Pack
-    if ($LASTEXITCODE -ne 0) { return $null }
+function Ensure-Git {
+  $g = Get-Command git -ErrorAction SilentlyContinue
+  if ($g) { return $g.Source }
+  foreach ($p in @(
+      'C:\Program Files\Git\cmd\git.exe',
+      'C:\Program Files (x86)\Git\cmd\git.exe'
+    )) {
+    if (Test-Path $p) { return $p }
   }
-  return $Pack
-}
-
-function Get-SourceFromZipball {
-  $uris = @(
-    ("https://codeload.github.com/" + $Repo + "/zip/refs/heads/main"),
-    ("https://github.com/" + $Repo + "/archive/refs/heads/main.zip"),
-    ("https://api.github.com/repos/" + $Repo + "/zipball/main")
-  )
-  $ok = $false
-  foreach ($u in $uris) {
-    try {
-      W Cyan ("GET " + $u)
-      Invoke-WebRequest -Uri $u -OutFile $Zip -UseBasicParsing -Headers @{ 'User-Agent' = 'RPMAssure-Deploy' }
-      if ((Test-Path $Zip) -and ((Get-Item $Zip).Length -gt 50000)) { $ok = $true; break }
-    } catch { W Yellow $_.Exception.Message }
+  $wg = Get-Command winget -ErrorAction SilentlyContinue
+  if ($wg) {
+    W Cyan 'Git not found - installing Git for Windows...'
+    & winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements --silent
+    $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+    $g = Get-Command git -ErrorAction SilentlyContinue
+    if ($g) { return $g.Source }
+    if (Test-Path 'C:\Program Files\Git\cmd\git.exe') { return 'C:\Program Files\Git\cmd\git.exe' }
   }
-  if (-not $ok) { throw 'Zipball download failed. Retry in a minute.' }
-  W Green ("ZIP " + (Get-Item $Zip).Length + " bytes in Downloads")
-  if (Test-Path $Extract) { Remove-Item $Extract -Recurse -Force }
-  Expand-Archive -LiteralPath $Zip -DestinationPath $Extract -Force
-  return $Extract
+  throw 'Git is not installed. Install Git for Windows, then re-run this script.'
 }
 
 function Find-SrcRoot([string]$root) {
@@ -77,25 +51,39 @@ function Find-SrcRoot([string]$root) {
   return $idx.Directory.Parent.Parent.FullName
 }
 
-Assert-Admin
-New-Item -ItemType Directory -Force -Path $Downloads, (Join-Path $Root 'deploy') | Out-Null
 Write-Host '========================================' -ForegroundColor Cyan
-Write-Host ' RPM Assure - Update App Server'
+Write-Host ' RPM Assure - Update from Git'
 Write-Host '========================================' -ForegroundColor Cyan
 
-$tree = Get-SourceFromGit
-if (-not $tree) {
-  W Yellow 'Git not available or pull failed — using zipball.'
-  $tree = Get-SourceFromZipball
+$git = Ensure-Git
+W Green ("git = " + $git)
+New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
+
+if (Test-Path (Join-Path $Pack '.git')) {
+  W Cyan ("git pull " + $Pack)
+  & $git -C $Pack fetch --all --prune
+  if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+  & $git -C $Pack reset --hard origin/main
+  if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
+} else {
+  W Cyan ("git clone " + $RepoUrl)
+  if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
+  & $git clone --depth 1 --branch main $RepoUrl $Pack
+  if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }
 }
-$srcRoot = Find-SrcRoot $tree
-$packRoot = $srcRoot
-if ((Split-Path $srcRoot -Leaf) -eq 'App') { $packRoot = Split-Path $srcRoot -Parent }
-W Green ("Source " + $srcRoot)
 
+$srcRoot = Find-SrcRoot $Pack
+W Green ("Source " + $srcRoot)
 if (-not (Test-Path $App)) { throw "Missing $App" }
+
+$self = Join-Path $Pack 'Update-AppServer.ps1'
+if (Test-Path $self) {
+  Copy-Item $self (Join-Path $Root 'deploy\Update-AppServer.ps1') -Force
+}
+
 $svcObj = Get-Service -Name $SvcName -ErrorAction SilentlyContinue
 if ($svcObj -and $svcObj.Status -ne 'Stopped') {
+  W Cyan '--- Stop service ---'
   Stop-Service -Name $SvcName -Force -ErrorAction SilentlyContinue
   Start-Sleep -Seconds 2
 }
@@ -103,21 +91,15 @@ if ($svcObj -and $svcObj.Status -ne 'Stopped') {
 $bak = Join-Path $Root ('backup\src-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Force -Path $bak | Out-Null
 if (Test-Path (Join-Path $App 'src')) {
+  W Cyan ("--- Backup " + $bak + " ---")
   robocopy (Join-Path $App 'src') $bak /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
 
+W Cyan '--- Copy UI from git ---'
 $destSrc = Join-Path $App 'src'
 New-Item -ItemType Directory -Force -Path $destSrc | Out-Null
 robocopy (Join-Path $srcRoot 'src') $destSrc /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed $LASTEXITCODE" }
-
-foreach ($name in @('Update-AppServer.ps1','Update-From-Git.ps1','Deploy-NoGit.ps1','Deploy-RpmAssure.ps1','Sync-All-Apis-Now.ps1','Install-RpmAssure-Full-UI.ps1')) {
-  $from = Join-Path $packRoot $name
-  if (Test-Path $from) {
-    Copy-Item $from (Join-Path $Downloads $name) -Force
-    Copy-Item $from (Join-Path $Root ('deploy\' + $name)) -Force
-  }
-}
 
 if ($svcObj) {
   Start-Service -Name $SvcName
@@ -126,17 +108,18 @@ if ($svcObj) {
 }
 
 if ($SyncApis) {
-  $sync = Join-Path $Root 'Sql\ops\Sync-All-Apis-Now.ps1'
-  $syncDl = Join-Path $Downloads 'Sync-All-Apis-Now.ps1'
-  if (-not (Test-Path $sync) -and (Test-Path $syncDl)) {
+  $sync = Join-Path $Pack 'Sync-All-Apis-Now.ps1'
+  $ops = Join-Path $Root 'Sql\ops\Sync-All-Apis-Now.ps1'
+  if (Test-Path $sync) {
     New-Item -ItemType Directory -Force -Path (Join-Path $Root 'Sql\ops') | Out-Null
-    Copy-Item $syncDl $sync -Force
+    Copy-Item $sync $ops -Force
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ops
   }
-  if (Test-Path $sync) { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $sync }
 }
 
 Write-Host '========================================' -ForegroundColor Cyan
-Write-Host ' UPDATE COMPLETE'
+Write-Host ' GIT UPDATE COMPLETE'
+Write-Host (" Pack   : " + $Pack)
 Write-Host (" Backup : " + $bak)
 Write-Host ' Hard-refresh (Ctrl+F5).'
 Write-Host '========================================' -ForegroundColor Cyan
