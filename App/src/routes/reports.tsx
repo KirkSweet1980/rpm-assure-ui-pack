@@ -379,10 +379,7 @@ function ReportsPage() {
 
   return (
     <RequireAuth>
-      <AppShell
-        title="Reports"
-        subtitle="Board packs, FinSight, RMM, multi-pillar — preview and print (email off)"
-      >
+      <AppShell>
         <div className="rpma-d3-workspace is-tool">
           <CorpWorkspaceRail
             heading="Reporting"

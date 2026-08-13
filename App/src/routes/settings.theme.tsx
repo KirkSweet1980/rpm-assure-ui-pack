@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { ThemeToggle } from "@/components/portfolio/theme-toggle";
-import { FONT_PACKS, persistFontPack, readFontPack, type FontPackId } from "@/lib/font-pack";
 import { DownloadPackButton } from "@/components/exco/download-pack-button";
 import {
   ThemeChromePreview,
@@ -58,22 +57,16 @@ function Swatch({
 function ThemeTokensPage() {
   const { theme } = useTheme();
   const [palette, setPalette] = useState<PaletteId>("slate");
-  const [font, setFont] = useState<FontPackId>("inter");
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     setPalette(readPalette());
-    setFont(readFontPack());
   }, []);
 
   useEffect(() => {
     persistPalette(palette, theme);
     setTick((n) => n + 1);
   }, [palette, theme]);
-
-  useEffect(() => {
-    persistFontPack(font);
-  }, [font]);
 
   const computed = useMemo(() => {
     const map: Record<string, string> = {};
@@ -100,41 +93,9 @@ function ThemeTokensPage() {
 
       <section>
         <h2 className="mb-2 text-[13px] font-bold text-fg">Type</h2>
-        <p className="mb-3 text-sm text-muted">
-          DashboardKit ships Inter at 14px. Pick a pack — the whole workspace updates.
+        <p className="text-sm text-muted">
+          Inter is locked for the product. IBM Plex Mono is used only for IDs, codes and SQL.
         </p>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {FONT_PACKS.map((p) => {
-            const on = font === p.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setFont(p.id)}
-                className={cn(
-                  "rounded-lg border p-3 text-left",
-                  on ? "border-[var(--bs-primary)] bg-[var(--dk-soft-primary)]" : "border-[var(--color-border)]",
-                )}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold" style={{ fontFamily: p.display }}>
-                    {p.name}
-                  </span>
-                  {on ? <Check className="h-4 w-4 text-[var(--bs-primary)]" /> : null}
-                </span>
-                <span className="mt-1 block text-[12px] text-muted" style={{ fontFamily: p.sans }}>
-                  {p.blurb}
-                </span>
-                <span className="mt-2 block text-[13px]" style={{ fontFamily: p.display }}>
-                  AHI Carriers · SYSPRO · 14px
-                </span>
-                <span className="block font-mono text-[11px] text-muted" style={{ fontFamily: p.mono }}>
-                  SIRF  68  6
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </section>
 
       <section>

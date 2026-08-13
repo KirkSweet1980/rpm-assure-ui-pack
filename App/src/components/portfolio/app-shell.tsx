@@ -33,7 +33,7 @@ export function AppShell({
   subtitle,
 }: {
   children: React.ReactNode;
-  title: string;
+  title?: string;
   subtitle?: string;
 }) {
   const [masterCustomers, setMasterCustomers] = useState<MasterCustomer[]>([]);
@@ -183,7 +183,7 @@ export function AppShell({
   return (
     <CustomerListProvider value={listValue}>
       <div className={cn("dk-shell rpma-d3-shell is-topnav", menuOpen && "is-menu-open")}>
-        <header className="dk-header dk-header-tall">
+        <header className="dk-header dk-header-one">
           <div className="dk-header-row">
             <button
               type="button"
@@ -201,10 +201,19 @@ export function AppShell({
               <span className="dk-brand-mark" />
               <span className="dk-brand-text">
                 <strong>RPM Assure</strong>
-                <em>DashboardKit</em>
               </span>
             </Link>
-            <div className="dk-header-mid" />
+            <div
+              id="rpma-top-menu"
+              className={cn("dk-header-nav", !menuOpen && "is-collapsed")}
+            >
+              <DkSidebarNav
+                pathname={pathname}
+                customers={switcherCustomers}
+                currentCode={currentCustomerCode}
+                layout="top"
+              />
+            </div>
             <div className="dk-header-right">
               <ThemeToggle compact />
               <button
@@ -225,21 +234,17 @@ export function AppShell({
               <UserButton />
             </div>
           </div>
-          <div id="rpma-top-menu" hidden={!menuOpen}>
-            <DkSidebarNav
-              pathname={pathname}
-              customers={switcherCustomers}
-              currentCode={currentCustomerCode}
-              layout="top"
-            />
-          </div>
         </header>
         <div className="dk-main">
           <main className="dk-content rpma-topnav-main">
-            <div className="dk-pagehead">
-              <h1>{title}</h1>
-              {subtitle ? <p>{subtitle}</p> : null}
-            </div>
+            {title ? (
+              <div className="dk-pagehead">
+                <h1>{title}</h1>
+                {subtitle ? <p>{subtitle}</p> : null}
+              </div>
+            ) : subtitle ? (
+              <p className="dk-page-sub">{subtitle}</p>
+            ) : null}
             <div className="dk-canvas rpma-topnav-canvas">{children}</div>
           </main>
         </div>

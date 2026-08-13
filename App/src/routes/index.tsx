@@ -892,12 +892,36 @@ function ExcoInsightPage() {
   const serversOnline = scoreboard.reduce((s, b) => s + (b.pulsewayServerOnline ?? 0), 0);
   const serversOffline = scoreboard.reduce((s, b) => s + (b.pulsewayServerOffline ?? 0), 0);
 
+  const collectFreshness = useMemo(() => {
+    function latest(vals: Array<string | null | undefined>) {
+      let max = 0;
+      for (const v of vals) {
+        if (!v) continue;
+        const t = new Date(v).getTime();
+        if (Number.isFinite(t) && t > max) max = t;
+      }
+      return max || null;
+    }
+    function age(ms: number | null) {
+      if (!ms) return { label: "No collect", tone: "muted" as const };
+      const h = (Date.now() - ms) / 3600000;
+      if (h < 1) return { label: `${Math.max(1, Math.round(h * 60))}m ago`, tone: "green" as const };
+      if (h <= 24) return { label: `${Math.round(h)}h ago`, tone: "green" as const };
+      if (h <= 72) return { label: `${Math.round(h)}h ago`, tone: "amber" as const };
+      return { label: `${Math.round(h / 24)}d ago`, tone: "red" as const };
+    }
+    return [
+      { k: "SYSPRO", ...age(latest(rows.map((r) => r.lastImportAt))) },
+      { k: "RMM", ...age(latest(rows.map((r) => r.pulsewayLastImportAt))) },
+      { k: "Backup", ...age(latest(rows.map((r) => r.coveLastImportAt))) },
+      { k: "EPP", ...age(latest(rows.map((r) => r.eppLastImportAt))) },
+      { k: "M365", ...age(latest(rows.map((r) => r.cspLastImportAt))) },
+    ];
+  }, [rows]);
+
   return (
     <RequireAuth>
-      <AppShell
-        title="EcoSystem"
-        subtitle={`${source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · ${formatSastDateTime(exco.generatedAt || summary.generatedAt)}`}
-      >
+      <AppShell subtitle={`${source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · ${formatSastDateTime(exco.generatedAt || summary.generatedAt)}`}>
         <div className="rpma-exco rpma-exco-compact space-y-2">
           <section className="rpma-glass px-3 py-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -915,6 +939,20 @@ function ExcoInsightPage() {
               </div>
               <p className="text-[10px] text-muted">{liveLabel} · SLA {slaAvg}%</p>
             </div>
+            <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-border/70 pt-2">
+              {collectFreshness.map((x) => (
+                <li key={x.k} className="flex items-center gap-1.5 text-[11px]">
+                  <span className="font-semibold text-muted">{x.k}</span>
+                  <span className={cn(
+                    "font-medium",
+                    x.tone === "green" && "text-rag-green",
+                    x.tone === "amber" && "text-rag-amber",
+                    x.tone === "red" && "text-rag-red",
+                    x.tone === "muted" && "text-subtle",
+                  )}>{x.label}</span>
+                </li>
+              ))}
+            </ul>
             <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-6 lg:grid-cols-12">
               {[
                 { k: "rag-red" as DrillKind, l: "Red", v: rag.red, t: "red" as const },

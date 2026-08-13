@@ -112,7 +112,7 @@ function SettingsLayout() {
 
   return (
     <RequireAuth>
-      <AppShell title={meta.title} subtitle={meta.subtitle}>
+      <AppShell>
         {!canAccess ? (
           <div className="rounded-lg border border-border bg-surface p-6 text-sm text-muted">
             <p className="font-medium text-fg">Platform Admin only</p>

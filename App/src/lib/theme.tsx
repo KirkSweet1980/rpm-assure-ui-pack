@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { applyMenuStyle, readMenuStyle } from "@/lib/nav/menu-style";
-import { applyFontPack, readFontPack } from "@/lib/font-pack";
+import { applyFontPack } from "@/lib/font-pack";
 
 /** User preference: light, dark, or follow OS */
 export type ThemePreference = "light" | "dark" | "auto";
@@ -86,7 +86,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeResolved(mode);
     applyDom(mode);
     applyMenuStyle(readMenuStyle());
-    applyFontPack(readFontPack());
+    applyFontPack("inter");
     setReady(true);
   }, []);
 
