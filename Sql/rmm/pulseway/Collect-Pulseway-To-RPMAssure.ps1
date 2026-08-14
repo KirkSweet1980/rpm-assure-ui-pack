@@ -817,13 +817,13 @@ Write-Log ('sites=' + $sites.Count + ' groups=' + $groups.Count)
 foreach ($s in @($sites + $groups)) {
   $sn = [string](Get-Prop $s @('Name','SiteName','GroupName','name'))
   $parent = [string](Get-Prop $s @('OrganizationName','Organization','ParentName','name'))
-  $pid = Get-Prop $s @('OrganizationId','organization_id','ParentId','id')
+  $parentOid = Get-Prop $s @('OrganizationId','organization_id','ParentId','id')
   if ($sn -match '(?i)fruit|sirf' -or $parent -match '(?i)fruit|sirf') {
-    Write-Log ("SIRF tree node name=$sn parent=$parent orgId=$pid")
-    if ($pid) { [void]$sirfOrgIds.Add("$pid") }
+    Write-Log ("SIRF tree node name=$sn parent=$parent orgId=$parentOid")
+    if ($parentOid) { [void]$sirfOrgIds.Add("$parentOid") }
   }
-  if ($pid -and $sirfOrgIds.Contains("$pid") -and "$pid" -match '^\d+$') {
-    $idMap[[int]$pid] = 'SIRF'
+  if ($parentOid -and $sirfOrgIds.Contains("$parentOid") -and "$parentOid" -match '^\d+$') {
+    $idMap[[int]$parentOid] = 'SIRF'
   }
 }
 
