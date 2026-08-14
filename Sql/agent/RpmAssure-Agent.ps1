@@ -155,7 +155,11 @@ try {
 SET NOCOUNT ON;
 SELECT CustomerCode
 FROM dbo.Agent_Registry WITH (NOLOCK)
-WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
+WHERE HostName = $(Sql-Lit $HostName)
+  AND (
+    LastStatus = N'QUEUED'
+    OR LastMessage LIKE N'sync requested%'
+  );
 "@
   $sr = Invoke-CentralSql -SqlText $qSync -Tsv
   if ($sr.ExitCode -eq 0) {
@@ -170,7 +174,8 @@ WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
 SET LastStatus = N'SYNCING', LastMessage = N'collect running'
-WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
+WHERE HostName = $(Sql-Lit $HostName)
+  AND (LastStatus = N'QUEUED' OR LastMessage LIKE N'sync requested%');
 "@
     [void](Invoke-CentralSql -SqlText $u)
   }
@@ -315,10 +320,10 @@ if ($forceCodes.Count) {
   $clr = @"
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
-SET RequestSyncUtc = NULL,
-    LastStatus = N'OK',
+SET LastStatus = N'OK',
     LastMessage = N'sync complete'
-WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
+WHERE HostName = $(Sql-Lit $HostName)
+  AND (LastStatus IN (N'QUEUED', N'SYNCING') OR LastMessage LIKE N'sync requested%' OR LastMessage = N'collect running');
 "@
   [void](Invoke-CentralSql -SqlText $clr)
   W "SYNC cleared"

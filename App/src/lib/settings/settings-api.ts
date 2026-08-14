@@ -1777,13 +1777,17 @@ export const requestAgentSync = createServerFn({ method: "POST" })
     if (!code || !host) return { ok: false as const, message: "Customer and host required" };
     try {
       await ensureAgentSyncColumn(pool);
+      const hasSync = await agentHasSyncColumn(pool);
+      const setSync = hasSync
+        ? "RequestSyncUtc = SYSUTCDATETIME(),"
+        : "";
       const r = await pool
         .request()
         .input("c", sqlTypes.NVarChar(32), code)
         .input("h", sqlTypes.NVarChar(128), host)
         .query(`
 UPDATE dbo.Agent_Registry
-SET RequestSyncUtc = SYSUTCDATETIME(),
+SET ${setSync}
     LastStatus = N'QUEUED',
     LastMessage = N'sync requested from Assure'
 WHERE CustomerCode = @c AND HostName = @h;
