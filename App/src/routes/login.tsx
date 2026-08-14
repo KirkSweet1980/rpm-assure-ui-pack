@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "dc-fields-only-20260814";
+const LOGIN_BUILD = "dc-fields-grey-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -221,8 +221,8 @@ const DC_CSS = `
   width: 100%; box-sizing: border-box;
   padding: 0.68rem 2.5rem 0.68rem 2.3rem;
   border-radius: 0.6rem;
-  border: 1px solid #c9d3e2;
-  background: transparent;
+  border: 1px solid #d5dde6;
+  background: #eef2f6;
   color: var(--ink); font-size: 14px; outline: none;
 }
 .rpma-dc-wrap input::placeholder { color: #8aa0b3; }
@@ -231,7 +231,7 @@ const DC_CSS = `
 .rpma-dc-wrap input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--ink);
   transition: background-color 9999s ease-out 0s;
-  box-shadow: 0 0 0 1000px transparent inset;
+  box-shadow: 0 0 0 1000px #eef2f6 inset;
 }
 .rpma-dc-wrap input:focus {
   border-color: var(--teal);
