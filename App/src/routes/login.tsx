@@ -10,26 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "glass-bg-picker-20260814";
-const LOGO = "/brand/rpm-resources-logo.jpg";
-const BG_KEY = "rpma-login-bg";
-
-const BACKDROPS = [
-  { id: "atrium", label: "A · Atrium", src: "/brand/ssot-examples/B-atrium.jpg" },
-  { id: "night", label: "B · Night City", src: "/brand/ssot-examples/C-noc.jpg" },
-  { id: "orb", label: "C · Glass Orb", src: "/brand/ssot-examples/D-orb.jpg" },
-  { id: "canyon", label: "D · Compass", src: "/brand/ssot-examples/E-compass.jpg" },
-  { id: "data", label: "E · Data Hall", src: "/brand/login-datacenter.jpg" },
-  { id: "hub", label: "F · Hub", src: "/brand/ssot-hub.jpg" },
-] as const;
-
-type BackdropId = (typeof BACKDROPS)[number]["id"];
-
-function readBackdrop(): BackdropId {
-  if (typeof window === "undefined") return "atrium";
-  const v = window.localStorage.getItem(BG_KEY);
-  return BACKDROPS.some((b) => b.id === v) ? (v as BackdropId) : "atrium";
-}
+const LOGIN_BUILD = "glass-datahall-20260814";
+const HALL = "/brand/login-datacenter.jpg?v=20260814k";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -39,21 +21,6 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [bgId, setBgId] = useState<BackdropId>("atrium");
-  const backdrop = BACKDROPS.find((b) => b.id === bgId) ?? BACKDROPS[0];
-
-  useEffect(() => {
-    setBgId(readBackdrop());
-  }, []);
-
-  function pickBg(id: BackdropId) {
-    setBgId(id);
-    try {
-      window.localStorage.setItem(BG_KEY, id);
-    } catch {
-      /* ignore */
-    }
-  }
 
   useEffect(() => {
     if (!isPending && user) {
@@ -101,14 +68,14 @@ function LoginPage() {
       <style>{GLASS_CSS}</style>
 
       <div className="rpma-gl-scene" aria-hidden="true">
-        <img className="rpma-gl-still" src={backdrop.src} alt="" />
+        <img className="rpma-gl-still" src={HALL} alt="" />
         <div className="rpma-gl-wash" />
       </div>
 
       <main className="rpma-gl-stage">
         <section className="rpma-gl-card">
           <div className="rpma-gl-sheen" aria-hidden="true" />
-          <img className="rpma-gl-logo" src={LOGO} alt="RPM Resources" />
+          <p className="rpma-gl-kicker">RPM Resources</p>
           <h1 className="rpma-gl-word">RPM Assure</h1>
           <p className="rpma-gl-tag">Assurance Delivered</p>
 
@@ -166,23 +133,6 @@ function LoginPage() {
           <p className="rpma-gl-foot">Powered by RPM Resources</p>
         </section>
       </main>
-
-      <nav className="rpma-gl-picker" aria-label="Choose a background">
-        <p className="rpma-gl-picker-k">Choose a scene</p>
-        <div className="rpma-gl-picker-row">
-          {BACKDROPS.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              className={b.id === bgId ? "is-on" : undefined}
-              onClick={() => pickBg(b.id)}
-            >
-              <img src={b.src} alt="" />
-              <span>{b.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
     </div>
   );
 }
@@ -192,17 +142,15 @@ const GLASS_CSS = `
   --teal: var(--color-brand-teal);
   --lime: var(--color-brand-lime);
   --slate: var(--color-brand-slate);
-  --ink: var(--color-brand-ink);
-  --glass: rgba(248, 252, 255, 0.38);
-  --glass-edge: rgba(255, 255, 255, 0.62);
-  --well: rgba(255, 255, 255, 0.52);
+  --fg: #f3f7fb;
+  --muted: rgba(243, 247, 251, 0.72);
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
   width: 100%;
   overflow: hidden;
-  background: #9aa8b4;
-  color: var(--ink);
+  background: #071018;
+  color: var(--fg);
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -211,7 +159,7 @@ const GLASS_CSS = `
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #1a2834;
+  background: #071018;
 }
 .rpma-gl-still {
   position: absolute;
@@ -219,7 +167,7 @@ const GLASS_CSS = `
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 42%;
+  object-position: 50% 50%;
   display: block;
 }
 .rpma-gl-wash {
@@ -227,9 +175,8 @@ const GLASS_CSS = `
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(90% 80% at 78% 48%, rgba(12, 28, 44, 0.18) 0%, transparent 58%),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 0%, transparent 38%, rgba(12, 28, 44, 0.22) 100%),
-    linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(12, 22, 34, 0.18) 100%);
+    radial-gradient(70% 70% at 78% 50%, rgba(4, 14, 22, 0.22) 0%, transparent 62%),
+    linear-gradient(90deg, rgba(4, 12, 20, 0.12) 0%, transparent 42%, rgba(4, 12, 20, 0.28) 100%);
 }
 .rpma-gl-stage {
   position: relative;
@@ -238,49 +185,49 @@ const GLASS_CSS = `
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 2.4rem 4.5vw 7.2rem 1.5rem;
+  padding: 2.4rem 5vw;
 }
 .rpma-gl-card {
   position: relative;
-  width: min(100%, 24.5rem);
-  padding: 1.85rem 1.7rem 1.25rem;
-  border-radius: 1.45rem;
-  background: var(--glass);
-  border: 1px solid var(--glass-edge);
+  width: min(100%, 24.25rem);
+  padding: 1.9rem 1.7rem 1.2rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.55) inset,
-    0 18px 50px rgba(11, 26, 58, 0.22),
-    0 2px 8px rgba(11, 26, 58, 0.08);
-  backdrop-filter: blur(28px) saturate(1.45);
-  -webkit-backdrop-filter: blur(28px) saturate(1.45);
+    0 1px 0 rgba(255,255,255,0.28) inset,
+    0 0 0 1px rgba(8, 20, 32, 0.18),
+    0 22px 56px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(16px) saturate(1.55);
+  -webkit-backdrop-filter: blur(16px) saturate(1.55);
   overflow: hidden;
 }
 .rpma-gl-sheen {
   position: absolute;
   inset: 0 auto auto 0;
   width: 100%;
-  height: 3px;
+  height: 2px;
   background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
-  opacity: 0.95;
 }
-.rpma-gl-logo {
-  display: block;
-  width: auto;
-  height: 1.85rem;
-  margin: 0.2rem auto 0.7rem;
-  object-fit: contain;
-  mix-blend-mode: multiply;
+.rpma-gl-kicker {
+  margin: 0.15rem 0 0.55rem;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 .rpma-gl-word {
-  margin: 0 0 0.28rem;
+  margin: 0 0 0.3rem;
   text-align: center;
-  font-size: clamp(1.7rem, 3vw, 2.15rem);
+  font-size: clamp(1.75rem, 3vw, 2.2rem);
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
   text-wrap: balance;
   color: transparent;
-  background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 46%, var(--lime) 100%);
+  background: linear-gradient(90deg, #9ec6d8 0%, var(--teal) 46%, var(--lime) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -292,7 +239,7 @@ const GLASS_CSS = `
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #3f6a22;
+  color: color-mix(in srgb, var(--lime) 78%, white);
 }
 .rpma-gl-form { display: flex; flex-direction: column; gap: 0.78rem; }
 .rpma-gl-field span {
@@ -301,13 +248,13 @@ const GLASS_CSS = `
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: #355068;
+  color: var(--muted);
 }
 .rpma-gl-wrap { position: relative; display: flex; align-items: center; }
 .rpma-gl-wrap > svg {
   position: absolute;
   left: 0.8rem;
-  color: #5d7a90;
+  color: rgba(243, 247, 251, 0.62);
   pointer-events: none;
 }
 .rpma-gl-wrap input {
@@ -316,35 +263,33 @@ const GLASS_CSS = `
   padding: 0.74rem 2.55rem 0.74rem 2.35rem;
   border: 0;
   border-radius: 0.78rem;
-  background: var(--well);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
   font-size: 0.92rem;
   outline: none;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.55) inset,
-    0 1px 2px rgba(11, 26, 58, 0.06);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.22) inset;
   transition: box-shadow 160ms ease-out, background 160ms ease-out;
 }
-.rpma-gl-wrap input::placeholder { color: #7d96aa; }
+.rpma-gl-wrap input::placeholder { color: rgba(243, 247, 251, 0.45); }
 .rpma-gl-wrap input:-webkit-autofill,
 .rpma-gl-wrap input:-webkit-autofill:hover,
 .rpma-gl-wrap input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--ink);
+  -webkit-text-fill-color: var(--fg);
   transition: background-color 9999s ease-out 0s;
-  box-shadow: 0 0 0 1000px var(--well) inset;
+  box-shadow: 0 0 0 1000px rgba(20, 40, 55, 0.35) inset;
 }
 .rpma-gl-wrap input:focus {
-  background: rgba(255,255,255,0.72);
+  background: rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--teal) 55%, white) inset,
-    0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--teal) 70%, white) inset,
+    0 0 0 4px color-mix(in srgb, var(--teal) 22%, transparent);
 }
 .rpma-gl-eye {
   position: absolute;
   right: 0.35rem;
   border: 0;
   background: transparent;
-  color: #5d7a90;
+  color: rgba(243, 247, 251, 0.7);
   cursor: pointer;
   padding: 0.35rem;
   display: inline-flex;
@@ -357,10 +302,10 @@ const GLASS_CSS = `
   margin: 0;
   padding: 0.55rem 0.7rem;
   border-radius: 0.7rem;
-  background: rgba(255, 236, 236, 0.78);
-  color: #9b2c2c;
+  background: rgba(155, 44, 44, 0.28);
+  color: #ffd4d4;
   font-size: 0.8rem;
-  box-shadow: 0 0 0 1px rgba(209, 75, 75, 0.28) inset;
+  box-shadow: 0 0 0 1px rgba(255, 180, 180, 0.28) inset;
 }
 .rpma-gl-submit {
   margin-top: 0.2rem;
@@ -385,79 +330,20 @@ const GLASS_CSS = `
   margin: 1.15rem 0 0;
   text-align: center;
   font-size: 0.7rem;
-  color: #4d6578;
-}
-.rpma-gl-picker {
-  position: absolute;
-  z-index: 3;
-  left: 1rem;
-  right: 1rem;
-  bottom: 0.85rem;
-  max-width: 46rem;
-}
-.rpma-gl-picker-k {
-  margin: 0 0 0.4rem 0.15rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #e8eef4;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.45);
-}
-.rpma-gl-picker-row {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.15rem;
-}
-.rpma-gl-picker button {
-  flex: 0 0 auto;
-  width: 6.6rem;
-  padding: 0;
-  border: 0;
-  border-radius: 0.7rem;
-  overflow: hidden;
-  background: rgba(8, 16, 24, 0.35);
-  color: #f4f8fb;
-  cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.28) inset;
-  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
-}
-.rpma-gl-picker button:hover { transform: translateY(-2px); }
-.rpma-gl-picker button.is-on {
-  box-shadow:
-    0 0 0 2px #fff,
-    0 0 0 4px var(--teal);
-}
-.rpma-gl-picker img {
-  display: block;
-  width: 100%;
-  height: 3.15rem;
-  object-fit: cover;
-}
-.rpma-gl-picker span {
-  display: block;
-  padding: 0.28rem 0.35rem 0.38rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-align: center;
-  background: rgba(8, 16, 24, 0.55);
+  color: var(--muted);
 }
 @media (max-width: 860px) {
   .rpma-gl-stage {
     align-items: flex-end;
     justify-content: center;
-    padding: 0 0.9rem 8.4rem;
+    padding: 0 0.9rem 1rem;
   }
   .rpma-gl-card {
     width: 100%;
-    border-radius: 1.25rem;
-    background: rgba(248, 252, 255, 0.58);
+    background: rgba(255, 255, 255, 0.1);
   }
-  .rpma-gl-picker { left: 0.55rem; right: 0.55rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpma-gl-wrap input, .rpma-gl-submit, .rpma-gl-picker button { transition: none; }
+  .rpma-gl-wrap input, .rpma-gl-submit { transition: none; }
 }
 `;
