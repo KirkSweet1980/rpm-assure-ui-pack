@@ -115,6 +115,14 @@ New-Item -ItemType Directory -Force -Path $destSrc | Out-Null
 robocopy (Join-Path $srcRoot 'src') $destSrc /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed $LASTEXITCODE" }
 
+$pubFrom = Join-Path $srcRoot 'public'
+$pubTo = Join-Path $App 'public'
+if (Test-Path $pubFrom) {
+  New-Item -ItemType Directory -Force -Path $pubTo | Out-Null
+  W Cyan '--- Copy public brand assets from git ---'
+  robocopy $pubFrom $pubTo /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+}
+
 $agentSrc = Join-Path $Pack 'Sql\agent'
 if (Test-Path $agentSrc) {
   $agentDest = Join-Path $Root 'Sql\agent'
@@ -123,7 +131,7 @@ if (Test-Path $agentSrc) {
   robocopy $agentSrc $agentDest /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
 
-foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway')) {
+foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway', 'Sql\cove')) {
   $from = Join-Path $Pack $rel
   if (Test-Path $from) {
     $to = Join-Path $Root $rel
