@@ -274,6 +274,41 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
   border-radius: 8px;
   box-shadow: none;
 }
+
+.rpma-xls {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: var(--color-surface);
+}
+.rpma-xls th,
+.rpma-xls td {
+  border: 1px solid #c5ccd6;
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+.rpma-xls thead th {
+  background: var(--color-nav);
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.rpma-xls tbody td:first-child {
+  background: color-mix(in srgb, var(--color-nav) 8%, var(--color-surface));
+  font-weight: 700;
+  color: var(--color-fg);
+}
+html[data-theme="dark"] .rpma-xls th,
+html.dark .rpma-xls th,
+html[data-theme="dark"] .rpma-xls td,
+html.dark .rpma-xls td {
+  border-color: #3a4554;
+}
+html[data-theme="dark"] .rpma-xls tbody td:first-child,
+html.dark .rpma-xls tbody td:first-child {
+  background: color-mix(in srgb, var(--color-nav) 45%, #10151c);
+}
 .rpma-exco-compact { font-size: 12px; }
 .rpma-exco-tile { border-radius: 6px; background: var(--color-surface-2); border: 0; }
 .rpma-exco-compact .rpma-heat-cell { min-height: 44px; padding: 6px; }

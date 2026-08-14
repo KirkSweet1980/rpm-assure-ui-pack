@@ -222,20 +222,20 @@ function InfrastructureStatusPage() {
           <h2 className="text-[16px] font-extrabold text-fg">Assure API Feed Status</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[12px]">
-            <thead className="rpma-table-head">
+          <table className="rpma-xls text-left">
+            <thead>
               <tr>
-                <th className="px-4 py-2 font-extrabold">Connection</th>
-                <th className="px-4 py-2 font-extrabold">Kind</th>
-                <th className="px-4 py-2 font-extrabold">Status</th>
-                <th className="px-4 py-2 font-extrabold">Last Sync</th>
-                <th className="px-4 py-2 font-extrabold">Result</th>
+                <th>Connection</th>
+                <th>Kind</th>
+                <th>Status</th>
+                <th>Last Sync</th>
+                <th>Result</th>
               </tr>
             </thead>
             <tbody>
               {connRows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-muted">
+                  <td colSpan={5}>
                     No API feeds yet.
                   </td>
                 </tr>
@@ -246,14 +246,14 @@ function InfrastructureStatusPage() {
                   const lastAt = r.lastSyncAt || live?.lastAt || null;
                   const { tone, result } = feedTone(lastAt);
                   return (
-                    <tr key={r.connectionCode} className="border-t border-border/40">
-                      <td className="px-4 py-2.5 font-semibold text-fg">{r.displayName}</td>
-                      <td className="px-4 py-2.5 text-muted">{kindLabel(r.sourceKind)}</td>
-                      <td className="px-4 py-2.5">{r.status}</td>
-                      <td className="px-4 py-2.5 text-muted">
+                    <tr key={r.connectionCode}>
+                      <td>{r.displayName}</td>
+                      <td>{kindLabel(r.sourceKind)}</td>
+                      <td>{r.status}</td>
+                      <td>
                         {lastAt ? formatSastDateTime(lastAt) : "No collect yet"}
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td>
                         <span className="inline-flex items-center gap-1.5 font-semibold">
                           <Lamp tone={tone} />
                           <span
@@ -283,21 +283,21 @@ function InfrastructureStatusPage() {
         </div>
         {agentMsg ? <p className="px-4 pb-2 text-[12px] text-muted">{agentMsg}</p> : null}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[12px]">
-            <thead className="rpma-table-head">
+          <table className="rpma-xls text-left">
+            <thead>
               <tr>
-                <th className="px-4 py-2 font-extrabold">Customer Name</th>
-                <th className="px-4 py-2 font-extrabold">Agent Version Installed</th>
-                <th className="px-4 py-2 font-extrabold">Agent Status</th>
-                <th className="px-4 py-2 text-center font-extrabold">Agent Sync</th>
-                <th className="px-4 py-2 font-extrabold">Service Cover</th>
-                <th className="px-4 py-2 text-right font-extrabold"> </th>
+                <th>Customer Name</th>
+                <th>Agent Version Installed</th>
+                <th>Agent Status</th>
+                <th className="text-center">Agent Sync</th>
+                <th>Service Cover</th>
+                <th className="text-right"> </th>
               </tr>
             </thead>
             <tbody>
               {agents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-muted">
+                  <td colSpan={6}>
                     No customers listed.
                   </td>
                 </tr>
@@ -308,19 +308,19 @@ function InfrastructureStatusPage() {
                   const on = COVER_CHIPS.filter((c) => row.cover[c.key]);
                   const canSync = Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
                   return (
-                    <tr key={row.customerCode} className="border-t border-border/40">
-                      <td className="px-4 py-2.5">
+                    <tr key={row.customerCode}>
+                      <td>
                         <SpaLink
                           href={`/customers/${encodeURIComponent(row.customerCode)}`}
-                          className="font-semibold text-fg no-underline hover:underline"
+                          className="font-bold text-fg no-underline hover:underline"
                         >
                           {row.displayName}
                         </SpaLink>
                       </td>
-                      <td className="px-4 py-2.5 font-mono text-[12px] text-muted">
+                      <td className="font-mono">
                         {row.agentVersion ? `v${row.agentVersion}` : "Not installed"}
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td>
                         <span
                           className={cn(
                             "inline-flex items-center gap-1.5 font-semibold",
@@ -334,7 +334,7 @@ function InfrastructureStatusPage() {
                           {st.label}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-center">
+                      <td className="text-center">
                         <span
                           className={cn(
                             "inline-flex items-center justify-center gap-1.5 font-semibold",
@@ -347,7 +347,7 @@ function InfrastructureStatusPage() {
                           {sy.label}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td>
                         {on.length === 0 ? (
                           <span className="text-muted">No Cover</span>
                         ) : (
@@ -367,7 +367,7 @@ function InfrastructureStatusPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-right">
+                      <td className="text-right">
                         <Button
                           type="button"
                           size="sm"
