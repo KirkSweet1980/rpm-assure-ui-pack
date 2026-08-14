@@ -36,7 +36,7 @@ export function DkSidebarNav({
       </SpaLink>
       {SETTINGS_MENU_ENABLED ? (
         <SpaLink
-          href="/settings"
+          href="/settings/infrastructure"
           className={cn("dk-link", path.startsWith("/settings") && "is-active")}
         >
           <Settings className="dk-ico" />

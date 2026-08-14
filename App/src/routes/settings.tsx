@@ -10,10 +10,11 @@ export const Route = createFileRoute("/settings")({
 });
 
 const TITLES: Record<string, { title: string; subtitle: string }> = {
+  "/settings/infrastructure": { title: "Assure Infrastructure Status", subtitle: "Platform connections, collect APIs, and SQL-host agents." },
   "/settings/sql": { title: "SQL Server", subtitle: "Connections and credentials for Live SQL and tools." },
   "/settings/ssl": { title: "SSL / HTTPS", subtitle: "Let's Encrypt or upload your own certificate for the public hostname." },
   "/settings/smtp": { title: "Email", subtitle: "Outbound email is disabled in this release." },
-  "/settings/integrations": { title: "Integrations", subtitle: "Pulseway, N-Able Cove Backup, Bitdefender, Microsoft Graph." },
+  "/settings/integrations": { title: "Integrations", subtitle: "Live collect connections: SYSPRO, Remote Management, Cloud Backup, EPP, Microsoft 365 Tenant." },
   "/settings/dashboard": { title: "Dashboard Configuration", subtitle: "Which KPI cards and panels show on Exco Insight and customer workspaces." },
   "/settings/chrome": { title: "Menu style", subtitle: "Pick how selected tabs and nav chips look. Applies immediately." },
   "/settings/theme": { title: "Theme tokens", subtitle: "CSS variables that paint the UI. Light / dark maps and palette presets." },
@@ -35,8 +36,9 @@ const CONFIG_SERVICES: CorpService[] = [
   {
     id: "assure-app",
     title: "Assure Application",
-    overview: "/settings/integrations",
+    overview: "/settings/infrastructure",
     modules: [
+      { label: "Assure Infrastructure Status", path: "/settings/infrastructure" },
       { label: "Integrations", path: "/settings/integrations" },
       { label: "RAG", path: "/settings/rag" },
       { label: "Collect", path: "/settings/collect" },
@@ -83,6 +85,12 @@ function SettingsLayout() {
   if (!SETTINGS_MENU_ENABLED) {
     return <Navigate to="/" />;
   }
+  const meta =
+    TITLES[pathname] ??
+    Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] ?? {
+      title: "Configuration",
+      subtitle: "Platform configuration — SQL, SSL, and tools.",
+    };
 
   const svc =
     CONFIG_SERVICES.find((s) =>
@@ -105,7 +113,7 @@ function SettingsLayout() {
           <div className={svc ? "rpma-d3-workspace" : "rpma-d3-workspace is-tool"}>
             <CorpWorkspaceRail
               heading="Configuration"
-              homeHref="/settings"
+              homeHref="/settings/infrastructure"
               services={CONFIG_SERVICES}
               pathname={pathname}
               servicesHeading="Settings"
@@ -115,7 +123,7 @@ function SettingsLayout() {
               <div className="rpma-modnav">
                 <CorpPathTrail
                   rootLabel="Configuration"
-                  rootHref="/settings"
+                  rootHref="/settings/infrastructure"
                   service={svc?.title}
                   moduleLabel={mod?.label}
                 />
