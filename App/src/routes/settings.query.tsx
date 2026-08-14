@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Play } from "lucide-react";
+import { Play, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHead } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ConfigPageHead } from "@/components/settings/config-page";
 import { runSqlQuery, type SqlQueryResult } from "@/lib/settings/settings-api";
 
 export const Route = createFileRoute("/settings/query")({
@@ -44,65 +43,62 @@ function QueryPage() {
   }
 
   return (
-    <div className="space-y-3">
-      <Card>
-        <CardHead>
-          <span className="inline-flex items-center gap-2">
-            SQL Query
-            <Badge variant="muted">SELECT only</Badge>
-          </span>
-        </CardHead>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted">
-            Read-only explorer against the <strong>primary</strong> connection. Blocked: INSERT,
-            UPDATE, DELETE, DDL, EXEC, multiple batches. Max 200 rows (cap 1000).
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {SAMPLES.map((s, i) => (
-              <button
-                key={i}
-                type="button"
-                className="rounded-md border border-border bg-surface-2 px-2 py-1 text-[10px] text-muted hover:text-fg"
-                onClick={() => setSqlText(s)}
-              >
-                Sample {i + 1}
-              </button>
-            ))}
-          </div>
-          <textarea
-            className="min-h-[140px] w-full rounded-lg border border-border bg-bg p-3 font-mono text-xs text-fg"
-            value={sqlText}
-            onChange={(e) => setSqlText(e.target.value)}
-            spellCheck={false}
-          />
-          <Button type="button" disabled={busy} onClick={() => void run()}>
-            <Play className="h-4 w-4" /> Run query
+    <div className="space-y-6">
+      <ConfigPageHead
+        kicker="Settings"
+        title="SQL Query"
+        icon={Terminal}
+        actions={
+          <Button type="button" size="sm" disabled={busy} onClick={() => void run()}>
+            <Play className="size-3.5" />
+            Run
           </Button>
-          {message ? (
-            <p className={`text-xs ${ok ? "text-rag-green" : "text-rag-red"}`}>{message}</p>
-          ) : null}
-        </CardContent>
-      </Card>
+        }
+      />
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="flex flex-wrap gap-1.5 px-4 py-3">
+          {SAMPLES.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              className="rounded-md border border-border bg-surface px-2 py-1 text-[11px] font-semibold text-muted hover:text-fg"
+              onClick={() => setSqlText(s)}
+            >
+              Sample {i + 1}
+            </button>
+          ))}
+        </div>
+        <textarea
+          className="min-h-[140px] w-full border-t border-border bg-transparent p-3 font-mono text-[12px] text-fg outline-none"
+          value={sqlText}
+          onChange={(e) => setSqlText(e.target.value)}
+          spellCheck={false}
+        />
+        {message ? (
+          <p className={`px-4 py-2 text-[12px] ${ok ? "text-rag-green" : "text-rag-red"}`}>{message}</p>
+        ) : null}
+      </section>
 
       {columns.length > 0 ? (
-        <Card>
-          <CardHead>Results ({rows.length})</CardHead>
-          <CardContent className="overflow-auto p-0">
-            <table className="w-full text-left text-[11px]">
-              <thead className="sticky top-0 bg-card-head text-[10px] uppercase text-subtle">
+        <section className="rpma-panel overflow-hidden p-0">
+          <div className="px-4 py-3">
+            <h2 className="text-[16px] font-extrabold text-fg">Results ({rows.length})</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="rpma-xls">
+              <thead>
                 <tr>
                   {columns.map((c) => (
-                    <th key={c} className="whitespace-nowrap px-2 py-1.5 font-semibold">
-                      {c}
-                    </th>
+                    <th key={c}>{c}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={i} className="border-t border-border/80">
+                  <tr key={i}>
                     {columns.map((c) => (
-                      <td key={c} className="max-w-[220px] truncate px-2 py-1 font-mono">
+                      <td key={c} className="max-w-[220px] truncate font-mono">
                         {formatCell(r[c])}
                       </td>
                     ))}
@@ -110,8 +106,8 @@ function QueryPage() {
                 ))}
               </tbody>
             </table>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ) : null}
     </div>
   );

@@ -28,7 +28,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/settings/users": { title: "Users", subtitle: "Staff accounts, roles, scope, plus your profile and 2FA." },
   "/settings/profile": { title: "My profile", subtitle: "Display name, password, and account details." },
   "/settings/security": { title: "Security & 2FA", subtitle: "Authenticator app and backup codes for your account." },
-  "/settings/audit": { title: "Audit log", subtitle: "Who created or disabled users and changed platform settings." },
+  "/settings/audit": { title: "Audit Log", subtitle: "Who created or disabled users and changed platform settings." },
   "/settings/about": { title: "About", subtitle: "Product notes and roadmap." },
 };
 
@@ -52,7 +52,7 @@ const CONFIG_SERVICES: CorpService[] = [
       { label: "SQL Query", path: "/settings/query" },
       { label: "Users", path: "/settings/users" },
       { label: "Audit Log", path: "/settings/audit" },
-      { label: "SSL", path: "/settings/ssl" },
+      { label: "SSL / HTTPS", path: "/settings/ssl" },
     ],
   },
   {
