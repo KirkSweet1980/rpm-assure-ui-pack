@@ -31,15 +31,6 @@ function Ensure-Git {
     )) {
     if (Test-Path $p) { return $p }
   }
-  $wg = Get-Command winget -ErrorAction SilentlyContinue
-  if ($wg) {
-    W Cyan 'Git not found - installing Git for Windows...'
-    & winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements --silent
-    $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
-    $g = Get-Command git -ErrorAction SilentlyContinue
-    if ($g) { return $g.Source }
-    if (Test-Path 'C:\Program Files\Git\cmd\git.exe') { return 'C:\Program Files\Git\cmd\git.exe' }
-  }
   throw 'Git is not installed. Install Git for Windows, then re-run this script.'
 }
 
@@ -51,12 +42,26 @@ function Find-SrcRoot([string]$root) {
   return $idx.Directory.Parent.Parent.FullName
 }
 
+function Remove-DirHard([string]$path) {
+  if (-not (Test-Path $path)) { return }
+  cmd /c "attrib -R `"$path\*`" /S /D >nul 2>nul"
+  cmd /c "rmdir /s /q `"$path`""
+  Start-Sleep -Seconds 1
+  if (Test-Path $path) {
+    Get-ChildItem $path -Force -Recurse -EA SilentlyContinue | ForEach-Object {
+      $_.Attributes = 'Normal'
+    }
+    Remove-Item $path -Recurse -Force -EA SilentlyContinue
+  }
+}
+
 Write-Host '========================================' -ForegroundColor Cyan
 Write-Host ' RPM Assure - Update from Git'
 Write-Host '========================================' -ForegroundColor Cyan
 
 $git = Ensure-Git
 W Green ("git = " + $git)
+& $git config --system core.longpaths true
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
 
 $lock = Join-Path $Pack '.git\index.lock'
@@ -65,15 +70,20 @@ if (Test-Path $lock) { Remove-Item $lock -Force -EA SilentlyContinue }
 $got = $false
 if (Test-Path (Join-Path $Pack '.git')) {
   W Cyan ("git pull " + $Pack)
-  & $git -C $Pack fetch --all --prune
-  & $git -C $Pack reset --hard origin/main
+  & $git -C $Pack -c core.longpaths=true -c core.protectNTFS=false fetch --all --prune
+  & $git -C $Pack -c core.longpaths=true -c core.protectNTFS=false reset --hard origin/main
   if ($LASTEXITCODE -eq 0) { $got = $true }
 }
 if (-not $got) {
   W Cyan ("git clone " + $RepoUrl)
-  if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
-  & $git clone --depth 1 --branch main $RepoUrl $Pack
-  if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }
+  Remove-DirHard $Pack
+  $tmp = Join-Path $Root ('deploy\ui-pack-new-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+  & $git -c core.longpaths=true -c core.protectNTFS=false clone --depth 1 --branch main $RepoUrl $tmp
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $tmp 'App\src\routes\index.tsx'))) {
+    throw 'git clone / checkout failed. Close Explorer windows on C:\RPM-Assure\deploy and retry.'
+  }
+  Remove-DirHard $Pack
+  Rename-Item $tmp $Pack
 }
 
 $srcRoot = Find-SrcRoot $Pack
