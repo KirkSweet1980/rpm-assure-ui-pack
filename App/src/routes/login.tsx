@@ -12,7 +12,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "cinema-glass-D-20260814";
+const LOGIN_BUILD = "cinema-glass-D-light-20260814";
 
 const SQL_LINES: { t: string; k?: "kw" | "cm" | "st" | "ok" }[] = [
   { t: "-- RPM Assure  |  live collect  |  central RPMAssure_App", k: "cm" },
@@ -224,7 +224,7 @@ const CINEMA_CSS = `
 .rpma-cin {
   position: relative; isolation: isolate; min-height: 100dvh; width: 100%;
   overflow: hidden; display: flex; flex-direction: column;
-  background: #061018; color: #e8f4ff;
+  background: #eef3f7; color: #16324a;
   font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 }
 .rpma-cin .rpma-login-sql-bg,
@@ -237,24 +237,33 @@ const CINEMA_CSS = `
 .rpma-cin-wall {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
   display: grid; grid-template-columns: 1fr 1fr 1fr;
-  opacity: 0.28;
+  opacity: 0.38;
 }
 .rpma-cin-vignette {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 80% at 78% 48%, rgba(6,16,24,0.15) 0%, transparent 55%),
-    linear-gradient(90deg, rgba(6,16,24,0.15) 0%, rgba(6,16,24,0.55) 52%, rgba(10,24,40,0.82) 100%);
+    radial-gradient(ellipse 55% 70% at 78% 48%, rgba(255,255,255,0.55) 0%, transparent 58%),
+    linear-gradient(90deg, rgba(238,243,247,0.2) 0%, rgba(238,243,247,0.55) 52%, rgba(246,249,252,0.92) 100%);
 }
 .rpma-cin-col { overflow: hidden; }
 .rpma-cin-track {
   padding: 1rem 0.75rem 2rem;
-  animation: rpmaCinSql 42s linear infinite;
+  animation: rpmaCinSql 26s ease-in-out infinite alternate;
   will-change: transform;
 }
-.rpma-cin-col--b .rpma-cin-track { animation-duration: 56s; animation-direction: reverse; }
-.rpma-cin-col--c .rpma-cin-track { animation-duration: 48s; }
-.rpma-cin-col--focus .rpma-cin-track { animation-duration: 36s; padding: 0.85rem 1rem 1.5rem; }
-@keyframes rpmaCinSql { 0% { transform: translateY(0); } 100% { transform: translateY(-33.333%); } }
+.rpma-cin-col--b .rpma-cin-track {
+  animation-duration: 34s;
+  animation-direction: alternate-reverse;
+}
+.rpma-cin-col--c .rpma-cin-track { animation-duration: 30s; }
+.rpma-cin-col--focus .rpma-cin-track {
+  animation: rpmaCinSql 22s ease-in-out infinite alternate;
+  padding: 0.85rem 1rem 1.5rem;
+}
+@keyframes rpmaCinSql {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-33.333%); }
+}
 @media (prefers-reduced-motion: reduce) {
   .rpma-cin-track { animation: none; }
 }
@@ -262,12 +271,12 @@ const CINEMA_CSS = `
   display: flex; gap: 0.65rem; font-family: ui-monospace, Consolas, "Cascadia Code", monospace;
   font-size: 11.5px; line-height: 1.55; white-space: pre;
 }
-.rpma-cin-gutter { flex: 0 0 1.7rem; text-align: right; color: rgba(120,150,170,0.38); }
-.rpma-cin-text { color: rgba(180,214,232,0.78); }
-.rpma-cin-line.is-kw .rpma-cin-text { color: #3ecfbf; font-weight: 650; }
-.rpma-cin-line.is-cm .rpma-cin-text { color: #8fce4a; font-style: italic; }
-.rpma-cin-line.is-st .rpma-cin-text { color: #9ec8ee; }
-.rpma-cin-line.is-ok .rpma-cin-text { color: #8fce4a; }
+.rpma-cin-gutter { flex: 0 0 1.7rem; text-align: right; color: #8aa0b4; }
+.rpma-cin-text { color: #3a556c; }
+.rpma-cin-line.is-kw .rpma-cin-text { color: #0f7f86; font-weight: 650; }
+.rpma-cin-line.is-cm .rpma-cin-text { color: #5a8a28; font-style: italic; }
+.rpma-cin-line.is-st .rpma-cin-text { color: #1a4d7a; }
+.rpma-cin-line.is-ok .rpma-cin-text { color: #3d7a18; }
 
 .rpma-cin-shell {
   position: relative; z-index: 3; flex: 1;
@@ -282,18 +291,18 @@ const CINEMA_CSS = `
   width: min(100%, 40rem); height: min(78dvh, 40rem);
   display: flex; flex-direction: column; overflow: hidden;
   border-radius: 12px;
-  border: 1px solid rgba(62,207,191,0.28);
-  background: linear-gradient(165deg, rgba(8,28,46,0.72) 0%, rgba(6,16,28,0.82) 100%);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(26,77,122,0.16);
+  background: linear-gradient(165deg, rgba(255,255,255,0.86) 0%, rgba(244,248,251,0.92) 100%);
+  box-shadow: 0 18px 48px rgba(16,40,64,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
 .rpma-cin-editor-bar {
   display: flex; align-items: center; gap: 0.55rem;
   padding: 0.45rem 0.75rem;
-  border-bottom: 1px solid rgba(27,184,166,0.18);
-  background: rgba(10,40,64,0.55);
+  border-bottom: 1px solid rgba(26,77,122,0.12);
+  background: linear-gradient(180deg, #1a4d7a 0%, #163f64 100%);
   font-family: ui-monospace, Consolas, monospace;
-  font-size: 11px; color: rgba(200,230,255,0.7);
+  font-size: 11px; color: rgba(232,244,255,0.88);
 }
 .rpma-cin-dots { display: flex; gap: 5px; }
 .rpma-cin-dots i { width: 8px; height: 8px; border-radius: 50%; display: block; background: #ff5f57; }
@@ -304,8 +313,7 @@ const CINEMA_CSS = `
 
 .rpma-cin-divider {
   width: 1px; align-self: stretch;
-  background: linear-gradient(180deg, transparent, rgba(143,206,74,0.55), rgba(27,184,166,0.55), transparent);
-  box-shadow: 0 0 18px rgba(27,184,166,0.35);
+  background: linear-gradient(180deg, transparent, #1bb8a6, #8fce4a, transparent);
 }
 
 .rpma-cin-right {
@@ -313,85 +321,86 @@ const CINEMA_CSS = `
   padding: clamp(1.5rem, 5vh, 3rem) clamp(1.25rem, 4vw, 3rem) 3.4rem;
 }
 .rpma-cin-tools { position: absolute; top: 1rem; right: 1.1rem; }
+.rpma-cin-tools .rpma-theme-switch-label { color: #3a556c; }
 .rpma-cin-card {
   width: min(100%, 26rem);
   padding: 1.85rem 1.7rem 1.65rem;
   border-radius: 18px;
   text-align: center;
-  background: linear-gradient(165deg, rgba(16,40,64,0.55) 0%, rgba(8,20,34,0.72) 100%);
-  border: 1px solid rgba(143,206,74,0.38);
+  background: linear-gradient(165deg, rgba(255,255,255,0.9) 0%, rgba(246,249,252,0.94) 100%);
+  border: 1px solid rgba(26,77,122,0.14);
   box-shadow:
-    0 28px 70px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(27,184,166,0.18),
-    inset 0 1px 0 rgba(255,255,255,0.12);
-  backdrop-filter: blur(22px) saturate(1.3);
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+    0 22px 56px rgba(16,40,64,0.12),
+    0 0 0 1px rgba(27,184,166,0.12),
+    inset 0 1px 0 #fff;
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
 .rpma-cin-mark {
   display: flex; justify-content: center;
-  filter: drop-shadow(0 0 28px rgba(27,184,166,0.45));
+  filter: drop-shadow(0 8px 18px rgba(27,184,166,0.22));
 }
 .rpma-cin-title {
   margin: 0.85rem 0 0;
   font-size: clamp(2.15rem, 4vw, 2.75rem);
   font-weight: 800; letter-spacing: -0.03em; line-height: 1.05;
 }
-.rpma-cin-rpm { color: #ffffff; }
+.rpma-cin-rpm { color: #0a2f5a; }
 .rpma-cin-assure { color: #1bb8a6; }
 .rpma-cin-tag {
   margin: 0.55rem 0 1.25rem;
   font-size: 0.72rem; font-weight: 700;
   letter-spacing: 0.16em; text-transform: uppercase;
-  color: #8fce4a;
+  color: #5a8a28;
 }
 .rpma-cin-form { display: flex; flex-direction: column; gap: 0.85rem; text-align: left; }
-.rpma-cin-field span { display: block; margin-bottom: 0.3rem; font-size: 12px; font-weight: 600; color: rgba(210,230,245,0.85); }
+.rpma-cin-field span { display: block; margin-bottom: 0.3rem; font-size: 12px; font-weight: 600; color: #3a556c; }
 .rpma-cin-wrap {
   position: relative; display: flex; align-items: center;
 }
-.rpma-cin-wrap > svg { position: absolute; left: 0.75rem; color: rgba(140,180,200,0.75); pointer-events: none; }
+.rpma-cin-wrap > svg { position: absolute; left: 0.75rem; color: #7b93a6; pointer-events: none; }
 .rpma-cin-wrap input {
   width: 100%; box-sizing: border-box;
   padding: 0.72rem 2.5rem 0.72rem 2.3rem;
   border-radius: 0.65rem;
-  border: 1px solid rgba(100,160,200,0.28);
-  background: rgba(6,16,28,0.62);
-  color: #f0f7ff; font-size: 14px; outline: none;
+  border: 1px solid #c5d3de;
+  background: #fff;
+  color: #16324a; font-size: 14px; outline: none;
 }
 .rpma-cin-wrap input:focus {
-  border-color: rgba(27,184,166,0.7);
+  border-color: #1bb8a6;
   box-shadow: 0 0 0 3px rgba(27,184,166,0.18);
 }
 .rpma-cin-eye {
   position: absolute; right: 0.5rem; border: 0; background: transparent;
-  color: rgba(160,190,210,0.8); cursor: pointer; padding: 0.35rem; display: inline-flex;
+  color: #6b8496; cursor: pointer; padding: 0.35rem; display: inline-flex;
 }
 .rpma-cin-error {
   margin: 0; padding: 0.55rem 0.7rem; border-radius: 0.5rem;
-  border: 1px solid rgba(220,80,80,0.4); background: rgba(80,20,20,0.35);
-  color: #ffb4b4; font-size: 13px;
+  border: 1px solid rgba(209,75,75,0.35); background: #fff4f4;
+  color: #9b2c2c; font-size: 13px;
 }
 .rpma-cin-submit {
   margin-top: 0.2rem; width: 100%; padding: 0.78rem 1rem; border: 0; border-radius: 0.65rem;
   background: linear-gradient(180deg, #22c9b6 0%, #1bb8a6 55%, #159e8f 100%);
   color: #041016; font-size: 15px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 8px 24px rgba(27,184,166,0.35);
+  box-shadow: 0 8px 20px rgba(27,184,166,0.28);
   transition: filter 150ms ease-out, transform 150ms ease-out;
 }
-.rpma-cin-submit:hover:not(:disabled) { filter: brightness(1.06); }
+.rpma-cin-submit:hover:not(:disabled) { filter: brightness(1.05); }
 .rpma-cin-submit:active:not(:disabled) { transform: scale(0.96); }
 .rpma-cin-submit:disabled { opacity: 0.65; cursor: wait; }
 .rpma-cin-foot {
   position: absolute; bottom: 0.85rem; left: 0; right: 0; z-index: 6;
   margin: 0; text-align: center; font-size: 0.75rem;
-  color: rgba(180,210,230,0.5); pointer-events: none;
+  color: #6b8496; pointer-events: none;
 }
 
 @media (max-width: 900px) {
   .rpma-cin-shell { grid-template-columns: 1fr; }
   .rpma-cin-left, .rpma-cin-divider { display: none; }
   .rpma-cin-vignette {
-    background: radial-gradient(ellipse 90% 70% at 50% 40%, rgba(6,16,24,0.35) 0%, rgba(6,16,24,0.78) 100%);
+    background: radial-gradient(ellipse 90% 70% at 50% 40%, rgba(255,255,255,0.55) 0%, rgba(238,243,247,0.92) 100%);
   }
   .rpma-cin-right { min-height: 100dvh; padding-bottom: 3.2rem; }
 }
