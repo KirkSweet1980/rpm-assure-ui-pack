@@ -41,6 +41,7 @@ const CONFIG_SERVICES: CorpService[] = [
       { label: "RAG", path: "/settings/rag" },
       { label: "Reports", path: "/settings/reports" },
       { label: "Collect", path: "/settings/collect" },
+      { label: "RPM Assure Agent", path: "/settings/agents" },
     ],
   },
   {
@@ -65,7 +66,6 @@ const CONFIG_SERVICES: CorpService[] = [
       { label: "UI Labels", path: "/settings/labels" },
       { label: "Dashboard", path: "/settings/dashboard" },
       { label: "Alerts", path: "/settings/alerts" },
-      { label: "RPM Assure Agent", path: "/settings/agents" },
       { label: "Report Schedules", path: "/settings/reports" },
     ],
   },
