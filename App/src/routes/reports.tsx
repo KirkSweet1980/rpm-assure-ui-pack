@@ -140,7 +140,7 @@ const REPORT_SERVICES: CorpService[] = [
   },
   {
     id: "fleet",
-    title: "Fleet Packs",
+    title: "RMM Reports",
     overview: "/reports?format=rmm-service",
     modules: [
       { label: "Remote Management Pack", path: "/reports?format=rmm-service" },

@@ -12,7 +12,7 @@ function linksForPage(ctx: AssistantContext): AssistantLink[] {
   const base = customerBase(ctx);
   if (!base) {
     return [
-      { label: "Estate", href: "/" },
+      { label: "Assure Eco-System", href: "/" },
       { label: "Reporting", href: "/reports" },
       { label: "Configuration", href: "/settings" },
     ];
@@ -29,13 +29,13 @@ function linksForPage(ctx: AssistantContext): AssistantLink[] {
 
 function pageHelp(path: string): string | null {
   if (path === "/" || path === "") {
-    return "You are on Estate. This is the executive view of all tenants: RAG, SLA, incidents and freshness. Open a customer from the tenant switcher or the left list.";
+    return "You are on Assure Eco-System. This is the executive view of all tenants: RAG, SLA, incidents and freshness. Open a customer from the tenant switcher or the left list.";
   }
   if (path.startsWith("/reports")) {
-    return "Reporting builds board packs. Pick a Service (Customer Assurance Packs, FinSight Packs, Fleet Packs, Estate Packs) then a Service Module, choose a tenant if required, then Preview or Print.";
+    return "Reporting builds board packs. Pick a Service (Customer Assurance Packs, FinSight Packs, RMM Reports, Assure Eco-System Packs) then a Service Module, choose a tenant if required, then Preview or Print.";
   }
   if (path.startsWith("/settings")) {
-    return "Configuration is Platform Admin only. Services: Platform (SQL, Certificates, Integrations), Appearance, Assurance Rules, People, Tools.";
+    return "Configuration is Platform Admin only. Landing page is Assure Infrastructure Status (connections and agents). Services: Platform (SQL, Certificates, Integrations), Appearance, Assurance Rules, People, Tools.";
   }
   if (/\/customers\/[^/]+\/syspro\/dtr/.test(path)) {
     return "FinSight is control-account reconciliation (sub-ledger vs GL). Tall bars are out-of-balance modules. Drill L1 → L2 → L3, then record status with finance.";
@@ -90,13 +90,13 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
       source: "local",
       text:
         "Cover means the tenant is in scope for that RPM Service and we collect data. No Cover (pewter) means it is not scored, not billed as that service, and does not move estate RAG. Green = Cover. Indigo = the selected item. Map Pulseway / Cove / Bitdefender / CSP in Configuration → Integrations, then run collect.",
-      links: [{ label: "Integrations", href: "/settings/integrations" }],
+      links: [{ label: "Assure Infrastructure Status", href: "/settings/infrastructure" }],
     };
   }
 
   if (q.includes("rag") || q.includes("red amber") || q.includes("why") && (q.includes("amber") || q.includes("red") || q.includes("green"))) {
     const bits = [
-      ctx.customerName ? `${ctx.customerName} is ${ctx.healthRag ?? "unscored"}.` : "Estate RAG is Green / Amber / Red from covered services only.",
+      ctx.customerName ? `${ctx.customerName} is ${ctx.healthRag ?? "unscored"}.` : "Assure Eco-System RAG is Green / Amber / Red from covered services only.",
       ctx.jobErrors ? `SYSPRO job errors: ${ctx.jobErrors}.` : null,
       ctx.finsightOob ? `FinSight out-of-balance lines: ${ctx.finsightOob}.` : null,
       ctx.rmmOffline ? `RMM servers offline: ${ctx.rmmOffline}.` : null,
@@ -114,7 +114,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
         "SLA in Assure is scored per covered pillar: SYSPRO (collect freshness, job errors, FinSight), Remote Management (server online %, critical alerts — workstations excluded), Cloud Backup (healthy vs failed/stale), Endpoint Security (managed estate). Microsoft 365 CSP is posture, not this SLA. Open Customer Assurance → SLA for clocks.",
       links: base
         ? [{ label: "SLA", href: `${base}/ams/sla` }]
-        : [{ label: "Estate", href: "/" }],
+        : [{ label: "Assure Eco-System", href: "/" }],
     };
   }
 
@@ -151,7 +151,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
         "Onboard on the customer SQL server with the one-shot script (Windows or SQL admin). It creates the read account, grants db_datareader, registers the tenant on central, then collect writes back. After SQL, map Pulseway / Cove / Bitdefender / CSP so Cover lights green. Configuration → Collect Inventory shows last import age.",
       links: [
         { label: "Collect Inventory", href: "/settings/collect" },
-        { label: "Integrations", href: "/settings/integrations" },
+        { label: "Assure Infrastructure Status", href: "/settings/infrastructure" },
       ],
     };
   }
@@ -183,7 +183,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
       return {
         source: "local",
         text: "Select a tenant first (Customer Tenant in the top bar), then ask me to open a Service Module.",
-        links: [{ label: "Estate", href: "/" }],
+        links: [{ label: "Assure Eco-System", href: "/" }],
       };
     }
     for (const [re, label, href] of go) {
