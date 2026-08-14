@@ -205,7 +205,7 @@ function InfrastructureStatusPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Configuration</p>
-          <h1 className="mt-1 flex items-center gap-2 text-[18px] font-semibold tracking-tight text-fg">
+          <h1 className="mt-1 flex items-center gap-2 text-[18px] font-extrabold tracking-tight text-fg">
             <Server className="h-5 w-5 text-muted" />
             Assure Infrastructure Status
           </h1>
@@ -218,17 +218,17 @@ function InfrastructureStatusPage() {
 
       <section className="rpma-panel overflow-hidden p-0">
         <div className="px-4 py-3">
-          <h2 className="text-[16px] font-semibold text-fg">Assure API Feed Status</h2>
+          <h2 className="text-[16px] font-extrabold text-fg">Assure API Feed Status</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[12px]">
             <thead className="rpma-table-head">
               <tr>
-                <th className="px-4 py-2 font-semibold">Connection</th>
-                <th className="px-4 py-2 font-semibold">Kind</th>
-                <th className="px-4 py-2 font-semibold">Status</th>
-                <th className="px-4 py-2 font-semibold">Last Sync</th>
-                <th className="px-4 py-2 font-semibold">Result</th>
+                <th className="px-4 py-2 font-extrabold">Connection</th>
+                <th className="px-4 py-2 font-extrabold">Kind</th>
+                <th className="px-4 py-2 font-extrabold">Status</th>
+                <th className="px-4 py-2 font-extrabold">Last Sync</th>
+                <th className="px-4 py-2 font-extrabold">Result</th>
               </tr>
             </thead>
             <tbody>
@@ -277,7 +277,7 @@ function InfrastructureStatusPage() {
 
       <section className="rpma-panel overflow-hidden p-0">
         <div className="flex items-end justify-between gap-3 px-4 py-3">
-          <h2 className="text-[16px] font-semibold text-fg">Assure Platform Agent Status</h2>
+          <h2 className="text-[16px] font-extrabold text-fg">Assure Platform Agent Status</h2>
           <p className="text-[12px] text-muted">{agents.length} customers</p>
         </div>
         {agentMsg ? <p className="px-4 pb-2 text-[12px] text-muted">{agentMsg}</p> : null}
@@ -285,11 +285,11 @@ function InfrastructureStatusPage() {
           <table className="w-full text-left text-[12px]">
             <thead className="rpma-table-head">
               <tr>
-                <th className="px-4 py-2 font-semibold">Customer Name</th>
-                <th className="px-4 py-2 font-semibold">Agent Version Installed</th>
-                <th className="px-4 py-2 font-semibold">Agent Status</th>
-                <th className="px-4 py-2 font-semibold">Agent Sync</th>
-                <th className="px-4 py-2 font-semibold">Service Cover</th>
+                <th className="px-4 py-2 font-extrabold">Customer Name</th>
+                <th className="px-4 py-2 font-extrabold">Agent Version Installed</th>
+                <th className="px-4 py-2 font-extrabold">Agent Status</th>
+                <th className="px-4 py-2 text-center font-extrabold">Agent Sync</th>
+                <th className="px-4 py-2 font-extrabold">Service Cover</th>
               </tr>
             </thead>
             <tbody>
@@ -332,8 +332,8 @@ function InfrastructureStatusPage() {
                           {st.label}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5">
-                        <span className="inline-flex items-center gap-2">
+                      <td className="px-4 py-2.5 text-center">
+                        <span className="inline-flex items-center justify-center gap-2">
                           <span
                             className={cn(
                               "inline-flex items-center gap-1.5 font-semibold",
