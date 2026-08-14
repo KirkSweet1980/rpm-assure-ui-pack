@@ -59,13 +59,17 @@ $git = Ensure-Git
 W Green ("git = " + $git)
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
 
+$lock = Join-Path $Pack '.git\index.lock'
+if (Test-Path $lock) { Remove-Item $lock -Force -EA SilentlyContinue }
+
+$got = $false
 if (Test-Path (Join-Path $Pack '.git')) {
   W Cyan ("git pull " + $Pack)
   & $git -C $Pack fetch --all --prune
-  if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
   & $git -C $Pack reset --hard origin/main
-  if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
-} else {
+  if ($LASTEXITCODE -eq 0) { $got = $true }
+}
+if (-not $got) {
   W Cyan ("git clone " + $RepoUrl)
   if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
   & $git clone --depth 1 --branch main $RepoUrl $Pack
