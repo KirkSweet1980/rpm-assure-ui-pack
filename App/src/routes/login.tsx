@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -10,9 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "split-assurance-20260814";
-const DC_VIDEO = "/brand/login-datacenter.mp4?v=20260814c";
-const DC_STILL = "/brand/login-datacenter.jpg?v=20260814c";
+const LOGIN_BUILD = "boardroom-20260814";
+const DC_STILL = "/brand/login-boardroom.jpg?v=20260814d";
 
 const WATERMARKS = ["clarity", "evidence", "source of truth", "assurance"] as const;
 
@@ -27,10 +26,10 @@ type Mark = {
 
 function scatterMarks(): Mark[] {
   const bands = [
-    { top: [7, 18], left: [5, 22] },
-    { top: [28, 42], left: [32, 52] },
-    { top: [52, 64], left: [6, 24] },
-    { top: [74, 86], left: [24, 48] },
+    { top: [8, 16], left: [6, 18] },
+    { top: [30, 40], left: [28, 46] },
+    { top: [54, 64], left: [5, 18] },
+    { top: [76, 86], left: [22, 42] },
   ];
   return WATERMARKS.map((text, i) => {
     const b = bands[i];
@@ -39,9 +38,9 @@ function scatterMarks(): Mark[] {
       text,
       top: b.top[0] + Math.random() * (b.top[1] - b.top[0]),
       left: b.left[0] + Math.random() * (b.left[1] - b.left[0]),
-      rot: -16 + Math.random() * 32,
-      size: long ? 1.15 + Math.random() * 0.45 : 1.85 + Math.random() * 1.15,
-      opacity: 0.16 + Math.random() * 0.14,
+      rot: -12 + Math.random() * 24,
+      size: long ? 1.25 + Math.random() * 0.4 : 2.05 + Math.random() * 0.85,
+      opacity: 0.18 + Math.random() * 0.1,
     };
   });
 }
@@ -54,37 +53,13 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [videoOn, setVideoOn] = useState(false);
   const [marks] = useState(scatterMarks);
-  const vidRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (!isPending && user) {
       void navigate({ to: "/" });
     }
   }, [isPending, user, navigate]);
-
-  useEffect(() => {
-    const v = vidRef.current;
-    if (!v) return;
-    v.muted = true;
-    v.defaultMuted = true;
-    v.playsInline = true;
-    const play = () => {
-      void v.play().then(() => setVideoOn(true)).catch(() => setVideoOn(false));
-    };
-    const onPlaying = () => setVideoOn(true);
-    const onFail = () => setVideoOn(false);
-    v.addEventListener("playing", onPlaying);
-    v.addEventListener("canplay", play);
-    v.addEventListener("error", onFail);
-    play();
-    return () => {
-      v.removeEventListener("playing", onPlaying);
-      v.removeEventListener("canplay", play);
-      v.removeEventListener("error", onFail);
-    };
-  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -125,20 +100,8 @@ function LoginPage() {
     <div className="rpma-dc" data-login-build={LOGIN_BUILD}>
       <style>{DC_CSS}</style>
 
-      <section className={"rpma-dc-left" + (videoOn ? " is-live" : "")} aria-hidden="true">
+      <section className="rpma-dc-left" aria-hidden="true">
         <img className="rpma-dc-still" src={DC_STILL} alt="" />
-        <video
-          ref={vidRef}
-          className="rpma-dc-vid"
-          poster={DC_STILL}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-        >
-          <source src={DC_VIDEO} type="video/mp4" />
-        </video>
         <div className="rpma-dc-vignette" />
         {marks.map((m) => (
           <span
@@ -230,9 +193,9 @@ const DC_CSS = `
   position: relative; isolation: isolate;
   min-height: 100dvh; width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(22rem, 26.5rem);
+  grid-template-columns: minmax(0, 1.5fr) minmax(22rem, 26.5rem);
   overflow: hidden;
-  background: #071018;
+  background: #dfe6ee;
   color: #e8eef4;
   font-family: Inter, system-ui, sans-serif;
 }
@@ -240,36 +203,36 @@ const DC_CSS = `
   position: relative;
   min-height: 100dvh;
   overflow: hidden;
-  background: #071018;
+  background: #cfd8e2;
 }
-.rpma-dc-vid, .rpma-dc-still {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: center 45%;
+.rpma-dc-still {
+  position: absolute; inset: -4%;
+  width: 108%; height: 108%;
+  object-fit: cover; object-position: 42% 55%;
+  animation: rpma-kb 28s ease-in-out infinite alternate;
 }
-.rpma-dc-still { z-index: 1; }
-.rpma-dc-vid { z-index: 2; opacity: 0; transition: opacity 400ms ease; }
-.rpma-dc-left.is-live .rpma-dc-vid { opacity: 1; }
-.rpma-dc-left.is-live .rpma-dc-still { opacity: 0; }
+@keyframes rpma-kb {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to { transform: scale(1.08) translate3d(-1.6%, -1.2%, 0); }
+}
 .rpma-dc-vignette {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(7,16,24,0.18) 0%, transparent 28%, rgba(7,16,24,0.42) 100%),
-    linear-gradient(180deg, rgba(7,16,24,0.22) 0%, transparent 30%, rgba(7,16,24,0.5) 100%);
+    linear-gradient(90deg, transparent 0%, transparent 72%, rgba(244,247,250,0.55) 100%),
+    linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 28%, rgba(20,32,44,0.12) 100%);
 }
 .rpma-dc-mark {
   position: absolute;
   z-index: 4;
   margin: 0;
-  max-width: 70%;
-  color: #fff;
+  max-width: 72%;
+  color: #163044;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   line-height: 0.95;
   text-transform: lowercase;
   white-space: nowrap;
   pointer-events: none;
-  text-shadow: 0 2px 18px rgba(7,16,24,0.35);
   user-select: none;
 }
 .rpma-dc-right {
@@ -282,7 +245,7 @@ const DC_CSS = `
   padding: 2.4rem 2.15rem 3.4rem;
   background: #f4f7fa;
   color: var(--ink);
-  box-shadow: -18px 0 40px rgba(7,16,24,0.18);
+  box-shadow: -16px 0 36px rgba(20,32,44,0.12);
 }
 .rpma-dc-right-inner { width: 100%; max-width: 22rem; margin: 0 auto; }
 .rpma-dc-word {
@@ -358,18 +321,17 @@ const DC_CSS = `
 @media (max-width: 860px) {
   .rpma-dc {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(34vh, 38vh) 1fr;
+    grid-template-rows: minmax(30vh, 34vh) 1fr;
   }
-  .rpma-dc-left { min-height: 34vh; }
+  .rpma-dc-left { min-height: 30vh; }
   .rpma-dc-right {
     min-height: auto;
     padding: 1.6rem 1.25rem 3.2rem;
-    box-shadow: 0 -12px 28px rgba(7,16,24,0.16);
+    box-shadow: 0 -12px 28px rgba(20,32,44,0.1);
   }
-  .rpma-dc-mark { font-size: 1.1rem !important; }
+  .rpma-dc-mark { font-size: 1.05rem !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpma-dc-vid { display: none; }
-  .rpma-dc-left.is-live .rpma-dc-still { opacity: 1; }
+  .rpma-dc-still { animation: none; }
 }
 `;
