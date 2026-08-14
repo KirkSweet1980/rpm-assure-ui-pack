@@ -15,11 +15,15 @@ export function CorpWorkspaceRail({
   homeHref,
   services,
   pathname,
+  servicesHeading = "Services",
+  modulesHeading = "Service Modules",
 }: {
   heading: string;
   homeHref: string;
   services: CorpService[];
   pathname: string;
+  servicesHeading?: string;
+  modulesHeading?: string;
 }) {
   const path = pathname.replace(/\/$/, "") || homeHref;
   const fromUrl =
@@ -53,7 +57,7 @@ export function CorpWorkspaceRail({
 
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
-          <h2>Services</h2>
+          <h2>{servicesHeading}</h2>
         </div>
         <div className="rpma-svc-static" role="navigation" aria-label="Services">
           {services.map((s) => (
@@ -71,7 +75,7 @@ export function CorpWorkspaceRail({
 
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
-          <h2>Service Modules</h2>
+          <h2>{modulesHeading}</h2>
         </div>
         <div className="rpma-mod-static" role="navigation" aria-label="Service Modules">
           {active ? (

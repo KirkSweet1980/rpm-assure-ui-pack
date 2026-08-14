@@ -116,6 +116,8 @@ function SettingsLayout() {
               homeHref="/settings"
               services={CONFIG_SERVICES}
               pathname={pathname}
+              servicesHeading="Settings"
+              modulesHeading="Service Modules"
             />
             <div className="rpma-d3-detail min-w-0">
               <div className="rpma-modnav">
