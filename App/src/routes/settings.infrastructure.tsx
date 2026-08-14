@@ -290,12 +290,13 @@ function InfrastructureStatusPage() {
                 <th className="px-4 py-2 font-extrabold">Agent Status</th>
                 <th className="px-4 py-2 text-center font-extrabold">Agent Sync</th>
                 <th className="px-4 py-2 font-extrabold">Service Cover</th>
+                <th className="px-4 py-2 text-right font-extrabold"> </th>
               </tr>
             </thead>
             <tbody>
               {agents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-muted">
+                  <td colSpan={6} className="px-4 py-6 text-muted">
                     No customers listed.
                   </td>
                 </tr>
@@ -333,27 +334,16 @@ function InfrastructureStatusPage() {
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-center">
-                        <span className="inline-flex items-center justify-center gap-2">
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1.5 font-semibold",
-                              sy.tone === "green" && "text-rag-green",
-                              sy.tone === "amber" && "text-amber-400",
-                              sy.tone === "red" && "text-rag-red",
-                            )}
-                          >
-                            <Lamp tone={sy.tone} />
-                            {sy.label}
-                          </span>
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="h-7 px-2.5 text-[11px]"
-                            disabled={!canSync}
-                            onClick={() => void syncOne(row)}
-                          >
-                            Sync
-                          </Button>
+                        <span
+                          className={cn(
+                            "inline-flex items-center justify-center gap-1.5 font-semibold",
+                            sy.tone === "green" && "text-rag-green",
+                            sy.tone === "amber" && "text-amber-400",
+                            sy.tone === "red" && "text-rag-red",
+                          )}
+                        >
+                          <Lamp tone={sy.tone} />
+                          {sy.label}
                         </span>
                       </td>
                       <td className="px-4 py-2.5">
@@ -371,6 +361,17 @@ function InfrastructureStatusPage() {
                             ))}
                           </span>
                         )}
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 px-2.5 text-[11px]"
+                          disabled={!canSync}
+                          onClick={() => void syncOne(row)}
+                        >
+                          Sync
+                        </Button>
                       </td>
                     </tr>
                   );
