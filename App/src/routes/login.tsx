@@ -1,56 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  BookMarked,
-  BookOpen,
-  Brain,
-  Cloud,
-  Eye,
-  EyeOff,
-  FileStack,
-  LayoutDashboard,
-  Lock,
-  Network,
-  Presentation,
-  ShieldCheck,
-  User,
-} from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { IdleLogoutBanner } from "@/lib/auth/idle-logout";
 import { normalizeLoginIdentifier } from "@/lib/auth/root-admin";
-import { RpmAssureMark } from "@/components/brand/rpm-assure-mark";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "ssot-arc-20260814";
-
-const NODES = [
-  { deg: 188, Icon: BookMarked, label: "SYSPRO" },
-  { deg: 156, Icon: Network, label: "Estate" },
-  { deg: 124, Icon: Brain, label: "Intelligence" },
-  { deg: 90, Icon: Presentation, label: "Exco" },
-  { deg: 56, Icon: BookOpen, label: "Reporting" },
-  { deg: 24, Icon: LayoutDashboard, label: "SLA" },
-  { deg: -8, Icon: FileStack, label: "Records" },
-] as const;
-
-const EXTRA = [
-  { deg: 210, Icon: Cloud, label: "Cloud" },
-  { deg: -30, Icon: ShieldCheck, label: "Security" },
-] as const;
-
-function nodeStyle(deg: number) {
-  const rad = (deg * Math.PI) / 180;
-  const x = Math.cos(rad);
-  const y = Math.sin(rad);
-  return {
-    left: `calc(50% + ${x * 42}vw)`,
-    top: `calc(46% - ${y * 34}vh)`,
-  } as const;
-}
+const LOGIN_BUILD = "dc-aisle-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -103,75 +63,39 @@ function LoginPage() {
   }
 
   return (
-    <div className="rpma-ssot" data-login-build={LOGIN_BUILD}>
-      <style>{SSOT_CSS}</style>
+    <div className="rpma-dc" data-login-build={LOGIN_BUILD}>
+      <style>{DC_CSS}</style>
 
-      <div className="rpma-ssot-stage" aria-hidden="true">
-        <svg className="rpma-ssot-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <linearGradient id="ssotGold" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#c9a227" />
-              <stop offset="50%" stopColor="#f0d36a" />
-              <stop offset="100%" stopColor="#c9a227" />
-            </linearGradient>
-            <radialGradient id="ssotBowl" cx="50%" cy="70%" r="70%">
-              <stop offset="0%" stopColor="#1436a8" />
-              <stop offset="70%" stopColor="#0b2278" />
-              <stop offset="100%" stopColor="#06144e" />
-            </radialGradient>
-          </defs>
-          <rect width="1600" height="900" fill="url(#ssotBowl)" />
-          <path
-            className="rpma-ssot-arc-thin"
-            d="M 80 620 A 720 520 0 0 1 1520 620"
-            fill="none"
-            stroke="url(#ssotGold)"
-            strokeWidth="2.5"
-            opacity="0.55"
-          />
-          <path
-            className="rpma-ssot-arc-gold"
-            d="M 160 680 A 640 430 0 0 1 1440 680"
-            fill="none"
-            stroke="url(#ssotGold)"
-            strokeWidth="10"
-            strokeLinecap="round"
-          />
-        </svg>
-
-        {[...NODES, ...EXTRA].map((n) => (
-          <div key={n.label} className="rpma-ssot-node" style={nodeStyle(n.deg)}>
-            <span className="rpma-ssot-arrow" />
-            <span className="rpma-ssot-disc">
-              <n.Icon size={22} strokeWidth={1.7} />
-            </span>
-            <span className="rpma-ssot-nlabel">{n.label}</span>
-          </div>
-        ))}
+      <div className="rpma-dc-stage" aria-hidden="true">
+        <video
+          className="rpma-dc-vid"
+          poster="/brand/login-datacenter.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        >
+          <source src="/brand/login-datacenter.mp4" type="video/mp4" />
+        </video>
+        <img className="rpma-dc-still" src="/brand/login-datacenter.jpg" alt="" />
+        <div className="rpma-dc-vignette" />
       </div>
 
-      <div className="rpma-ssot-center">
-        <p className="rpma-ssot-kicker">RPM Assure</p>
-        <h1 className="rpma-ssot-title">
-          <span className="is-gold">Single Source</span>
-          <span className="is-white">of Truth</span>
-        </h1>
+      <div className="rpma-dc-center">
+        <h1 className="rpma-dc-word">RPM Assure</h1>
 
-        <div className="rpma-ssot-card">
-          <div className="rpma-ssot-mark">
-            <RpmAssureMark size={72} showWordmark={false} staticMark />
-          </div>
-          <p className="rpma-ssot-tag">- Assurance Delivered -</p>
-
+        <div className="rpma-dc-card">
+          <p className="rpma-dc-tag">- Assurance Delivered -</p>
           <IdleLogoutBanner />
 
           {!authEnabled ? (
-            <p className="rpma-ssot-error">Auth is disabled.</p>
+            <p className="rpma-dc-error">Auth is disabled.</p>
           ) : (
-            <form className="rpma-ssot-form" onSubmit={onSubmit}>
-              <label className="rpma-ssot-field">
+            <form className="rpma-dc-form" onSubmit={onSubmit}>
+              <label className="rpma-dc-field">
                 <span>Username</span>
-                <span className="rpma-ssot-wrap">
+                <span className="rpma-dc-wrap">
                   <User size={16} aria-hidden />
                   <input
                     type="text"
@@ -183,9 +107,9 @@ function LoginPage() {
                   />
                 </span>
               </label>
-              <label className="rpma-ssot-field">
+              <label className="rpma-dc-field">
                 <span>Password</span>
-                <span className="rpma-ssot-wrap">
+                <span className="rpma-dc-wrap">
                   <Lock size={16} aria-hidden />
                   <input
                     type={showPw ? "text" : "password"}
@@ -198,7 +122,7 @@ function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="rpma-ssot-eye"
+                    className="rpma-dc-eye"
                     onClick={() => setShowPw((v) => !v)}
                     aria-label={showPw ? "Hide password" : "Show password"}
                     tabIndex={-1}
@@ -207,8 +131,8 @@ function LoginPage() {
                   </button>
                 </span>
               </label>
-              {error ? <p className="rpma-ssot-error">{error}</p> : null}
-              <button type="submit" className="rpma-ssot-submit" disabled={busy}>
+              {error ? <p className="rpma-dc-error">{error}</p> : null}
+              <button type="submit" className="rpma-dc-submit" disabled={busy}>
                 {busy ? "Signing in..." : "Sign in"}
               </button>
             </form>
@@ -216,185 +140,118 @@ function LoginPage() {
         </div>
       </div>
 
-      <p className="rpma-ssot-foot">Powered by RPM Resources</p>
+      <p className="rpma-dc-foot">Powered by RPM Resources</p>
     </div>
   );
 }
 
-const SSOT_CSS = `
-.rpma-ssot {
-  --ssot-navy: #0a1f72;
-  --ssot-deep: #06144e;
-  --ssot-gold: #e8c547;
-  --ssot-gold-deep: #c9a227;
-  --ssot-ink: #0b1a3a;
-  --ssot-muted: #4a5d86;
+const DC_CSS = `
+.rpma-dc {
+  --teal: #1bb8a6;
+  --ink: #0b1a3a;
+  --muted: #4a657c;
   position: relative; isolation: isolate;
   min-height: 100dvh; width: 100%;
   overflow: hidden;
-  background: radial-gradient(ellipse 90% 80% at 50% 70%, #1436a8 0%, #0b2278 55%, #06144e 100%);
-  color: #fff;
+  background: #071018;
+  color: #e8eef4;
   font-family: Inter, system-ui, sans-serif;
 }
-.rpma-ssot-stage { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.rpma-ssot-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.rpma-ssot-arc-gold {
-  stroke-dasharray: 1800;
-  stroke-dashoffset: 1800;
-  animation: ssotDraw 1.6s ease-out forwards;
+.rpma-dc-stage { position: absolute; inset: 0; z-index: 0; }
+.rpma-dc-vid, .rpma-dc-still {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 45%;
 }
-.rpma-ssot-arc-thin {
-  stroke-dasharray: 2000;
-  stroke-dashoffset: 2000;
-  animation: ssotDraw 2s 0.2s ease-out forwards;
+.rpma-dc-still { z-index: 1; }
+.rpma-dc-vid { z-index: 2; }
+.rpma-dc-vignette {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background:
+    radial-gradient(ellipse 42% 38% at 50% 38%, rgba(255,255,255,0.18) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(7,16,24,0.18) 0%, transparent 28%, rgba(7,16,24,0.55) 100%);
 }
-@keyframes ssotDraw { to { stroke-dashoffset: 0; } }
-
-.rpma-ssot-node {
-  position: absolute;
-  width: 4.6rem;
-  transform: translate(-50%, -50%);
-  display: flex; flex-direction: column; align-items: center; gap: 0.28rem;
-  animation: ssotPop 0.55s ease-out both;
-}
-.rpma-ssot-node:nth-child(3) { animation-delay: .08s; }
-.rpma-ssot-node:nth-child(4) { animation-delay: .14s; }
-.rpma-ssot-node:nth-child(5) { animation-delay: .2s; }
-.rpma-ssot-node:nth-child(6) { animation-delay: .26s; }
-.rpma-ssot-node:nth-child(7) { animation-delay: .32s; }
-.rpma-ssot-node:nth-child(8) { animation-delay: .38s; }
-.rpma-ssot-node:nth-child(9) { animation-delay: .44s; }
-.rpma-ssot-node:nth-child(10) { animation-delay: .5s; }
-@keyframes ssotPop {
-  from { opacity: 0; transform: translate(-50%, -40%) scale(0.7); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-.rpma-ssot-disc {
-  width: 3.15rem; height: 3.15rem;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  color: #fff;
-  background: radial-gradient(circle at 35% 30%, #2a58d4 0%, #12308f 70%);
-  border: 2px solid rgba(240, 211, 106, 0.85);
-  box-shadow: 0 0 0 4px rgba(10, 31, 114, 0.55), 0 8px 18px rgba(0,0,0,0.28);
-}
-.rpma-ssot-nlabel {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: rgba(255,255,255,0.78);
-  text-shadow: 0 1px 6px rgba(0,0,0,0.4);
-}
-.rpma-ssot-arrow {
-  position: absolute; left: 50%; top: calc(100% + 2px);
-  width: 1px; height: 18px;
-  background: linear-gradient(180deg, rgba(240,211,106,0.9), transparent);
-  transform: translateX(-50%);
-}
-.rpma-ssot-arrow::after {
-  content: "";
-  position: absolute; left: 50%; bottom: -3px;
-  width: 6px; height: 6px;
-  border-right: 1.5px solid #f0d36a;
-  border-bottom: 1.5px solid #f0d36a;
-  transform: translateX(-50%) rotate(45deg);
-}
-
-.rpma-ssot-center {
-  position: relative; z-index: 2;
+.rpma-dc-center {
+  position: relative; z-index: 4;
   min-height: 100dvh;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 5.5rem 1.25rem 3.2rem;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(6.5vh, 16vh, 18vh) 1.25rem 3rem;
 }
-.rpma-ssot-kicker {
-  margin: 0 0 0.35rem;
-  font-size: 0.72rem; font-weight: 800;
-  letter-spacing: 0.28em; text-transform: uppercase;
-  color: rgba(240, 211, 106, 0.9);
+.rpma-dc-word {
+  margin: 0 0 clamp(1.1rem, 3.5vh, 2rem);
+  text-align: center;
+  font-size: clamp(2.4rem, 6.4vw, 4.6rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--teal);
+  text-shadow:
+    0 0 18px rgba(255,255,255,0.85),
+    0 0 42px rgba(27,184,166,0.55),
+    0 8px 28px rgba(7,16,24,0.25);
 }
-.rpma-ssot-title {
-  margin: 0 0 1.15rem;
-  text-align: center; line-height: 0.95;
-  font-weight: 800; letter-spacing: -0.03em;
-}
-.rpma-ssot-title .is-gold {
-  display: block;
-  font-size: clamp(2.1rem, 5.2vw, 3.6rem);
-  color: #f0d36a;
-  text-shadow: 0 4px 24px rgba(0,0,0,0.28);
-}
-.rpma-ssot-title .is-white {
-  display: block;
-  margin-top: 0.12rem;
-  font-size: clamp(1.85rem, 4.6vw, 3.15rem);
-  color: #fff;
-}
-
-.rpma-ssot-card {
+.rpma-dc-card {
   width: min(100%, 24rem);
-  padding: 1.35rem 1.4rem 1.25rem;
-  border-radius: 1.15rem;
-  background: #fff;
-  color: var(--ssot-ink);
-  box-shadow: 0 28px 64px rgba(0,0,0,0.32);
-  border: 1px solid rgba(240, 211, 106, 0.35);
+  padding: 1.2rem 1.35rem 1.2rem;
+  border-radius: 1.05rem;
+  background: rgba(255,255,255,0.94);
+  color: var(--ink);
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 24px 56px rgba(7,16,24,0.32);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
-.rpma-ssot-mark { display: flex; justify-content: center; }
-.rpma-ssot-tag {
-  margin: 0.4rem 0 0.95rem;
+.rpma-dc-tag {
+  margin: 0 0 0.85rem;
   text-align: center;
   font-size: 0.68rem; font-weight: 700;
   letter-spacing: 0.16em; text-transform: uppercase;
   color: #5a8a28;
 }
-.rpma-ssot-form { display: flex; flex-direction: column; gap: 0.7rem; }
-.rpma-ssot-field span { display: block; margin-bottom: 0.26rem; font-size: 12px; font-weight: 600; color: var(--ssot-muted); }
-.rpma-ssot-wrap { position: relative; display: flex; align-items: center; }
-.rpma-ssot-wrap > svg { position: absolute; left: 0.75rem; color: #7b93a6; pointer-events: none; }
-.rpma-ssot-wrap input {
+.rpma-dc-form { display: flex; flex-direction: column; gap: 0.68rem; }
+.rpma-dc-field span { display: block; margin-bottom: 0.24rem; font-size: 12px; font-weight: 600; color: var(--muted); }
+.rpma-dc-wrap { position: relative; display: flex; align-items: center; }
+.rpma-dc-wrap > svg { position: absolute; left: 0.75rem; color: #7b93a6; pointer-events: none; }
+.rpma-dc-wrap input {
   width: 100%; box-sizing: border-box;
   padding: 0.68rem 2.5rem 0.68rem 2.3rem;
   border-radius: 0.6rem;
   border: 1px solid #c9d3e2;
   background: #fff;
-  color: var(--ssot-ink); font-size: 14px; outline: none;
+  color: var(--ink); font-size: 14px; outline: none;
 }
-.rpma-ssot-wrap input:focus {
-  border-color: #1a4db8;
-  box-shadow: 0 0 0 3px rgba(20, 54, 168, 0.16);
+.rpma-dc-wrap input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(27,184,166,0.18);
 }
-.rpma-ssot-eye {
+.rpma-dc-eye {
   position: absolute; right: 0.5rem; border: 0; background: transparent;
   color: #6b8496; cursor: pointer; padding: 0.35rem; display: inline-flex;
 }
-.rpma-ssot-error {
+.rpma-dc-error {
   margin: 0; padding: 0.5rem 0.65rem; border-radius: 0.5rem;
   border: 1px solid rgba(209,75,75,0.35); background: #fff4f4;
   color: #9b2c2c; font-size: 13px;
 }
-.rpma-ssot-submit {
-  margin-top: 0.1rem; width: 100%; padding: 0.74rem 1rem; border: 0; border-radius: 0.6rem;
-  background: linear-gradient(180deg, #2a58d4 0%, #1436a8 100%);
-  color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 8px 18px rgba(10, 31, 114, 0.28);
+.rpma-dc-submit {
+  margin-top: 0.05rem; width: 100%; padding: 0.74rem 1rem; border: 0; border-radius: 0.6rem;
+  background: var(--teal); color: #fff;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 8px 18px rgba(27,184,166,0.28);
   transition: filter 150ms ease-out, transform 150ms ease-out;
 }
-.rpma-ssot-submit:hover:not(:disabled) { filter: brightness(1.06); }
-.rpma-ssot-submit:active:not(:disabled) { transform: scale(0.97); }
-.rpma-ssot-submit:disabled { opacity: 0.65; cursor: wait; }
-.rpma-ssot-foot {
-  position: absolute; bottom: 0.75rem; left: 0; right: 0; z-index: 3;
+.rpma-dc-submit:hover:not(:disabled) { filter: brightness(1.06); }
+.rpma-dc-submit:active:not(:disabled) { transform: scale(0.97); }
+.rpma-dc-submit:disabled { opacity: 0.65; cursor: wait; }
+.rpma-dc-foot {
+  position: absolute; bottom: 0.7rem; left: 0; right: 0; z-index: 4;
   margin: 0; text-align: center; font-size: 0.72rem;
-  color: rgba(255,255,255,0.55);
-}
-
-@media (max-width: 860px) {
-  .rpma-ssot-node { display: none; }
-  .rpma-ssot-center { padding-top: 2.4rem; }
-  .rpma-ssot-title .is-gold { font-size: 1.85rem; }
-  .rpma-ssot-title .is-white { font-size: 1.65rem; }
+  color: rgba(255,255,255,0.72);
+  text-shadow: 0 1px 8px rgba(7,16,24,0.55);
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpma-ssot-arc-gold, .rpma-ssot-arc-thin, .rpma-ssot-node { animation: none; }
-  .rpma-ssot-arc-gold, .rpma-ssot-arc-thin { stroke-dashoffset: 0; }
+  .rpma-dc-vid { display: none; }
 }
 `;
