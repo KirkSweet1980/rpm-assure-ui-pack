@@ -53,7 +53,11 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [marks] = useState(scatterMarks);
+  const [marks, setMarks] = useState<Mark[]>([]);
+
+  useEffect(() => {
+    setMarks(scatterMarks());
+  }, []);
 
   useEffect(() => {
     if (!isPending && user) {
