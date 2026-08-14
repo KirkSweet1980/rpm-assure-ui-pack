@@ -73,7 +73,6 @@ export function inferCustomerCover(input: {
   cspMapped?: boolean | null;
 }): CustomerCover {
   const sysproEvidence =
-    hasText(input.sqlInstanceName) ||
     (Number(input.operatorCount) || 0) > 0 ||
     (Number(input.activeUserCount) || 0) > 0 ||
     hasText(input.sysproLastImportAt) ||

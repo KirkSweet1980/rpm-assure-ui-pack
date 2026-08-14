@@ -317,12 +317,14 @@ function recomputeRowHealth(row: PortfolioRow): void {
     sysproLastImportAt: row.lastImportAt,
     pulsewayOrgName: row.pulsewayOrgName,
     pulsewayDeviceCount: row.pulsewayDeviceCount,
-    pulsewayMapped: (row.pulsewayDeviceCount ?? 0) > 0,
+    pulsewayMapped: (row.pulsewayDeviceCount ?? 0) > 0 || Boolean(row.pulsewayOrgName) || row.pillarPulseway === true,
     coveDeviceCount: row.coveDeviceCount,
-    coveMapped: (row.coveDeviceCount ?? 0) > 0,
+    coveMapped: (row.coveDeviceCount ?? 0) > 0 || row.pillarCove === true,
     eppDeviceCount: row.eppDeviceCount ?? 0,
+    eppMapped: row.pillarEpp === true,
     cspUserCount: row.cspUserCount ?? 0,
     cspLicenseCount: row.cspLicenseSkuCount ?? 0,
+    cspMapped: row.pillarCsp === true,
   });
   // Instance mapped => Covered unless explicit PillarSyspro = false (deferred No Cover)
   if (
@@ -706,7 +708,7 @@ GROUP BY CustomerCode`);
 
     for (const row of rows) {
       const c = byCode.get(row.customerCode.toUpperCase());
-      if (!c) continue;
+      if (c) {
       const cls = classByCode.get(row.customerCode.toUpperCase());
       applyPulsewayToRow(row, {
         deviceCount: Number(c.DeviceCount) || 0,
@@ -721,6 +723,27 @@ GROUP BY CustomerCode`);
         workstationOnline: cls?.workstationOnline,
         workstationOffline: cls?.workstationOffline,
       });
+      }
+    }
+    try {
+      const maps = await pool.request().query(`
+SELECT DISTINCT CustomerCode FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)
+WHERE ISNULL(Active,1) = 1
+  AND OrganizationName NOT LIKE N'Invalid%'
+  AND LTRIM(RTRIM(ISNULL(OrganizationName,N''))) <> N''`);
+      const mapped = new Set(
+        (maps.recordset ?? []).map((r: { CustomerCode: string }) =>
+          String(r.CustomerCode).toUpperCase(),
+        ),
+      );
+      for (const row of rows) {
+        if (mapped.has(row.customerCode.toUpperCase())) {
+          row.pillarPulseway = true;
+          if (row.cover) row.cover = { ...row.cover, rmm: true };
+        }
+      }
+    } catch {
+      /* map optional */
     }
   } catch (e) {
     console.warn("[rpm-assure] Pulseway portfolio enrich skipped:", e instanceof Error ? e.message : e);
@@ -762,8 +785,8 @@ SELECT DISTINCT CustomerCode FROM dbo.Dim_Cove_PartnerMap WITH (NOLOCK) WHERE Ac
         row.coveOkDeviceCount = Number(c.OkCount) || 0;
         row.coveLastImportAt = toIso(c.ImportedAt);
       }
-      if (mapped.has(row.customerCode.toUpperCase()) && row.cover) {
-        row.cover = { ...row.cover, cove: true };
+      if (mapped.has(row.customerCode.toUpperCase())) {
+        row.cover = { ...(row.cover ?? { syspro: false, rmm: false, cove: false }), cove: true };
         row.pillarCove = true;
       }
     }
@@ -857,6 +880,25 @@ GROUP BY UPPER(LTRIM(RTRIM(e.CustomerCode)))`);
         };
       }
     }
+    try {
+      const maps = await pool.request().query(`
+SELECT DISTINCT CustomerCode FROM dbo.Dim_Bitdefender_CompanyMap WITH (NOLOCK)
+WHERE ISNULL(Active,1) = 1
+  AND CompanyName NOT LIKE N'Invalid%'
+  AND CompanyName NOT LIKE N'%column name%'
+  AND LTRIM(RTRIM(ISNULL(CompanyName,N''))) <> N''`);
+      for (const r of maps.recordset ?? []) {
+        const row = rows.find(
+          (x) => x.customerCode.toUpperCase() === String(r.CustomerCode).toUpperCase(),
+        );
+        if (row) {
+          row.pillarEpp = true;
+          if (row.cover) row.cover = { ...row.cover, epp: true };
+        }
+      }
+    } catch {
+      /* map optional */
+    }
   } catch (e) {
     console.warn(
       "[rpm-assure] EPP/Bitdefender portfolio enrich skipped:",
@@ -933,6 +975,22 @@ GROUP BY UPPER(LTRIM(RTRIM(CustomerCode)))`);
         };
         row.pillarCsp = true;
       }
+    }
+    try {
+      const maps = await pool.request().query(`
+SELECT DISTINCT CustomerCode FROM dbo.Dim_Csp_TenantMap WITH (NOLOCK)
+WHERE ISNULL(Active,1) = 1`);
+      for (const r of maps.recordset ?? []) {
+        const row = rows.find(
+          (x) => x.customerCode.toUpperCase() === String(r.CustomerCode).toUpperCase(),
+        );
+        if (row) {
+          row.pillarCsp = true;
+          if (row.cover) row.cover = { ...row.cover, csp: true };
+        }
+      }
+    } catch {
+      /* map optional */
     }
     // Lean EXCO posture (one row per customer) — view, else latest Csp_Posture
     try {
@@ -2340,10 +2398,11 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
       sysproDtrVarianceLines: row.sysproDtrVarianceLines,
       pulsewayOrgName: row.pulsewayOrgName,
       pulsewayDeviceCount: row.pulsewayDeviceCount,
-      pulsewayMapped: (row.pulsewayDeviceCount ?? 0) > 0 || Boolean(row.pulsewayOrgName),
+      pulsewayMapped: (row.pulsewayDeviceCount ?? 0) > 0 || Boolean(row.pulsewayOrgName) || row.pillarPulseway === true,
       coveDeviceCount: row.coveDeviceCount,
-      coveMapped: (row.coveDeviceCount ?? 0) > 0,
+      coveMapped: (row.coveDeviceCount ?? 0) > 0 || row.pillarCove === true,
       eppDeviceCount: row.eppDeviceCount ?? 0,
+      eppMapped: row.pillarEpp === true,
     });
     const healthScorePct = excoHealthScore({
       rag: row.healthRag,
@@ -2911,8 +2970,8 @@ WHERE CustomerCode = @code`);
   if (instanceName) instanceName = String(instanceName).trim() || null;
 
   // If Dim_Customer has no SqlInstanceName, probe warehouse for a matching instance
-  // (same rule for every customer — Hydrasales / Redsun / etc.)
-  if (!instanceName) {
+  // (same rule for every customer). Skip when SYSPRO is explicitly deferred (HYDRA).
+  if (!instanceName && customer.pillarSyspro !== false) {
     try {
       const display = String(customer.displayName || code || "");
       const probe = await pool
@@ -3990,6 +4049,10 @@ ORDER BY OrganizationName`);
           notes: r.Notes != null ? String(r.Notes) : null,
         }),
       );
+      if (rmm.mapping.some((m) => m.active && m.organizationName && !/^invalid/i.test(m.organizationName))) {
+        customer.pillarPulseway = true;
+        rmm.pillarOn = true;
+      }
     } catch {
       rmm.mapping = [];
     }
@@ -4521,6 +4584,13 @@ WHERE CustomerCode = @code`);
         active: r.Active == null ? true : Boolean(r.Active),
         notes: r.Notes != null ? String(r.Notes) : null,
       }));
+      if (
+        cove.mapping.some(
+          (m) => m.active && m.partnerName && !/^invalid/i.test(m.partnerName) && !/column name/i.test(m.partnerName),
+        )
+      ) {
+        customer.pillarCove = true;
+      }
     } catch {
       cove.mapping = [];
     }
@@ -5554,6 +5624,7 @@ ORDER BY UpdatedAtUtc DESC`);
             openIncidents: null,
             lastSyncAt: toIso(tr.UpdatedAtUtc ?? null),
           };
+          customer.pillarCsp = true;
         }
       } catch {
         /* map optional */
@@ -5926,8 +5997,8 @@ ORDER BY UserPrincipalName, DisplayName`);
         : customer.coveDeviceCount ?? 0,
     coveMapped:
       typeof cove !== "undefined" && cove
-        ? (cove.mapping?.length ?? 0) > 0 || (cove.devices?.length ?? 0) > 0
-        : false,
+        ? (cove.mapping?.length ?? 0) > 0 || (cove.devices?.length ?? 0) > 0 || customer.pillarCove === true
+        : customer.pillarCove === true,
     covePartnerName:
       typeof cove !== "undefined" && cove?.mapping?.[0]?.partnerName
         ? cove.mapping[0].partnerName
@@ -5936,8 +6007,10 @@ ORDER BY UserPrincipalName, DisplayName`);
       typeof epp !== "undefined" && epp
         ? epp.summary?.deviceCount ?? epp.devices?.length ?? customer.eppDeviceCount ?? 0
         : customer.eppDeviceCount ?? 0,
+    eppMapped: customer.pillarEpp === true,
     cspUserCount: customer.cspUserCount ?? csp?.users?.length ?? 0,
     cspLicenseCount: customer.cspLicenseSkuCount ?? csp?.licenses?.length ?? 0,
+    cspMapped: customer.pillarCsp === true || Boolean(csp?.tenant),
   });
   // EPP cover from devices (and explicit AmsConfig.PillarBitdefender)
   const eppCount =
@@ -5965,8 +6038,7 @@ ORDER BY UserPrincipalName, DisplayName`);
   const sysproHardOff = customer.pillarSyspro === false;
   const sysproLoadedEvidence =
     !sysproHardOff &&
-    (Boolean(instanceName && String(instanceName).trim()) ||
-      (typeof operators !== "undefined" && operators.length > 0) ||
+    ((typeof operators !== "undefined" && operators.length > 0) ||
       (typeof jobErrors !== "undefined" && jobErrors.length > 0) ||
       (typeof dtrLevel1 !== "undefined" && dtrLevel1.length > 0) ||
       Boolean(license) ||
@@ -6043,7 +6115,9 @@ ORDER BY UserPrincipalName, DisplayName`);
 
   const coveHasData =
     (cove.devices?.length ?? 0) > 0 ||
-    (cove.summary?.deviceCount ?? 0) > 0;
+    (cove.summary?.deviceCount ?? 0) > 0 ||
+    (cove.mapping?.filter((m) => m.active && m.partnerName && !/^invalid/i.test(m.partnerName)).length ?? 0) > 0 ||
+    customer.pillarCove === true;
   if (coveHasData && !cover.cove && customer.pillarCove !== false) {
     cover = { ...cover, cove: true };
     customer.cover = { ...(customer.cover ?? cover), cove: true };
@@ -6155,9 +6229,9 @@ ORDER BY UserPrincipalName, DisplayName`);
       sysproLastImportAt: customer.lastImportAt,
       pulsewayOrgName: customer.pulsewayOrgName,
       pulsewayDeviceCount: rmm.devices?.length ?? customer.pulsewayDeviceCount,
-      pulsewayMapped: (rmm.devices?.length ?? 0) > 0 || rmm.pillarOn,
+      pulsewayMapped: (rmm.devices?.length ?? 0) > 0 || rmm.pillarOn || (rmm.mapping?.length ?? 0) > 0,
       coveDeviceCount: cove?.devices?.length ?? customer.coveDeviceCount,
-      coveMapped: (cove?.devices?.length ?? 0) > 0,
+      coveMapped: (cove?.devices?.length ?? 0) > 0 || (cove?.mapping?.length ?? 0) > 0 || customer.pillarCove === true,
       eppDeviceCount:
         epp?.summary?.deviceCount ??
         epp?.devices?.length ??
