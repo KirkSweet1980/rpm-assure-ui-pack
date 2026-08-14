@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-boxes-20260814";
-const DC_STILL = "/brand/login-boardroom.jpg?v=20260814f";
+const LOGIN_BUILD = "boardroom-centered-20260814";
+const DC_STILL = "/brand/login-boardroom.jpg?v=20260814g";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -166,24 +166,20 @@ const DC_CSS = `
   background: #cfd8e2;
 }
 .rpma-dc-scene {
-  position: absolute; inset: -3%;
-  width: 106%; height: 106%;
-  animation: rpma-kb 28s ease-in-out infinite alternate;
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
 }
 .rpma-dc-still {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  object-fit: cover; object-position: 32% 30%;
+  object-fit: cover; object-position: 28% 28%;
 }
 .rpma-dc-marks {
   position: absolute; inset: 0; z-index: 4;
-  display: grid;
-  grid-template-columns: 8% 27% 10% 34% 1fr;
-  grid-template-rows: 9% 20% 5% 28% 1fr;
   pointer-events: none;
 }
 .rpma-dc-marks span {
-  display: flex; align-items: center; justify-content: center;
+  position: absolute;
   margin: 0;
   color: #102436;
   font-weight: 800;
@@ -191,17 +187,15 @@ const DC_CSS = `
   line-height: 1;
   text-transform: lowercase;
   text-align: center;
+  white-space: nowrap;
   opacity: 0.34;
   user-select: none;
+  transform: translate(-50%, -50%);
 }
-.m-clarity { grid-column: 2; grid-row: 2; font-size: clamp(1.5rem, 3.1vw, 2.35rem); }
-.m-evidence { grid-column: 4; grid-row: 2; font-size: clamp(1.5rem, 3.1vw, 2.35rem); }
-.m-sot { grid-column: 2; grid-row: 4; font-size: clamp(0.95rem, 1.7vw, 1.35rem); }
-.m-assurance { grid-column: 4; grid-row: 4; font-size: clamp(1.45rem, 2.9vw, 2.2rem); }
-@keyframes rpma-kb {
-  from { transform: scale(1) translate3d(0, 0, 0); }
-  to { transform: scale(1.06) translate3d(-1.2%, -0.8%, 0); }
-}
+.m-clarity { left: 25.5%; top: 15.5%; font-size: clamp(1.55rem, 3.2vw, 2.4rem); }
+.m-evidence { left: 58.5%; top: 15.5%; font-size: clamp(1.55rem, 3.2vw, 2.4rem); }
+.m-sot { left: 25.5%; top: 41%; font-size: clamp(0.95rem, 1.7vw, 1.3rem); }
+.m-assurance { left: 58.5%; top: 41%; font-size: clamp(1.45rem, 2.9vw, 2.2rem); }
 .rpma-dc-vignette {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
   background:
