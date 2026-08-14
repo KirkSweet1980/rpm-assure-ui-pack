@@ -10,8 +10,9 @@ import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import type { ExcoCustomerBoard, ExcoInsightPayload } from "@/lib/data/types";
 import { buildExcoPillarSla, hasSlaCover } from "@/lib/data/exco-sla-stats";
 import { finsightOobAttention } from "@/lib/brand/finsight";
-import { cn, formatSastDateTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ChevronRight, RefreshCw } from "lucide-react";
+import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
 import {
   ESTATE_VIEWS,
   allEstateViews,
@@ -993,13 +994,10 @@ function ExcoInsightPage() {
     <RequireAuth>
       <AppShell>
         <div className="rpma-exco space-y-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Customer Eco-System</p>
-            <h1 className="mt-1 text-[18px] font-extrabold tracking-tight text-fg">Customer Eco-System</h1>
-            <p className="mt-0.5 text-[12px] text-muted">
-              {source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · {formatSastDateTime(exco.generatedAt || summary.generatedAt)}
-            </p>
-          </div>
+          <HeadsUpDisplay
+            liveSql={source.liveOk || summary.dataMode === "live"}
+            generatedAt={exco.generatedAt || summary.generatedAt}
+          />
           <div className="rpma-viewbar">
             {allEstateViews(customViews).map((v) => (
               <span key={v.id} className="inline-flex items-center">
