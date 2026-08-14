@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, Printer, RefreshCw } from "lucide-react";
+import { CalendarCheck, ClipboardList, FileStack, Gauge, HardDrive, Layers, Loader2, Printer, RefreshCw, Server, Shield, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
@@ -45,105 +45,120 @@ const PACKS: {
   when: string;
   blurb: string;
   needsCustomer: boolean;
-  icon: "day" | "ams" | "estate" | "rmm";
+  service: "ams" | "finsight" | "fleet" | "estate";
 }[] = [
   {
     id: "ams-monthly",
-    title: "Monthly AMS pack",
+    title: "Monthly AMS Pack",
     when: "Monthly",
-    blurb: "Signed SLA evidence: health, day-end, jobs, FinSight, operators, hotfixes, RPM clocks. No 99.5%. No Cove/EPP.",
+    blurb: "Signed SLA evidence — health, jobs, FinSight, operators, RPM clocks.",
     needsCustomer: true,
-    icon: "ams",
-  },
-  {
-    id: "day-end",
-    title: "Day end · FinSight",
-    when: "Daily",
-    blurb: "Daily close: collect OK, FinSight control matrix, exception register, SQL backups.",
-    needsCustomer: true,
-    icon: "day",
-  },
-  {
-    id: "period-end",
-    title: "Period end · FinSight",
-    when: "Month-end",
-    blurb: "Close readiness: modules in balance, material OOB, ops gates, actions.",
-    needsCustomer: true,
-    icon: "day",
+    service: "ams",
   },
   {
     id: "ams-weekly",
-    title: "Weekly RPM Assure digest",
+    title: "Weekly Digest",
     when: "Weekly",
-    blurb: "Ops + FinSight: health, jobs, OOB lines, backups, licence, risks.",
+    blurb: "Ops snapshot — health, jobs, OOB, licence, and risks.",
     needsCustomer: true,
-    icon: "ams",
+    service: "ams",
   },
   {
     id: "ams-full",
-    title: "Applications RPM Assure Report",
+    title: "Full Assurance Pack",
     when: "On demand",
-    blurb: "Full RPM Assure pack anytime — board structure.",
+    blurb: "Board-length RPM Assure pack for any tenant.",
     needsCustomer: true,
-    icon: "ams",
+    service: "ams",
+  },
+  {
+    id: "day-end",
+    title: "Day End",
+    when: "Daily",
+    blurb: "Collect OK, control matrix, exception register, SQL backups.",
+    needsCustomer: true,
+    service: "finsight",
+  },
+  {
+    id: "period-end",
+    title: "Period End",
+    when: "Month-end",
+    blurb: "Close readiness — modules in balance, material OOB, actions.",
+    needsCustomer: true,
+    service: "finsight",
   },
   {
     id: "rmm-service",
     title: "Remote Management Pack",
     when: "On demand",
-    blurb: "Fleet, alerts, patches, offline. Servers feed SLA. Workstations visibility only.",
+    blurb: "Fleet, alerts, patches, and offline. Servers feed SLA.",
     needsCustomer: true,
-    icon: "rmm",
+    service: "fleet",
   },
   {
     id: "rmm-availability",
     title: "Server Availability",
     when: "On demand",
-    blurb: "Server uptime %, offline hours 7d/30d, last seen, reboot age. Workstations listed, not SLA.",
+    blurb: "Uptime %, offline hours, last seen. Workstations not in SLA.",
     needsCustomer: true,
-    icon: "rmm",
+    service: "fleet",
   },
   {
     id: "rmm-patch",
     title: "Patch Compliance",
     when: "On demand",
-    blurb: "Server compliance %, missing/pending backlog. Workstation backlog is visibility only.",
+    blurb: "Server compliance % and missing / pending backlog.",
     needsCustomer: true,
-    icon: "rmm",
+    service: "fleet",
   },
   {
     id: "rmm-capacity",
     title: "Capacity & Performance",
     when: "On demand",
-    blurb: "Disk ≥85%, CPU ≥80%, memory ≥85%, peak IOPS. Servers first.",
+    blurb: "Disk ≥85%, CPU, memory, peak IOPS. Servers first.",
     needsCustomer: true,
-    icon: "rmm",
-  },
-  {
-    id: "services-cover",
-    title: "Services on cover",
-    when: "On demand",
-    blurb: "Cross-pillar snapshot: cover strip + RMM / Backup / EPP / M365 / FinSight highlights.",
-    needsCustomer: true,
-    icon: "rmm",
+    service: "fleet",
   },
   {
     id: "estate",
-    title: "Assure Eco-System overview",
+    title: "Eco-System Overview",
     when: "Anytime",
-    blurb: "All customers — health, attention list, FinSight OOB roll-up.",
+    blurb: "All customers — health, attention, FinSight roll-up.",
     needsCustomer: false,
-    icon: "estate",
+    service: "estate",
+  },
+  {
+    id: "services-cover",
+    title: "Services On Cover",
+    when: "On demand",
+    blurb: "Cover strip plus RMM, Backup, EPP, M365, FinSight.",
+    needsCustomer: true,
+    service: "estate",
   },
   {
     id: "custom-pack",
-    title: "Custom report",
+    title: "Custom Pack",
     when: "On demand",
-    blurb: "Pick fields from the catalog — build your own pack, then print.",
+    blurb: "Pick fields from the catalog, then preview and print.",
     needsCustomer: true,
-    icon: "ams",
+    service: "estate",
   },
 ];
+
+const PACK_ICON: Record<ReportFormat, typeof Shield> = {
+  "ams-monthly": ShieldCheck,
+  "ams-weekly": ClipboardList,
+  "ams-full": FileStack,
+  "day-end": CalendarCheck,
+  "period-end": Layers,
+  "rmm-service": Server,
+  "rmm-availability": Gauge,
+  "rmm-patch": Shield,
+  "rmm-capacity": HardDrive,
+  estate: Layers,
+  "services-cover": ShieldCheck,
+  "custom-pack": FileStack,
+};
 
 const REPORT_SERVICES: CorpService[] = [
   {
@@ -430,30 +445,47 @@ function ReportsPage() {
             </div>
 
             {!pack ? (
-              <section>
+              <section className="rpma-rpt-catalog">
                 <div className="rpma-rpt-hero">
                   <div>
-                    <h2>Reporting</h2>
-                    <p>
-                      Choose a service on the left, then a pack. Preview in the browser and
-                      print to PDF. Outbound email schedules are off in this release.
-                    </p>
+                    <h2>Report catalog</h2>
+                    <p>Pick a pack. Preview in the browser, then print to PDF.</p>
                   </div>
                 </div>
-                <div className="rpma-rpt-grid">
-                  {PACKS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => selectFormat(p.id)}
-                      className="rpma-rpt-card"
-                    >
-                      <p className="when">{p.when}</p>
-                      <h3>{p.title}</h3>
-                      <p className="blurb">{p.blurb}</p>
-                    </button>
-                  ))}
-                </div>
+                {REPORT_SERVICES.map((svc) => {
+                  const packs = PACKS.filter((p) => p.service === svc.id);
+                  return (
+                    <div key={svc.id} className="rpma-rpt-block">
+                      <header className="rpma-rpt-block-head">
+                        <h3>{svc.title}</h3>
+                        <span>{packs.length}</span>
+                      </header>
+                      <div className="rpma-rpt-grid">
+                        {packs.map((p) => {
+                          const Icon = PACK_ICON[p.id];
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => selectFormat(p.id)}
+                              className="rpma-rpt-card"
+                            >
+                              <div className="rpma-rpt-card-top">
+                                <span className="rpma-rpt-ico" aria-hidden>
+                                  <Icon size={16} />
+                                </span>
+                                <span className="when">{p.when}</span>
+                              </div>
+                              <h3>{p.title}</h3>
+                              <p className="blurb">{p.blurb}</p>
+                              <span className="rpma-rpt-open">Open pack</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </section>
             ) : (
               <>
