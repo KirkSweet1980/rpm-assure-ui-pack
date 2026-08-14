@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Check, RefreshCw, X } from "lucide-react";
+import { Bot, Check, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   fetchConfigHealth,
@@ -22,6 +22,37 @@ type ConnRow = {
   notes: string | null;
   lastSyncAt: string | null;
 };
+
+const KIND_LABEL: Record<string, string> = {
+  erp: "ERP",
+  rmm: "RMM",
+  epp: "EPP",
+  backup: "BACKUP",
+  licensing: "LICENSING",
+};
+
+function kindLabel(raw: string) {
+  return KIND_LABEL[raw.trim().toLowerCase()] ?? raw.trim().toUpperCase();
+}
+
+function kindToHealthId(raw: string) {
+  const k = raw.trim().toLowerCase();
+  if (k === "erp") return "syspro";
+  if (k === "rmm") return "rmm";
+  if (k === "epp") return "epp";
+  if (k === "backup") return "cove";
+  if (k === "licensing") return "csp";
+  return "";
+}
+
+function syncTone(iso: string | null): { tone: "green" | "amber" | "red"; result: string } {
+  if (!iso) return { tone: "red", result: "Never" };
+  const h = (Date.now() - new Date(iso).getTime()) / 3600000;
+  if (!Number.isFinite(h) || h < 0) return { tone: "red", result: "Never" };
+  if (h <= 24) return { tone: "green", result: "OK" };
+  if (h <= 72) return { tone: "amber", result: "Stale" };
+  return { tone: "red", result: "Stale" };
+}
 
 function formatSqlCard(item: ConfigHealthItem) {
   if (item.source !== "sql") {
@@ -61,7 +92,7 @@ function HealthTile({ item }: { item: ConfigHealthItem }) {
       </span>
       {item.source !== "sql" ? (
         <span className="text-[10px] uppercase tracking-wide text-muted">
-          {item.source === "agent" ? "SYSPRO · RPM Assure Agent" : item.source === "api" ? "API" : "Platform"}
+          {item.source === "agent" ? "SYSPRO \u00b7 RPM Assure Agent" : item.source === "api" ? "API" : "Platform"}
         </span>
       ) : null}
       <span className={cn("text-[12px] font-semibold", item.ok ? "text-rag-green" : "text-rag-red")}>
@@ -123,33 +154,66 @@ function IntegrationsPage() {
       </div>
 
       <div className="rpma-panel overflow-x-auto p-0">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
+        <table className="w-full min-w-[720px] text-left text-[13px]">
           <thead className="border-b border-border bg-surface-2 text-[10px] uppercase tracking-wide text-muted">
             <tr>
               <th className="px-3 py-2 font-semibold">Connection</th>
               <th className="px-3 py-2 font-semibold">Kind</th>
               <th className="px-3 py-2 font-semibold">Status</th>
               <th className="px-3 py-2 font-semibold">Last sync</th>
+              <th className="px-3 py-2 font-semibold">Result</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-muted">
+                <td colSpan={5} className="px-3 py-6 text-center text-muted">
                   {msg || "No Dim_Connection rows. Health tiles above still probe live tables."}
                 </td>
               </tr>
             ) : (
-              rows.map((r) => (
-                <tr key={r.connectionCode} className="border-b border-border/70 last:border-0">
-                  <td className="px-3 py-2.5 font-medium text-fg">{r.displayName}</td>
-                  <td className="px-3 py-2.5 text-muted">{r.sourceKind}</td>
-                  <td className="px-3 py-2.5">{r.status}</td>
-                  <td className="px-3 py-2.5 text-[12px] text-muted">
-                    {r.lastSyncAt ? formatSastDateTime(r.lastSyncAt) : "—"}
-                  </td>
-                </tr>
-              ))
+              rows.map((r) => {
+                const hid = kindToHealthId(r.sourceKind);
+                const live = health.find((h) => h.id === hid);
+                const lastAt = r.lastSyncAt || live?.lastAt || null;
+                const { tone, result } = syncTone(lastAt);
+                return (
+                  <tr key={r.connectionCode} className="border-b border-border/70 last:border-0">
+                    <td className="px-3 py-2.5 font-medium text-fg">{r.displayName}</td>
+                    <td className="px-3 py-2.5 font-semibold tracking-wide text-muted">{kindLabel(r.sourceKind)}</td>
+                    <td className="px-3 py-2.5">{r.status}</td>
+                    <td className="px-3 py-2.5">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Bot
+                          className={cn(
+                            "size-3.5 shrink-0",
+                            tone === "green" && "text-emerald-500",
+                            tone === "amber" && "text-amber-400",
+                            tone === "red" && "text-red-500",
+                          )}
+                          strokeWidth={2.25}
+                          aria-hidden
+                        />
+                        <span className="text-[12px] text-muted">
+                          {lastAt ? formatSastDateTime(lastAt) : "No collect yet"}
+                        </span>
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={cn(
+                          "text-[12px] font-semibold",
+                          tone === "green" && "text-emerald-500",
+                          tone === "amber" && "text-amber-500",
+                          tone === "red" && "text-red-500",
+                        )}
+                      >
+                        {result}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
