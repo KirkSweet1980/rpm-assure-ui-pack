@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.3.0"
+$AgentVersion = "2.3.1"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -226,8 +226,14 @@ WHEN MATCHED THEN UPDATE SET
   RoleTags = $(Sql-Lit $RoleTags),
   InstanceName = $(Sql-Lit $hc.Instance),
   InstallPath = $(Sql-Lit $AgentRoot),
-  LastStatus = N'ONLINE',
-  LastMessage = N'heartbeat ok'
+  LastStatus = CASE
+    WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING') THEN t.LastStatus
+    ELSE N'ONLINE'
+  END,
+  LastMessage = CASE
+    WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING') THEN t.LastMessage
+    ELSE N'heartbeat ok'
+  END
 WHEN NOT MATCHED THEN INSERT (CustomerCode, HostName, InstanceName, AgentVersion, RoleTags, InstallPath, LastHeartbeatUtc, LastStatus, LastMessage)
   VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $hc.Instance), $(Sql-Lit $AgentVersion), $(Sql-Lit $RoleTags), $(Sql-Lit $AgentRoot), SYSUTCDATETIME(), N'ONLINE', N'registered');
 
@@ -245,14 +251,14 @@ VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Li
 if (-not $hostCustomers.Count) { $hbFailed = $true }
 Write-RpmaStatusFile -Online (-not $hbFailed) -Message $(if ($hbFailed) { 'heartbeat failed' } else { 'heartbeat ok' })
 
-# Auto-update when Assure queued LastStatus=UPDATE
+# Auto-update: SQL queue (UPDATE) and/or newer VERSION in local git pack
 try {
   $qUp = @"
 SET NOCOUNT ON;
 SELECT TOP 1 LastMessage
 FROM dbo.Agent_Registry WITH (NOLOCK)
 WHERE HostName = $(Sql-Lit $HostName)
-  AND (LastStatus = N'UPDATE' OR LastMessage LIKE N'update requested%');
+  AND (LastStatus IN (N'UPDATE', N'UPDATING') OR LastMessage LIKE N'update requested%');
 "@
   $ur = Invoke-CentralSql -SqlText $qUp -Tsv
   $needUp = $false
@@ -261,34 +267,71 @@ WHERE HostName = $(Sql-Lit $HostName)
       if ($line.Trim() -and $line -notmatch 'LastMessage|---') { $needUp = $true }
     }
   }
+  $pack = "C:\RPM-Assure\deploy\ui-pack"
+  $packVerFile = Join-Path $pack "Sql\agent\VERSION"
+  $fetchStamp = Join-Path $LogDir "last_pack_fetch.txt"
+  $fetchDue = $true
+  if (Test-Path $fetchStamp) {
+    try {
+      $lf = [datetime]::Parse((Get-Content $fetchStamp -Raw).Trim(), [Globalization.CultureInfo]::InvariantCulture)
+      if (((Get-Date).ToUniversalTime() - $lf.ToUniversalTime()).TotalMinutes -lt 360) { $fetchDue = $false }
+    } catch {}
+  }
+  $gitExe = "C:\Program Files\Git\cmd\git.exe"
+  if (($needUp -or $fetchDue) -and (Test-Path $gitExe) -and (Test-Path (Join-Path $pack ".git"))) {
+    W "pack fetch (needUp=$needUp fetchDue=$fetchDue)"
+    & $gitExe -C $pack fetch --all --prune 2>$null | Out-Null
+    & $gitExe -C $pack reset --hard origin/main 2>$null | Out-Null
+    [IO.File]::WriteAllText($fetchStamp, (Get-Date).ToUniversalTime().ToString("o"))
+  }
+  if (-not $needUp -and (Test-Path $packVerFile)) {
+    $pv = (Get-Content $packVerFile -Raw).Trim()
+    if ($pv -and $pv -ne $AgentVersion) {
+      W "pack VERSION $pv != local $AgentVersion"
+      $needUp = $true
+    }
+  }
   if ($needUp) {
-    W 'UPDATE queued by Assure - pulling pack'
+    W "UPDATE - applying pack to $AgentRoot"
     [void](Invoke-CentralSql -SqlText @"
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
-SET LastStatus = N'UPDATING', LastMessage = N'applying 2.3.0'
+SET LastStatus = N'UPDATING', LastMessage = N'applying pack'
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
-    $upd = Join-Path $AgentRoot 'Update-From-Assure.ps1'
-    if (-not (Test-Path $upd)) { $upd = Join-Path $AgentRoot 'Update-Agent-From-Central.ps1' }
-    if (-not (Test-Path $upd)) { $upd = Join-Path $SqlRoot 'agent\Update-Agent-From-Central.ps1' }
-    if (Test-Path $upd) {
-      $old = $ErrorActionPreference
-      $ErrorActionPreference = 'Continue'
-      $out = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $upd -AgentRoot $AgentRoot 2>&1 | Out-String
-      $ErrorActionPreference = $old
-      W ("UPDATE result: " + $out.Substring(0, [Math]::Min(300, $out.Length)))
+    $from = Join-Path $pack "Sql\agent"
+    $applied = $false
+    if (Test-Path (Join-Path $from "RpmAssure-Agent.ps1")) {
+      robocopy $from $AgentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+      $applied = $true
+    }
+    if (-not $applied) {
+      $upd = Join-Path $AgentRoot "Update-From-Assure.ps1"
+      if (-not (Test-Path $upd)) { $upd = Join-Path $AgentRoot "Update-Agent-From-Central.ps1" }
+      if (Test-Path $upd) {
+        $old = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        $out = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $upd -AgentRoot $AgentRoot 2>&1 | Out-String
+        $ErrorActionPreference = $old
+        W ("UPDATE script: " + $out.Substring(0, [Math]::Min(300, $out.Length)))
+        $applied = $true
+      }
+    }
+    if ($applied) {
+      $newVer = $AgentVersion
+      if (Test-Path (Join-Path $AgentRoot "VERSION")) {
+        $newVer = (Get-Content (Join-Path $AgentRoot "VERSION") -Raw).Trim()
+      }
       [void](Invoke-CentralSql -SqlText @"
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
-SET LastStatus = N'ONLINE', LastMessage = N'updated 2.3.0', AgentVersion = N'2.3.0'
+SET LastStatus = N'ONLINE', LastMessage = N'updated $newVer', AgentVersion = $(Sql-Lit $newVer)
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
-      W 'UPDATE applied - service will restart'
+      W "UPDATE applied $newVer - next loop uses new files"
       exit 0
-    } else {
-      W 'WARN update script missing'
     }
+    W "WARN update files missing on this host"
   }
 } catch { W ("WARN update check " + $_.Exception.Message) }
 
