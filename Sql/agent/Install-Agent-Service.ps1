@@ -164,11 +164,14 @@ if (-not (Test-Path $cmd)) {
 
 $existing = Get-Service -Name $ServiceName -EA SilentlyContinue
 if ($existing) {
-  Write-Host "Stopping existing $ServiceName"
+  Write-Host "Removing existing $ServiceName"
+  $old = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
   & $nssm stop $ServiceName confirm 2>$null | Out-Null
   Start-Sleep 2
   & $nssm remove $ServiceName confirm 2>$null | Out-Null
   Start-Sleep 1
+  $ErrorActionPreference = $old
 }
 
 & $nssm install $ServiceName $cmd
