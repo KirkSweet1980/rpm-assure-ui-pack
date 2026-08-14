@@ -96,52 +96,65 @@ $miExit = $menu.Items.Add('Exit tray')
 $notify.ContextMenuStrip = $menu
 
 $miDo.add_Click({
+  $script:SyncBefore = $null
+  $cur = Read-RpmaStatus
+  $script:SyncBefore = $cur.sync
+  $script:SyncTicks = 0
   [IO.File]::WriteAllText($flagFile, (Get-Date).ToUniversalTime().ToString('o'))
   $form = New-Object System.Windows.Forms.Form
-  $form.Text = 'RPM Assure — Sync this customer'
-  $form.Size = New-Object System.Drawing.Size(420, 140)
+  $form.Text = 'RPM Assure - Sync this customer'
+  $form.Size = New-Object System.Drawing.Size(420, 150)
   $form.StartPosition = 'CenterScreen'
   $form.FormBorderStyle = 'FixedDialog'
   $form.MaximizeBox = $false
+  $form.MinimizeBox = $false
   $lbl = New-Object System.Windows.Forms.Label
   $lbl.AutoSize = $false
   $lbl.SetBounds(12, 12, 380, 28)
-  $lbl.Text = 'Queued — waiting for this agent…'
+  $lbl.Text = 'Queued - waiting for this agent...'
   $bar = New-Object System.Windows.Forms.ProgressBar
-  $bar.SetBounds(12, 48, 380, 22)
+  $bar.SetBounds(12, 48, 380, 24)
   $bar.Minimum = 0
   $bar.Maximum = 100
-  $bar.Value = 10
+  $bar.Value = 8
   $form.Controls.Add($lbl)
   $form.Controls.Add($bar)
-  $ticks = 0
   $pt = New-Object System.Windows.Forms.Timer
   $pt.Interval = 2000
   $pt.add_Tick({
-    $ticks++
+    $script:SyncTicks = [int]$script:SyncTicks + 1
+    $t = [int]$script:SyncTicks
     $s = Read-RpmaStatus
     $msg = [string]$s.msg
-    if ($msg -match 'collect running|SYNCING') {
-      $bar.Value = [Math]::Min(90, 30 + $ticks * 4)
-      $lbl.Text = 'Collect running on this customer…'
-    } elseif ($msg -match 'sync complete|cycle done|heartbeat ok') {
-      if ($ticks -gt 2) {
-        $bar.Value = 100
-        $lbl.Text = 'Sync complete'
-        $pt.Stop()
-      } else {
-        $bar.Value = [Math]::Min(40, 10 + $ticks * 8)
-        $lbl.Text = 'Waiting for this customer…'
-      }
+    $done = $false
+    if ($s.sync -and $script:SyncBefore -and ($s.sync -ne $script:SyncBefore)) { $done = $true }
+    if ($msg -match 'sync complete|cycle done') { $done = $true }
+    if ($done -and $t -ge 2) {
+      $bar.Value = 100
+      $lbl.Text = 'Sync complete for this customer'
+      $pt.Stop()
+      $form.Close()
+      return
+    }
+    if ($msg -match 'collect running|SYNCING|job error') {
+      $n = 30 + ($t * 5)
+      if ($n -gt 92) { $n = 92 }
+      $bar.Value = $n
+      $lbl.Text = 'Collect running on this customer...'
     } elseif ($msg -match 'fail|error') {
       $bar.Value = 100
       $lbl.Text = 'Error: ' + $msg
       $pt.Stop()
     } else {
-      $bar.Value = [Math]::Min(85, 12 + $ticks * 5)
-      $lbl.Text = 'Waiting for this customer…'
+      $n = 10 + ($t * 6)
+      if ($n -gt 88) { $n = 88 }
+      $bar.Value = $n
+      $lbl.Text = 'Waiting for this customer (' + $t + ')...'
     }
-    if ($ticks -gt 90) { $pt.Stop(); $lbl.Text = 'Timed out' }
+    if ($t -gt 90) {
+      $pt.Stop()
+      $lbl.Text = 'Timed out waiting for this customer'
+    }
   })
   $pt.Start()
   [void]$form.ShowDialog()
