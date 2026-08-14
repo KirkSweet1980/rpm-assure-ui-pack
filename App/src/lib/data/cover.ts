@@ -1,11 +1,12 @@
 /**
  * Multi-pillar cover model for RPM Assure.
- * Legs: SYSPRO · RMM (Pulseway) · Cyber Backup (Cove) · EPP · M365.
+ * Legs: SYSPRO · RMM (Pulseway) · Cloud Backup (Cove) · EPP · M365.
  *
- * SAME RULE for every customer and every pillar:
- *   live warehouse evidence (devices / operators / licenses) → Covered
- *   explicit AmsConfig flag false → No Cover (hard off, even if stray rows exist)
- *   map-only / flag-true / empty snapshot → No Cover until data arrives
+ * SAME RULE for every customer and every vendor service:
+ *   live warehouse evidence OR an active vendor map OR explicit pillar flag
+ *     → Covered (green)
+ *   none of the above → No Cover (red)
+ * SYSPRO only: explicit PillarSyspro = false is a hard deferred off.
  *
  * Uncovered legs stay in the menu and show "No Cover". They do not drive estate health / SLA.
  */
@@ -31,17 +32,17 @@ function hasText(v: string | null | undefined): boolean {
   return Boolean(v != null && String(v).trim());
 }
 
-/** Explicit false = hard No Cover. Otherwise only live evidence counts. */
-function resolvePillar(
+/** Vendor pillars: evidence or flag-true = Covered. Stale AmsConfig false cannot hide a map or live rows. */
+function resolveVendor(
   evidence: boolean,
   flag: boolean | null | undefined,
 ): boolean {
-  if (flag === false) return false;
-  return evidence;
+  if (evidence) return true;
+  return flag === true;
 }
 
 /**
- * Infer cover from live data. Same function for every customer.
+ * Infer cover from live data + maps. Same function for every customer.
  */
 export function inferCustomerCover(input: {
   pillarSyspro?: boolean | null;
@@ -66,8 +67,10 @@ export function inferCustomerCover(input: {
   coveMapped?: boolean | null;
   covePartnerName?: string | null;
   eppDeviceCount?: number | null;
+  eppMapped?: boolean | null;
   cspUserCount?: number | null;
   cspLicenseCount?: number | null;
+  cspMapped?: boolean | null;
 }): CustomerCover {
   const sysproEvidence =
     hasText(input.sqlInstanceName) ||
@@ -80,20 +83,27 @@ export function inferCustomerCover(input: {
     Boolean(input.sysproHasVersion) ||
     (Number(input.sysproHotfixCount) || 0) > 0;
 
-  // Devices / seats only — a map row with zero snapshot is No Cover
-  const rmmEvidence = (Number(input.pulsewayDeviceCount) || 0) > 0;
-  const coveEvidence = (Number(input.coveDeviceCount) || 0) > 0;
-  const eppEvidence = (Number(input.eppDeviceCount) || 0) > 0;
+  const rmmEvidence =
+    (Number(input.pulsewayDeviceCount) || 0) > 0 ||
+    Boolean(input.pulsewayMapped) ||
+    hasText(input.pulsewayOrgName);
+  const coveEvidence =
+    (Number(input.coveDeviceCount) || 0) > 0 ||
+    Boolean(input.coveMapped) ||
+    hasText(input.covePartnerName);
+  const eppEvidence =
+    (Number(input.eppDeviceCount) || 0) > 0 || Boolean(input.eppMapped);
   const cspEvidence =
     (Number(input.cspUserCount) || 0) > 0 ||
-    (Number(input.cspLicenseCount) || 0) > 0;
+    (Number(input.cspLicenseCount) || 0) > 0 ||
+    Boolean(input.cspMapped);
 
   return {
-    syspro: resolvePillar(sysproEvidence, input.pillarSyspro),
-    rmm: resolvePillar(rmmEvidence, input.pillarPulseway),
-    cove: resolvePillar(coveEvidence, input.pillarCove),
-    epp: resolvePillar(eppEvidence, input.pillarEpp),
-    csp: resolvePillar(cspEvidence, input.pillarCsp),
+    syspro: input.pillarSyspro === false ? false : sysproEvidence || input.pillarSyspro === true,
+    rmm: resolveVendor(rmmEvidence, input.pillarPulseway),
+    cove: resolveVendor(coveEvidence, input.pillarCove),
+    epp: resolveVendor(eppEvidence, input.pillarEpp),
+    csp: resolveVendor(cspEvidence, input.pillarCsp),
   };
 }
 

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getDemoCustomerDetail, getDemoPortfolio } from "./demo-portfolio";
 import { fetchLiveCustomerDetail, fetchLivePortfolio } from "./live-portfolio";
+import { applyVendorMapCover, applyVendorMapCoverDetail } from "./apply-vendor-map-cover";
 import { getDataMode, hasSqlConfig, sqlConfigDebug } from "./sql-config";
 import { getLastPoolError } from "./sql-pool";
 import type { CustomerDetailPayload, DetailLeg, PortfolioPayload } from "./types";
@@ -16,7 +17,6 @@ import {
 function normalizeCustomerCode(raw: string): string {
   let s = String(raw ?? "").trim();
   try {
-    // Paths may arrive still encoded (AHI%20Carrier)
     s = decodeURIComponent(s);
   } catch {
     /* keep raw */
@@ -43,7 +43,10 @@ async function loadPortfolio(): Promise<PortfolioPayload> {
         { attempts: 3, delaysMs: [400, 1200, 2500], label: "portfolio" },
       );
       console.info(`[rpm-assure] portfolio SQL ${Date.now() - t0}ms`);
-      if (live) return live;
+      if (live) {
+        await applyVendorMapCover(live).catch(() => undefined);
+        return live;
+      }
       console.warn("[rpm-assure] SQL returned null:", getLastPoolError());
       return getDemoPortfolio();
     } catch (e) {
@@ -65,7 +68,6 @@ async function loadCustomer(
     : [...new Set(legs)].sort().join("+");
   const key = "customer:" + code.toUpperCase() + ":" + legKey;
 
-  // Never serve a previously cached miss for long — clear null entries
   try {
     const { cacheGet } = await import("./query-cache");
     const hit = cacheGet<CustomerDetailPayload | null>(key, CUSTOMER_TTL_MS);
@@ -93,12 +95,14 @@ async function loadCustomer(
         console.info(
           `[rpm-assure] customer ${code} SQL ${Date.now() - t0}ms live=${!!live}`,
         );
-        if (live) result = live;
+        if (live) {
+          await applyVendorMapCoverDetail(live).catch(() => undefined);
+          result = live;
+        }
       } catch (e) {
         console.error("[rpm-assure] customer SQL error after retries", e);
       }
       if (!result) {
-        // Demo fallback so board never blanks a known pilot code
         const demo = getDemoCustomerDetail(code);
         result = demo ? fillCustomerPanels(demo) : null;
       }
@@ -107,16 +111,13 @@ async function loadCustomer(
       result = demo ? fillCustomerPanels(demo) : null;
     }
 
-    // Do not cache misses — retry next navigation after map/SQL fix
     if (result == null) {
       console.warn(`[rpm-assure] customer detail null for code="${code}"`);
-      // Return null without storing: override cacheGetOrLoad by deleting after
       setTimeout(() => cacheInvalidate(key), 0);
     }
     return result;
   });
 }
-
 
 export { softMissingCustomer } from "./soft-customer";
 
@@ -124,7 +125,6 @@ export const fetchPortfolio = createServerFn({ method: "GET" }).handler(
   async (): Promise<PortfolioPayload> => loadPortfolio(),
 );
 
-/** Bust portfolio cache and reload from SQL (Exco auto-refresh / manual refresh). */
 export const refreshPortfolio = createServerFn({ method: "GET" })
   .validator((data: { force?: boolean } | undefined) => data ?? {})
   .handler(async ({ data }): Promise<PortfolioPayload> => {
@@ -134,7 +134,6 @@ export const refreshPortfolio = createServerFn({ method: "GET" })
     return loadPortfolio();
   });
 
-/** Used by /api/portfolio-refresh (plain JSON, reliable on Windows). */
 export async function loadPortfolioForRefresh(force = true): Promise<PortfolioPayload> {
   if (force) cacheInvalidate("portfolio");
   return loadPortfolio();
