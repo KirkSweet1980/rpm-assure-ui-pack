@@ -111,7 +111,7 @@ const PACKS: {
   },
   {
     id: "estate",
-    title: "Estate overview",
+    title: "Assure Eco-System overview",
     when: "Anytime",
     blurb: "All customers — health, attention list, FinSight OOB roll-up.",
     needsCustomer: false,
@@ -158,10 +158,10 @@ const REPORT_SERVICES: CorpService[] = [
   },
   {
     id: "estate",
-    title: "Estate Packs",
+    title: "Assure Eco-System Packs",
     overview: "/reports?format=estate",
     modules: [
-      { label: "Estate Overview", path: "/reports?format=estate" },
+      { label: "Assure Eco-System Overview", path: "/reports?format=estate" },
       { label: "Custom Pack", path: "/reports?format=custom-pack" },
     ],
   },
@@ -362,7 +362,7 @@ function ReportsPage() {
       return `Day end · ${now.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" })}`;
     }
     if (format === "period-end") return "Period end · FinSight readiness";
-    if (format === "estate") return "Estate overview · all active customers";
+    if (format === "estate") return "Assure Eco-System overview · all active customers";
     if (format === "rmm-service") return "RMM service pack · latest Pulseway snapshot";
     if (format === "services-cover") return "Services on cover · multi-pillar snapshot";
     if (format === "custom-pack") return `Custom · ${selectedCount} field(s) selected`;
@@ -380,12 +380,14 @@ function ReportsPage() {
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-d3-workspace is-tool">
+        <div className="rpma-d3-workspace is-dual">
           <CorpWorkspaceRail
             heading="Reporting"
             homeHref="/reports"
             services={REPORT_SERVICES}
             pathname={reportPath}
+            servicesHeading="Services"
+            modulesHeading="Service Modules"
           />
           <div className="rpma-d3-detail min-w-0">
             <div className="rpma-modnav">
@@ -565,7 +567,7 @@ function ReportsPage() {
                   </label>
                 ) : (
                   <p className="flex-1 text-sm text-muted">
-                    Estate pack covers all customers — no single customer needed.
+                    Assure Eco-System pack covers all customers — no single customer needed.
                   </p>
                 )}
               </div>

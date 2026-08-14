@@ -261,11 +261,29 @@ body {
 .rpma-modbtn.is-on, html[data-theme="dark"] .rpma-modbtn.is-on { background: #263544; color: #fff; border-color: #263544; }
 
 .rpma-d3-workspace {
-  display: grid; grid-template-columns: minmax(15.5rem, 18vw) minmax(12.75rem, 15vw) minmax(0, 1fr);
-  gap: 0.55rem; align-items: start; min-height: calc(100dvh - 8rem);
+  --rail-customers: 15.5rem;
+  --rail-services: 12.75rem;
+  display: grid;
+  grid-template-columns: var(--rail-customers) var(--rail-services) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "customers services detail";
+  gap: 0.55rem;
+  align-items: stretch;
+  min-height: calc(100dvh - var(--pc-header-height) - 2rem);
 }
-.rpma-d3-workspace.is-inspect { grid-template-columns: minmax(15.5rem, 18vw) minmax(12.75rem, 15vw) minmax(0, 1fr); }
-.rpma-d3-workspace.is-tool { grid-template-columns: 18.5rem minmax(0, 1fr); }
+.rpma-d3-workspace.is-inspect {
+  grid-template-columns: var(--rail-customers) var(--rail-services) minmax(0, 1fr);
+  grid-template-areas: "customers services detail";
+}
+.rpma-d3-workspace.is-tool,
+.rpma-d3-workspace.is-dual {
+  grid-template-columns: var(--rail-services) minmax(0, 1fr);
+  grid-template-areas: "services detail";
+}
+.rpma-d3-workspace > .rpma-list,
+.rpma-d3-workspace > .rpma-d3-master { grid-area: customers; min-width: 0; }
+.rpma-d3-workspace > .rpma-pillar-rail { grid-area: services; min-width: 0; }
+.rpma-d3-workspace > .rpma-d3-detail { grid-area: detail; min-width: 0; }
 .rpma-split-arrow { align-self: stretch; min-height: 8rem; border: 0; background: transparent; color: #b0b8c2; display: grid; place-items: center; cursor: pointer; }
 .rpma-crumb { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; }
 .rpma-crumb-a { color: #39465a; text-decoration: none; }
@@ -623,7 +641,17 @@ html[data-theme="dark"] .rpma-mod-row { color: var(--color-fg); }
 html[data-theme="dark"] .rpma-mod-row.is-on { background: #222b38; }
 
 @media (max-width: 1023px) {
-  .rpma-d3-workspace, .rpma-d3-workspace.is-inspect, .rpma-d3-workspace.is-tool { grid-template-columns: 1fr; }
+  .rpma-d3-workspace,
+  .rpma-d3-workspace.is-inspect,
+  .rpma-d3-workspace.is-tool,
+  .rpma-d3-workspace.is-dual {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "customers"
+      "services"
+      "detail";
+    min-height: 0;
+  }
   .rpma-d3-master, .rpma-list, .rpma-pillar-rail { position: relative; top: auto; max-height: none; }
 }
 
