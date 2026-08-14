@@ -270,6 +270,7 @@ SET LastStatus = N'UPDATING', LastMessage = N'applying 2.2.0'
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
     $upd = Join-Path $AgentRoot 'Update-Agent-From-Central.ps1'
+    if (-not (Test-Path $upd)) { $upd = Join-Path $AgentRoot 'Update-From-Assure.ps1' }
     if (-not (Test-Path $upd)) { $upd = Join-Path $SqlRoot 'agent\Update-Agent-From-Central.ps1' }
     if (Test-Path $upd) {
       $old = $ErrorActionPreference
