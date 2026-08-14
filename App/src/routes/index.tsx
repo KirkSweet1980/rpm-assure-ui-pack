@@ -994,8 +994,8 @@ function ExcoInsightPage() {
       <AppShell>
         <div className="rpma-exco space-y-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Estate</p>
-            <h1 className="mt-1 text-[18px] font-extrabold tracking-tight text-fg">Assure Eco-System</h1>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Customer Eco-System</p>
+            <h1 className="mt-1 text-[18px] font-extrabold tracking-tight text-fg">Customer Eco-System</h1>
             <p className="mt-0.5 text-[12px] text-muted">
               {source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · {formatSastDateTime(exco.generatedAt || summary.generatedAt)}
             </p>
@@ -1046,7 +1046,7 @@ function ExcoInsightPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <h3 className="text-[15px] font-extrabold tracking-tight text-fg">
-                  Assure Eco-System is{" "}
+                  Customer Eco-System is{" "}
                   <span className={rag.overall === "Green" ? "text-rag-green" : rag.overall === "Amber" ? "text-rag-amber" : "text-rag-red"}>
                     {rag.overall}
                   </span>
@@ -1281,7 +1281,7 @@ function ExcoInsightPage() {
               <div className="rpma-pane-body">
               {(drill ? drillRows : attention).length === 0 ? (
                 <p className="text-[12px] text-muted">
-                  {drill ? "No customers in this view." : "Assure Eco-System is clear."}
+                  {drill ? "No customers in this view." : "Customer Eco-System is clear."}
                 </p>
               ) : (
                 <ul className="space-y-1">
