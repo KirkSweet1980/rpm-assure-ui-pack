@@ -7,6 +7,7 @@ export type InfraAgentRow = {
   hostName: string | null;
   agentVersion: string | null;
   healthStatus: string;
+  lastStatus: string | null;
   lastHeartbeatUtc: string | null;
   cover: {
     syspro: boolean;
@@ -75,6 +76,7 @@ ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
         hostName: row.HostName != null ? String(row.HostName) : null,
         agentVersion: row.AgentVersion != null ? String(row.AgentVersion) : null,
         healthStatus: String(row.HealthStatus ?? "NOT_INSTALLED"),
+        lastStatus: row.LastStatus != null ? String(row.LastStatus) : null,
         lastHeartbeatUtc: row.LastHeartbeatUtc
           ? new Date(row.LastHeartbeatUtc as string).toISOString()
           : null,
@@ -128,6 +130,7 @@ ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
           hostName: row.HostName != null ? String(row.HostName) : null,
           agentVersion: row.AgentVersion != null ? String(row.AgentVersion) : null,
           healthStatus: String(row.HealthStatus ?? "NOT_INSTALLED"),
+          lastStatus: row.LastStatus != null ? String(row.LastStatus) : null,
           lastHeartbeatUtc: row.LastHeartbeatUtc
             ? new Date(row.LastHeartbeatUtc as string).toISOString()
             : null,

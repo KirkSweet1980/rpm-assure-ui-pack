@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { Check, RefreshCw, Server, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { RefreshCw, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpaLink } from "@/components/nav/spa-link";
 import {
   fetchConfigHealth,
   fetchIntegrations,
+  requestAgentSync,
   type ConfigHealthItem,
 } from "@/lib/settings/settings-api";
 import { fetchInfraAgents, type InfraAgentRow } from "@/lib/settings/infra-status";
@@ -29,6 +30,26 @@ function agentStatus(row: InfraAgentRow): { label: string; tone: "green" | "ambe
   }
   if (s === "NOT_INSTALLED") return { label: "Not installed", tone: "muted" };
   return { label: "Disconnected", tone: "red" };
+}
+
+function syncToneOf(
+  row: InfraAgentRow,
+  phase?: "idle" | "queued" | "running" | "done" | "error",
+): { label: string; tone: "green" | "amber" | "red" } {
+  if (phase === "queued" || phase === "running") return { label: "Syncing", tone: "amber" };
+  if (phase === "error") return { label: "Error", tone: "amber" };
+  if (phase === "done") return { label: "OK", tone: "green" };
+  const last = (row.lastStatus ?? "").toUpperCase();
+  const health = row.healthStatus.toUpperCase();
+  if (last === "QUEUED" || last === "SYNCING" || last === "UPDATE" || last === "UPDATING") {
+    return { label: "Syncing", tone: "amber" };
+  }
+  if (last === "JOB_FAIL") return { label: "Error", tone: "amber" };
+  if (health === "ONLINE" && (last === "OK" || last === "ONLINE" || last === "")) {
+    return { label: "OK", tone: "green" };
+  }
+  if (health === "ONLINE") return { label: "OK", tone: "green" };
+  return { label: "Offline", tone: "red" };
 }
 
 const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string }> = [
@@ -61,7 +82,7 @@ function kindToHealthId(raw: string) {
   return "";
 }
 
-function syncTone(iso: string | null): { tone: "green" | "amber" | "red"; result: string } {
+function feedTone(iso: string | null): { tone: "green" | "amber" | "red"; result: string } {
   if (!iso) return { tone: "red", result: "Never" };
   const h = (Date.now() - new Date(iso).getTime()) / 3600000;
   if (!Number.isFinite(h) || h < 0) return { tone: "red", result: "Never" };
@@ -78,12 +99,30 @@ type ConnRow = {
   lastSyncAt: string | null;
 };
 
+type SyncPhase = "idle" | "queued" | "running" | "done" | "error";
+
+function Lamp({ tone }: { tone: "green" | "amber" | "red" | "muted" }) {
+  return (
+    <span
+      className={cn(
+        "h-2 w-2 shrink-0 rounded-full",
+        tone === "green" && "bg-rag-green",
+        tone === "amber" && "bg-amber-400",
+        tone === "red" && "bg-rag-red",
+        tone === "muted" && "bg-muted",
+      )}
+    />
+  );
+}
+
 function InfrastructureStatusPage() {
   const [items, setItems] = useState<ConfigHealthItem[]>([]);
   const [conns, setConns] = useState<ConnRow[]>([]);
   const [agents, setAgents] = useState<InfraAgentRow[]>([]);
   const [agentMsg, setAgentMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sync, setSync] = useState<Record<string, SyncPhase>>({});
+  const armed = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -97,6 +136,23 @@ function InfrastructureStatusPage() {
       setConns(i.rows ?? []);
       setAgents(a.rows ?? []);
       setAgentMsg(a.ok ? null : a.message);
+      setSync((prev) => {
+        const next = { ...prev };
+        for (const row of a.rows ?? []) {
+          if (!armed.current.has(row.customerCode)) continue;
+          const last = (row.lastStatus ?? "").toUpperCase();
+          if (last === "QUEUED") next[row.customerCode] = "queued";
+          else if (last === "SYNCING") next[row.customerCode] = "running";
+          else if (last === "OK" || last === "ONLINE") {
+            next[row.customerCode] = "done";
+            armed.current.delete(row.customerCode);
+          } else if (last === "JOB_FAIL") {
+            next[row.customerCode] = "error";
+            armed.current.delete(row.customerCode);
+          }
+        }
+        return next;
+      });
     } catch (e) {
       setAgentMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -108,7 +164,29 @@ function InfrastructureStatusPage() {
     void load();
   }, [load]);
 
-  const okN = items.filter((i) => i.ok).length;
+  const polling = Object.values(sync).some((s) => s === "queued" || s === "running");
+  useEffect(() => {
+    if (!polling) return;
+    const id = window.setInterval(() => void load(), 2500);
+    return () => window.clearInterval(id);
+  }, [polling, load]);
+
+  async function syncOne(row: InfraAgentRow) {
+    if (!row.hostName) return;
+    armed.current.add(row.customerCode);
+    setSync((p) => ({ ...p, [row.customerCode]: "queued" }));
+    const r = await requestAgentSync({
+      data: { customerCode: row.customerCode, hostName: row.hostName },
+    });
+    if (!r.ok) {
+      armed.current.delete(row.customerCode);
+      setSync((p) => ({ ...p, [row.customerCode]: "error" }));
+      setAgentMsg(r.message);
+      return;
+    }
+    void load();
+  }
+
   const connRows: ConnRow[] =
     conns.length > 0
       ? conns
@@ -138,53 +216,9 @@ function InfrastructureStatusPage() {
         </Button>
       </div>
 
-      <section className="rpma-panel p-4">
-        <div className="mb-3 flex items-end justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Platform</p>
-            <h2 className="mt-0.5 text-[16px] font-semibold text-fg">Connections</h2>
-          </div>
-          <p className="text-[12px] text-muted">
-            {items.length ? `${okN} of ${items.length} connected` : "Checking…"}
-          </p>
-        </div>
-        {items.length ? (
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((i) => (
-              <SpaLink
-                key={i.id}
-                href={i.href}
-                className="flex items-center gap-3 rounded-lg bg-surface-2/70 px-3 py-2.5 no-underline"
-              >
-                <span
-                  className={cn(
-                    "grid h-7 w-7 shrink-0 place-items-center rounded-full text-white",
-                    i.ok ? "bg-rag-green" : "bg-rag-red",
-                  )}
-                >
-                  {i.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold text-fg">{healthTitle(i)}</span>
-                  <span className="block truncate text-[11px] text-muted">{i.detail}</span>
-                </span>
-                <span className={cn("shrink-0 text-[12px] font-semibold", i.ok ? "text-rag-green" : "text-rag-red")}>
-                  {i.ok ? "Connected" : "Not connected"}
-                </span>
-              </SpaLink>
-            ))}
-          </div>
-        ) : (
-          <p className="text-[13px] text-muted">Checking connections…</p>
-        )}
-      </section>
-
       <section className="rpma-panel overflow-hidden p-0">
-        <div className="flex items-end justify-between gap-3 px-4 py-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Collect</p>
-            <h2 className="mt-0.5 text-[16px] font-semibold text-fg">Collect Connections</h2>
-          </div>
+        <div className="px-4 py-3">
+          <h2 className="text-[16px] font-semibold text-fg">Assure API Feed Status</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[12px]">
@@ -201,7 +235,7 @@ function InfrastructureStatusPage() {
               {connRows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-muted">
-                    No collect connections yet.
+                    No API feeds yet.
                   </td>
                 </tr>
               ) : (
@@ -209,7 +243,7 @@ function InfrastructureStatusPage() {
                   const hid = kindToHealthId(r.sourceKind);
                   const live = items.find((h) => h.id === hid);
                   const lastAt = r.lastSyncAt || live?.lastAt || null;
-                  const { tone, result } = syncTone(lastAt);
+                  const { tone, result } = feedTone(lastAt);
                   return (
                     <tr key={r.connectionCode} className="border-t border-border/40">
                       <td className="px-4 py-2.5 font-semibold text-fg">{r.displayName}</td>
@@ -219,15 +253,17 @@ function InfrastructureStatusPage() {
                         {lastAt ? formatSastDateTime(lastAt) : "No collect yet"}
                       </td>
                       <td className="px-4 py-2.5">
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            tone === "green" && "text-rag-green",
-                            tone === "amber" && "text-amber-400",
-                            tone === "red" && "text-rag-red",
-                          )}
-                        >
-                          {result}
+                        <span className="inline-flex items-center gap-1.5 font-semibold">
+                          <Lamp tone={tone} />
+                          <span
+                            className={cn(
+                              tone === "green" && "text-rag-green",
+                              tone === "amber" && "text-amber-400",
+                              tone === "red" && "text-rag-red",
+                            )}
+                          >
+                            {result}
+                          </span>
                         </span>
                       </td>
                     </tr>
@@ -241,13 +277,10 @@ function InfrastructureStatusPage() {
 
       <section className="rpma-panel overflow-hidden p-0">
         <div className="flex items-end justify-between gap-3 px-4 py-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">SQL hosts</p>
-            <h2 className="mt-0.5 text-[16px] font-semibold text-fg">Installed Assure SQL Agents</h2>
-          </div>
+          <h2 className="text-[16px] font-semibold text-fg">Assure Platform Agent Status</h2>
           <p className="text-[12px] text-muted">{agents.length} customers</p>
         </div>
-        {agentMsg ? <p className="px-4 pb-2 text-[12px] text-rag-red">{agentMsg}</p> : null}
+        {agentMsg ? <p className="px-4 pb-2 text-[12px] text-muted">{agentMsg}</p> : null}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[12px]">
             <thead className="rpma-table-head">
@@ -255,20 +288,23 @@ function InfrastructureStatusPage() {
                 <th className="px-4 py-2 font-semibold">Customer Name</th>
                 <th className="px-4 py-2 font-semibold">Agent Version Installed</th>
                 <th className="px-4 py-2 font-semibold">Agent Status</th>
+                <th className="px-4 py-2 font-semibold">Agent Sync</th>
                 <th className="px-4 py-2 font-semibold">Service Cover</th>
               </tr>
             </thead>
             <tbody>
               {agents.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-muted">
+                  <td colSpan={5} className="px-4 py-6 text-muted">
                     No customers listed.
                   </td>
                 </tr>
               ) : (
                 agents.map((row) => {
                   const st = agentStatus(row);
+                  const sy = syncToneOf(row, sync[row.customerCode]);
                   const on = COVER_CHIPS.filter((c) => row.cover[c.key]);
+                  const canSync = Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
                   return (
                     <tr key={row.customerCode} className="border-t border-border/40">
                       <td className="px-4 py-2.5">
@@ -292,16 +328,32 @@ function InfrastructureStatusPage() {
                             st.tone === "muted" && "text-muted",
                           )}
                         >
+                          <Lamp tone={st.tone} />
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="inline-flex items-center gap-2">
                           <span
                             className={cn(
-                              "h-2 w-2 rounded-full",
-                              st.tone === "green" && "bg-rag-green",
-                              st.tone === "amber" && "bg-amber-400",
-                              st.tone === "red" && "bg-rag-red",
-                              st.tone === "muted" && "bg-muted",
+                              "inline-flex items-center gap-1.5 font-semibold",
+                              sy.tone === "green" && "text-rag-green",
+                              sy.tone === "amber" && "text-amber-400",
+                              sy.tone === "red" && "text-rag-red",
                             )}
-                          />
-                          {st.label}
+                          >
+                            <Lamp tone={sy.tone} />
+                            {sy.label}
+                          </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-7 px-2.5 text-[11px]"
+                            disabled={!canSync}
+                            onClick={() => void syncOne(row)}
+                          >
+                            Sync
+                          </Button>
                         </span>
                       </td>
                       <td className="px-4 py-2.5">
