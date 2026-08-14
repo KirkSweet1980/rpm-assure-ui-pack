@@ -42,7 +42,6 @@ const CONFIG_SERVICES: CorpService[] = [
       { label: "Integrations", path: "/settings/integrations" },
       { label: "RAG", path: "/settings/rag" },
       { label: "Collect", path: "/settings/collect" },
-      { label: "RPM Assure Agent", path: "/settings/agents" },
     ],
   },
   {
