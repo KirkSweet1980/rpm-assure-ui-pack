@@ -105,7 +105,7 @@ function DashboardSettingsPage() {
       if (r.dashboard) setDash(r.dashboard);
       clearDashboardConfigCache();
       setDirty(false);
-      setMsg("Saved. Open Exco Insight to see the new layout.");
+      setMsg("Saved. Open Customer Eco-System to see the new layout.");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
