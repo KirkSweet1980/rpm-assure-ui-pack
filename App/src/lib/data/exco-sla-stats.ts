@@ -15,12 +15,19 @@ export type ExcoSlaInput = {
   serverOnline: number;
   serverOffline: number;
   criticalAlerts: number;
+  /** 30-day uptime % from Pulseway offline hours when present */
+  serverUptime30d?: number | null;
   /** Backup health when Cove on cover */
   backupHealthy: boolean | null;
   coveDeviceCount: number;
+  coveOkCount?: number;
+  coveFailedCount?: number;
+  coveStaleCount?: number;
+  coveRestorePct?: number | null;
   /** EPP */
   eppDeviceCount: number;
   eppManagedCount?: number | null;
+  eppUnmanagedCount?: number | null;
   healthRag?: HealthRag;
 };
 
@@ -56,15 +63,21 @@ function scoreRmm(i: ExcoSlaInput): { pct: number | null; note: string } {
   const so = i.serverOnline || 0;
   const sf = i.serverOffline || 0;
   const sn = so + sf;
-  // Workstations are never part of RMM SLA
-  if (sn <= 0) {
+  if (sn <= 0 && i.serverUptime30d == null) {
     return {
       pct: null,
       note: "No servers (workstations excluded from SLA)",
     };
   }
-  let pct = (so / sn) * 100;
-  const notes: string[] = [`${so}/${sn} servers online`];
+  let pct =
+    i.serverUptime30d != null
+      ? i.serverUptime30d
+      : (so / Math.max(1, sn)) * 100;
+  const notes: string[] = [
+    i.serverUptime30d != null
+      ? `${clampPct(i.serverUptime30d)}% 30-day uptime`
+      : `${so}/${sn} servers online`,
+  ];
   if (i.criticalAlerts > 0) {
     pct -= Math.min(40, i.criticalAlerts * 12);
     notes.push(`${i.criticalAlerts} critical alert(s)`);
@@ -72,13 +85,29 @@ function scoreRmm(i: ExcoSlaInput): { pct: number | null; note: string } {
   return { pct: clampPct(pct), note: notes.join(" · ") };
 }
 
-
 function scoreCove(i: ExcoSlaInput): { pct: number; note: string } {
+  const ok = i.coveOkCount ?? 0;
+  const failed = i.coveFailedCount ?? 0;
+  const stale = i.coveStaleCount ?? 0;
+  const denom = ok + failed;
+  if (denom > 0) {
+    let pct = (ok / denom) * 100;
+    const notes = [`${ok}/${denom} jobs OK`];
+    if (stale > 0) {
+      pct = Math.min(pct, (ok / (ok + stale)) * 100);
+      notes.push(`${stale} stale vs 24h RPO`);
+    }
+    if (i.coveRestorePct != null) {
+      pct = (pct * 0.7 + i.coveRestorePct * 0.3);
+      notes.push(`restore ${i.coveRestorePct}%`);
+    }
+    return { pct: clampPct(pct), note: notes.join(" · ") };
+  }
   if (i.backupHealthy === true) {
-    return { pct: 100, note: "Backup healthy" };
+    return { pct: 100, note: "Backup healthy · 24h RPO met" };
   }
   if (i.backupHealthy === false) {
-    return { pct: 35, note: "Backup failed or stale" };
+    return { pct: 35, note: "Backup failed or stale vs 24h RPO" };
   }
   if (i.coveDeviceCount > 0) {
     return { pct: 70, note: `${i.coveDeviceCount} device(s) · status unknown` };
@@ -88,16 +117,17 @@ function scoreCove(i: ExcoSlaInput): { pct: number; note: string } {
 
 function scoreEpp(i: ExcoSlaInput): { pct: number; note: string } {
   const n = i.eppDeviceCount || 0;
+  const managed = i.eppManagedCount;
+  const unmanaged = i.eppUnmanagedCount ?? (n && managed != null ? Math.max(0, n - managed) : 0);
+  const den = (managed ?? 0) + (unmanaged ?? 0) || n;
+  if (den > 0 && managed != null) {
+    return {
+      pct: clampPct((managed / den) * 100),
+      note: `${managed}/${den} endpoints managed (target 98%)`,
+    };
+  }
   if (n <= 0) {
     return { pct: 80, note: "EPP on cover · no endpoint rows yet" };
-  }
-  const managed = i.eppManagedCount;
-  if (managed != null && n > 0) {
-    const pct = clampPct((managed / n) * 100);
-    return {
-      pct,
-      note: `${managed}/${n} endpoints managed`,
-    };
   }
   return { pct: 95, note: `${n} endpoint(s) mapped` };
 }
@@ -243,11 +273,29 @@ export function slaInputFromDetail(
   const cove = data.cove?.summary;
   const failed = cove?.failedCount ?? 0;
   const stale = cove?.staleCount ?? 0;
+  const ok = cove?.okCount ?? 0;
   const coveN = cove?.deviceCount ?? data.cove?.devices?.length ?? 0;
   let backupHealthy: boolean | null = null;
   if (cover.cove) {
     if (coveN > 0 && failed === 0 && stale === 0) backupHealthy = true;
     else if (failed > 0 || stale > 0) backupHealthy = false;
+  }
+  const rec = cove?.recovery ?? data.cove?.recovery;
+  const tOk = rec?.testSuccessCount ?? 0;
+  const tFail = rec?.testFailedCount ?? 0;
+  const coveRestorePct = tOk + tFail > 0 ? (tOk / (tOk + tFail)) * 100 : null;
+  const servers = (data.rmm?.devices ?? []).filter((d) => {
+    const t = (d.deviceType || "").toLowerCase();
+    const os = (d.osName || "").toLowerCase();
+    return t.includes("server") || os.includes("windows server") || os.includes("server 20");
+  });
+  const with30 = servers.filter((d) => d.offlineHours30d != null);
+  let serverUptime30d: number | null = null;
+  if (with30.length) {
+    const minutes = 30 * 24 * 60;
+    const avgOff =
+      with30.reduce((s, d) => s + (d.offlineHours30d ?? 0) * 60, 0) / with30.length;
+    serverUptime30d = Math.max(0, Math.min(100, ((minutes - avgOff) / minutes) * 100));
   }
   return {
     cover,
@@ -262,15 +310,21 @@ export function slaInputFromDetail(
       data.rmm?.summary?.serverOffline ?? data.customer?.pulsewayServerOffline ?? 0,
     criticalAlerts:
       data.rmm?.summary?.criticalAlerts ?? data.customer?.pulsewayCriticalAlerts ?? 0,
+    serverUptime30d,
     backupHealthy,
     coveDeviceCount:
       coveN || data.customer?.coveDeviceCount || 0,
+    coveOkCount: ok,
+    coveFailedCount: failed,
+    coveStaleCount: stale,
+    coveRestorePct,
     eppDeviceCount:
       data.epp?.summary?.deviceCount ??
       data.epp?.devices?.length ??
       data.customer?.eppDeviceCount ??
       0,
     eppManagedCount: data.epp?.summary?.managedCount ?? null,
+    eppUnmanagedCount: data.epp?.summary?.unmanagedCount ?? null,
     healthRag: data.customer?.healthRag,
   };
 }

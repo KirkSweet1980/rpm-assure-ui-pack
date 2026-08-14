@@ -173,6 +173,14 @@ export function customerTree(code: string, displayName: string): NavNode {
             match: "exact",
             audience: "ops",
           },
+          {
+            id: `${code}-rmm-sla`,
+            label: "Service SLA",
+            blurb: "Uptime 99.9% · agent coverage · MTTR clocks",
+            href: `${base}/rmm/sla`,
+            match: "exact",
+            audience: "ops",
+          },
         ],
       },
       {
@@ -204,6 +212,14 @@ export function customerTree(code: string, displayName: string): NavNode {
             label: "Retention policies",
             blurb: "Policy name, profile, retention periods",
             href: `${base}/cove/retention`,
+            match: "exact",
+            audience: "ops",
+          },
+          {
+            id: `${code}-cove-sla`,
+            label: "Service SLA",
+            blurb: "Backup success · 24h RPO · restore tests",
+            href: `${base}/cove/sla`,
             match: "exact",
             audience: "ops",
           },
@@ -257,6 +273,14 @@ export function customerTree(code: string, displayName: string): NavNode {
             href: `${base}/epp/quarantine`,
             match: "exact",
             audience: "tech",
+          },
+          {
+            id: `${code}-epp-sla`,
+            label: "Service SLA",
+            blurb: "Coverage 98% · updates · threat clocks",
+            href: `${base}/epp/sla`,
+            match: "exact",
+            audience: "ops",
           },
         ],
       },
@@ -379,6 +403,14 @@ export function settingsTree(): NavNode {
 
   const platformChildren: NavNode[] = [
     {
+      id: "set-infra",
+      label: "Assure Infrastructure Status",
+      blurb: "Connections, APIs, and SQL-host agents",
+      href: "/settings/infrastructure",
+      match: "exact",
+      audience: "admin",
+    },
+    {
       id: "set-sql",
       label: "SQL Server",
       blurb: "Central database connections",
@@ -391,14 +423,6 @@ export function settingsTree(): NavNode {
       label: "SSL / HTTPS",
       blurb: "Let's Encrypt or own certificate",
       href: "/settings/ssl",
-      match: "exact",
-      audience: "admin",
-    },
-    {
-      id: "set-integrations",
-      label: "Integrations",
-      blurb: "RMM, EPP, Cove, CSP connections",
-      href: "/settings/integrations",
       match: "exact",
       audience: "admin",
     },
@@ -566,7 +590,7 @@ export function settingsTree(): NavNode {
   return {
     id: "settings-root",
     label: "Configuration",
-    href: "/settings",
+    href: "/settings/infrastructure",
     match: "prefix",
     audience: "admin",
     children,

@@ -30,6 +30,7 @@ import { Route as SettingsAuditRouteImport } from './routes/settings.audit'
 import { Route as SettingsChromeRouteImport } from './routes/settings.chrome'
 import { Route as SettingsCollectRouteImport } from './routes/settings.collect'
 import { Route as SettingsDashboardRouteImport } from './routes/settings.dashboard'
+import { Route as SettingsInfrastructureRouteImport } from './routes/settings.infrastructure'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsLabelsRouteImport } from './routes/settings.labels'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
@@ -63,6 +64,7 @@ import { Route as CustomersCodeCoveMappingRouteImport } from './routes/customers
 import { Route as CustomersCodeCoveOverviewRouteImport } from './routes/customers.$code.cove.overview'
 import { Route as CustomersCodeCoveRecoveryRouteImport } from './routes/customers.$code.cove.recovery'
 import { Route as CustomersCodeCoveRetentionRouteImport } from './routes/customers.$code.cove.retention'
+import { Route as CustomersCodeCoveSlaRouteImport } from './routes/customers.$code.cove.sla'
 import { Route as CustomersCodeCspIndexRouteImport } from './routes/customers.$code.csp.index'
 import { Route as CustomersCodeCspGlobalAdminsRouteImport } from './routes/customers.$code.csp.global-admins'
 import { Route as CustomersCodeCspLicensesRouteImport } from './routes/customers.$code.csp.licenses'
@@ -74,12 +76,14 @@ import { Route as CustomersCodeEppEndpointsRouteImport } from './routes/customer
 import { Route as CustomersCodeEppIncidentsRouteImport } from './routes/customers.$code.epp.incidents'
 import { Route as CustomersCodeEppModulesRouteImport } from './routes/customers.$code.epp.modules'
 import { Route as CustomersCodeEppQuarantineRouteImport } from './routes/customers.$code.epp.quarantine'
+import { Route as CustomersCodeEppSlaRouteImport } from './routes/customers.$code.epp.sla'
 import { Route as CustomersCodeRmmIndexRouteImport } from './routes/customers.$code.rmm.index'
 import { Route as CustomersCodeRmmAlertsRouteImport } from './routes/customers.$code.rmm.alerts'
 import { Route as CustomersCodeRmmDevicesRouteImport } from './routes/customers.$code.rmm.devices'
 import { Route as CustomersCodeRmmMappingRouteImport } from './routes/customers.$code.rmm.mapping'
 import { Route as CustomersCodeRmmOverviewRouteImport } from './routes/customers.$code.rmm.overview'
 import { Route as CustomersCodeRmmPatchRouteImport } from './routes/customers.$code.rmm.patch'
+import { Route as CustomersCodeRmmSlaRouteImport } from './routes/customers.$code.rmm.sla'
 import { Route as CustomersCodeRmmWorkstationsRouteImport } from './routes/customers.$code.rmm.workstations'
 import { Route as CustomersCodeSysproIndexRouteImport } from './routes/customers.$code.syspro.index'
 import { Route as CustomersCodeSysproDayEndRouteImport } from './routes/customers.$code.syspro.day-end'
@@ -195,6 +199,11 @@ const SettingsCollectRoute = SettingsCollectRouteImport.update({
 const SettingsDashboardRoute = SettingsDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsInfrastructureRoute = SettingsInfrastructureRouteImport.update({
+  id: '/infrastructure',
+  path: '/infrastructure',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
@@ -368,6 +377,11 @@ const CustomersCodeCoveRetentionRoute =
     path: '/retention',
     getParentRoute: () => CustomersCodeCoveRoute,
   } as any)
+const CustomersCodeCoveSlaRoute = CustomersCodeCoveSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
+  getParentRoute: () => CustomersCodeCoveRoute,
+} as any)
 const CustomersCodeCspIndexRoute = CustomersCodeCspIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -429,6 +443,11 @@ const CustomersCodeEppQuarantineRoute =
     path: '/quarantine',
     getParentRoute: () => CustomersCodeEppRoute,
   } as any)
+const CustomersCodeEppSlaRoute = CustomersCodeEppSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
+  getParentRoute: () => CustomersCodeEppRoute,
+} as any)
 const CustomersCodeRmmIndexRoute = CustomersCodeRmmIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -458,6 +477,11 @@ const CustomersCodeRmmOverviewRoute =
 const CustomersCodeRmmPatchRoute = CustomersCodeRmmPatchRouteImport.update({
   id: '/patch',
   path: '/patch',
+  getParentRoute: () => CustomersCodeRmmRoute,
+} as any)
+const CustomersCodeRmmSlaRoute = CustomersCodeRmmSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
   getParentRoute: () => CustomersCodeRmmRoute,
 } as any)
 const CustomersCodeRmmWorkstationsRoute =
@@ -545,6 +569,7 @@ export interface FileRoutesByFullPath {
   '/settings/chrome': typeof SettingsChromeRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
+  '/settings/infrastructure': typeof SettingsInfrastructureRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/labels': typeof SettingsLabelsRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -577,6 +602,7 @@ export interface FileRoutesByFullPath {
   '/customers/$code/cove/overview': typeof CustomersCodeCoveOverviewRoute
   '/customers/$code/cove/recovery': typeof CustomersCodeCoveRecoveryRoute
   '/customers/$code/cove/retention': typeof CustomersCodeCoveRetentionRoute
+  '/customers/$code/cove/sla': typeof CustomersCodeCoveSlaRoute
   '/customers/$code/csp/global-admins': typeof CustomersCodeCspGlobalAdminsRoute
   '/customers/$code/csp/licenses': typeof CustomersCodeCspLicensesRoute
   '/customers/$code/csp/mfa': typeof CustomersCodeCspMfaRoute
@@ -586,11 +612,13 @@ export interface FileRoutesByFullPath {
   '/customers/$code/epp/incidents': typeof CustomersCodeEppIncidentsRoute
   '/customers/$code/epp/modules': typeof CustomersCodeEppModulesRoute
   '/customers/$code/epp/quarantine': typeof CustomersCodeEppQuarantineRoute
+  '/customers/$code/epp/sla': typeof CustomersCodeEppSlaRoute
   '/customers/$code/rmm/alerts': typeof CustomersCodeRmmAlertsRoute
   '/customers/$code/rmm/devices': typeof CustomersCodeRmmDevicesRoute
   '/customers/$code/rmm/mapping': typeof CustomersCodeRmmMappingRoute
   '/customers/$code/rmm/overview': typeof CustomersCodeRmmOverviewRoute
   '/customers/$code/rmm/patch': typeof CustomersCodeRmmPatchRoute
+  '/customers/$code/rmm/sla': typeof CustomersCodeRmmSlaRoute
   '/customers/$code/rmm/workstations': typeof CustomersCodeRmmWorkstationsRoute
   '/customers/$code/syspro/day-end': typeof CustomersCodeSysproDayEndRoute
   '/customers/$code/syspro/dtr': typeof CustomersCodeSysproDtrRoute
@@ -627,6 +655,7 @@ export interface FileRoutesByTo {
   '/settings/chrome': typeof SettingsChromeRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
+  '/settings/infrastructure': typeof SettingsInfrastructureRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/labels': typeof SettingsLabelsRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -653,6 +682,7 @@ export interface FileRoutesByTo {
   '/customers/$code/cove/overview': typeof CustomersCodeCoveOverviewRoute
   '/customers/$code/cove/recovery': typeof CustomersCodeCoveRecoveryRoute
   '/customers/$code/cove/retention': typeof CustomersCodeCoveRetentionRoute
+  '/customers/$code/cove/sla': typeof CustomersCodeCoveSlaRoute
   '/customers/$code/csp/global-admins': typeof CustomersCodeCspGlobalAdminsRoute
   '/customers/$code/csp/licenses': typeof CustomersCodeCspLicensesRoute
   '/customers/$code/csp/mfa': typeof CustomersCodeCspMfaRoute
@@ -662,11 +692,13 @@ export interface FileRoutesByTo {
   '/customers/$code/epp/incidents': typeof CustomersCodeEppIncidentsRoute
   '/customers/$code/epp/modules': typeof CustomersCodeEppModulesRoute
   '/customers/$code/epp/quarantine': typeof CustomersCodeEppQuarantineRoute
+  '/customers/$code/epp/sla': typeof CustomersCodeEppSlaRoute
   '/customers/$code/rmm/alerts': typeof CustomersCodeRmmAlertsRoute
   '/customers/$code/rmm/devices': typeof CustomersCodeRmmDevicesRoute
   '/customers/$code/rmm/mapping': typeof CustomersCodeRmmMappingRoute
   '/customers/$code/rmm/overview': typeof CustomersCodeRmmOverviewRoute
   '/customers/$code/rmm/patch': typeof CustomersCodeRmmPatchRoute
+  '/customers/$code/rmm/sla': typeof CustomersCodeRmmSlaRoute
   '/customers/$code/rmm/workstations': typeof CustomersCodeRmmWorkstationsRoute
   '/customers/$code/syspro/day-end': typeof CustomersCodeSysproDayEndRoute
   '/customers/$code/syspro/dtr': typeof CustomersCodeSysproDtrRoute
@@ -706,6 +738,7 @@ export interface FileRoutesById {
   '/settings/chrome': typeof SettingsChromeRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
+  '/settings/infrastructure': typeof SettingsInfrastructureRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/labels': typeof SettingsLabelsRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -738,6 +771,7 @@ export interface FileRoutesById {
   '/customers/$code/cove/overview': typeof CustomersCodeCoveOverviewRoute
   '/customers/$code/cove/recovery': typeof CustomersCodeCoveRecoveryRoute
   '/customers/$code/cove/retention': typeof CustomersCodeCoveRetentionRoute
+  '/customers/$code/cove/sla': typeof CustomersCodeCoveSlaRoute
   '/customers/$code/csp/global-admins': typeof CustomersCodeCspGlobalAdminsRoute
   '/customers/$code/csp/licenses': typeof CustomersCodeCspLicensesRoute
   '/customers/$code/csp/mfa': typeof CustomersCodeCspMfaRoute
@@ -747,11 +781,13 @@ export interface FileRoutesById {
   '/customers/$code/epp/incidents': typeof CustomersCodeEppIncidentsRoute
   '/customers/$code/epp/modules': typeof CustomersCodeEppModulesRoute
   '/customers/$code/epp/quarantine': typeof CustomersCodeEppQuarantineRoute
+  '/customers/$code/epp/sla': typeof CustomersCodeEppSlaRoute
   '/customers/$code/rmm/alerts': typeof CustomersCodeRmmAlertsRoute
   '/customers/$code/rmm/devices': typeof CustomersCodeRmmDevicesRoute
   '/customers/$code/rmm/mapping': typeof CustomersCodeRmmMappingRoute
   '/customers/$code/rmm/overview': typeof CustomersCodeRmmOverviewRoute
   '/customers/$code/rmm/patch': typeof CustomersCodeRmmPatchRoute
+  '/customers/$code/rmm/sla': typeof CustomersCodeRmmSlaRoute
   '/customers/$code/rmm/workstations': typeof CustomersCodeRmmWorkstationsRoute
   '/customers/$code/syspro/day-end': typeof CustomersCodeSysproDayEndRoute
   '/customers/$code/syspro/dtr': typeof CustomersCodeSysproDtrRoute
@@ -792,6 +828,7 @@ export interface FileRouteTypes {
     | '/settings/chrome'
     | '/settings/collect'
     | '/settings/dashboard'
+    | '/settings/infrastructure'
     | '/settings/integrations'
     | '/settings/labels'
     | '/settings/profile'
@@ -824,6 +861,7 @@ export interface FileRouteTypes {
     | '/customers/$code/cove/overview'
     | '/customers/$code/cove/recovery'
     | '/customers/$code/cove/retention'
+    | '/customers/$code/cove/sla'
     | '/customers/$code/csp/global-admins'
     | '/customers/$code/csp/licenses'
     | '/customers/$code/csp/mfa'
@@ -833,11 +871,13 @@ export interface FileRouteTypes {
     | '/customers/$code/epp/incidents'
     | '/customers/$code/epp/modules'
     | '/customers/$code/epp/quarantine'
+    | '/customers/$code/epp/sla'
     | '/customers/$code/rmm/alerts'
     | '/customers/$code/rmm/devices'
     | '/customers/$code/rmm/mapping'
     | '/customers/$code/rmm/overview'
     | '/customers/$code/rmm/patch'
+    | '/customers/$code/rmm/sla'
     | '/customers/$code/rmm/workstations'
     | '/customers/$code/syspro/day-end'
     | '/customers/$code/syspro/dtr'
@@ -874,6 +914,7 @@ export interface FileRouteTypes {
     | '/settings/chrome'
     | '/settings/collect'
     | '/settings/dashboard'
+    | '/settings/infrastructure'
     | '/settings/integrations'
     | '/settings/labels'
     | '/settings/profile'
@@ -900,6 +941,7 @@ export interface FileRouteTypes {
     | '/customers/$code/cove/overview'
     | '/customers/$code/cove/recovery'
     | '/customers/$code/cove/retention'
+    | '/customers/$code/cove/sla'
     | '/customers/$code/csp/global-admins'
     | '/customers/$code/csp/licenses'
     | '/customers/$code/csp/mfa'
@@ -909,11 +951,13 @@ export interface FileRouteTypes {
     | '/customers/$code/epp/incidents'
     | '/customers/$code/epp/modules'
     | '/customers/$code/epp/quarantine'
+    | '/customers/$code/epp/sla'
     | '/customers/$code/rmm/alerts'
     | '/customers/$code/rmm/devices'
     | '/customers/$code/rmm/mapping'
     | '/customers/$code/rmm/overview'
     | '/customers/$code/rmm/patch'
+    | '/customers/$code/rmm/sla'
     | '/customers/$code/rmm/workstations'
     | '/customers/$code/syspro/day-end'
     | '/customers/$code/syspro/dtr'
@@ -952,6 +996,7 @@ export interface FileRouteTypes {
     | '/settings/chrome'
     | '/settings/collect'
     | '/settings/dashboard'
+    | '/settings/infrastructure'
     | '/settings/integrations'
     | '/settings/labels'
     | '/settings/profile'
@@ -984,6 +1029,7 @@ export interface FileRouteTypes {
     | '/customers/$code/cove/overview'
     | '/customers/$code/cove/recovery'
     | '/customers/$code/cove/retention'
+    | '/customers/$code/cove/sla'
     | '/customers/$code/csp/global-admins'
     | '/customers/$code/csp/licenses'
     | '/customers/$code/csp/mfa'
@@ -993,11 +1039,13 @@ export interface FileRouteTypes {
     | '/customers/$code/epp/incidents'
     | '/customers/$code/epp/modules'
     | '/customers/$code/epp/quarantine'
+    | '/customers/$code/epp/sla'
     | '/customers/$code/rmm/alerts'
     | '/customers/$code/rmm/devices'
     | '/customers/$code/rmm/mapping'
     | '/customers/$code/rmm/overview'
     | '/customers/$code/rmm/patch'
+    | '/customers/$code/rmm/sla'
     | '/customers/$code/rmm/workstations'
     | '/customers/$code/syspro/day-end'
     | '/customers/$code/syspro/dtr'
@@ -1182,6 +1230,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/settings/dashboard'
       preLoaderRoute: typeof SettingsDashboardRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/infrastructure': {
+      id: '/settings/infrastructure'
+      path: '/infrastructure'
+      fullPath: '/settings/infrastructure'
+      preLoaderRoute: typeof SettingsInfrastructureRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/integrations': {
@@ -1415,6 +1470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersCodeCoveRetentionRouteImport
       parentRoute: typeof CustomersCodeCoveRoute
     }
+    '/customers/$code/cove/sla': {
+      id: '/customers/$code/cove/sla'
+      path: '/sla'
+      fullPath: '/customers/$code/cove/sla'
+      preLoaderRoute: typeof CustomersCodeCoveSlaRouteImport
+      parentRoute: typeof CustomersCodeCoveRoute
+    }
     '/customers/$code/csp/': {
       id: '/customers/$code/csp/'
       path: '/'
@@ -1492,6 +1554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersCodeEppQuarantineRouteImport
       parentRoute: typeof CustomersCodeEppRoute
     }
+    '/customers/$code/epp/sla': {
+      id: '/customers/$code/epp/sla'
+      path: '/sla'
+      fullPath: '/customers/$code/epp/sla'
+      preLoaderRoute: typeof CustomersCodeEppSlaRouteImport
+      parentRoute: typeof CustomersCodeEppRoute
+    }
     '/customers/$code/rmm/': {
       id: '/customers/$code/rmm/'
       path: '/'
@@ -1532,6 +1601,13 @@ declare module '@tanstack/react-router' {
       path: '/patch'
       fullPath: '/customers/$code/rmm/patch'
       preLoaderRoute: typeof CustomersCodeRmmPatchRouteImport
+      parentRoute: typeof CustomersCodeRmmRoute
+    }
+    '/customers/$code/rmm/sla': {
+      id: '/customers/$code/rmm/sla'
+      path: '/sla'
+      fullPath: '/customers/$code/rmm/sla'
+      preLoaderRoute: typeof CustomersCodeRmmSlaRouteImport
       parentRoute: typeof CustomersCodeRmmRoute
     }
     '/customers/$code/rmm/workstations': {
@@ -1622,6 +1698,7 @@ interface SettingsRouteChildren {
   SettingsChromeRoute: typeof SettingsChromeRoute
   SettingsCollectRoute: typeof SettingsCollectRoute
   SettingsDashboardRoute: typeof SettingsDashboardRoute
+  SettingsInfrastructureRoute: typeof SettingsInfrastructureRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsLabelsRoute: typeof SettingsLabelsRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
@@ -1645,6 +1722,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsChromeRoute: SettingsChromeRoute,
   SettingsCollectRoute: SettingsCollectRoute,
   SettingsDashboardRoute: SettingsDashboardRoute,
+  SettingsInfrastructureRoute: SettingsInfrastructureRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsLabelsRoute: SettingsLabelsRoute,
   SettingsProfileRoute: SettingsProfileRoute,
@@ -1689,6 +1767,7 @@ interface CustomersCodeCoveRouteChildren {
   CustomersCodeCoveOverviewRoute: typeof CustomersCodeCoveOverviewRoute
   CustomersCodeCoveRecoveryRoute: typeof CustomersCodeCoveRecoveryRoute
   CustomersCodeCoveRetentionRoute: typeof CustomersCodeCoveRetentionRoute
+  CustomersCodeCoveSlaRoute: typeof CustomersCodeCoveSlaRoute
   CustomersCodeCoveIndexRoute: typeof CustomersCodeCoveIndexRoute
 }
 
@@ -1698,6 +1777,7 @@ const CustomersCodeCoveRouteChildren: CustomersCodeCoveRouteChildren = {
   CustomersCodeCoveOverviewRoute: CustomersCodeCoveOverviewRoute,
   CustomersCodeCoveRecoveryRoute: CustomersCodeCoveRecoveryRoute,
   CustomersCodeCoveRetentionRoute: CustomersCodeCoveRetentionRoute,
+  CustomersCodeCoveSlaRoute: CustomersCodeCoveSlaRoute,
   CustomersCodeCoveIndexRoute: CustomersCodeCoveIndexRoute,
 }
 
@@ -1730,6 +1810,7 @@ interface CustomersCodeEppRouteChildren {
   CustomersCodeEppIncidentsRoute: typeof CustomersCodeEppIncidentsRoute
   CustomersCodeEppModulesRoute: typeof CustomersCodeEppModulesRoute
   CustomersCodeEppQuarantineRoute: typeof CustomersCodeEppQuarantineRoute
+  CustomersCodeEppSlaRoute: typeof CustomersCodeEppSlaRoute
   CustomersCodeEppIndexRoute: typeof CustomersCodeEppIndexRoute
 }
 
@@ -1738,6 +1819,7 @@ const CustomersCodeEppRouteChildren: CustomersCodeEppRouteChildren = {
   CustomersCodeEppIncidentsRoute: CustomersCodeEppIncidentsRoute,
   CustomersCodeEppModulesRoute: CustomersCodeEppModulesRoute,
   CustomersCodeEppQuarantineRoute: CustomersCodeEppQuarantineRoute,
+  CustomersCodeEppSlaRoute: CustomersCodeEppSlaRoute,
   CustomersCodeEppIndexRoute: CustomersCodeEppIndexRoute,
 }
 
@@ -1750,6 +1832,7 @@ interface CustomersCodeRmmRouteChildren {
   CustomersCodeRmmMappingRoute: typeof CustomersCodeRmmMappingRoute
   CustomersCodeRmmOverviewRoute: typeof CustomersCodeRmmOverviewRoute
   CustomersCodeRmmPatchRoute: typeof CustomersCodeRmmPatchRoute
+  CustomersCodeRmmSlaRoute: typeof CustomersCodeRmmSlaRoute
   CustomersCodeRmmWorkstationsRoute: typeof CustomersCodeRmmWorkstationsRoute
   CustomersCodeRmmIndexRoute: typeof CustomersCodeRmmIndexRoute
 }
@@ -1760,6 +1843,7 @@ const CustomersCodeRmmRouteChildren: CustomersCodeRmmRouteChildren = {
   CustomersCodeRmmMappingRoute: CustomersCodeRmmMappingRoute,
   CustomersCodeRmmOverviewRoute: CustomersCodeRmmOverviewRoute,
   CustomersCodeRmmPatchRoute: CustomersCodeRmmPatchRoute,
+  CustomersCodeRmmSlaRoute: CustomersCodeRmmSlaRoute,
   CustomersCodeRmmWorkstationsRoute: CustomersCodeRmmWorkstationsRoute,
   CustomersCodeRmmIndexRoute: CustomersCodeRmmIndexRoute,
 }

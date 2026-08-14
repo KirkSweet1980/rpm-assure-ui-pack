@@ -1181,8 +1181,10 @@ function ExcoInsightPage() {
                   ["Endpoint Security", slaByService.epp],
                 ].map(([name, pct]) => {
                   const n = pct as number | null;
-                  const tone = n == null ? "" : n >= 80 ? "text-rag-green" : n >= 55 ? "text-rag-amber" : "text-rag-red";
-                  const bar = n == null ? "" : n >= 80 ? "is-green" : n >= 55 ? "is-amber" : "is-red";
+                  const target =
+                    name === "Remote Management" ? 99.9 : name === "Cloud Backup" ? 99.5 : name === "Endpoint Security" ? 98 : 90;
+                  const tone = n == null ? "" : n >= target ? "text-rag-green" : n >= target - 5 ? "text-rag-amber" : "text-rag-red";
+                  const bar = n == null ? "" : n >= target ? "is-green" : n >= target - 5 ? "is-amber" : "is-red";
                   return (
                     <li key={String(name)} className="flex items-center gap-2 text-[12px]">
                       <span className="min-w-0 flex-1 truncate font-medium text-fg">{name}</span>

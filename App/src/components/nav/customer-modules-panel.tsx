@@ -93,6 +93,7 @@ export const CUSTOMER_PILLARS: {
       { label: "Workstations", path: "/rmm/workstations", icon: Monitor, color: "#0284c7" },
       { label: "Patch Compliance", path: "/rmm/patch", icon: Package, color: "#059669" },
       { label: "Alerts", path: "/rmm/alerts", icon: Bell, color: "#dc2626" },
+      { label: "Service SLA", path: "/rmm/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
   {
@@ -107,6 +108,7 @@ export const CUSTOMER_PILLARS: {
       { label: "Backup Devices", path: "/cove/devices", icon: HardDrive, color: "#6d28d9" },
       { label: "Recovery", path: "/cove/recovery", icon: RotateCcw, color: "#2563eb" },
       { label: "Retention", path: "/cove/retention", icon: Archive, color: "#d97706" },
+      { label: "Service SLA", path: "/cove/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
   {
@@ -122,6 +124,7 @@ export const CUSTOMER_PILLARS: {
       { label: "Policies", path: "/epp/modules", icon: FileKey2, color: "#7c3aed" },
       { label: "Security Incidents", path: "/epp/incidents", icon: Siren, color: "#ea580c" },
       { label: "Quarantine", path: "/epp/quarantine", icon: Ban, color: "#334155" },
+      { label: "Service SLA", path: "/epp/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
   {

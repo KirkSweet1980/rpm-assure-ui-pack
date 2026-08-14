@@ -48,6 +48,7 @@ import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stat
 import { dayEndTone } from "@/lib/data/day-end";
 import {
   INDUSTRY_MEASURES,
+  INDUSTRY_SLA_DOC,
   RPM_CONTRACT_CLOCKS,
   RPM_CONTRACT_RULES,
   RPM_SECURITY_ADMIN,
@@ -56,6 +57,8 @@ import {
   RPM_SLA_TITLE,
   vsIndustryTone,
 } from "@/lib/data/sla-metrics";
+import { buildRmmServiceSla, buildCoveServiceSla, buildEppServiceSla } from "@/lib/data/service-sla";
+import { ServiceSlaTable } from "@/components/customer/service-sla-section";
 import { cn, formatSastDate, formatSastDateTime } from "@/lib/utils";
 import {
   FINSIGHT_COL,
@@ -3986,6 +3989,14 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
           );
         })}
       </div>
+
+      <ChartCaption
+        title="Service SLA — RMM · Cloud Backup · Endpoint Security"
+        why={`${INDUSTRY_SLA_DOC}. Measured from live collect. Ticket MTTD/MTTR lines stay unmeasured until a helpdesk feed exists.`}
+      />
+      <ServiceSlaTable pack={buildRmmServiceSla(data)} />
+      <ServiceSlaTable pack={buildCoveServiceSla(data)} />
+      <ServiceSlaTable pack={buildEppServiceSla(data)} />
     </div>
   );
 }

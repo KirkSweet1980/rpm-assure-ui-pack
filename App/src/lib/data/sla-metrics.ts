@@ -5,13 +5,14 @@
  *   Ticket clocks in Business Hours. No uptime %. Targets, not guarantees.
  *
  * Layer B — Operational posture for RMM / Cove / EPP.
- *   Industry-typical measures we can compute from live collect.
+ *   Industry measures from RMM SLA Metrics Recommendations (14 Aug 2026).
  *   These are NOT in the RPM SYSPRO+AMS contract (clauses 5.1, 11.2).
  */
 
 export const RPM_SLA_REVISION = "5.0";
 export const RPM_SLA_DATE = "August 2026";
 export const RPM_SLA_TITLE = "SYSPRO Support & Application Management Services";
+export const INDUSTRY_SLA_DOC = "RMM SLA Metrics Recommendations · 14 August 2026";
 
 /** 08:00–17:00 local = 8 Business Hours per Business Day. */
 export const RPM_BH_PER_DAY = 8;
@@ -110,44 +111,212 @@ export type IndustryMeasure = {
   source: string;
 };
 
-/**
- * Industry-typical operational targets we can measure from current collect.
- * Used for RMM / Cove / EPP posture — never printed as the RPM SYSPRO contract.
- */
+export type IndustrySlaLineDef = {
+  id: string;
+  metric: string;
+  targetPct: number | null;
+  targetLabel: string;
+  contractual: boolean;
+  measurable: boolean;
+  how: string;
+};
+
+/** Headline industry targets used on Exco tiles. */
 export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
   rmm: {
     pillar: "rmm",
-    label: "RMM (Pulseway)",
-    metric: "Managed-server availability",
+    label: "RPM Remote Management",
+    metric: "Server uptime (standard tier)",
     targetPct: 99.9,
-    targetLabel: "99.9% servers online",
+    targetLabel: "99.9% monthly uptime",
     howWeMeasure:
-      "(servers online ÷ classified servers) × 100, minus 12 points per open critical alert (cap −40). Workstations are excluded.",
-    source:
-      "MSP infrastructure practice: 99.9% server availability is the common managed-server target. CompTIA / NOC-style SLAs emphasise MTTR by priority; we cannot measure ticket MTTR until a helpdesk feed exists.",
+      "From Pulseway OfflineHours30d when present: (43,200 − offline minutes) / 43,200. Otherwise snapshot servers online ÷ classified servers. Critical alerts deduct 12 pts each (cap −40). Workstations excluded.",
+    source: INDUSTRY_SLA_DOC,
   },
   cove: {
     pillar: "cove",
-    label: "Cloud Backup (Cove)",
+    label: "RPM Cloud Backup",
     metric: "Backup success vs 24h RPO",
     targetPct: 99.5,
     targetLabel: "99.5% success · 24h RPO",
     howWeMeasure:
-      "Healthy latest collect = 100. Failed or stale (older than 24h RPO) = 35. Devices with unknown status = 70.",
-    source:
-      "Enterprise backup SLAs typically set ≥99.5% monthly job success (industry backup practice). RPO/RTO are the NIST SP 800-34 language; 24h is the measurable daily-estate RPO from last successful backup.",
+      "Success = OK jobs ÷ (OK + failed). RPO met = devices whose last success is within 24h. Restore success = passed tests ÷ (passed + failed).",
+    source: INDUSTRY_SLA_DOC,
   },
   epp: {
     pillar: "epp",
-    label: "EPP (Bitdefender)",
-    metric: "Agent coverage of mapped endpoints",
-    targetPct: 95,
-    targetLabel: "95% endpoints managed",
+    label: "RPM Endpoint Security",
+    metric: "Protection coverage",
+    targetPct: 98,
+    targetLabel: "98% endpoints managed",
     howWeMeasure:
-      "managed ÷ mapped endpoints when both counts exist; otherwise mapped-only scores 95 (on target) and empty cover scores 80 (awaiting rows).",
-    source:
-      "Endpoint-security KPIs treat agent coverage as the leading indicator. 95% coverage is the common industry benchmark; 100% is the stretch (unmanaged devices are the gap).",
+      "managed ÷ (managed + unmanaged) from GravityZone. Open critical incidents pull the score down. Detection-efficacy is not contractual.",
+    source: INDUSTRY_SLA_DOC,
   },
+};
+
+/** Full PDF line items — shown on each service SLA page. */
+export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]> = {
+  rmm: [
+    {
+      id: "rmm-uptime",
+      metric: "Server uptime / availability",
+      targetPct: 99.9,
+      targetLabel: "99.9% (standard) · 99.95% important · 99.99% HA",
+      contractual: true,
+      measurable: true,
+      how: "Unplanned downtime minutes vs period. Pulseway 30-day offline hours, else current online/offline snapshot. Servers only.",
+    },
+    {
+      id: "rmm-coverage",
+      metric: "Agent / monitoring coverage",
+      targetPct: 99,
+      targetLabel: "≥ 99% in-scope servers reporting",
+      contractual: true,
+      measurable: true,
+      how: "Classified servers with a reporting Pulseway agent (online or last-seen within 15 minutes).",
+    },
+    {
+      id: "rmm-mttd",
+      metric: "Mean time to detect (critical)",
+      targetPct: null,
+      targetLabel: "< 5–15 minutes",
+      contractual: false,
+      measurable: false,
+      how: "Requires real-time RMM alerting clocks. Not scored until a helpdesk feed timestamps detection.",
+    },
+    {
+      id: "rmm-mttr-p1",
+      metric: "MTTR P1 — full server / service outage",
+      targetPct: null,
+      targetLabel: "Response 15–30 min · restore 2–4 hours",
+      contractual: false,
+      measurable: false,
+      how: "Ticket clocks. Not scored until a helpdesk feed exists.",
+    },
+    {
+      id: "rmm-mttr-p2",
+      metric: "MTTR P2 — significant degradation",
+      targetPct: null,
+      targetLabel: "Response 30–60 min · restore 4–8 hours",
+      contractual: false,
+      measurable: false,
+      how: "Ticket clocks. Not scored until a helpdesk feed exists.",
+    },
+  ],
+  cove: [
+    {
+      id: "cove-success",
+      metric: "Backup success rate",
+      targetPct: 99.5,
+      targetLabel: "99% – 99.9%+ of scheduled jobs",
+      contractual: true,
+      measurable: true,
+      how: "OK jobs ÷ (OK + failed) on latest Cove collect. Warnings that still meet RPO count as OK.",
+    },
+    {
+      id: "cove-rpo",
+      metric: "RPO — standard servers / files",
+      targetPct: 100,
+      targetLabel: "4–24 hours (we score 24h)",
+      contractual: true,
+      measurable: true,
+      how: "Devices whose last successful backup is within 24 hours. Stale devices miss RPO.",
+    },
+    {
+      id: "cove-restore",
+      metric: "Restore / recoverability success",
+      targetPct: 95,
+      targetLabel: "≥ 95–99% of test restores",
+      contractual: true,
+      measurable: true,
+      how: "Cove recovery tests passed ÷ (passed + failed). Unknown / not-in-plan are excluded from the rate.",
+    },
+    {
+      id: "cove-test-freq",
+      metric: "Test restore frequency",
+      targetPct: 100,
+      targetLabel: "Monthly (critical) / quarterly (others)",
+      contractual: true,
+      measurable: true,
+      how: "Last recovery test age. Green ≤ 31 days, amber ≤ 93 days, red if never or older.",
+    },
+    {
+      id: "cove-rto",
+      metric: "RTO — standard",
+      targetPct: null,
+      targetLabel: "4–12 hours or next business day",
+      contractual: false,
+      measurable: false,
+      how: "Requires timed restore clocks. Not scored from collect.",
+    },
+  ],
+  epp: [
+    {
+      id: "epp-coverage",
+      metric: "Protection coverage / agent deployment",
+      targetPct: 98,
+      targetLabel: "≥ 98–100% of in-scope endpoints",
+      contractual: true,
+      measurable: true,
+      how: "GravityZone managed ÷ (managed + unmanaged).",
+    },
+    {
+      id: "epp-update",
+      metric: "Definition / content update compliance",
+      targetPct: 95,
+      targetLabel: "≥ 95–99% within 24 hours",
+      contractual: true,
+      measurable: false,
+      how: "Needs last-successful-update timestamps from GravityZone. Not in current collect.",
+    },
+    {
+      id: "epp-mttd",
+      metric: "MTTD (critical threats)",
+      targetPct: null,
+      targetLabel: "Under 15–30 minutes",
+      contractual: false,
+      measurable: false,
+      how: "Managed EDR clock. Not scored until incident detect timestamps are complete.",
+    },
+    {
+      id: "epp-respond",
+      metric: "Mean time to respond / triage (critical)",
+      targetPct: null,
+      targetLabel: "15 min acknowledgment · containment 1–4 h",
+      contractual: false,
+      measurable: false,
+      how: "Managed EDR ticket clocks. Not scored.",
+    },
+    {
+      id: "epp-open",
+      metric: "Open critical incidents",
+      targetPct: 100,
+      targetLabel: "0 open criticals",
+      contractual: false,
+      measurable: true,
+      how: "GravityZone incidents currently open at critical / high. Operational, not a contractual nines target.",
+    },
+  ],
+};
+
+export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
+  rmm: [
+    "Planned maintenance with 48–72 hours’ notice (except emergency security patches).",
+    "Force majeure, client-caused issues, power or ISP failures outside RPM control.",
+    "Third-party cloud platform outages.",
+    "Workstations are excluded from the uptime commitment.",
+  ],
+  cove: [
+    "Long-term offline devices, full disks, and application locks not remediated by the client.",
+    "Extreme bandwidth constraints outside RPM control.",
+    "A job that fails then succeeds inside the RPO window is still compliant.",
+  ],
+  epp: [
+    "Detection-efficacy percentages are not contractual (threat novelty).",
+    "Unmanaged devices the client has not approved for deployment.",
+    "Endpoints offline longer than the update window are excluded from update compliance.",
+  ],
 };
 
 export function vsIndustryTone(
