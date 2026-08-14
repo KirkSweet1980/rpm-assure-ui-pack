@@ -4,7 +4,7 @@
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Inter", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-mono: "Inter", system-ui, sans-serif;
   --color-bg: #f0f2f8;
   --color-surface: #ffffff;
   --color-surface-2: #f4f5fb;
@@ -77,6 +77,8 @@ body {
   font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.45;
+  overflow-x: clip;
+  max-width: 100%;
 }
 @layer base {
   button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
@@ -90,11 +92,12 @@ body {
     line-height: 1.25;
   }
   code, kbd, pre, .font-mono {
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
   }
 }
 
-.dk-shell, .dk-content, .rpma-glass, .rpma-exco, .rpma-eco-visuals, .rpma-card, .rpma-list, .rpma-pillar-rail, .rpma-dd, .rpma-modbtn {
+.dk-shell, .dk-content, .rpma-glass, .rpma-exco, .rpma-eco-visuals, .rpma-card, .rpma-list, .rpma-pillar-rail, .rpma-dd, .rpma-modbtn, .rpma-panel, .rpma-d3-detail, .rpma-xls {
   font-family: var(--font-sans);
 }
 .dk-pagehead h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--pc-heading-color); overflow-wrap: anywhere; }
@@ -628,10 +631,10 @@ html.dark .rpma-hud-head {
   padding: 0 6px;
   border-radius: 99px;
   background: var(--color-surface-2);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 800;
-  tabular-nums: true;
+  font-variant-numeric: tabular-nums;
 }
 .rpma-viewbar-btn.is-on .rpma-viewbar-n {
   background: var(--color-nav);
@@ -668,7 +671,7 @@ html.dark .rpma-xls tbody td:first-child {
 .rpma-impact-bar.is-green { background: #17c666; }
 .rpma-impact-bar.is-amber { background: #ffa21d; }
 .rpma-impact-bar.is-red { background: #ea4d4d; }
-.rpma-impact-score { font-size: 11px; font-family: var(--font-mono); font-weight: 700; text-align: right; }
+.rpma-impact-score { font-size: 11px; font-family: var(--font-sans); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .rpma-card { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 8px; }
 
 .rpma-heat { display: grid; grid-template-columns: 14px 1fr; gap: 6px; align-items: center; }
@@ -855,4 +858,51 @@ html.dark .bg-white { background-color: #141a22 !important; }
   border: 0; background: transparent; font-size: 12px; font-weight: 650;
   color: var(--color-muted); cursor: pointer;
 }
+
+/* One typeface for all data surfaces (RMM / Cove / EPP / CSP / SYSPRO) */
+.rpma-d3-detail table,
+.dk-content table,
+.rpma-xls,
+.rpma-panel table {
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+.rpma-d3-detail table th,
+.dk-content table th,
+.rpma-xls th {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.rpma-d3-detail table td,
+.dk-content table td,
+.rpma-xls td,
+.rpma-d3-detail .font-mono,
+.dk-content .font-mono,
+.rpma-panel .font-mono,
+.rpma-xls .font-mono {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums;
+}
+.rpma-d3-detail table td,
+.dk-content table td,
+.rpma-xls td {
+  vertical-align: middle;
+}
+
+@media (max-width: 767px) {
+  :root { --pc-header-height: 52px; }
+  .dk-content { padding: 0.55rem !important; }
+  .rpma-d3-workspace { gap: 0.4rem; min-height: 0; }
+  .rpma-exco-board { gap: 0.65rem; }
+  .rpma-pillar-rail, .rpma-list { max-height: none; }
+}
+
+@media (max-width: 390px) {
+  .dk-brand-text em { display: none; }
+}
+
 

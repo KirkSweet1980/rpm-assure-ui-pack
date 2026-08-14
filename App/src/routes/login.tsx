@@ -223,7 +223,7 @@ const CINEMA_CSS = `
     radial-gradient(ellipse 90% 70% at 50% 0%, #f7fafc 0%, transparent 55%),
     linear-gradient(180deg, #e8eef4 0%, #f3f6f9 48%, #e4ebf2 100%);
   color: #16324a;
-  font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  font-family: Inter, system-ui, sans-serif;
 }
 .rpma-cin .rpma-login-sql-bg,
 .rpma-cin .rpma-login-page-words,

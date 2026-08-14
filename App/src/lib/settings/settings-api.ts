@@ -1493,6 +1493,14 @@ export const clearSslCertificate = createServerFn({ method: "POST" }).handler(as
   return { ok: true as const, ssl, status: sslFileStatus() };
 });
 
+export const probeSslReachability = createServerFn({ method: "POST" })
+  .validator((data: { hostname?: string } | undefined) => data ?? {})
+  .handler(async ({ data }) => {
+    const { getSslConfig, probePublicHttps } = await import("./ssl-store");
+    const host = (data.hostname || getSslConfig().hostname || "").trim();
+    return probePublicHttps(host);
+  });
+
 export type ConfigHealthItem = {
   id: string;
   label: string;

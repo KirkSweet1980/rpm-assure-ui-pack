@@ -388,3 +388,43 @@ export function applySslToDisk(cfg?: SslConfig): {
     status: sslFileStatus(),
   };
 }
+
+export async function probePublicHttps(hostname: string): Promise<{
+  ok: boolean;
+  status: number | null;
+  url: string;
+  message: string;
+}> {
+  const host = (hostname || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (!host) {
+    return { ok: false, status: null, url: "", message: "Set a public hostname first." };
+  }
+  const url = `https://${host}/healthz`;
+  try {
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), 8000);
+    const res = await fetch(url, { method: "GET", redirect: "follow", signal: ac.signal });
+    clearTimeout(t);
+    if (res.ok) {
+      return { ok: true, status: res.status, url, message: `HTTPS reachable — ${url} returned ${res.status}.` };
+    }
+    const login = `https://${host}/login`;
+    const res2 = await fetch(login, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(8000) });
+    return {
+      ok: res2.ok || res2.status === 200 || res2.status === 302,
+      status: res2.status,
+      url: login,
+      message: `HTTPS answered ${res2.status} on /login (healthz was ${res.status}).`,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      status: null,
+      url,
+      message:
+        "Cannot reach public HTTPS: " +
+        (e instanceof Error ? e.message : String(e)) +
+        ". Confirm Caddy is listening on 443 and DNS points at this host.",
+    };
+  }
+}

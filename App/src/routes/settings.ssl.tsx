@@ -7,6 +7,7 @@ import {
   applySslConfig,
   clearSslCertificate,
   fetchSslSettings,
+  probeSslReachability,
   saveSslSettings,
   uploadSslCertificate,
 } from "@/lib/settings/settings-api";
@@ -131,6 +132,19 @@ function SslSettingsPage() {
     }
   }
 
+  async function onProbe() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await probeSslReachability({ data: { hostname: ssl.hostname } });
+      setMsg(r.message);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function readFileAsText(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
@@ -148,6 +162,9 @@ function SslSettingsPage() {
         icon={Shield}
         actions={
           <>
+            <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => void onProbe()}>
+              Test public HTTPS
+            </Button>
             <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => void onApply()}>
               Apply Caddyfile
             </Button>
@@ -163,6 +180,10 @@ function SslSettingsPage() {
       <section className="rpma-panel overflow-hidden p-0">
         <div className="px-4 py-3">
           <h2 className="text-[16px] font-extrabold text-fg">HTTPS Settings</h2>
+          <p className="mt-1 text-[12px] text-muted">
+            Public access is <span className="font-semibold">https://hostname</span> on port 443 via Caddy.
+            The app itself stays on loopback only — do not publish that port.
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="rpma-xls">
