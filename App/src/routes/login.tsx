@@ -11,7 +11,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "ssot-boardroom-hi-20260814";
+const LOGIN_BUILD = "boardroom-hi-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -80,29 +80,10 @@ function LoginPage() {
           <source src="/brand/ssot-hub-loop.mp4" type="video/mp4" />
         </video>
         <img className="rpma-cin-bgstill" src="/brand/ssot-hub.jpg" alt="" />
-        <div className="rpma-cin-rings" />
         <div className="rpma-cin-vignette" />
       </div>
 
       <div className="rpma-cin-shell">
-        <aside className="rpma-cin-left">
-          <div className="rpma-ssot-copy">
-            <p className="rpma-ssot-kicker">Single source of truth</p>
-            <h2 className="rpma-ssot-title">Every service. One picture.</h2>
-            <p className="rpma-ssot-lede">
-              SYSPRO, remote management, cloud backup, endpoint security and Microsoft 365 —
-              collected once, scored the same way, decided from one board.
-            </p>
-            <ul className="rpma-ssot-pills">
-              <li>Live collect</li>
-              <li>Estate RAG</li>
-              <li>SLA by service</li>
-            </ul>
-          </div>
-        </aside>
-
-        <div className="rpma-cin-divider" aria-hidden="true" />
-
         <section className="rpma-cin-right">
           <div className="rpma-cin-card">
             <div className="rpma-cin-mark">
@@ -197,78 +178,25 @@ const CINEMA_CSS = `
 }
 .rpma-cin-bgvid { z-index: 1; }
 .rpma-cin-bgstill { z-index: 0; }
-.rpma-cin-rings {
-  position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  background:
-    radial-gradient(circle at 38% 52%, rgba(27,184,166,0.22) 0%, transparent 28%),
-    radial-gradient(circle at 38% 52%, rgba(143,206,74,0.08) 0%, transparent 42%);
-  animation: rpmaSsotPulse 6.5s ease-in-out infinite;
-}
 .rpma-cin-vignette {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(5,8,12,0.28) 0%, rgba(5,8,12,0.15) 42%, rgba(5,8,12,0.72) 100%),
-    linear-gradient(180deg, rgba(5,8,12,0.35) 0%, transparent 28%, rgba(5,8,12,0.55) 100%);
+    linear-gradient(90deg, transparent 0%, rgba(5,8,12,0.12) 55%, rgba(5,8,12,0.55) 100%),
+    linear-gradient(180deg, rgba(5,8,12,0.22) 0%, transparent 32%, rgba(5,8,12,0.4) 100%);
 }
 @keyframes rpmaSsotKen {
   0% { transform: scale(1) translate3d(0,0,0); }
   100% { transform: scale(1.08) translate3d(-1.2%, 0.8%, 0); }
 }
-@keyframes rpmaSsotPulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
-}
 @media (prefers-reduced-motion: reduce) {
   .rpma-cin-bgvid { display: none; }
-  .rpma-cin-bgstill, .rpma-cin-rings { animation: none; }
+  .rpma-cin-bgstill { animation: none; }
 }
 
 .rpma-cin-shell {
   position: relative; z-index: 3; flex: 1;
-  display: grid; grid-template-columns: minmax(0,1.15fr) 2px minmax(22rem, 0.85fr);
+  display: flex; justify-content: flex-end;
   min-height: 100dvh;
-}
-.rpma-cin-left {
-  display: flex; align-items: flex-end; justify-content: flex-start;
-  padding: clamp(1.5rem, 6vh, 3.5rem) clamp(1.5rem, 5vw, 3.5rem) clamp(3.5rem, 8vh, 5rem);
-}
-.rpma-ssot-copy { max-width: 34rem; }
-.rpma-ssot-kicker {
-  margin: 0 0 0.65rem;
-  font-size: 0.72rem; font-weight: 800;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: #8fce4a;
-}
-.rpma-ssot-title {
-  margin: 0;
-  font-size: clamp(2.1rem, 4.2vw, 3.4rem);
-  font-weight: 800; letter-spacing: -0.035em; line-height: 1.05;
-  color: #fff;
-  text-shadow: 0 10px 28px rgba(0,0,0,0.45);
-}
-.rpma-ssot-lede {
-  margin: 0.9rem 0 0;
-  font-size: 1rem; line-height: 1.5; font-weight: 500;
-  color: rgba(232,238,244,0.82);
-  max-width: 32rem;
-}
-.rpma-ssot-pills {
-  list-style: none; margin: 1.15rem 0 0; padding: 0;
-  display: flex; flex-wrap: wrap; gap: 0.45rem;
-}
-.rpma-ssot-pills li {
-  padding: 0.28rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid rgba(27,184,166,0.35);
-  background: rgba(5,12,16,0.4);
-  color: #c8f4ee;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-}
-
-.rpma-cin-divider {
-  width: 2px; align-self: stretch; margin: 10vh 0;
-  background: linear-gradient(180deg, transparent 0%, #1bb8a6 22%, #8fce4a 78%, transparent 100%);
-  box-shadow: 0 0 14px rgba(27,184,166,0.35);
 }
 
 .rpma-cin-right {
@@ -351,11 +279,10 @@ const CINEMA_CSS = `
 }
 
 @media (max-width: 900px) {
-  .rpma-cin-shell { grid-template-columns: 1fr; }
-  .rpma-cin-left, .rpma-cin-divider { display: none; }
+  .rpma-cin-shell { justify-content: center; }
   .rpma-cin-vignette {
     background:
-      linear-gradient(180deg, rgba(5,8,12,0.35) 0%, rgba(5,8,12,0.55) 45%, rgba(5,8,12,0.82) 100%);
+      linear-gradient(180deg, rgba(5,8,12,0.28) 0%, rgba(5,8,12,0.45) 50%, rgba(5,8,12,0.72) 100%);
   }
   .rpma-cin-right { min-height: 100dvh; padding-bottom: 3.2rem; }
   .rpma-cin-card { aspect-ratio: auto; }
