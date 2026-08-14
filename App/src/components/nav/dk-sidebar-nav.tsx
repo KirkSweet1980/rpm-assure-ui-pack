@@ -20,7 +20,7 @@ export function DkSidebarNav({
     <nav className="dk-nav is-top" aria-label="Main">
       <SpaLink href="/" className={cn("dk-link", path === "/" && "is-active")}>
         <Home className="dk-ico" />
-        <span className="dk-text">Estate</span>
+        <span className="dk-text">Assure Eco-System</span>
       </SpaLink>
       <CustomerSwitcher
         customers={customers}
