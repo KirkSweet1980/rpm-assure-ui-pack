@@ -12,6 +12,7 @@ import { buildExcoPillarSla, hasSlaCover } from "@/lib/data/exco-sla-stats";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { cn } from "@/lib/utils";
 import { ChevronRight, RefreshCw } from "lucide-react";
+import { HelpTip, MetricLabel, PaneHead } from "@/components/ui/help-tip";
 import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
 import { CustomizeWidgetsButton, CustomizeWidgetsPanel } from "@/components/exco/customize-widgets";
 import {
@@ -50,11 +51,13 @@ function KpiMini({
   value,
   sub,
   tone,
+  tip,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   tone?: "green" | "amber" | "red";
+  tip?: string;
 }) {
   const color =
     tone === "green"
@@ -66,9 +69,7 @@ function KpiMini({
           : "text-fg";
   return (
     <div className="min-w-0 rounded-lg border border-border/80 bg-card/40 px-2.5 py-2">
-      <p className="truncate text-[10px] font-bold uppercase tracking-wide text-subtle">
-        {label}
-      </p>
+      <MetricLabel tip={tip || `${label} — click related tiles for the customer list.`}>{label}</MetricLabel>
       <p className={cn("font-mono text-lg font-bold tabular-nums leading-tight", color)}>
         {value}
       </p>
@@ -1088,7 +1089,9 @@ function ExcoInsightPage() {
           ) : null}
           <div className="rpma-exco-board">
           <section className="rpma-pane" {...wgt("brief")}>
-            <h2 className="rpma-pane-head">Executive Brief</h2>
+            <PaneHead tip="Estate RAG, SLA average, collect freshness and the twelve KPIs Exco uses to decide who needs attention. Click a KPI to list those customers.">
+              Executive Brief
+            </PaneHead>
             <div className="rpma-pane-body">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
@@ -1120,18 +1123,18 @@ function ExcoInsightPage() {
             </ul>
             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-12">
               {[
-                { k: "rag-red" as DrillKind, l: "Red", v: rag.red, t: "red" as const },
-                { k: "rag-amber" as DrillKind, l: "Amber", v: rag.amber, t: "amber" as const },
-                { k: "attention" as DrillKind, l: "Attention", v: attention.length, t: "amber" as const },
-                { k: "incidents" as DrillKind, l: "Incidents", v: incidents.length, t: "red" as const },
-                { k: "jobs" as DrillKind, l: "Job Errors", v: scoreboard.filter((b) => (b.jobErrorCount || 0) > 0).length, t: "red" as const },
-                { k: "finsight" as DrillKind, l: "FinSight OOB", v: finsightEstate.oobCustomers, t: "amber" as const },
-                { k: "rmm-offline" as DrillKind, l: "Servers Off", v: scoreboard.filter((b) => (b.pulsewayServerOffline || 0) > 0).length, t: "red" as const },
-                { k: "rmm-critical" as DrillKind, l: "RMM Critical", v: scoreboard.filter((b) => (b.pulsewayCriticalAlerts || 0) > 0).length, t: "red" as const },
-                { k: "backup" as DrillKind, l: "Backup Issues", v: exco.backupUnhealthyCount, t: "amber" as const },
-                { k: "stale" as DrillKind, l: "Stale Collect", v: exco.collectStaleCount, t: "amber" as const },
-                { k: "risks" as DrillKind, l: "Open Risks", v: exco.openRisksTotal, t: "amber" as const },
-                { k: "attention" as DrillKind, l: "SLA Avg", v: `${slaAvg}%`, t: slaAvg >= 80 ? ("green" as const) : slaAvg >= 55 ? ("amber" as const) : ("red" as const) },
+                { k: "rag-red" as DrillKind, l: "Red", v: rag.red, t: "red" as const, tip: "Customers whose overall health is Red. Open one to see which service is failing." },
+                { k: "rag-amber" as DrillKind, l: "Amber", v: rag.amber, t: "amber" as const, tip: "Customers on Amber — usually one pillar degraded or collect ageing." },
+                { k: "attention" as DrillKind, l: "Attention", v: attention.length, t: "amber" as const, tip: "Needs an owner this week: health, SLA, stale collect or open incidents." },
+                { k: "incidents" as DrillKind, l: "Incidents", v: incidents.length, t: "red" as const, tip: "Open major incidents across the estate." },
+                { k: "jobs" as DrillKind, l: "Job Errors", v: scoreboard.filter((b) => (b.jobErrorCount || 0) > 0).length, t: "red" as const, tip: "SYSPRO companies with failed or errored jobs on the last collect." },
+                { k: "finsight" as DrillKind, l: "FinSight OOB", v: finsightEstate.oobCustomers, t: "amber" as const, tip: "Customers with out-of-balance FinSight control lines." },
+                { k: "rmm-offline" as DrillKind, l: "Servers Off", v: scoreboard.filter((b) => (b.pulsewayServerOffline || 0) > 0).length, t: "red" as const, tip: "Customers with at least one Pulseway server offline." },
+                { k: "rmm-critical" as DrillKind, l: "RMM Critical", v: scoreboard.filter((b) => (b.pulsewayCriticalAlerts || 0) > 0).length, t: "red" as const, tip: "Customers with Pulseway critical alerts still open." },
+                { k: "backup" as DrillKind, l: "Backup Issues", v: exco.backupUnhealthyCount, t: "amber" as const, tip: "Customers with failed or stale Cove backups on the latest collect." },
+                { k: "stale" as DrillKind, l: "Stale Collect", v: exco.collectStaleCount, t: "amber" as const, tip: "Last SYSPRO / agent collect is older than 24 hours." },
+                { k: "risks" as DrillKind, l: "Open Risks", v: exco.openRisksTotal, t: "amber" as const, tip: "Open Customer Assurance risks that still need a mitigation owner." },
+                { k: "attention" as DrillKind, l: "SLA Avg", v: `${slaAvg}%`, t: slaAvg >= 80 ? ("green" as const) : slaAvg >= 55 ? ("amber" as const) : ("red" as const), tip: "Average SLA across covered services. Target blend is 80%+ green." },
               ].map((x, i) => (
                 <button
                   key={`${x.l}-${i}`}
@@ -1139,7 +1142,7 @@ function ExcoInsightPage() {
                   onClick={() => toggleDrill(x.k)}
                   className={cn("rounded-md bg-surface-2 px-2 py-1.5 text-left", drill === x.k && "ring-1 ring-[var(--color-nav)]")}
                 >
-                  <p className="truncate text-[10px] font-bold uppercase tracking-wide text-muted">{x.l}</p>
+                  <MetricLabel tip={x.tip}>{x.l}</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold tabular-nums leading-tight",
                     x.t === "red" && Number(x.v) > 0 ? "text-rag-red" :
                     x.t === "amber" && Number(x.v) > 0 ? "text-rag-amber" :
@@ -1151,7 +1154,9 @@ function ExcoInsightPage() {
           </section>
 
           <section className="rpma-pane" {...wgt("cover")}>
-              <h2 className="rpma-pane-head">Services On Cover</h2>
+              <PaneHead tip="How many active customers have each RPM service mapped and collecting. Green bar is cover rate versus the estate.">
+                Services On Cover
+              </PaneHead>
               <ul className="rpma-pane-body space-y-2">
                 {[
                   ["SYSPRO", coverStats.syspro],
@@ -1172,7 +1177,9 @@ function ExcoInsightPage() {
               </ul>
             </section>
             <section className="rpma-pane" {...wgt("sla")}>
-              <h2 className="rpma-pane-head">SLA By Service</h2>
+              <PaneHead tip="Live SLA for customers on that service. Targets: SYSPRO 90%, RMM 99.9% availability, Cloud Backup 99.5% success, Endpoint Security 98% managed.">
+                SLA By Service
+              </PaneHead>
               <ul className="rpma-pane-body space-y-2">
                 {[
                   ["SYSPRO", slaByService.syspro],
@@ -1198,74 +1205,78 @@ function ExcoInsightPage() {
               </ul>
             </section>
             <section className="rpma-pane" {...wgt("pulse")}>
-              <h2 className="rpma-pane-head">Operations Pulse</h2>
+              <PaneHead tip="Live Pulseway, Cove and Bitdefender signals across the estate. Hover each tile for what it measures and the threshold that turns amber or red.">
+                Operations Pulse
+              </PaneHead>
               <div className="rpma-pane-body grid grid-cols-2 gap-2">
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="rpma-online">Online</p>
+                  <MetricLabel tip="Pulseway servers reporting online on the latest collect.">Online</MetricLabel>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{serversOnline}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Servers Offline</p>
+                  <MetricLabel tip="Pulseway servers that have not checked in. Any count above 0 is red.">Servers Offline</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", serversOffline > 0 ? "text-rag-red" : "text-fg")}>{serversOffline}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Server Availability</p>
+                  <MetricLabel tip="Online servers ÷ (online + offline). Target 99.9%. Below 99% is amber.">Server Availability</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.rmmServerAvailabilityPct ?? 100) < 99 ? "text-rag-amber" : "text-rag-green")}>
                     {exco.rmmServerAvailabilityPct == null ? "—" : `${exco.rmmServerAvailabilityPct}%`}
                   </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Patch Compliance</p>
+                  <MetricLabel tip="Share of servers with current OS patches. Below 90% is amber.">Patch Compliance</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.rmmPatchCompliancePct ?? 100) < 90 ? "text-rag-amber" : "text-rag-green")}>
                     {exco.rmmPatchCompliancePct == null ? "—" : `${exco.rmmPatchCompliancePct}%`}
                   </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Disk At Risk</p>
+                  <MetricLabel tip="Servers with a volume over the disk-risk threshold (typically 85%+ used).">Disk At Risk</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.rmmDiskHighTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.rmmDiskHighTotal ?? 0}
                   </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Backup Failed</p>
+                  <MetricLabel tip="Cove devices whose last backup failed or has no success in 72 hours.">Backup Failed</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.coveFailedTotal ?? 0) > 0 ? "text-rag-red" : "text-fg")}>
                     {exco.coveFailedTotal ?? 0}
                   </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Backup Stale</p>
+                  <MetricLabel tip="Cove devices whose last successful backup is older than 36 hours.">Backup Stale</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.coveStaleTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.coveStaleTotal ?? 0}
                   </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">EPP Unmanaged</p>
+                  <MetricLabel tip="Bitdefender endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.eppUnmanagedTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.eppUnmanagedTotal ?? 0}
                     <span className="ml-1 text-[10px] font-semibold text-muted">/ {exco.eppEndpointTotal ?? 0}</span>
                   </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Collect Fresh</p>
+                  <MetricLabel tip="Customers whose last SYSPRO / agent collect is within 24 hours.">Collect Fresh</MetricLabel>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{exco.collectFreshCount}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Collect Stale</p>
+                  <MetricLabel tip="Customers whose last collect is older than 24 hours. Check the edge agent.">Collect Stale</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", exco.collectStaleCount > 0 ? "text-rag-amber" : "text-fg")}>{exco.collectStaleCount}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">FinSight Clear</p>
+                  <MetricLabel tip="SYSPRO companies with no FinSight out-of-balance lines on the latest close.">FinSight Clear</MetricLabel>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{finsightEstate.clearCustomers}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">OOB Lines</p>
+                  <MetricLabel tip="Total out-of-balance FinSight control lines across the estate. Each line needs a finance owner.">OOB Lines</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", finsightEstate.totalOobLines > 0 ? "text-rag-amber" : "text-fg")}>{finsightEstate.totalOobLines}</p>
                 </div>
               </div>
             </section>
 
             <section className="rpma-pane" {...wgt("matrix")}>
-              <h2 className="rpma-pane-head">Risk Matrix</h2>
+              <PaneHead tip="Impact versus likelihood for every customer. Click a cell to list those tenants. High/High is the first conversation this week.">
+                Risk Matrix
+              </PaneHead>
               <div className="rpma-pane-body">
               <div className="rpma-heat">
                 <span className="rpma-heat-ylab">Impact</span>
@@ -1301,7 +1312,9 @@ function ExcoInsightPage() {
             </section>
 
             <section className="rpma-pane" {...wgt("impact")}>
-              <h2 className="rpma-pane-head">Impact</h2>
+              <PaneHead tip="Customers ranked by impact score (health, cover gaps, incidents and SLA). Longer bar = more executive attention.">
+                Impact
+              </PaneHead>
               <ol className="rpma-impact rpma-pane-body">
                 {[...riskPoints]
                   .sort((a, b) => b.impactScore - a.impactScore || b.likeScore - a.likeScore)
@@ -1329,23 +1342,25 @@ function ExcoInsightPage() {
             </section>
 
             <section className="rpma-pane" {...wgt("m365")}>
-              <h2 className="rpma-pane-head">Microsoft 365 CSP</h2>
+              <PaneHead tip="Microsoft 365 CSP estate: tenants on cover, average Secure Score, users without MFA, and tenants with too many Global Admins.">
+                Microsoft 365 CSP
+              </PaneHead>
               <div className="rpma-pane-body">
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Tenants</p>
+                  <MetricLabel tip="Customers with an active Microsoft 365 CSP tenant mapped in Assure.">Tenants</MetricLabel>
                   <p className="font-mono text-[15px] font-bold">{m365Estate.tenants}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">Secure Score</p>
+                  <MetricLabel tip="Average Microsoft Secure Score across mapped tenants. Higher is better.">Secure Score</MetricLabel>
                   <p className="font-mono text-[15px] font-bold">{m365Estate.avgScore == null ? "—" : `${m365Estate.avgScore}%`}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">MFA Gaps</p>
+                  <MetricLabel tip="Licensed users who are not registered for MFA. Each one is a credential-risk conversation.">MFA Gaps</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", m365Estate.mfaGap > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.mfaGap}</p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <p className="text-[10px] font-bold uppercase text-muted">High GA Count</p>
+                  <MetricLabel tip="Tenants with more Global Admins than the agreed control (typically more than 4).">High GA Count</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold", m365Estate.highGa > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.highGa}</p>
                 </div>
               </div>
@@ -1356,9 +1371,9 @@ function ExcoInsightPage() {
             </section>
 
             <section className="rpma-pane" {...wgt("decisions")}>
-              <h2 className="rpma-pane-head">
+              <PaneHead tip="Customers that need an owner this week: red/amber health, SLA miss, stale collect, or open incidents. Click a KPI above to filter this list.">
                 {drill ? drillTitle : "Who Needs A Decision"}
-              </h2>
+              </PaneHead>
               <div className="rpma-pane-body">
               {(drill ? drillRows : attention).length === 0 ? (
                 <p className="text-[12px] text-muted">
@@ -1386,7 +1401,10 @@ function ExcoInsightPage() {
             <section className="rpma-pane" {...wgt("incidents")}>
               <div className="rpma-pane-head-row">
                 <h2 className="rpma-pane-head">
-                  {drill ? drillTitle : "Major Incidents"}
+                  <span className="rpma-pane-head-inner">
+                    {drill ? drillTitle : "Major Incidents"}
+                    <HelpTip text="P1/P2 style incidents from Customer Assurance. Click a row to open that tenant. Use Clear after a KPI drill." />
+                  </span>
                 </h2>
                 {drill ? (
                   <button type="button" onClick={() => setDrill(null)} className="text-[11px] font-bold text-fg">Clear</button>
@@ -1427,7 +1445,9 @@ function ExcoInsightPage() {
             </section>
 
             <section className="rpma-pane" {...wgt("finsight")}>
-              <h2 className="rpma-pane-head">FinSight Close</h2>
+              <PaneHead tip="FinSight out-of-balance control lines across SYSPRO companies. Clear = period close is clean. OOB lines need a finance owner.">
+                FinSight Close
+              </PaneHead>
               <div className="rpma-pane-body">
               {finsightEstate.worst.length === 0 ? (
                 <p className="text-[12px] text-muted">Control accounts clear on covered SYSPRO tenants.</p>

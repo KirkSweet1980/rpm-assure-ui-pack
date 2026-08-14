@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
+import { HelpTip } from "@/components/ui/help-tip";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import type { CustomerCover } from "@/lib/data/types";
@@ -169,6 +170,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
           <h2>Customer EcoSystem</h2>
+          <HelpTip text="Tenant-level pages: overview, assurance, incidents, risks and SLA. These stay on the customer even when no RPM service is on cover." />
         </div>
         <div className="rpma-eco-list">
           {ECOSYSTEM_MODULES.map((m) => {
@@ -194,6 +196,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
           <h2>RPM Services</h2>
+          <HelpTip text="Green lamp = this service is on cover and collecting. Red lamp = mapped as no cover. Click a service to load its modules below." />
         </div>
         <div className="rpma-svc-static" role="navigation" aria-label="RPM Services">
           {CUSTOMER_PILLARS.map((p) => {
@@ -224,6 +227,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
           <h2>Service Modules</h2>
+          <HelpTip text="Pages inside the selected RPM service. The right pane shows live data for this customer only." />
         </div>
         <div className="rpma-mod-static" role="navigation" aria-label="Service Modules">
           {active ? (

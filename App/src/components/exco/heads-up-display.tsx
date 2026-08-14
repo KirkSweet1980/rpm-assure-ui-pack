@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Activity, Clock, Database } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
+import { HelpTip } from "@/components/ui/help-tip";
 
 const TZ = "Africa/Johannesburg";
 
@@ -34,17 +35,22 @@ function HudCell({
   label,
   value,
   tone,
+  tip,
 }: {
   icon: typeof Clock;
   label: string;
   value: string;
   tone?: "live" | "demo";
+  tip?: string;
 }) {
   return (
     <div className="rpma-hud-cell">
       <Icon className="rpma-hud-ico" aria-hidden />
       <div className="min-w-0">
-        <p className="rpma-hud-k">{label}</p>
+        <p className="rpma-hud-k">
+          {label}
+          {tip ? <HelpTip text={tip} side="bottom" /> : null}
+        </p>
         <p
           className={cn(
             "rpma-hud-v",
@@ -87,13 +93,14 @@ export function HeadsUpDisplay({
         <h2>Heads-up Display</h2>
       </div>
       <div className="rpma-hud-grid">
-        <HudCell icon={Clock} label="System Date" value={dateStr} />
-        <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} />
+        <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />
+        <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} tip="Live clock in SAST. Collect age and SLA windows are measured against this." />
         <HudCell
           icon={Database}
           label={sqlLabel}
           value={sqlWhen}
           tone={liveSql ? "live" : "demo"}
+          tip={liveSql ? "Last successful read from the central Assure SQL. Live = not demo seed." : "Showing packaged demo data. Connect SQL in Configuration to go live."}
         />
       </div>
     </section>

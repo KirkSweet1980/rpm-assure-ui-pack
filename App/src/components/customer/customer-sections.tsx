@@ -38,6 +38,7 @@ import { RagBadge } from "@/components/portfolio/rag-badge";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { NoCover, NoCoverPanel } from "@/components/ui/no-cover";
+import { HelpTip, MetricLabel } from "@/components/ui/help-tip";
 import { classifyRmmDevice, isRmmServer, isRmmWorkstation } from "@/lib/data/rmm-device-class";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { CHART } from "@/lib/brand-colors";
@@ -291,7 +292,12 @@ function ServiceVisuals({
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {tiles.map((t) => (
             <SpaLink key={t.href} href={t.href} className="rpma-glass block px-3 py-2.5 hover:shadow-md">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{t.label}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+                <span className="inline-flex items-center gap-1">
+                  {t.label}
+                  {t.hint ? <HelpTip text={t.hint} /> : null}
+                </span>
+              </p>
               <p className="font-mono text-xl font-bold text-fg">{t.n}</p>
               <p className="text-[11px] text-muted">{t.hint}</p>
             </SpaLink>
@@ -1400,11 +1406,13 @@ export function RmmDevicesSection({
                   <StatTile
                     label="Operating system"
                     value={selected.osName?.trim() || "Not reported by agent"}
+                    tip="OS name as reported by the Pulseway agent on this device."
                   />
                   <StatTile
                     label="IP address"
                     value={selected.ipAddress?.trim() || "Not reported by agent"}
                     mono
+                    tip="Primary IP the agent last reported. Blank if Pulseway did not send one."
                   />
                   <StatCard
                     label="Days since reboot"
@@ -1485,6 +1493,7 @@ export function RmmDevicesSection({
                             ? "100% (online now)"
                             : "0% (offline)"
                     }
+                    tip="Share of recent samples the device was online. 100% means the agent is checking in now."
                   />
                   <StatCard
                     label="Offline now"
@@ -1532,6 +1541,7 @@ export function RmmDevicesSection({
                         : "Not reported by agent"
                     }
                     bar={selected.cpuPct}
+                    tip="Latest CPU percent from Pulseway. Bar turns amber at 75% and red at 90%."
                   />
                   <StatTile
                     label="Memory usage"
@@ -1541,10 +1551,12 @@ export function RmmDevicesSection({
                         : "Not reported by agent"
                     }
                     bar={selected.memoryPct}
+                    tip="Latest memory percent from Pulseway. Bar turns amber at 75% and red at 90%."
                   />
                   <StatTile
                     label="Alerts"
                     value={`Critical ${selected.criticalNotifications} · Elevated ${selected.elevatedNotifications}`}
+                    tip="Open Pulseway notifications on this device. Critical needs an owner today."
                   />
                   <StatTile
                     label="Last seen online"
@@ -1554,6 +1566,7 @@ export function RmmDevicesSection({
                         : "—"
                     }
                     className="sm:col-span-2 lg:col-span-3"
+                    tip="Last successful agent check-in, shown in SAST."
                   />
                 </div>
 
@@ -1707,16 +1720,20 @@ function StatTile({
   mono,
   bar,
   className,
+  tip,
 }: {
   label: string;
   value: string;
   mono?: boolean;
   bar?: number | null;
   className?: string;
+  tip?: string;
 }) {
   return (
     <div className={"rounded-lg border border-border px-3 py-2 " + (className ?? "")}>
-      <p className="text-[10px] font-bold uppercase tracking-wide text-subtle">{label}</p>
+      {tip ? <MetricLabel tip={tip}>{label}</MetricLabel> : (
+        <p className="text-[10px] font-bold uppercase tracking-wide text-subtle">{label}</p>
+      )}
       <p
         className={
           "mt-0.5 text-sm font-semibold text-fg " + (mono ? "font-mono" : "")
