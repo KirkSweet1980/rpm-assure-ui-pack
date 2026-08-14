@@ -1522,7 +1522,6 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
   });
 
   const rest: Array<[string, string, string]> = [
-    ["syspro", "SYSPRO Collect", "/settings/collect"],
     ["rmm", "Pulseway (RMM)", "/settings/integrations"],
     ["cove", "Cove (Backup)", "/settings/integrations"],
     ["epp", "Bitdefender (EPP)", "/settings/integrations"],
@@ -1530,16 +1529,49 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
   ];
 
   if (!pool) {
+    items.push({
+      id: "syspro",
+      label: "SYSPRO Agents",
+      ok: false,
+      lastAt: null,
+      detail: "SQL not connected",
+      href: "/settings/agents",
+    });
     for (const [id, label, href] of rest) {
       items.push({ id, label, ok: false, lastAt: null, detail: "SQL not connected", href });
     }
     return { ok: false as const, generatedAt: new Date().toISOString(), items };
   }
 
-  const sysproAt = await probeIso(pool, [
-    "SELECT MAX(LastImportAt) AS t FROM dbo.Dim_Customer WITH (NOLOCK)",
-    "SELECT MAX(ImportedAt) AS t FROM dbo.Fact_Syspro_Operator WITH (NOLOCK)",
-  ]);
+  try {
+    const ag = await pool.request().query(`
+SELECT
+  SUM(CASE WHEN LastHeartbeatUtc >= DATEADD(minute, -20, SYSUTCDATETIME()) THEN 1 ELSE 0 END) AS OnlineCnt,
+  COUNT(*) AS TotalCnt,
+  MAX(LastHeartbeatUtc) AS t
+FROM dbo.Agent_Registry WITH (NOLOCK)`);
+    const row = (ag.recordset?.[0] ?? {}) as { OnlineCnt?: number; TotalCnt?: number; t?: Date };
+    const on = Number(row.OnlineCnt ?? 0);
+    const tot = Number(row.TotalCnt ?? 0);
+    items.push({
+      id: "syspro",
+      label: "SYSPRO Agents",
+      ok: on > 0,
+      lastAt: row.t ? new Date(row.t).toISOString() : null,
+      detail: tot === 0 ? "No agents registered" : `${on} online · ${tot} registered`,
+      href: "/settings/agents",
+    });
+  } catch {
+    items.push({
+      id: "syspro",
+      label: "SYSPRO Agents",
+      ok: false,
+      lastAt: null,
+      detail: "Agent tables not installed",
+      href: "/settings/agents",
+    });
+  }
+
   const rmmAt = await probeIso(pool, [
     "SELECT MAX(ImportedAt) AS t FROM dbo.Pulseway_Devices WITH (NOLOCK)",
     "SELECT MAX(LastImportAt) AS t FROM dbo.vw_Kpi_Pulseway_Summary WITH (NOLOCK)",
@@ -1556,7 +1588,6 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
     "SELECT MAX(ImportedAt) AS t FROM dbo.Csp_Users WITH (NOLOCK)",
   ]);
   const times: Record<string, string | null> = {
-    syspro: sysproAt,
     rmm: rmmAt,
     cove: coveAt,
     epp: eppAt,
@@ -1577,7 +1608,9 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
 
 export type AgentStatusRow = {
   customerCode: string;
+  displayName: string;
   hostName: string;
+  agentId: string;
   instanceName: string | null;
   agentVersion: string | null;
   lastHeartbeatUtc: string | null;
@@ -1586,7 +1619,38 @@ export type AgentStatusRow = {
   lastMessage: string | null;
   healthStatus: string;
   minutesSinceHeartbeat: number | null;
+  requestSyncUtc: string | null;
 };
+
+async function ensureAgentSyncColumn(pool: NonNullable<Awaited<ReturnType<typeof getPool>>>) {
+  await pool.request().query(`
+IF COL_LENGTH('dbo.Agent_Registry', 'RequestSyncUtc') IS NULL
+  ALTER TABLE dbo.Agent_Registry ADD RequestSyncUtc datetime2(0) NULL;
+`);
+}
+
+function mapAgentRow(row: Record<string, unknown>): AgentStatusRow {
+  const code = String(row.CustomerCode ?? "");
+  const host = row.HostName != null ? String(row.HostName) : "";
+  return {
+    customerCode: code,
+    displayName: String(row.DisplayName ?? code),
+    hostName: host,
+    agentId: host ? `${code}@${host}` : `${code}@not-installed`,
+    instanceName: row.InstanceName != null ? String(row.InstanceName) : null,
+    agentVersion: row.AgentVersion != null ? String(row.AgentVersion) : null,
+    lastHeartbeatUtc: row.LastHeartbeatUtc
+      ? new Date(row.LastHeartbeatUtc as string).toISOString()
+      : null,
+    lastJobUtc: row.LastJobUtc ? new Date(row.LastJobUtc as string).toISOString() : null,
+    lastStatus: row.LastStatus != null ? String(row.LastStatus) : null,
+    lastMessage: row.LastMessage != null ? String(row.LastMessage) : null,
+    healthStatus: String(row.HealthStatus ?? "NOT_INSTALLED"),
+    minutesSinceHeartbeat:
+      row.MinutesSinceHeartbeat != null ? Number(row.MinutesSinceHeartbeat) : null,
+    requestSyncUtc: row.RequestSyncUtc ? new Date(row.RequestSyncUtc as string).toISOString() : null,
+  };
+}
 
 export const fetchAgentStatus = createServerFn({ method: "GET" }).handler(async () => {
   const pool = await getPool();
@@ -1594,39 +1658,72 @@ export const fetchAgentStatus = createServerFn({ method: "GET" }).handler(async 
     return { ok: false as const, message: getLastPoolError() ?? "SQL not connected", rows: [] as AgentStatusRow[] };
   }
   try {
+    await ensureAgentSyncColumn(pool);
     const r = await pool.request().query(`
-SELECT CustomerCode, HostName, InstanceName, AgentVersion,
-       LastHeartbeatUtc, LastJobUtc, LastStatus, LastMessage,
-       HealthStatus, MinutesSinceHeartbeat
-FROM dbo.vw_Agent_Status_Latest WITH (NOLOCK)
-ORDER BY CustomerCode, HostName`);
-    const rows: AgentStatusRow[] = (r.recordset ?? []).map((row: Record<string, unknown>) => ({
-      customerCode: String(row.CustomerCode ?? ""),
-      hostName: String(row.HostName ?? ""),
-      instanceName: row.InstanceName != null ? String(row.InstanceName) : null,
-      agentVersion: row.AgentVersion != null ? String(row.AgentVersion) : null,
-      lastHeartbeatUtc: row.LastHeartbeatUtc
-        ? new Date(row.LastHeartbeatUtc as string).toISOString()
-        : null,
-      lastJobUtc: row.LastJobUtc ? new Date(row.LastJobUtc as string).toISOString() : null,
-      lastStatus: row.LastStatus != null ? String(row.LastStatus) : null,
-      lastMessage: row.LastMessage != null ? String(row.LastMessage) : null,
-      healthStatus: String(row.HealthStatus ?? "NEVER"),
-      minutesSinceHeartbeat:
-        row.MinutesSinceHeartbeat != null ? Number(row.MinutesSinceHeartbeat) : null,
-    }));
-    return { ok: true as const, message: `${rows.length} agent(s)`, rows };
+SELECT
+  c.CustomerCode,
+  ISNULL(c.DisplayName, c.CustomerCode) AS DisplayName,
+  r.HostName,
+  r.InstanceName,
+  r.AgentVersion,
+  r.LastHeartbeatUtc,
+  r.LastJobUtc,
+  r.LastStatus,
+  r.LastMessage,
+  r.RequestSyncUtc,
+  CASE
+    WHEN r.HostName IS NULL THEN N'NOT_INSTALLED'
+    WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
+    WHEN r.LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
+    ELSE N'ONLINE'
+  END AS HealthStatus,
+  DATEDIFF(minute, r.LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat
+FROM dbo.Dim_Customer c WITH (NOLOCK)
+LEFT JOIN dbo.Agent_Registry r WITH (NOLOCK) ON r.CustomerCode = c.CustomerCode
+WHERE c.Active = 1
+ORDER BY c.DisplayName, r.HostName`);
+    const rows = (r.recordset ?? []).map((row: Record<string, unknown>) => mapAgentRow(row));
+    return { ok: true as const, message: `${rows.length} customer(s)`, rows };
   } catch (e) {
     return {
       ok: false as const,
       message:
         e instanceof Error
           ? e.message
-          : "Agent tables missing — apply Sql/agent/470_Ensure_Agent_Tables.sql",
+          : "Agent tables missing — apply 470 on central",
       rows: [] as AgentStatusRow[],
     };
   }
 });
+
+export const requestAgentSync = createServerFn({ method: "POST" })
+  .validator((data: { customerCode: string; hostName: string }) => data)
+  .handler(async ({ data }) => {
+    const pool = await getPool();
+    if (!pool) return { ok: false as const, message: "SQL not connected" };
+    const code = data.customerCode.trim().toUpperCase();
+    const host = data.hostName.trim();
+    if (!code || !host) return { ok: false as const, message: "Customer and host required" };
+    try {
+      await ensureAgentSyncColumn(pool);
+      const r = await pool
+        .request()
+        .input("c", sqlTypes.NVarChar(32), code)
+        .input("h", sqlTypes.NVarChar(128), host)
+        .query(`
+UPDATE dbo.Agent_Registry
+SET RequestSyncUtc = SYSUTCDATETIME(),
+    LastStatus = N'QUEUED',
+    LastMessage = N'sync requested from Assure'
+WHERE CustomerCode = @c AND HostName = @h;
+SELECT @@ROWCOUNT AS n;`);
+      const n = Number((r.recordset?.[0] as { n?: number } | undefined)?.n ?? 0);
+      if (n < 1) return { ok: false as const, message: `No agent registered for ${code}@${host}` };
+      return { ok: true as const, message: `Sync queued for ${code}@${host}` };
+    } catch (e) {
+      return { ok: false as const, message: e instanceof Error ? e.message : String(e) };
+    }
+  });
 
 export const runAllApiSync = createServerFn({ method: "POST" }).handler(async () => {
   try {

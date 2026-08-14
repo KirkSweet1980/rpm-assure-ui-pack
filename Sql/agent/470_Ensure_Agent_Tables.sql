@@ -28,6 +28,12 @@ BEGIN
 END
 ELSE PRINT 'Agent_Registry exists';
 GO
+IF COL_LENGTH(N'dbo.Agent_Registry', N'RequestSyncUtc') IS NULL
+BEGIN
+  ALTER TABLE dbo.Agent_Registry ADD RequestSyncUtc datetime2(0) NULL;
+  PRINT 'RequestSyncUtc added';
+END
+GO
 
 IF OBJECT_ID(N'dbo.Agent_Heartbeat', N'U') IS NULL
 BEGIN

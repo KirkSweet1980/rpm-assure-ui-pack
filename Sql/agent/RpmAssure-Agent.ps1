@@ -119,6 +119,34 @@ $r = Invoke-CentralSql -SqlText $hbSql
 if ($r.ExitCode -ne 0) { W "WARN heartbeat push: $($r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))" }
 else { W "Heartbeat pushed" }
 
+# Honour Assure UI sync button (RequestSyncUtc)
+$forceCodes = @()
+try {
+  $qSync = @"
+SET NOCOUNT ON;
+SELECT CustomerCode
+FROM dbo.Agent_Registry WITH (NOLOCK)
+WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
+"@
+  $sr = Invoke-CentralSql -SqlText $qSync -Tsv
+  if ($sr.ExitCode -eq 0) {
+    foreach ($line in ($sr.Text -split "`r?`n")) {
+      $c = $line.Trim()
+      if ($c -and $c -notmatch 'CustomerCode|---') { $forceCodes += $c.ToUpperInvariant() }
+    }
+  }
+  if ($forceCodes.Count) {
+    W ("SYNC requested for " + ($forceCodes -join ','))
+    $u = @"
+SET NOCOUNT ON;
+UPDATE dbo.Agent_Registry
+SET LastStatus = N'SYNCING', LastMessage = N'collect running'
+WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
+"@
+    [void](Invoke-CentralSql -SqlText $u)
+  }
+} catch { W "WARN sync poll $($_.Exception.Message)" }
+
 if ($HeartbeatOnly) {
   W "HeartbeatOnly - done"
   exit 0
@@ -220,7 +248,9 @@ WHERE CustomerCode = $(Sql-Lit $Code) AND HostName = $(Sql-Lit $HostName);
 foreach ($j in $jobs) {
   $name = $j.Name
   $interval = [int]$j.IntervalMin
-  if (-not (Test-JobDue -Name $name -IntervalMin $interval)) {
+  $cust = if ($j.Customer) { [string]$j.Customer } else { $CustomerCode }
+  $forced = $ForceJob -eq $name -or (($forceCodes -contains $cust.ToUpperInvariant()) -and $name -like 'syspro-core-*')
+  if (-not $forced -and -not (Test-JobDue -Name $name -IntervalMin $interval)) {
     W "SKIP $name not due (interval ${interval}m)"
     continue
   }
@@ -249,6 +279,19 @@ foreach ($j in $jobs) {
   W "DONE $name exit=$code"
   Report-JobRun -Name $name -Started $started -Finished $finished -ExitCode $code -Message ("exit=" + $code) -LogTail $tail -Code $(if ($j.Customer) { $j.Customer } else { $CustomerCode })
   if ($code -eq 0) { Set-JobRan -Name $name }
+}
+
+if ($forceCodes.Count) {
+  $clr = @"
+SET NOCOUNT ON;
+UPDATE dbo.Agent_Registry
+SET RequestSyncUtc = NULL,
+    LastStatus = N'OK',
+    LastMessage = N'sync complete'
+WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
+"@
+  [void](Invoke-CentralSql -SqlText $clr)
+  W "SYNC cleared"
 }
 
 W "=== Agent cycle done log=$log ==="

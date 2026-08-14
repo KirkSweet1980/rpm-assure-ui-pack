@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { fetchConfigHealth, type ConfigHealthItem } from "@/lib/settings/settings-api";
+import { AgentFleetPanel } from "@/components/settings/agent-fleet-panel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/")({
@@ -63,6 +64,8 @@ function SettingsHub() {
           ))}
         </div>
       ) : null}
+
+      <AgentFleetPanel compact />
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {OPTIONS.map((o) => (
