@@ -23,7 +23,22 @@ type ConnRow = {
   lastSyncAt: string | null;
 };
 
+function formatSqlCard(item: ConfigHealthItem) {
+  if (item.source !== "sql") {
+    return { title: item.label, detail: item.detail };
+  }
+  const raw = item.detail || "";
+  const m = raw.match(/(\d{1,3}(?:\.\d{1,3}){3})[,:]?\s*(\d{2,5})?/);
+  const host = m?.[1] ?? raw.split(/[·,\s-]/)[0] ?? "—";
+  const port = m?.[2] ?? "14333";
+  return {
+    title: "SQL Server - RPM Assure Platform Status",
+    detail: item.ok ? `IP: ${host} - Port ${port} - RPM Assure App` : raw,
+  };
+}
+
 function HealthTile({ item }: { item: ConfigHealthItem }) {
+  const sql = formatSqlCard(item);
   return (
     <SpaLink
       href={item.href}
@@ -42,7 +57,7 @@ function HealthTile({ item }: { item: ConfigHealthItem }) {
         >
           {item.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
         </span>
-        <span className="min-w-0 text-[13px] font-bold leading-snug text-fg">{item.label}</span>
+        <span className="min-w-0 text-[13px] font-bold leading-snug text-fg">{sql.title}</span>
       </span>
       {item.source !== "sql" ? (
         <span className="text-[10px] uppercase tracking-wide text-muted">
@@ -52,7 +67,7 @@ function HealthTile({ item }: { item: ConfigHealthItem }) {
       <span className={cn("text-[12px] font-semibold", item.ok ? "text-rag-green" : "text-rag-red")}>
         {item.ok ? "Connected" : "Not connected"}
       </span>
-      <span className="text-[11px] text-muted">{item.detail}</span>
+      <span className="text-[11px] text-muted">{sql.detail}</span>
       {item.lastAt ? (
         <span className="text-[10px] text-subtle">Last collect {formatSastDateTime(item.lastAt)}</span>
       ) : null}
