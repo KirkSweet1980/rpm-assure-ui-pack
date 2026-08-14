@@ -1000,28 +1000,23 @@ function ExcoInsightPage() {
               {source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · {formatSastDateTime(exco.generatedAt || summary.generatedAt)}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="rpma-viewbar">
             {allEstateViews(customViews).map((v) => (
               <span key={v.id} className="inline-flex items-center">
                 <button
                   type="button"
                   onClick={() => applyView(v)}
-                  className={cn(
-                    "rounded-md px-2.5 py-1 text-[11px] font-semibold",
-                    activeView === v.id
-                      ? "bg-[#263544] text-white"
-                      : "bg-surface-2 text-muted hover:text-fg",
-                  )}
+                  className={cn("rpma-viewbar-btn", activeView === v.id && "is-on")}
                 >
                   {v.label}
                   {viewCounts[v.id] != null ? (
-                    <span className="ml-1 font-mono tabular-nums opacity-80">{viewCounts[v.id]}</span>
+                    <span className="rpma-viewbar-n">{viewCounts[v.id]}</span>
                   ) : null}
                 </button>
                 {!v.builtin ? (
                   <button
                     type="button"
-                    className="ml-0.5 px-1 text-[10px] text-muted hover:text-rag-red"
+                    className="px-1 text-[11px] text-muted hover:text-rag-red"
                     title="Remove view"
                     onClick={() => removeView(v.id)}
                   >
@@ -1034,9 +1029,9 @@ function ExcoInsightPage() {
               <button
                 type="button"
                 onClick={saveCurrentView}
-                className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-muted hover:text-fg"
+                className="rpma-viewbar-btn"
               >
-                Save this view
+                Save This View
               </button>
             ) : null}
           </div>

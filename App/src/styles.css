@@ -416,6 +416,59 @@ html[data-theme="dark"] .rpma-pane-head-row,
 html.dark .rpma-pane-head-row {
   background: color-mix(in srgb, var(--color-nav) 45%, #10151c);
 }
+.rpma-viewbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+.rpma-viewbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 0;
+  border-right: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rpma-viewbar > *:last-child .rpma-viewbar-btn,
+.rpma-viewbar > .rpma-viewbar-btn:last-child { border-right: 0; }
+.rpma-viewbar-btn:hover { color: var(--color-fg); background: color-mix(in srgb, var(--color-nav) 5%, var(--color-surface)); }
+.rpma-viewbar-btn.is-on {
+  background: color-mix(in srgb, var(--color-nav) 10%, var(--color-surface));
+  color: var(--color-fg);
+  box-shadow: inset 0 -2px 0 var(--color-nav);
+}
+.rpma-viewbar-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--color-surface-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  tabular-nums: true;
+}
+.rpma-viewbar-btn.is-on .rpma-viewbar-n {
+  background: var(--color-nav);
+  color: #fff;
+}
+html[data-theme="dark"] .rpma-viewbar-btn.is-on,
+html.dark .rpma-viewbar-btn.is-on {
+  background: color-mix(in srgb, var(--color-nav) 45%, #10151c);
+}
 html[data-theme="dark"] .rpma-xls th,
 html.dark .rpma-xls th,
 html[data-theme="dark"] .rpma-xls td,

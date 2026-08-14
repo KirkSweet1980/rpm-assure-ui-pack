@@ -8,7 +8,7 @@ export type EstateView = {
 };
 
 export const ESTATE_VIEWS: EstateView[] = [
-  { id: "all", label: "Entire Assure Eco-System", drill: null, builtin: true },
+  { id: "all", label: "All Customers", drill: null, builtin: true },
   { id: "attention", label: "Attention", drill: "attention", builtin: true },
   { id: "finsight", label: "FinSight OOB", drill: "finsight", builtin: true },
   { id: "sla", label: "SLA Breach", drill: "sla", builtin: true },
