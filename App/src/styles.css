@@ -117,9 +117,28 @@ body {
 .dk-shell { display: flex; flex-direction: column; min-height: 100dvh; padding-top: var(--pc-header-height); background: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-sans); }
 .dk-brand { height: var(--pc-header-height); display: flex; align-items: center; gap: 12px; padding: 0 20px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
 .dk-brand-mark { width: 32px; height: 32px; border-radius: 8px; background: var(--dk-brand-1); }
-.dk-brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.dk-brand-text { display: flex; flex-direction: column; line-height: 1.15; position: relative; padding-bottom: 7px; }
 .dk-brand-text strong { font-size: 15px; font-weight: 700; }
 .dk-brand-text em { font-style: normal; font-size: 11px; color: #8996a4; }
+.dk-brand-text::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 36%;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-brand-slate) 0%, var(--color-brand-teal) 48%, var(--color-brand-lime) 100%);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand-teal) 55%, transparent);
+  animation: rpma-brand-scan 3.2s ease-in-out infinite;
+}
+@keyframes rpma-brand-scan {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(175%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dk-brand-text::after { animation: none; width: 100%; }
+}
 .dk-link, .dk-collapse {
   display: flex; align-items: center; gap: 12px; width: auto; margin: 0; padding: 8px 12px;
   border: 0; background: transparent; color: #d5deea; font-size: 13px; font-weight: 500;

@@ -89,11 +89,11 @@ export function RpmAssureNavLogo({ className }: { className?: string }) {
         >
           RPM Assure
         </text>
-        <rect x="48" y="31" height="2" rx="1" fill={`url(#${g})`}>
-          <animate attributeName="width" values="60;100;60" dur="3.2s" repeatCount="indefinite" />
+        <rect x="48" y="31" width="34" height="2" rx="1" fill={`url(#${g})`}>
+          <animate attributeName="x" values="48;114;48" dur="3.2s" repeatCount="indefinite" />
           <animate
             attributeName="opacity"
-            values="0.55;0.95;0.55"
+            values="0.7;1;0.7"
             dur="3.2s"
             repeatCount="indefinite"
           />
