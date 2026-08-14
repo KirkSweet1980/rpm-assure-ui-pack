@@ -11,7 +11,7 @@ export const Route = createFileRoute("/settings/")({
 });
 
 const OPTIONS: { href: string; title: string; blurb: string }[] = [
-  { href: "/settings/integrations", title: "Integrations", blurb: "API sources: Pulseway, Cove, Bitdefender, Microsoft Graph." },
+  { href: "/settings/integrations", title: "Integrations", blurb: "API sources: Pulseway, N-Able Cove Backup, Bitdefender, Microsoft Graph." },
   { href: "/settings/sql", title: "SQL Server", blurb: "Central connections and credentials." },
   { href: "/settings/ssl", title: "SSL / HTTPS", blurb: "Certificate for the public hostname." },
   { href: "/settings/users", title: "Users", blurb: "Staff accounts, roles, and scope." },
@@ -54,12 +54,14 @@ function SettingsHub() {
                 {i.ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
               </span>
               <span className="min-w-0">
-                <span className="block text-[11px] font-bold leading-snug text-fg">{i.label}</span>
+                <span className="block text-[11px] font-bold leading-snug text-fg">
+                  {i.id === "cove" ? "N-Able Cove Backup" : i.label}
+                </span>
                 <span className={cn("block truncate text-[10px]", i.ok ? "text-rag-green" : "text-rag-red")}>
                   {i.ok ? "Connected" : "Not connected"}
                 </span>
                 <span className="block text-[9px] leading-snug text-muted">
-                  {i.source === "sql" ? i.detail : i.source === "agent" ? "SYSPRO · Agent" : i.source === "api" ? "API" : "Platform"}
+                  {i.source === "sql" ? i.detail : i.source === "agent" ? "SYSPRO \u00b7 Agent" : i.source === "api" ? "API" : "Platform"}
                 </span>
               </span>
             </SpaLink>

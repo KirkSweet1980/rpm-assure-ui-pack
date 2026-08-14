@@ -55,6 +55,9 @@ function syncTone(iso: string | null): { tone: "green" | "amber" | "red"; result
 }
 
 function formatSqlCard(item: ConfigHealthItem) {
+  if (item.id === "cove") {
+    return { title: "N-Able Cove Backup", detail: item.detail };
+  }
   if (item.source !== "sql") {
     return { title: item.label, detail: item.detail };
   }
