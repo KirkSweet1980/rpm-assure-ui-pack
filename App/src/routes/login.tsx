@@ -10,24 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-panes-20260814";
-const DC_STILL = "/brand/login-boardroom.jpg?v=20260814e";
-
-const PANE_MARKS: Mark[] = [
-  { text: "clarity", top: 11, left: 5, rot: -6, size: 2.45, opacity: 0.36 },
-  { text: "evidence", top: 18, left: 36, rot: 5, size: 2.2, opacity: 0.34 },
-  { text: "source of truth", top: 34, left: 6, rot: -3, size: 1.42, opacity: 0.32 },
-  { text: "assurance", top: 13, left: 58, rot: 4, size: 2.15, opacity: 0.35 },
-];
-
-type Mark = {
-  text: string;
-  top: number;
-  left: number;
-  rot: number;
-  size: number;
-  opacity: number;
-};
+const LOGIN_BUILD = "boardroom-boxes-20260814";
+const DC_STILL = "/brand/login-boardroom.jpg?v=20260814f";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -86,23 +70,14 @@ function LoginPage() {
       <section className="rpma-dc-left" aria-hidden="true">
         <div className="rpma-dc-scene">
           <img className="rpma-dc-still" src={DC_STILL} alt="" />
-          {PANE_MARKS.map((m) => (
-            <span
-              key={m.text}
-              className="rpma-dc-mark"
-              style={{
-                top: `${m.top}%`,
-                left: `${m.left}%`,
-                transform: `rotate(${m.rot}deg)`,
-                fontSize: `${m.size}rem`,
-                opacity: m.opacity,
-              }}
-            >
-              {m.text}
-            </span>
-          ))}
         </div>
         <div className="rpma-dc-vignette" />
+        <div className="rpma-dc-marks">
+          <span className="m-clarity">clarity</span>
+          <span className="m-evidence">evidence</span>
+          <span className="m-sot">source of truth</span>
+          <span className="m-assurance">assurance</span>
+        </div>
       </section>
 
       <aside className="rpma-dc-right">
@@ -198,8 +173,31 @@ const DC_CSS = `
 .rpma-dc-still {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  object-fit: cover; object-position: 38% 38%;
+  object-fit: cover; object-position: 32% 30%;
 }
+.rpma-dc-marks {
+  position: absolute; inset: 0; z-index: 4;
+  display: grid;
+  grid-template-columns: 8% 27% 10% 34% 1fr;
+  grid-template-rows: 9% 20% 5% 28% 1fr;
+  pointer-events: none;
+}
+.rpma-dc-marks span {
+  display: flex; align-items: center; justify-content: center;
+  margin: 0;
+  color: #102436;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: lowercase;
+  text-align: center;
+  opacity: 0.34;
+  user-select: none;
+}
+.m-clarity { grid-column: 2; grid-row: 2; font-size: clamp(1.5rem, 3.1vw, 2.35rem); }
+.m-evidence { grid-column: 4; grid-row: 2; font-size: clamp(1.5rem, 3.1vw, 2.35rem); }
+.m-sot { grid-column: 2; grid-row: 4; font-size: clamp(0.95rem, 1.7vw, 1.35rem); }
+.m-assurance { grid-column: 4; grid-row: 4; font-size: clamp(1.45rem, 2.9vw, 2.2rem); }
 @keyframes rpma-kb {
   from { transform: scale(1) translate3d(0, 0, 0); }
   to { transform: scale(1.06) translate3d(-1.2%, -0.8%, 0); }
@@ -209,20 +207,6 @@ const DC_CSS = `
   background:
     linear-gradient(90deg, transparent 0%, transparent 72%, rgba(244,247,250,0.55) 100%),
     linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 28%, rgba(20,32,44,0.12) 100%);
-}
-.rpma-dc-mark {
-  position: absolute;
-  z-index: 4;
-  margin: 0;
-  color: #102436;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  line-height: 0.95;
-  text-transform: lowercase;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  text-shadow: 0 1px 10px rgba(255,255,255,0.35);
 }
 .rpma-dc-right {
   position: relative;
