@@ -42,11 +42,13 @@ function HealthTile({ item }: { item: ConfigHealthItem }) {
         >
           {item.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
         </span>
-        <span className="min-w-0 truncate text-[13px] font-bold text-fg">{item.label}</span>
+        <span className="min-w-0 text-[13px] font-bold leading-snug text-fg">{item.label}</span>
       </span>
-      <span className="text-[10px] uppercase tracking-wide text-muted">
-        {item.source === "agent" ? "SYSPRO · RPM Assure Agent" : item.source === "api" ? "API" : "Platform"}
-      </span>
+      {item.source !== "sql" ? (
+        <span className="text-[10px] uppercase tracking-wide text-muted">
+          {item.source === "agent" ? "SYSPRO · RPM Assure Agent" : item.source === "api" ? "API" : "Platform"}
+        </span>
+      ) : null}
       <span className={cn("text-[12px] font-semibold", item.ok ? "text-rag-green" : "text-rag-red")}>
         {item.ok ? "Connected" : "Not connected"}
       </span>
