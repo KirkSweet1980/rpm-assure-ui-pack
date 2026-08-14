@@ -26,7 +26,13 @@ SET NOCOUNT ON;
     (N'UVSS',                      N'UVSS'),
     (N'Unique Ventilation Systems',N'UVSS'),
     (N'Vault Tech',                N'VAULT'),
-    (N'YLJ Health',                N'YLJ')
+    (N'YLJ Health',                N'YLJ'),
+    (N'Sir Fruit',                 N'SIRF'),
+    (N'SIR Fruit',                 N'SIRF'),
+    (N'SirFruit',                  N'SIRF'),
+    (N'SIRF',                      N'SIRF'),
+    (N'SIR FRUIT (PTY) LTD',       N'SIRF'),
+    (N'Sir Fruit (Pty) Ltd',       N'SIRF')
   ) v(OrganizationName, CustomerCode)
 ),
 Valid AS (

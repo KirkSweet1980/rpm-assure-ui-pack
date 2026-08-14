@@ -808,6 +808,47 @@ GROUP BY d.CustomerCode`);
       });
       }
     }
+    // SIRF: attach Fruit / SIRZA devices even if OrgSummary missed them
+    try {
+      const sirf = rows.find((r) => r.customerCode.toUpperCase() === "SIRF");
+      if (sirf && !(sirf.pulsewayDeviceCount && sirf.pulsewayDeviceCount > 0)) {
+        const fb = await pool.request().query(`
+SELECT
+  MAX(OrganizationName) AS OrganizationName,
+  COUNT_BIG(*) AS DeviceCount,
+  SUM(CASE WHEN IsOnline = 1 THEN 1 ELSE 0 END) AS OnlineCount,
+  SUM(CASE WHEN IsOnline = 0 OR IsOnline IS NULL THEN 1 ELSE 0 END) AS OfflineCount,
+  SUM(ISNULL(CriticalNotifications, 0)) AS CriticalAlerts,
+  SUM(ISNULL(ElevatedNotifications, 0)) AS ElevatedAlerts,
+  MAX(ImportedAt) AS ImportedAt
+FROM dbo.Pulseway_Devices WITH (NOLOCK)
+WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
+  AND (
+    CustomerCode = N'SIRF'
+    OR OrganizationName LIKE N'%Fruit%'
+    OR OrganizationName LIKE N'%SIRF%'
+    OR Name LIKE N'SIRZA%'
+    OR Name LIKE N'%SirFruit%'
+    OR Name LIKE N'%Sir Fruit%'
+  )`);
+        const f = fb.recordset?.[0];
+        const n = Number(f?.DeviceCount) || 0;
+        if (n > 0) {
+          applyPulsewayToRow(sirf, {
+            deviceCount: n,
+            onlineCount: Number(f.OnlineCount) || 0,
+            offlineCount: Number(f.OfflineCount) || 0,
+            criticalAlerts: Number(f.CriticalAlerts) || 0,
+            elevatedAlerts: Number(f.ElevatedAlerts) || 0,
+            lastImportAt: toIso((f.ImportedAt as Date | string | null) ?? null),
+            organizationName:
+              f.OrganizationName != null ? String(f.OrganizationName) : "Sir Fruit",
+          });
+        }
+      }
+    } catch {
+      /* optional */
+    }
     try {
       const maps = await pool.request().query(`
 SELECT DISTINCT CustomerCode FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)

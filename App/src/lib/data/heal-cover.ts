@@ -77,7 +77,17 @@ FROM dbo.Pulseway_Devices AS d
 INNER JOIN dbo.Dim_Pulseway_OrgMap AS m
   ON m.Active = 1 AND m.CustomerCode = @code
  AND m.OrganizationName = d.OrganizationName
-WHERE d.CustomerCode IS NULL OR d.CustomerCode <> @code;`);
+WHERE d.CustomerCode IS NULL OR d.CustomerCode <> @code;
+IF UPPER(@code) = N'SIRF'
+BEGIN
+  UPDATE dbo.Pulseway_Devices
+  SET CustomerCode = N'SIRF'
+  WHERE OrganizationName LIKE N'%Fruit%'
+     OR OrganizationName LIKE N'%SIRF%'
+     OR Name LIKE N'SIRZA%'
+     OR Name LIKE N'%SirFruit%'
+     OR Name LIKE N'%Sir Fruit%';
+END`);
   } catch {
     /* */
   }
@@ -105,15 +115,23 @@ WHERE e.CompanyName IS NOT NULL
     /* CompanyName column may be missing - ignore */
   }
 
-  // 3) Live counts (latest snapshot only)
+  // 3) Live counts (latest snapshot, including rows only reachable via the vendor map)
   const counts: LiveCoverCounts = { rmm: 0, cove: 0, epp: 0, csp: 0 };
   counts.rmm = await withRetrySoft(
     async () => {
       const r = await pool.request().input("code", sql.NVarChar(50), c).query(`
 SELECT COUNT_BIG(*) AS n
-FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE CustomerCode = @code
-  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK));`);
+FROM dbo.Pulseway_Devices AS d WITH (NOLOCK)
+WHERE d.SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
+  AND (
+    d.CustomerCode = @code
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Pulseway_OrgMap AS m WITH (NOLOCK)
+      WHERE m.Active = 1 AND m.CustomerCode = @code
+        AND m.OrganizationName = d.OrganizationName
+        AND m.OrganizationName NOT LIKE N'Invalid%'
+    )
+  );`);
       return Number(r.recordset?.[0]?.n) || 0;
     },
     0,
@@ -123,9 +141,18 @@ WHERE CustomerCode = @code
     async () => {
       const r = await pool.request().input("code", sql.NVarChar(50), c).query(`
 SELECT COUNT_BIG(*) AS n
-FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)
-WHERE CustomerCode = @code
-  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WITH (NOLOCK));`);
+FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
+WHERE d.SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WITH (NOLOCK))
+  AND (
+    d.CustomerCode = @code
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
+      WHERE m.Active = 1 AND m.CustomerCode = @code
+        AND m.PartnerName NOT LIKE N'Invalid%'
+        AND LTRIM(RTRIM(ISNULL(m.PartnerName,N''))) <> N''
+        AND LTRIM(RTRIM(m.PartnerName)) = LTRIM(RTRIM(ISNULL(d.Product, N'')))
+    )
+  );`);
       return Number(r.recordset?.[0]?.n) || 0;
     },
     0,
@@ -157,7 +184,8 @@ SELECT
     { attempts: 3, label: `count-csp:${c}` },
   );
 
-  // 4) Write AmsConfig to match live counts (self-heal flags)
+  // 4) Write AmsConfig: live rows OR an active vendor map = on cover.
+  //    Never force a mapped customer off because the latest snapshot is empty.
   try {
     await pool
       .request()
@@ -167,14 +195,33 @@ SELECT
       .input("epp", sql.Bit, counts.epp > 0)
       .input("csp", sql.Bit, counts.csp > 0).query(`
 IF OBJECT_ID(N'dbo.Dim_Customer_AmsConfig', N'U') IS NULL RETURN;
+DECLARE @mapRmm bit = CASE WHEN EXISTS (
+  SELECT 1 FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)
+  WHERE CustomerCode = @code AND ISNULL(Active,1) = 1
+    AND OrganizationName NOT LIKE N'Invalid%' AND LTRIM(RTRIM(ISNULL(OrganizationName,N''))) <> N''
+) THEN 1 ELSE 0 END;
+DECLARE @mapCove bit = CASE WHEN EXISTS (
+  SELECT 1 FROM dbo.Dim_Cove_PartnerMap WITH (NOLOCK)
+  WHERE CustomerCode = @code AND ISNULL(Active,1) = 1
+    AND PartnerName NOT LIKE N'Invalid%' AND LTRIM(RTRIM(ISNULL(PartnerName,N''))) <> N''
+) THEN 1 ELSE 0 END;
+DECLARE @mapEpp bit = 0;
+IF OBJECT_ID(N'dbo.Dim_Bitdefender_CompanyMap', N'U') IS NOT NULL
+  SET @mapEpp = CASE WHEN EXISTS (
+    SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap WITH (NOLOCK)
+    WHERE CustomerCode = @code AND ISNULL(Active,1) = 1
+      AND CompanyName NOT LIKE N'Invalid%' AND LTRIM(RTRIM(ISNULL(CompanyName,N''))) <> N''
+  ) THEN 1 ELSE 0 END;
 IF NOT EXISTS (SELECT 1 FROM dbo.Dim_Customer_AmsConfig WHERE CustomerCode = @code)
   INSERT dbo.Dim_Customer_AmsConfig (CustomerCode, AmsEnabled, PillarPulseway, PillarCove, PillarBitdefender)
-  VALUES (@code, 1, @rmm, @cove, @epp);
+  VALUES (@code, 1, CASE WHEN @rmm = 1 OR @mapRmm = 1 THEN 1 ELSE 0 END,
+                 CASE WHEN @cove = 1 OR @mapCove = 1 THEN 1 ELSE 0 END,
+                 CASE WHEN @epp = 1 OR @mapEpp = 1 THEN 1 ELSE 0 END);
 ELSE
   UPDATE dbo.Dim_Customer_AmsConfig
-  SET PillarPulseway = @rmm,
-      PillarCove = @cove,
-      PillarBitdefender = @epp,
+  SET PillarPulseway = CASE WHEN @rmm = 1 OR @mapRmm = 1 THEN 1 ELSE 0 END,
+      PillarCove = CASE WHEN @cove = 1 OR @mapCove = 1 THEN 1 ELSE 0 END,
+      PillarBitdefender = CASE WHEN @epp = 1 OR @mapEpp = 1 THEN 1 ELSE 0 END,
       UpdatedAt = SYSUTCDATETIME(),
       UpdatedBy = N'heal-cover'
   WHERE CustomerCode = @code;

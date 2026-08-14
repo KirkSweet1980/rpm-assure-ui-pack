@@ -715,7 +715,10 @@ Add-Map 'redsun' $null 'RSR'
 Add-Map 'sirfruit' $null 'SIRF'
 Add-Map 'sir fruit (pty) ltd' $null 'SIRF'
 Add-Map 'sir fruit pty ltd' $null 'SIRF'
+Add-Map 'sir fruit (pty) ltd.' $null 'SIRF'
 Add-Map 'sirf' $null 'SIRF'
+Add-Map 'sirza' $null 'SIRF'
+Add-Map 'sir za' $null 'SIRF'
 Write-Log ('Org map after SIRF aliases: names=' + $orgMap.Count)
 
 function Resolve-Customer([string]$orgName, $orgId) {
@@ -1484,6 +1487,13 @@ foreach ($d in $devices) {
   if ($null -ne $patchMiss) { $patchMiss = Get-IntLoose $patchMiss }
   if ($null -ne $patchPend) { $patchPend = Get-IntLoose $patchPend }
   $code = Resolve-Customer $oname $oid
+  if (-not $code) {
+    $nmLow = ([string]$name).ToLowerInvariant()
+    $onLow = ([string]$oname).ToLowerInvariant()
+    if ($onLow -match 'fruit' -or $nmLow -match 'fruit|sirfruit|^sirza') {
+      $code = 'SIRF'
+    }
+  }
   if ($code) { $mappedN++ }
   # Prefer extended insert; fallback without stats columns if SQL rejects (old schema)
   [void]$sb.AppendLine((
@@ -1590,7 +1600,7 @@ if ($notifs.Count -gt 0) {
 
 [void]$sb.AppendLine('SELECT COUNT(*) AS DevicesToday FROM dbo.Pulseway_Devices WHERE SnapshotDate = @Snap;')
 [void]$sb.AppendLine("UPDATE d SET d.CustomerCode = m.CustomerCode FROM dbo.Pulseway_Devices d INNER JOIN dbo.Dim_Pulseway_OrgMap m ON LTRIM(RTRIM(d.OrganizationName)) = LTRIM(RTRIM(m.OrganizationName)) AND ISNULL(m.Active,1)=1 WHERE d.SnapshotDate = @Snap AND (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode))=N'');")
-[void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'SIRF' WHERE SnapshotDate = @Snap AND (CustomerCode IS NULL OR LTRIM(RTRIM(CustomerCode))=N'') AND (OrganizationName LIKE N'%Fruit%' OR OrganizationName LIKE N'%SIRF%' OR OrganizationName LIKE N'%Sir Fruit%');")
+[void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'SIRF' WHERE SnapshotDate = @Snap AND (OrganizationName LIKE N'%Fruit%' OR OrganizationName LIKE N'%SIRF%' OR OrganizationName LIKE N'%Sir Fruit%' OR Name LIKE N'SIRZA%' OR Name LIKE N'%SirFruit%' OR Name LIKE N'%Sir Fruit%');")
 [void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'RSR' WHERE SnapshotDate = @Snap AND (CustomerCode IS NULL OR LTRIM(RTRIM(CustomerCode))=N'' OR CustomerCode = N'RSR') AND (OrganizationName LIKE N'%Redsun%' OR OrganizationName LIKE N'%Raisin%');")
 [void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'RSR' WHERE SnapshotDate = @Snap AND OrganizationName LIKE N'%Redsun%';")
 [void]$sb.AppendLine("SELECT OrganizationName, COUNT(*) AS Cnt, SUM(CASE WHEN CustomerCode IS NULL OR LTRIM(RTRIM(CustomerCode))=N'' THEN 1 ELSE 0 END) AS Unmapped FROM dbo.Pulseway_Devices WHERE SnapshotDate = @Snap GROUP BY OrganizationName ORDER BY Cnt DESC;")
