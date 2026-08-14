@@ -17,6 +17,7 @@ export function CorpWorkspaceRail({
   pathname,
   servicesHeading = "Settings",
   modulesHeading = "Service Modules",
+  stacked = false,
 }: {
   heading: string;
   homeHref: string;
@@ -24,6 +25,7 @@ export function CorpWorkspaceRail({
   pathname: string;
   servicesHeading?: string;
   modulesHeading?: string;
+  stacked?: boolean;
 }) {
   const path = pathname.replace(/\/$/, "") || homeHref;
   const fromUrl =
@@ -73,9 +75,31 @@ export function CorpWorkspaceRail({
             ))}
           </div>
         </section>
+
+        {stacked && active ? (
+          <section className="rpma-nav-block">
+            <div className="rpma-pillar-rail-head">
+              <h2>{modulesHeading}</h2>
+            </div>
+            <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
+              {active.modules.map((m) => {
+                const selected = path === m.path || path.startsWith(`${m.path}/`);
+                return (
+                  <SpaLink
+                    key={m.path}
+                    href={m.path}
+                    className={cn("rpma-mod-row", selected && "is-on")}
+                  >
+                    {m.label}
+                  </SpaLink>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
       </aside>
 
-      {active ? (
+      {!stacked && active ? (
         <aside className="rpma-pillar-rail" aria-label={modulesHeading}>
           <section className="rpma-nav-block">
             <div className="rpma-pillar-rail-head">

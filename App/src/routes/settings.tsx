@@ -108,7 +108,7 @@ function SettingsLayout() {
             </p>
           </div>
         ) : (
-          <div className={svc ? "rpma-d3-workspace" : "rpma-d3-workspace is-tool"}>
+          <div className="rpma-d3-workspace is-tool">
             <CorpWorkspaceRail
               heading="Configuration"
               homeHref="/settings/infrastructure"
@@ -116,6 +116,7 @@ function SettingsLayout() {
               pathname={pathname}
               servicesHeading="Settings"
               modulesHeading="Service Modules"
+              stacked
             />
             <div className="rpma-d3-detail min-w-0">
               <div className="rpma-modnav">
