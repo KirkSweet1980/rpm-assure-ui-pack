@@ -112,21 +112,25 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
 
   const sel = rows.find((r) => r.agentId === selected);
   const selSt = sel ? sync[sel.agentId] : undefined;
+  void compact;
 
   return (
-    <div className="rpma-panel space-y-2 p-2.5">
-      <div className="flex flex-wrap items-center justify-between gap-1.5">
-        <p className="text-[11px] font-semibold tracking-wide text-fg">RPM Assure SQL Agent Status</p>
+    <div className="rpma-panel space-y-3 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Fleet</p>
+          <p className="mt-0.5 text-[16px] font-semibold text-fg">RPM Assure SQL Agent Status</p>
+        </div>
         <div className="flex items-center gap-1">
-          <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[10px]" disabled={busy} onClick={() => void load()}>
-            <RefreshCw className={cn("size-3", busy && "animate-spin")} />
+          <Button type="button" size="sm" variant="ghost" className="h-8 px-3 text-[12px]" disabled={busy} onClick={() => void load()}>
+            <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
             Refresh
           </Button>
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            className="h-6 px-2 text-[10px]"
+            className="h-8 px-3 text-[12px]"
             disabled={busy}
             onClick={() => {
               void requestAgentUpdate({ data: { all: true } }).then((r) => {
@@ -139,11 +143,11 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
           </Button>
         </div>
       </div>
-      {msg ? <p className="text-[10px] text-muted">{msg}</p> : null}
+      {msg ? <p className="text-[12px] text-muted">{msg}</p> : null}
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-2">
         {rows.length === 0 ? (
-          <p className="text-[10px] text-muted">No agents registered.</p>
+          <p className="text-[13px] text-muted">No agents registered.</p>
         ) : (
           rows.map((r) => {
             const st = sync[r.agentId];
@@ -153,16 +157,16 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
               <button
                 key={r.agentId}
                 type="button"
-                title={`${r.displayName} · ${r.agentId} · ${labelOf(tone)}`}
+                title={`${r.displayName} \u00b7 ${r.agentId} \u00b7 ${labelOf(tone)}`}
                 onClick={() => setSelected(r.agentId)}
                 className={cn(
-                  "inline-flex min-h-8 items-center gap-1.5 rounded-md border px-2 py-1 text-left transition-colors",
+                  "inline-flex min-h-12 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
                   on ? "border-fg/30 bg-surface-2" : "border-transparent bg-surface-2/70 hover:bg-surface-2",
                 )}
               >
                 <Bot
                   className={cn(
-                    "size-3.5 shrink-0",
+                    "size-5 shrink-0",
                     tone === "green" && "text-emerald-500",
                     tone === "amber" && "text-amber-400",
                     tone === "red" && "text-red-500",
@@ -170,19 +174,19 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
                   strokeWidth={2.25}
                 />
                 <span className="min-w-0">
-                  <span className="block max-w-[9rem] truncate text-[10px] font-semibold leading-tight text-fg">
+                  <span className="block max-w-[12rem] truncate text-[13px] font-semibold leading-tight text-fg">
                     {r.displayName}
                   </span>
                   <span
                     className={cn(
-                      "block text-[9px] font-medium leading-tight",
+                      "block text-[11px] font-medium leading-tight",
                       tone === "green" && "text-emerald-500",
                       tone === "amber" && "text-amber-500",
                       tone === "red" && "text-red-500",
                     )}
                   >
                     {labelOf(tone)}
-                    {r.agentVersion ? ` · v${r.agentVersion}` : ""}
+                    {r.agentVersion ? ` \u00b7 v${r.agentVersion}` : ""}
                   </span>
                 </span>
               </button>
@@ -192,24 +196,24 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
       </div>
 
       {sel ? (
-        <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-1.5">
-          <span className="font-mono text-[9px] text-muted">{sel.agentId}</span>
+        <div className="flex flex-wrap items-center gap-3 border-t border-border/40 pt-3">
+          <span className="font-mono text-[11px] text-muted">{sel.agentId}</span>
           <Button
             type="button"
             size="sm"
-            className="h-6 px-2 text-[10px]"
+            className="h-8 px-3 text-[12px]"
             disabled={!sel.hostName || toneOf(sel, selSt) === "red" || selSt?.phase === "queued" || selSt?.phase === "running"}
             onClick={() => void syncOne(sel)}
           >
             Sync Now
           </Button>
           {selSt ? (
-            <div className="min-w-[120px] flex-1">
-              <div className="flex justify-between text-[9px] text-muted">
+            <div className="min-w-[160px] flex-1">
+              <div className="flex justify-between text-[11px] text-muted">
                 <span>{selSt.note}</span>
                 <span>{selSt.pct}%</span>
               </div>
-              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-black/25">
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-black/25">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
