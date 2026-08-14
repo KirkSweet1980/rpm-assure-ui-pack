@@ -21,8 +21,8 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/settings/rag": { title: "RAG thresholds", subtitle: "Job error and FinSight rules for Red / Amber / Green — no code deploy." },
   "/settings/alerts": { title: "Alerts", subtitle: "In-app rules for Red health, job errors, and stale collect." },
   "/settings/collect": { title: "Collect inventory", subtitle: "Last import per customer / instance and schedule health." },
-  "/settings/agents": { title: "Edge agents", subtitle: "SQL-host Windows service: heartbeat and SYSPRO collect." },
-  "/settings/reports": { title: "Report schedules", subtitle: "On-screen report packs (email schedules off)." },
+  "/settings/agents": { title: "RPM Assure Agent", subtitle: "SQL-host Windows service: heartbeat and SYSPRO collect." },
+  "/settings/reports": { title: "Reports", subtitle: "On-screen report packs (email schedules off)." },
   "/settings/query": { title: "SQL Query", subtitle: "Read-only explorer against the configured database." },
   "/settings/users": { title: "Users", subtitle: "Staff accounts, roles, scope, plus your profile and 2FA." },
   "/settings/profile": { title: "My profile", subtitle: "Display name, password, and account details." },
@@ -33,55 +33,40 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
 
 const CONFIG_SERVICES: CorpService[] = [
   {
-    id: "platform",
-    title: "Platform",
+    id: "assure-app",
+    title: "Assure Application",
+    overview: "/settings/integrations",
+    modules: [
+      { label: "Integrations", path: "/settings/integrations" },
+      { label: "RAG", path: "/settings/rag" },
+      { label: "Reports", path: "/settings/reports" },
+      { label: "Collect", path: "/settings/collect" },
+    ],
+  },
+  {
+    id: "settings",
+    title: "Settings",
     overview: "/settings/sql",
     modules: [
-      { label: "Health", path: "/settings/integrations" },
       { label: "SQL Server", path: "/settings/sql" },
-      { label: "Certificates", path: "/settings/ssl" },
-      { label: "Email", path: "/settings/smtp" },
-      { label: "API Integrations", path: "/settings/integrations" },
-      { label: "Collect Inventory", path: "/settings/collect" },
-    ],
-  },
-  {
-    id: "appearance",
-    title: "Appearance",
-    overview: "/settings/dashboard",
-    modules: [
-      { label: "Dashboard", path: "/settings/dashboard" },
-      { label: "Menu Style", path: "/settings/chrome" },
-      { label: "Theme", path: "/settings/theme" },
-      { label: "Labels", path: "/settings/labels" },
-    ],
-  },
-  {
-    id: "assurance",
-    title: "Assurance Rules",
-    overview: "/settings/rag",
-    modules: [
-      { label: "RAG Thresholds", path: "/settings/rag" },
-      { label: "Alerts", path: "/settings/alerts" },
-      { label: "Report Schedules", path: "/settings/reports" },
-    ],
-  },
-  {
-    id: "people",
-    title: "People",
-    overview: "/settings/users",
-    modules: [
+      { label: "SQL Query", path: "/settings/query" },
       { label: "Users", path: "/settings/users" },
       { label: "Audit Log", path: "/settings/audit" },
+      { label: "SSL", path: "/settings/ssl" },
+      { label: "Integrations", path: "/settings/integrations" },
     ],
   },
   {
-    id: "tools",
-    title: "Tools",
-    overview: "/settings/query",
+    id: "customization",
+    title: "Customization",
+    overview: "/settings/theme",
     modules: [
-      { label: "SQL Query", path: "/settings/query" },
-      { label: "About", path: "/settings/about" },
+      { label: "Theme", path: "/settings/theme" },
+      { label: "UI Labels", path: "/settings/labels" },
+      { label: "Dashboard", path: "/settings/dashboard" },
+      { label: "Alerts", path: "/settings/alerts" },
+      { label: "RPM Assure Agent", path: "/settings/agents" },
+      { label: "Report Schedules", path: "/settings/reports" },
     ],
   },
 ];
@@ -107,9 +92,10 @@ function SettingsLayout() {
       subtitle: "Platform configuration — SQL, SSL, and tools.",
     };
 
-  const svc = CONFIG_SERVICES.find((s) =>
-    s.modules.some((m) => pathname === m.path || pathname.startsWith(`${m.path}/`)),
-  );
+  const svc =
+    CONFIG_SERVICES.find((s) =>
+      s.modules.some((m) => pathname === m.path || pathname.startsWith(`${m.path}/`)),
+    ) ?? null;
   const mod = svc?.modules.find((m) => pathname === m.path || pathname.startsWith(`${m.path}/`));
 
   return (
