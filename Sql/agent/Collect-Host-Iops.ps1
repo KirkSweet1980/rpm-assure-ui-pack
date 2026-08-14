@@ -27,7 +27,7 @@ function Sql-Dec($v) {
   if ($null -eq $v -or "$v" -eq "") { return "NULL" }
   try {
     $n = [double]$v
-    if (-not [double]::IsFinite($n)) { return "NULL" }
+    if ([double]::IsNaN($n) -or [double]::IsInfinity($n)) { return "NULL" }
     return $n.ToString("0.##", [Globalization.CultureInfo]::InvariantCulture)
   } catch { return "NULL" }
 }
@@ -117,7 +117,7 @@ foreach ($set in @($samples.CounterSamples)) {
     }
     $path = [string]$s.Path
     $val = [double]$s.CookedValue
-    if (-not [double]::IsFinite($val) -or $val -lt 0) { continue }
+    if ([double]::IsNaN($val) -or [double]::IsInfinity($val) -or $val -lt 0) { continue }
     if ($path -match "Disk Reads/sec") { $byInst[$letter].Read += $val }
     elseif ($path -match "Disk Writes/sec") { $byInst[$letter].Write += $val }
     elseif ($path -match "Disk Transfers/sec") { $byInst[$letter].Total += $val }
