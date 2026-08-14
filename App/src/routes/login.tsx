@@ -10,9 +10,26 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "glass-boardroom-20260814";
-const DC_STILL = "/brand/login-boardroom.jpg?v=20260814j";
+const LOGIN_BUILD = "glass-bg-picker-20260814";
 const LOGO = "/brand/rpm-resources-logo.jpg";
+const BG_KEY = "rpma-login-bg";
+
+const BACKDROPS = [
+  { id: "atrium", label: "A · Atrium", src: "/brand/ssot-examples/B-atrium.jpg" },
+  { id: "night", label: "B · Night City", src: "/brand/ssot-examples/C-noc.jpg" },
+  { id: "orb", label: "C · Glass Orb", src: "/brand/ssot-examples/D-orb.jpg" },
+  { id: "canyon", label: "D · Compass", src: "/brand/ssot-examples/E-compass.jpg" },
+  { id: "data", label: "E · Data Hall", src: "/brand/login-datacenter.jpg" },
+  { id: "hub", label: "F · Hub", src: "/brand/ssot-hub.jpg" },
+] as const;
+
+type BackdropId = (typeof BACKDROPS)[number]["id"];
+
+function readBackdrop(): BackdropId {
+  if (typeof window === "undefined") return "atrium";
+  const v = window.localStorage.getItem(BG_KEY);
+  return BACKDROPS.some((b) => b.id === v) ? (v as BackdropId) : "atrium";
+}
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -22,6 +39,21 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [bgId, setBgId] = useState<BackdropId>("atrium");
+  const backdrop = BACKDROPS.find((b) => b.id === bgId) ?? BACKDROPS[0];
+
+  useEffect(() => {
+    setBgId(readBackdrop());
+  }, []);
+
+  function pickBg(id: BackdropId) {
+    setBgId(id);
+    try {
+      window.localStorage.setItem(BG_KEY, id);
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     if (!isPending && user) {
@@ -69,15 +101,7 @@ function LoginPage() {
       <style>{GLASS_CSS}</style>
 
       <div className="rpma-gl-scene" aria-hidden="true">
-        <div className="rpma-gl-art">
-          <img className="rpma-gl-still" src={DC_STILL} alt="" />
-          <div className="rpma-gl-marks">
-            <span className="m-clarity">clarity</span>
-            <span className="m-evidence">evidence</span>
-            <span className="m-sot">source of truth</span>
-            <span className="m-assurance">assurance</span>
-          </div>
-        </div>
+        <img className="rpma-gl-still" src={backdrop.src} alt="" />
         <div className="rpma-gl-wash" />
       </div>
 
@@ -142,6 +166,23 @@ function LoginPage() {
           <p className="rpma-gl-foot">Powered by RPM Resources</p>
         </section>
       </main>
+
+      <nav className="rpma-gl-picker" aria-label="Choose a background">
+        <p className="rpma-gl-picker-k">Choose a scene</p>
+        <div className="rpma-gl-picker-row">
+          {BACKDROPS.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              className={b.id === bgId ? "is-on" : undefined}
+              onClick={() => pickBg(b.id)}
+            >
+              <img src={b.src} alt="" />
+              <span>{b.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
@@ -170,46 +211,17 @@ const GLASS_CSS = `
   inset: 0;
   z-index: 0;
   overflow: hidden;
-}
-.rpma-gl-art {
-  position: absolute;
-  left: 42%;
-  top: 28%;
-  width: max(100%, calc(100dvh * 1568 / 1045));
-  height: max(100%, calc(100% * 1045 / 1568));
-  transform: translate(-42%, -28%);
+  background: #1a2834;
 }
 .rpma-gl-still {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: cover;
+  object-position: 50% 42%;
   display: block;
 }
-.rpma-gl-marks {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.rpma-gl-marks span {
-  position: absolute;
-  margin: 0;
-  color: #102436;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  text-transform: lowercase;
-  text-align: center;
-  white-space: nowrap;
-  opacity: 0.32;
-  user-select: none;
-  transform: translate(-50%, -50%);
-}
-.m-clarity { left: 37.5%; top: 16.5%; font-size: clamp(1.45rem, 2.6vw, 2.2rem); }
-.m-evidence { left: 62.5%; top: 16.5%; font-size: clamp(1.45rem, 2.6vw, 2.2rem); }
-.m-sot { left: 37.5%; top: 36.5%; font-size: clamp(0.82rem, 1.2vw, 1.08rem); }
-.m-assurance { left: 62.5%; top: 36.5%; font-size: clamp(1.3rem, 2.2vw, 1.9rem); }
 .rpma-gl-wash {
   position: absolute;
   inset: 0;
@@ -226,7 +238,7 @@ const GLASS_CSS = `
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 2.4rem 4.5vw 2.4rem 1.5rem;
+  padding: 2.4rem 4.5vw 7.2rem 1.5rem;
 }
 .rpma-gl-card {
   position: relative;
@@ -375,20 +387,77 @@ const GLASS_CSS = `
   font-size: 0.7rem;
   color: #4d6578;
 }
+.rpma-gl-picker {
+  position: absolute;
+  z-index: 3;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.85rem;
+  max-width: 46rem;
+}
+.rpma-gl-picker-k {
+  margin: 0 0 0.4rem 0.15rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e8eef4;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.45);
+}
+.rpma-gl-picker-row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+.rpma-gl-picker button {
+  flex: 0 0 auto;
+  width: 6.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.7rem;
+  overflow: hidden;
+  background: rgba(8, 16, 24, 0.35);
+  color: #f4f8fb;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.28) inset;
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+.rpma-gl-picker button:hover { transform: translateY(-2px); }
+.rpma-gl-picker button.is-on {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px var(--teal);
+}
+.rpma-gl-picker img {
+  display: block;
+  width: 100%;
+  height: 3.15rem;
+  object-fit: cover;
+}
+.rpma-gl-picker span {
+  display: block;
+  padding: 0.28rem 0.35rem 0.38rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  background: rgba(8, 16, 24, 0.55);
+}
 @media (max-width: 860px) {
   .rpma-gl-stage {
     align-items: flex-end;
     justify-content: center;
-    padding: 0 0.9rem 0.9rem;
+    padding: 0 0.9rem 8.4rem;
   }
   .rpma-gl-card {
     width: 100%;
     border-radius: 1.25rem;
     background: rgba(248, 252, 255, 0.58);
   }
-  .m-clarity, .m-evidence, .m-sot, .m-assurance { opacity: 0.22; }
+  .rpma-gl-picker { left: 0.55rem; right: 0.55rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpma-gl-wrap input, .rpma-gl-submit { transition: none; }
+  .rpma-gl-wrap input, .rpma-gl-submit, .rpma-gl-picker button { transition: none; }
 }
 `;
