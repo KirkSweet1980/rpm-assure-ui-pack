@@ -11,9 +11,10 @@ if ((Test-Path $src) -and ((Resolve-Path $src).Path -ne (Resolve-Path -LiteralPa
   Copy-Item $src $destTray -Force
 }
 $iconSrc = Join-Path $srcDir 'tray'
-if (Test-Path $iconSrc) {
-  New-Item -ItemType Directory -Force -Path (Join-Path $AgentRoot 'tray') | Out-Null
-  Copy-Item (Join-Path $iconSrc '*') (Join-Path $AgentRoot 'tray') -Force
+$iconDst = Join-Path $AgentRoot 'tray'
+if ((Test-Path $iconSrc) -and ((Resolve-Path $iconSrc).Path -ne (Resolve-Path -LiteralPath $iconDst -ErrorAction SilentlyContinue).Path)) {
+  New-Item -ItemType Directory -Force -Path $iconDst | Out-Null
+  Copy-Item (Join-Path $iconSrc '*') $iconDst -Force
 }
 $tray = Join-Path $AgentRoot 'Start-Agent-Tray.ps1'
 if (-not (Test-Path $tray)) { throw "Missing $tray" }

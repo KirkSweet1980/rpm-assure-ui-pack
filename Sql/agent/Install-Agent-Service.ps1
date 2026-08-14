@@ -22,15 +22,30 @@ Write-Host "========================================"
 
 New-Item -ItemType Directory -Force -Path $AgentRoot, (Join-Path $AgentRoot "logs"), (Join-Path $AgentRoot "tools") | Out-Null
 
-foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Start-Agent-Tray.ps1", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
-  $src = Join-Path $Here $f
-  if (Test-Path $src) { Copy-Item $src (Join-Path $AgentRoot $f) -Force }
+function Copy-RpmaFile([string]$From, [string]$To) {
+  if (-not (Test-Path -LiteralPath $From)) { return }
+  $destDir = Split-Path -Parent $To
+  if ($destDir -and -not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
+  $same = $false
+  try {
+    if (Test-Path -LiteralPath $To) {
+      $same = ((Resolve-Path $From).Path -eq (Resolve-Path $To).Path)
+    }
+  } catch {}
+  if ($same) { return }
+  Copy-Item -LiteralPath $From -Destination $To -Force
+}
+
+foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Start-Agent-Tray.ps1", "Install-Agent-Tray.ps1", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
+  Copy-RpmaFile (Join-Path $Here $f) (Join-Path $AgentRoot $f)
 }
 if (Test-Path (Join-Path $Here 'tray')) {
   New-Item -ItemType Directory -Force -Path (Join-Path $AgentRoot 'tray') | Out-Null
-  Copy-Item (Join-Path $Here 'tray\*') (Join-Path $AgentRoot 'tray') -Force
+  Get-ChildItem (Join-Path $Here 'tray') -File | ForEach-Object {
+    Copy-RpmaFile $_.FullName (Join-Path $AgentRoot ('tray\' + $_.Name))
+  }
 }
-Copy-Item (Join-Path $Here "Install-Agent-Service.ps1") (Join-Path $AgentRoot "Install-Agent-Service.ps1") -Force -EA SilentlyContinue
+Copy-RpmaFile (Join-Path $Here "Install-Agent-Service.ps1") (Join-Path $AgentRoot "Install-Agent-Service.ps1")
 
 $configs = @()
 if (Test-Path (Join-Path $SqlRoot "customers")) {
