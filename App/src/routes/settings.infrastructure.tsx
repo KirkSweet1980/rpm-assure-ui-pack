@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RefreshCw, Server } from "lucide-react";
+import { Cloud, Database, Mail, RefreshCw, Server, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpaLink } from "@/components/nav/spa-link";
 import {
@@ -10,6 +10,7 @@ import {
   type ConfigHealthItem,
 } from "@/lib/settings/settings-api";
 import { fetchInfraAgents, type InfraAgentRow } from "@/lib/settings/infra-status";
+import type { LucideIcon } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/infrastructure")({
@@ -52,12 +53,12 @@ function syncToneOf(
   return { label: "Offline", tone: "red" };
 }
 
-const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string }> = [
-  { key: "syspro", label: "SYSPRO" },
-  { key: "rmm", label: "RMM" },
-  { key: "cove", label: "Backup" },
-  { key: "epp", label: "EPP" },
-  { key: "csp", label: "CSP" },
+const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string; icon: LucideIcon }> = [
+  { key: "syspro", label: "SYSPRO", icon: Database },
+  { key: "rmm", label: "RMM", icon: Server },
+  { key: "cove", label: "Backup", icon: Cloud },
+  { key: "epp", label: "EPP", icon: Shield },
+  { key: "csp", label: "CSP", icon: Mail },
 ];
 
 const KIND_LABEL: Record<string, string> = {
@@ -351,14 +352,18 @@ function InfrastructureStatusPage() {
                           <span className="text-muted">No Cover</span>
                         ) : (
                           <span className="flex flex-wrap gap-1">
-                            {on.map((c) => (
+                            {on.map((c) => {
+                              const Icon = c.icon;
+                              return (
                               <span
                                 key={c.key}
-                                className="rounded-md bg-rag-green/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rag-green"
+                                className="inline-flex items-center gap-1 rounded-md bg-rag-green/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rag-green"
                               >
+                                <Icon className="h-3 w-3" />
                                 {c.label}
                               </span>
-                            ))}
+                              );
+                            })}
                           </span>
                         )}
                       </td>
