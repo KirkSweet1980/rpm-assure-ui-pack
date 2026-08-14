@@ -131,6 +131,52 @@ function Invoke-RpmaSql {
   $text = ''
   if (Test-Path -LiteralPath $tmpOut) { $text = [IO.File]::ReadAllText($tmpOut) }
   Remove-Item -LiteralPath $tmpSql, $tmpOut -Force -ErrorAction SilentlyContinue
+
+  $needAdo = ($ec -ne 0) -or ($text -match 'Data source name not found|ODBC Driver')
+  if ($needAdo) {
+    try {
+      $csb = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
+      $csb['Data Source'] = $Server
+      if ($Database) { $csb['Initial Catalog'] = $Database }
+      $csb['User ID'] = $User
+      $csb['Password'] = $Pass
+      $csb['Encrypt'] = $true
+      $csb['TrustServerCertificate'] = $true
+      $csb['Connect Timeout'] = 45
+      $conn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
+      $conn.Open()
+      $parts = [regex]::Split($SqlText, '(?im)^\s*GO\s*$')
+      $adoText = ''
+      $adoEc = 0
+      foreach ($part in $parts) {
+        $batch = $part.Trim()
+        if (-not $batch) { continue }
+        $cmd = $conn.CreateCommand()
+        $cmd.CommandTimeout = 180
+        $cmd.CommandText = $batch
+        if ($Tsv) {
+          $reader = $cmd.ExecuteReader()
+          $lines = New-Object System.Collections.Generic.List[string]
+          while ($reader.Read()) {
+            $cols = New-Object System.Collections.Generic.List[string]
+            for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+              if ($reader.IsDBNull($i)) { [void]$cols.Add('') }
+              else { [void]$cols.Add([string]$reader.GetValue($i)) }
+            }
+            [void]$lines.Add(($cols.ToArray() -join '|'))
+          }
+          $reader.Close()
+          $adoText = ($lines.ToArray() -join "`n")
+        } else {
+          [void]$cmd.ExecuteNonQuery()
+        }
+      }
+      $conn.Close()
+      return [pscustomobject]@{ ExitCode = $adoEc; Text = $adoText }
+    } catch {
+      return [pscustomobject]@{ ExitCode = 1; Text = ($text + ' | ADO: ' + $_.Exception.Message) }
+    }
+  }
   return [pscustomobject]@{ ExitCode = $ec; Text = $text }
 }
 
