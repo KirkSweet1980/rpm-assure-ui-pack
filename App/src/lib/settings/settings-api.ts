@@ -1628,10 +1628,24 @@ export type AgentStatusRow = {
 };
 
 async function ensureAgentSyncColumn(pool: NonNullable<Awaited<ReturnType<typeof getPool>>>) {
-  await pool.request().query(`
+  try {
+    await pool.request().query(`
 IF COL_LENGTH('dbo.Agent_Registry', 'RequestSyncUtc') IS NULL
   ALTER TABLE dbo.Agent_Registry ADD RequestSyncUtc datetime2(0) NULL;
 `);
+  } catch {
+    /* app login may not have ALTER — ignore */
+  }
+}
+
+async function agentHasSyncColumn(pool: NonNullable<Awaited<ReturnType<typeof getPool>>>) {
+  try {
+    const r = await pool.request().query(`
+SELECT CASE WHEN COL_LENGTH('dbo.Agent_Registry', 'RequestSyncUtc') IS NULL THEN 0 ELSE 1 END AS n`);
+    return Number((r.recordset?.[0] as { n?: number } | undefined)?.n ?? 0) === 1;
+  } catch {
+    return false;
+  }
 }
 
 function mapAgentRow(row: Record<string, unknown>): AgentStatusRow {
@@ -1664,40 +1678,92 @@ export const fetchAgentStatus = createServerFn({ method: "GET" }).handler(async 
   }
   try {
     await ensureAgentSyncColumn(pool);
+    const hasSync = await agentHasSyncColumn(pool);
+    const syncCol = hasSync ? "r.RequestSyncUtc" : "CAST(NULL AS datetime2) AS RequestSyncUtc";
     const r = await pool.request().query(`
 SELECT
-  c.CustomerCode,
-  ISNULL(c.DisplayName, c.CustomerCode) AS DisplayName,
-  r.HostName,
-  r.InstanceName,
-  r.AgentVersion,
-  r.LastHeartbeatUtc,
-  r.LastJobUtc,
-  r.LastStatus,
-  r.LastMessage,
-  r.RequestSyncUtc,
-  CASE
-    WHEN r.HostName IS NULL THEN N'NOT_INSTALLED'
-    WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
-    WHEN r.LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
-    ELSE N'ONLINE'
-  END AS HealthStatus,
-  DATEDIFF(minute, r.LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat
-FROM dbo.Dim_Customer c WITH (NOLOCK)
-LEFT JOIN dbo.Agent_Registry r WITH (NOLOCK) ON r.CustomerCode = c.CustomerCode
-WHERE c.Active = 1
-ORDER BY c.DisplayName, r.HostName`);
+  x.CustomerCode,
+  x.DisplayName,
+  x.HostName,
+  x.InstanceName,
+  x.AgentVersion,
+  x.LastHeartbeatUtc,
+  x.LastJobUtc,
+  x.LastStatus,
+  x.LastMessage,
+  x.RequestSyncUtc,
+  x.HealthStatus,
+  x.MinutesSinceHeartbeat
+FROM (
+  SELECT
+    r.CustomerCode,
+    ISNULL(c.DisplayName, r.CustomerCode) AS DisplayName,
+    r.HostName,
+    r.InstanceName,
+    r.AgentVersion,
+    r.LastHeartbeatUtc,
+    r.LastJobUtc,
+    r.LastStatus,
+    r.LastMessage,
+    ${syncCol},
+    CASE
+      WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
+      WHEN r.LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
+      ELSE N'ONLINE'
+    END AS HealthStatus,
+    DATEDIFF(minute, r.LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat
+  FROM dbo.Agent_Registry r WITH (NOLOCK)
+  LEFT JOIN dbo.Dim_Customer c WITH (NOLOCK) ON c.CustomerCode = r.CustomerCode
+
+  UNION ALL
+
+  SELECT
+    c.CustomerCode,
+    ISNULL(c.DisplayName, c.CustomerCode) AS DisplayName,
+    CAST(NULL AS nvarchar(128)) AS HostName,
+    CAST(NULL AS nvarchar(128)) AS InstanceName,
+    CAST(NULL AS nvarchar(32)) AS AgentVersion,
+    CAST(NULL AS datetime2) AS LastHeartbeatUtc,
+    CAST(NULL AS datetime2) AS LastJobUtc,
+    CAST(NULL AS nvarchar(32)) AS LastStatus,
+    CAST(NULL AS nvarchar(1000)) AS LastMessage,
+    CAST(NULL AS datetime2) AS RequestSyncUtc,
+    N'NOT_INSTALLED' AS HealthStatus,
+    CAST(NULL AS int) AS MinutesSinceHeartbeat
+  FROM dbo.Dim_Customer c WITH (NOLOCK)
+  WHERE c.Active = 1
+    AND NOT EXISTS (
+      SELECT 1 FROM dbo.Agent_Registry r2 WITH (NOLOCK) WHERE r2.CustomerCode = c.CustomerCode
+    )
+) x
+ORDER BY x.DisplayName, x.HostName`);
     const rows = (r.recordset ?? []).map((row: Record<string, unknown>) => mapAgentRow(row));
-    return { ok: true as const, message: `${rows.length} customer(s)`, rows };
+    const online = rows.filter((x) => x.healthStatus === "ONLINE").length;
+    return { ok: true as const, message: `${online} online · ${rows.length} listed`, rows };
   } catch (e) {
-    return {
-      ok: false as const,
-      message:
-        e instanceof Error
-          ? e.message
-          : "Agent tables missing — apply 470 on central",
-      rows: [] as AgentStatusRow[],
-    };
+    try {
+      const r2 = await pool.request().query(`
+SELECT CustomerCode, HostName, InstanceName, AgentVersion,
+       LastHeartbeatUtc, LastJobUtc, LastStatus, LastMessage,
+       CASE
+         WHEN LastHeartbeatUtc IS NULL THEN N'NEVER'
+         WHEN LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
+         ELSE N'ONLINE'
+       END AS HealthStatus,
+       DATEDIFF(minute, LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat
+FROM dbo.Agent_Registry WITH (NOLOCK)
+ORDER BY CustomerCode, HostName`);
+      const rows = (r2.recordset ?? []).map((row: Record<string, unknown>) =>
+        mapAgentRow({ ...row, DisplayName: row.CustomerCode }),
+      );
+      return { ok: true as const, message: `${rows.length} agent(s) (registry only)`, rows };
+    } catch (e2) {
+      return {
+        ok: false as const,
+        message: e2 instanceof Error ? e2.message : "Agent tables missing",
+        rows: [] as AgentStatusRow[],
+      };
+    }
   }
 });
 
