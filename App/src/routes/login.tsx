@@ -11,61 +11,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "cinema-glass-L4-20260814";
-
-const SQL_LINES: { t: string; k?: "kw" | "cm" | "st" | "ok" }[] = [
-  { t: "-- RPM Assure  |  live collect  |  central RPMAssure_App", k: "cm" },
-  { t: "SET NOCOUNT ON;" },
-  { t: "DECLARE @Snap date = CONVERT(date, SYSUTCDATETIME());", k: "kw" },
-  { t: "" },
-  { t: "SELECT c.CustomerCode, c.DisplayName, c.Active", k: "kw" },
-  { t: "FROM dbo.Dim_Customer AS c WITH (NOLOCK)" },
-  { t: "WHERE c.Active = 1" },
-  { t: "ORDER BY c.DisplayName;" },
-  { t: "" },
-  { t: "SELECT SnapshotDate, OrganizationName, DeviceId, IsOnline", k: "kw" },
-  { t: "FROM dbo.Pulseway_Devices WITH (NOLOCK)" },
-  { t: "WHERE SnapshotDate = @Snap" },
-  { t: "  AND CustomerCode = N'SIRF';", k: "st" },
-  { t: "" },
-  { t: "-- 28 servers online  ·  0 offline", k: "ok" },
-  { t: "" },
-  { t: "SELECT TenantId, SecureScore, MfaRegisteredPct", k: "kw" },
-  { t: "FROM dbo.Csp_TenantPosture WITH (NOLOCK)" },
-  { t: "WHERE SnapshotDate = @Snap;" },
-  { t: "" },
-  { t: "MERGE dbo.Agent_Registry AS t", k: "kw" },
-  { t: "USING (SELECT N'SIRF' CustomerCode) AS s" },
-  { t: "ON t.CustomerCode = s.CustomerCode" },
-  { t: "WHEN MATCHED THEN UPDATE SET LastHeartbeatUtc = SYSUTCDATETIME();" },
-  { t: "" },
-  { t: "SELECT LastStatus, LastHeartbeatUtc", k: "kw" },
-  { t: "FROM dbo.Agent_Registry WITH (NOLOCK)" },
-  { t: "WHERE CustomerCode = N'SIRF';", k: "st" },
-  { t: "-- ONLINE  2026-08-14 08:44:15Z", k: "ok" },
-  { t: "" },
-  { t: "SELECT CompanyDb, JobName, ErrorCount", k: "kw" },
-  { t: "FROM dbo.Fact_SysproJob WITH (NOLOCK)" },
-  { t: "WHERE SnapshotDate = @Snap AND ErrorCount > 0;" },
-  { t: "" },
-  { t: "GO", k: "kw" },
-];
-
-function SqlColumn({ className }: { className?: string }) {
-  const block = [...SQL_LINES, { t: "" }, ...SQL_LINES, { t: "" }, ...SQL_LINES];
-  return (
-    <div className={className} aria-hidden="true">
-      <div className="rpma-cin-track">
-        {block.map((ln, i) => (
-          <div key={i} className={`rpma-cin-line${ln.k ? ` is-${ln.k}` : ""}`}>
-            <span className="rpma-cin-gutter">{String((i % SQL_LINES.length) + 1).padStart(3, " ")}</span>
-            <span className="rpma-cin-text">{ln.t || " "}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const LOGIN_BUILD = "ssot-cinema-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -121,25 +67,37 @@ function LoginPage() {
     <div className="rpma-cin" data-login-build={LOGIN_BUILD}>
       <style>{CINEMA_CSS}</style>
 
-      <div className="rpma-cin-wall" aria-hidden="true">
-        <SqlColumn className="rpma-cin-col rpma-cin-col--a" />
-        <SqlColumn className="rpma-cin-col rpma-cin-col--b" />
-        <SqlColumn className="rpma-cin-col rpma-cin-col--c" />
+      <div className="rpma-cin-stage" aria-hidden="true">
+        <video
+          className="rpma-cin-bgvid"
+          poster="/brand/ssot-hub.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        >
+          <source src="/brand/ssot-hub-loop.mp4" type="video/mp4" />
+        </video>
+        <img className="rpma-cin-bgstill" src="/brand/ssot-hub.jpg" alt="" />
+        <div className="rpma-cin-rings" />
+        <div className="rpma-cin-vignette" />
       </div>
-      <div className="rpma-cin-vignette" aria-hidden="true" />
 
       <div className="rpma-cin-shell">
-        <aside className="rpma-cin-left" aria-hidden="true">
-          <div className="rpma-cin-editor">
-            <div className="rpma-cin-editor-bar">
-              <span className="rpma-cin-dots">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span>collect.sql — RPMAssure_App</span>
-            </div>
-            <SqlColumn className="rpma-cin-col rpma-cin-col--focus" />
+        <aside className="rpma-cin-left">
+          <div className="rpma-ssot-copy">
+            <p className="rpma-ssot-kicker">Single source of truth</p>
+            <h2 className="rpma-ssot-title">Every service. One picture.</h2>
+            <p className="rpma-ssot-lede">
+              SYSPRO, remote management, cloud backup, endpoint security and Microsoft 365 —
+              collected once, scored the same way, decided from one board.
+            </p>
+            <ul className="rpma-ssot-pills">
+              <li>Live collect</li>
+              <li>Estate RAG</li>
+              <li>SLA by service</li>
+            </ul>
           </div>
         </aside>
 
@@ -219,10 +177,8 @@ const CINEMA_CSS = `
 .rpma-cin {
   position: relative; isolation: isolate; min-height: 100dvh; width: 100%;
   overflow: hidden; display: flex; flex-direction: column;
-  background:
-    radial-gradient(ellipse 90% 70% at 50% 0%, #f7fafc 0%, transparent 55%),
-    linear-gradient(180deg, #e8eef4 0%, #f3f6f9 48%, #e4ebf2 100%);
-  color: #16324a;
+  background: #05080c;
+  color: #e8eef4;
   font-family: Inter, system-ui, sans-serif;
 }
 .rpma-cin .rpma-login-sql-bg,
@@ -232,87 +188,85 @@ const CINEMA_CSS = `
 .rpma-cin .rpma-login-ps-stage,
 .rpma-cin .rpma-login-hero-center { display: none !important; }
 
-.rpma-cin-wall {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  opacity: 0.22;
+.rpma-cin-stage { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.rpma-cin-bgvid, .rpma-cin-bgstill {
+  position: absolute; inset: -4%;
+  width: 108%; height: 108%;
+  object-fit: cover;
+  animation: rpmaSsotKen 28s ease-in-out infinite alternate;
+}
+.rpma-cin-bgvid { z-index: 1; }
+.rpma-cin-bgstill { z-index: 0; }
+.rpma-cin-rings {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    radial-gradient(circle at 38% 52%, rgba(27,184,166,0.22) 0%, transparent 28%),
+    radial-gradient(circle at 38% 52%, rgba(143,206,74,0.08) 0%, transparent 42%);
+  animation: rpmaSsotPulse 6.5s ease-in-out infinite;
 }
 .rpma-cin-vignette {
-  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
   background:
-    radial-gradient(ellipse 50% 80% at 78% 50%, rgba(255,255,255,0.72) 0%, transparent 60%),
-    linear-gradient(90deg, rgba(232,238,244,0.15) 0%, rgba(243,246,249,0.35) 50%, rgba(255,255,255,0.78) 100%);
+    linear-gradient(90deg, rgba(5,8,12,0.28) 0%, rgba(5,8,12,0.15) 42%, rgba(5,8,12,0.72) 100%),
+    linear-gradient(180deg, rgba(5,8,12,0.35) 0%, transparent 28%, rgba(5,8,12,0.55) 100%);
 }
-.rpma-cin-col { overflow: hidden; }
-.rpma-cin-track {
-  padding: 1rem 0.75rem 2rem;
-  animation: rpmaCinSql 26s ease-in-out infinite alternate;
-  will-change: transform;
+@keyframes rpmaSsotKen {
+  0% { transform: scale(1) translate3d(0,0,0); }
+  100% { transform: scale(1.08) translate3d(-1.2%, 0.8%, 0); }
 }
-.rpma-cin-col--b .rpma-cin-track {
-  animation-duration: 34s;
-  animation-direction: alternate-reverse;
-}
-.rpma-cin-col--c .rpma-cin-track { animation-duration: 30s; }
-.rpma-cin-col--focus .rpma-cin-track {
-  animation: rpmaCinSql 22s ease-in-out infinite alternate;
-  padding: 0.85rem 1rem 1.5rem;
-}
-@keyframes rpmaCinSql {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-33.333%); }
+@keyframes rpmaSsotPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpma-cin-track { animation: none; }
+  .rpma-cin-bgvid { display: none; }
+  .rpma-cin-bgstill, .rpma-cin-rings { animation: none; }
 }
-.rpma-cin-line {
-  display: flex; gap: 0.65rem; font-family: ui-monospace, Consolas, "Cascadia Code", monospace;
-  font-size: 11.5px; line-height: 1.55; white-space: pre;
-}
-.rpma-cin-gutter { flex: 0 0 1.7rem; text-align: right; color: #8aa0b4; }
-.rpma-cin-text { color: #3a556c; }
-.rpma-cin-line.is-kw .rpma-cin-text { color: #0f7f86; font-weight: 650; }
-.rpma-cin-line.is-cm .rpma-cin-text { color: #5a8a28; font-style: italic; }
-.rpma-cin-line.is-st .rpma-cin-text { color: #1a4d7a; }
-.rpma-cin-line.is-ok .rpma-cin-text { color: #3d7a18; }
 
 .rpma-cin-shell {
   position: relative; z-index: 3; flex: 1;
-  display: grid; grid-template-columns: minmax(0,1fr) 2px minmax(0,1fr);
+  display: grid; grid-template-columns: minmax(0,1.15fr) 2px minmax(22rem, 0.85fr);
   min-height: 100dvh;
 }
 .rpma-cin-left {
-  display: flex; align-items: center; justify-content: center;
-  padding: clamp(1.5rem, 5vh, 3rem) clamp(1.25rem, 4vw, 3rem);
+  display: flex; align-items: flex-end; justify-content: flex-start;
+  padding: clamp(1.5rem, 6vh, 3.5rem) clamp(1.5rem, 5vw, 3.5rem) clamp(3.5rem, 8vh, 5rem);
 }
-.rpma-cin-editor {
-  width: min(100%, 42rem); height: min(82dvh, 44rem);
-  display: flex; flex-direction: column; overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid rgba(26,77,122,0.14);
-  background: rgba(255,255,255,0.78);
-  box-shadow:
-    0 28px 64px rgba(16,40,64,0.12),
-    0 2px 0 rgba(255,255,255,0.9) inset;
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+.rpma-ssot-copy { max-width: 34rem; }
+.rpma-ssot-kicker {
+  margin: 0 0 0.65rem;
+  font-size: 0.72rem; font-weight: 800;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: #8fce4a;
 }
-.rpma-cin-editor-bar {
-  display: flex; align-items: center; gap: 0.55rem;
-  padding: 0.5rem 0.85rem;
-  border-bottom: 1px solid rgba(26,77,122,0.12);
-  background: linear-gradient(180deg, #1a4d7a 0%, #163f64 100%);
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 11px; color: rgba(232,244,255,0.9);
+.rpma-ssot-title {
+  margin: 0;
+  font-size: clamp(2.1rem, 4.2vw, 3.4rem);
+  font-weight: 800; letter-spacing: -0.035em; line-height: 1.05;
+  color: #fff;
+  text-shadow: 0 10px 28px rgba(0,0,0,0.45);
 }
-.rpma-cin-dots { display: flex; gap: 5px; }
-.rpma-cin-dots i { width: 8px; height: 8px; border-radius: 50%; display: block; background: #ff5f57; }
-.rpma-cin-dots i:nth-child(2) { background: #febc2e; }
-.rpma-cin-dots i:nth-child(3) { background: #28c840; }
-.rpma-cin-col--focus { flex: 1; min-height: 0; }
-.rpma-cin-col--focus .rpma-cin-line { font-size: 13px; line-height: 1.65; }
+.rpma-ssot-lede {
+  margin: 0.9rem 0 0;
+  font-size: 1rem; line-height: 1.5; font-weight: 500;
+  color: rgba(232,238,244,0.82);
+  max-width: 32rem;
+}
+.rpma-ssot-pills {
+  list-style: none; margin: 1.15rem 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.45rem;
+}
+.rpma-ssot-pills li {
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(27,184,166,0.35);
+  background: rgba(5,12,16,0.4);
+  color: #c8f4ee;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+}
 
 .rpma-cin-divider {
-  width: 2px; align-self: stretch; margin: 8vh 0;
+  width: 2px; align-self: stretch; margin: 10vh 0;
   background: linear-gradient(180deg, transparent 0%, #1bb8a6 22%, #8fce4a 78%, transparent 100%);
   box-shadow: 0 0 14px rgba(27,184,166,0.35);
 }
@@ -321,8 +275,6 @@ const CINEMA_CSS = `
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: clamp(1.5rem, 5vh, 3rem);
 }
-.rpma-cin-tools { position: absolute; top: 1rem; right: 1.1rem; }
-.rpma-cin-tools .rpma-theme-switch-label { color: #3a556c; }
 .rpma-cin-card {
   width: min(100%, 24.5rem);
   aspect-ratio: 1 / 1.08;
@@ -330,12 +282,11 @@ const CINEMA_CSS = `
   padding: 1.75rem 1.65rem 1.5rem;
   border-radius: 20px;
   text-align: center;
-  background: rgba(255,255,255,0.88);
-  border: 1px solid rgba(26,77,122,0.12);
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(255,255,255,0.2);
   box-shadow:
-    0 32px 72px rgba(16,40,64,0.14),
-    0 0 0 1px rgba(27,184,166,0.1),
-    inset 0 1px 0 #fff;
+    0 32px 72px rgba(0,0,0,0.38),
+    0 0 0 1px rgba(27,184,166,0.18);
   backdrop-filter: blur(20px) saturate(1.1);
   -webkit-backdrop-filter: blur(20px) saturate(1.1);
 }
@@ -396,14 +347,15 @@ const CINEMA_CSS = `
 .rpma-cin-foot {
   position: absolute; bottom: 0.85rem; left: 0; right: 0; z-index: 6;
   margin: 0; text-align: center; font-size: 0.75rem;
-  color: #6b8496; pointer-events: none;
+  color: rgba(232,238,244,0.55); pointer-events: none;
 }
 
 @media (max-width: 900px) {
   .rpma-cin-shell { grid-template-columns: 1fr; }
   .rpma-cin-left, .rpma-cin-divider { display: none; }
   .rpma-cin-vignette {
-    background: radial-gradient(ellipse 90% 70% at 50% 40%, rgba(255,255,255,0.7) 0%, rgba(232,238,244,0.95) 100%);
+    background:
+      linear-gradient(180deg, rgba(5,8,12,0.35) 0%, rgba(5,8,12,0.55) 45%, rgba(5,8,12,0.82) 100%);
   }
   .rpma-cin-right { min-height: 100dvh; padding-bottom: 3.2rem; }
   .rpma-cin-card { aspect-ratio: auto; }
