@@ -103,6 +103,51 @@ export function CoveEsrPanel({ data }: { data: CustomerDetailPayload }) {
           <Kpi label="Devices" value={esr.deviceCount} />
           <Kpi label="Used storage" value={esr.usedStorageLabel} />
         </div>
+        {esr.machines.length ? (
+          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+            <table className="w-full min-w-[720px] text-left text-[12px]">
+              <thead className="rpma-table-head">
+                <tr>
+                  <th className="px-2 py-1.5">Machine / server</th>
+                  <th className="px-2 py-1.5">Cove device</th>
+                  <th className="px-2 py-1.5">Type</th>
+                  <th className="px-2 py-1.5">Status</th>
+                  <th className="px-2 py-1.5">Size</th>
+                  <th className="px-2 py-1.5">Backup time</th>
+                  <th className="px-2 py-1.5">Last success</th>
+                  <th className="px-2 py-1.5">RPO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {esr.machines.map((m) => (
+                  <tr key={`${m.machineName}-${m.deviceName}`} className="border-t border-border">
+                    <td className="px-2 py-1.5 font-medium">{m.machineName}</td>
+                    <td className="px-2 py-1.5 text-muted">{m.deviceName}</td>
+                    <td className="px-2 py-1.5">{m.kind}</td>
+                    <td
+                      className={cn(
+                        "px-2 py-1.5",
+                        /fail|error/i.test(m.status)
+                          ? "font-semibold text-rag-red"
+                          : m.rpoOk
+                            ? "text-rag-green"
+                            : "text-rag-amber",
+                      )}
+                    >
+                      {m.status}
+                    </td>
+                    <td className="px-2 py-1.5 tabular-nums">{m.sizeLabel}</td>
+                    <td className="px-2 py-1.5 tabular-nums">{m.durationLabel}</td>
+                    <td className="px-2 py-1.5 text-muted">{m.lastSuccessLabel}</td>
+                    <td className={cn("px-2 py-1.5", m.rpoOk ? "text-rag-green" : "text-rag-amber")}>
+                      {m.rpoOk ? "Within 24h" : "Outside 24h"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </section>
 
       <section>

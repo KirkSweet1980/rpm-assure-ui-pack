@@ -3,13 +3,49 @@ import { COVE_SAFEGUARDS, type CoveEsr, type CoveEsrSlice } from "@/lib/data/cov
 function esc(s: string | number | null | undefined): string {
   if (s == null) return "";
   return String(s)
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">");
+    .replace(/&/g, String.fromCharCode(38) + "amp;")
+    .replace(/</g, String.fromCharCode(38) + "lt;")
+    .replace(/>/g, String.fromCharCode(38) + "gt;");
 }
 
 function kpi(label: string, value: string): string {
   return `<td class="esr-kpi"><div class="lbl">${esc(label)}</div><div class="val">${esc(value)}</div></td>`;
+}
+
+function machineTable(esr: CoveEsr): string {
+  if (!esr.machines.length) {
+    return `<p class="muted">No machine names on the latest Cove collect.</p>`;
+  }
+  const rows = esr.machines
+    .map((m) => {
+      const st = m.status.toLowerCase();
+      const cls = st.includes("fail") || st.includes("error") ? "bad" : m.rpoOk ? "ok" : "warn";
+      return `<tr>
+        <td>${esc(m.machineName)}</td>
+        <td>${esc(m.deviceName)}</td>
+        <td>${esc(m.kind)}</td>
+        <td class="${cls}">${esc(m.status)}</td>
+        <td>${esc(m.sizeLabel)}</td>
+        <td>${esc(m.durationLabel)}</td>
+        <td>${esc(m.lastSuccessLabel)}</td>
+        <td class="${m.rpoOk ? "ok" : "warn"}">${m.rpoOk ? "Within 24h" : "Outside 24h"}</td>
+      </tr>`;
+    })
+    .join("");
+  return `<p class="esr-copy"><strong>Protected machines</strong> — Cove device name and host name from the latest collect.</p>
+  <table class="ams">
+    <thead><tr>
+      <th class="dark">Machine / server</th>
+      <th class="dark">Cove device</th>
+      <th class="dark">Type</th>
+      <th class="dark">Status</th>
+      <th class="dark">Size</th>
+      <th class="dark">Backup time</th>
+      <th class="dark">Last success</th>
+      <th class="dark">RPO</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 function donut(title: string, blurb: string, slices: CoveEsrSlice[]): string {
@@ -95,6 +131,7 @@ Backup success rate indicates the effectiveness of the backup process, which is 
   ${kpi("Devices", String(esr.deviceCount))}
   ${kpi("Used storage", esr.usedStorageLabel)}
 </tr></table>
+${machineTable(esr)}
 
 <div class="esr-band">Recovery point objective (RPO)</div>
 <p class="esr-copy">Recovery Point Objective (RPO) displays the percentage of devices for each backup frequency depicting how often the successful backups are performed within the specified RPO interval, for example, every 24 hours.</p>

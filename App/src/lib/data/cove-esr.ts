@@ -20,6 +20,17 @@ export const COVE_SAFEGUARDS = [
 
 export type CoveEsrSlice = { label: string; count: number; pct: number };
 
+export type CoveEsrMachine = {
+  deviceName: string;
+  machineName: string;
+  kind: string;
+  status: string;
+  sizeLabel: string;
+  durationLabel: string;
+  lastSuccessLabel: string;
+  rpoOk: boolean;
+};
+
 export type CoveEsr = {
   customerName: string;
   customerCode: string;
@@ -48,6 +59,7 @@ export type CoveEsr = {
   assets: CoveEsrSlice[];
   deviceTypes: CoveEsrSlice[];
   retention: CoveEsrSlice[];
+  machines: CoveEsrMachine[];
 };
 
 function durationLabel(sec: number | null): string {
@@ -186,6 +198,31 @@ export function buildCoveEsr(data: CustomerDetailPayload): CoveEsr {
   const snap = cs?.asOfDate || cs?.lastImportAt || devices[0]?.snapshotDate;
   const period = snap ? monthRange(new Date(snap)) : monthRange(new Date());
 
+  const machines: CoveEsrMachine[] = devices
+    .map((d) => {
+      const h = hoursAgo(d.lastSuccessTime);
+      const st = (d.lastBackupStatus || "").trim() || "Unknown";
+      return {
+        deviceName: (d.deviceName || "").trim() || "—",
+        machineName: (d.machineName || "").trim() || (d.deviceName || "").trim() || "—",
+        kind: deviceKind(d) === "Workstations" ? "Workstation" : "Server",
+        status: st,
+        sizeLabel: bytesLabel(d.usedBytes ?? d.selectedBytes ?? 0),
+        durationLabel: durationLabel(d.backupDurationSec ?? null),
+        lastSuccessLabel: d.lastSuccessTime
+          ? new Date(d.lastSuccessTime).toLocaleString("en-ZA", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
+        rpoOk: h != null && h <= 24,
+      };
+    })
+    .sort((a, b) => a.machineName.localeCompare(b.machineName, "en"));
+
   return {
     customerName: c.displayName,
     customerCode: c.customerCode,
@@ -218,5 +255,6 @@ export function buildCoveEsr(data: CustomerDetailPayload): CoveEsr {
     assets: slices(assets, devices.length),
     deviceTypes: slices(types, devices.length),
     retention: slices(ret, devices.length),
+    machines,
   };
 }

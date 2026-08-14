@@ -1472,13 +1472,13 @@ export function buildCustomPackHtml(opts: {
       }
       sections.push(`<h2 class="sec">RPM Cloud Backup</h2>${kvTable(rows)}`);
       if (fieldOn(selected, "cove_devices") && cove?.devices?.length) {
-        sections.push(`<h3 class="sub">Devices on cloud backup (sample)</h3>
-        <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Status</th><th class="dark">Last success</th></tr></thead>
+        sections.push(`<h3 class="sub">Devices on cloud backup</h3>
+        <table class="ams"><thead><tr><th class="dark">Machine / server</th><th class="dark">Cove device</th><th class="dark">Status</th><th class="dark">Last success</th></tr></thead>
         <tbody>${cove.devices
-          .slice(0, 25)
+          .slice(0, 40)
           .map(
             (d) =>
-              `<tr><td>${esc(d.deviceName || d.machineName || "—")}</td><td>${esc(d.lastBackupStatus || "—")}</td><td>${esc(fmtDt(d.lastSuccessTime))}</td></tr>`,
+              `<tr><td>${esc(d.machineName || d.deviceName || "—")}</td><td>${esc(d.deviceName || "—")}</td><td>${esc(d.lastBackupStatus || "—")}</td><td>${esc(fmtDt(d.lastSuccessTime))}</td></tr>`,
           )
           .join("")}</tbody></table>`);
       }
@@ -1911,17 +1911,17 @@ function covePack(
   if (kind === "recovery" && esr.covered) {
     const devices = opts.customer.cove?.devices ?? [];
     sections.push(`<h2 class="sec">Devices in recovery plans</h2>
-      <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Plan</th><th class="dark">Test status</th><th class="dark">Last test</th></tr></thead>
+      <table class="ams"><thead><tr><th class="dark">Machine / server</th><th class="dark">Cove device</th><th class="dark">Plan</th><th class="dark">Test status</th><th class="dark">Last test</th></tr></thead>
       <tbody>${
         devices.length
           ? devices
               .slice(0, 40)
               .map(
                 (d) =>
-                  `<tr><td>${esc(d.deviceName || d.machineName || "—")}</td><td>${esc(d.recoveryPlanLabel || "—")}</td><td class="${(d.recoveryTestStatus || "").toLowerCase().includes("fail") ? "bad" : ""}">${esc(d.recoveryTestStatus || "—")}</td><td>${esc(fmtDt(d.lastRecoveryTestAt))}</td></tr>`,
+                  `<tr><td>${esc(d.machineName || d.deviceName || "—")}</td><td>${esc(d.deviceName || "—")}</td><td>${esc(d.recoveryPlanLabel || "—")}</td><td class="${(d.recoveryTestStatus || "").toLowerCase().includes("fail") ? "bad" : ""}">${esc(d.recoveryTestStatus || "—")}</td><td>${esc(fmtDt(d.lastRecoveryTestAt))}</td></tr>`,
               )
               .join("")
-          : `<tr><td colspan="4" class="muted">No recovery rows.</td></tr>`
+          : `<tr><td colspan="5" class="muted">No recovery rows.</td></tr>`
       }</tbody></table>`);
   }
   return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Cloud Backup · Cove Executive Summary");
