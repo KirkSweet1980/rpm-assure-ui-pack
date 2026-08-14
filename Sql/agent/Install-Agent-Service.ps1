@@ -22,7 +22,7 @@ Write-Host "========================================"
 
 New-Item -ItemType Directory -Force -Path $AgentRoot, (Join-Path $AgentRoot "logs"), (Join-Path $AgentRoot "tools") | Out-Null
 
-foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
+foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Start-Agent-Tray.ps1", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
   $src = Join-Path $Here $f
   if (Test-Path $src) { Copy-Item $src (Join-Path $AgentRoot $f) -Force }
 }
@@ -160,6 +160,19 @@ if ($existing) {
 Start-Service $ServiceName
 Start-Sleep 2
 Get-Service $ServiceName | Format-Table Name, Status, StartType -AutoSize
+
+# Tray icon at user logon
+$tray = Join-Path $AgentRoot 'Start-Agent-Tray.ps1'
+$trayTask = 'RPMAssure-Edge-Tray'
+$tr = 'powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "' + $tray + '" -AgentRoot "' + $AgentRoot + '"'
+cmd.exe /c ('schtasks /Delete /TN "' + $trayTask + '" /F >nul 2>&1') | Out-Null
+cmd.exe /c ('schtasks /Create /F /TN "' + $trayTask + '" /TR "' + $tr + '" /SC ONLOGON /RL LIMITED') | Out-Null
+if ($LASTEXITCODE -eq 0) {
+  Write-Host "Tray task $trayTask (starts at logon)"
+  Start-Process powershell.exe -ArgumentList @('-WindowStyle','Hidden','-NoProfile','-ExecutionPolicy','Bypass','-File',$tray,'-AgentRoot',$AgentRoot)
+} else {
+  Write-Host 'WARN: could not register tray logon task (not fatal)'
+}
 
 if ($RunOnce) {
   Write-Host "Running first collect cycle now..."

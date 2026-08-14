@@ -41,6 +41,27 @@ function W([string]$m) {
   Write-Host $line
 }
 
+function Write-RpmaStatusFile {
+  param([bool]$Online, [string]$Message)
+  $lastSync = $null
+  $sf = Get-ChildItem $LogDir -Filter 'last_syspro-core-*.txt' -EA SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if ($sf) {
+    try { $lastSync = (Get-Content $sf.FullName -Raw).Trim() } catch {}
+  }
+  $obj = [ordered]@{
+    online           = $Online
+    lastHeartbeatUtc = (Get-Date).ToUniversalTime().ToString('o')
+    lastSyncUtc      = $lastSync
+    lastMessage      = $Message
+    host             = $HostName
+    customer         = $CustomerCode
+    version          = $AgentVersion
+  }
+  try {
+    ($obj | ConvertTo-Json -Compress) | Set-Content -LiteralPath (Join-Path $AgentRoot 'status.json') -Encoding UTF8
+  } catch {}
+}
+
 function Sql-Lit([string]$s) {
   if ($null -eq $s) { return "NULL" }
   return "N'" + ($s.Replace("'", "''")) + "'"
@@ -116,11 +137,18 @@ INSERT INTO dbo.Agent_Heartbeat (CustomerCode, HostName, AgentVersion, OsCaption
 VALUES ($(Sql-Lit $CustomerCode), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Lit $os), $(if ($null -eq $mem) { 'NULL' } else { $mem }), $(if ($null -eq $disk) { 'NULL' } else { $disk }), $(Sql-Lit $detail));
 "@
 $r = Invoke-CentralSql -SqlText $hbSql
-if ($r.ExitCode -ne 0) { W "WARN heartbeat push: $($r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))" }
-else { W "Heartbeat pushed" }
+if ($r.ExitCode -ne 0) { W "WARN heartbeat push: $($r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))"; Write-RpmaStatusFile -Online $false -Message 'heartbeat failed' }
+else { W "Heartbeat pushed"; Write-RpmaStatusFile -Online $true -Message 'heartbeat ok' }
+
+$forceCodes = @()
+$flag = Join-Path $AgentRoot 'request-sync.flag'
+if (Test-Path $flag) {
+  W 'SYNC flag from tray'
+  if ($CustomerCode) { $forceCodes += $CustomerCode.ToUpperInvariant() }
+  Remove-Item $flag -Force -EA SilentlyContinue
+}
 
 # Honour Assure UI sync button (RequestSyncUtc)
-$forceCodes = @()
 try {
   $qSync = @"
 SET NOCOUNT ON;
@@ -295,4 +323,5 @@ WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
 }
 
 W "=== Agent cycle done log=$log ==="
+Write-RpmaStatusFile -Online ($r.ExitCode -eq 0) -Message 'cycle done'
 exit 0
