@@ -299,8 +299,15 @@ function ReportsPage() {
   const needsCustomer = pack?.needsCustomer ?? false;
 
   useEffect(() => {
-    const ok = PACKS.some((p) => p.id === search.format);
-    if (ok && search.format) setFormat(search.format as ReportFormat);
+    const raw = (search.format || "").toLowerCase().trim();
+    const aliased =
+      raw === "epp" || raw === "endpoint" || raw === "bitdefender"
+        ? "epp-service"
+        : raw === "rmm" || raw === "pulseway"
+          ? "rmm-service"
+          : raw;
+    const ok = PACKS.some((p) => p.id === aliased);
+    if (ok) setFormat(aliased as ReportFormat);
     if (!search.format) setFormat(null);
     if (search.customer) setCustomerCode(search.customer);
   }, [search.format, search.customer]);

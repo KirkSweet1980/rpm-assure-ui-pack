@@ -4290,10 +4290,26 @@ WHERE CustomerCode = @code`);
       AND NULLIF(LTRIM(RTRIM(OrganizationName)), N'') IS NOT NULL
   )
   OR LTRIM(RTRIM(OrganizationName)) IN (
+    SELECT LTRIM(RTRIM(OrganizationName))
+    FROM dbo.Dim_Pulseway_OrgAlias WITH (NOLOCK)
+    WHERE CustomerCode = @code AND ISNULL(Active, 1) = 1
+      AND NULLIF(LTRIM(RTRIM(OrganizationName)), N'') IS NOT NULL
+  )
+  OR LTRIM(RTRIM(OrganizationName)) IN (
     SELECT LTRIM(RTRIM(PulsewayOrgName))
     FROM dbo.Dim_Customer WITH (NOLOCK)
     WHERE CustomerCode = @code
       AND NULLIF(LTRIM(RTRIM(PulsewayOrgName)), N'') IS NOT NULL
+  )
+  OR EXISTS (
+    SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
+    WHERE c.CustomerCode = @code
+      AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName, N'')))) >= 6
+      AND (
+        UPPER(LTRIM(RTRIM(OrganizationName))) = UPPER(LTRIM(RTRIM(c.DisplayName)))
+        OR UPPER(LTRIM(RTRIM(OrganizationName))) LIKE UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+        OR UPPER(LTRIM(RTRIM(c.DisplayName))) LIKE UPPER(LTRIM(RTRIM(OrganizationName))) + N'%'
+      )
   )
 )`;
       const deviceSelects = [

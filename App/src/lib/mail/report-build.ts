@@ -51,6 +51,37 @@ export type ReportPack = {
   text: string;
 };
 
+function normalizeReportFormat(raw: string): ReportFormat {
+  const f = raw.toLowerCase().trim();
+  if (f === "epp" || f === "endpoint" || f === "bitdefender" || f === "endpoint-security") {
+    return "epp-service";
+  }
+  if (f === "epp-incidents" || f === "epp-quarantine" || f === "incidents") {
+    return f === "epp-incidents" || f === "epp-quarantine" ? "epp-incidents" : "epp-incidents";
+  }
+  if (f === "rmm" || f === "pulseway" || f === "fleet") return "rmm-service";
+  if (f === "cove" || f === "backup") return "cove-service";
+  const allowed: ReportFormat[] = [
+    "day-end",
+    "period-end",
+    "estate",
+    "custom-pack",
+    "ams-full",
+    "ams-weekly",
+    "ams-monthly",
+    "rmm-service",
+    "rmm-availability",
+    "rmm-patch",
+    "rmm-capacity",
+    "cove-service",
+    "cove-recovery",
+    "epp-service",
+    "epp-incidents",
+    "services-cover",
+  ];
+  return (allowed as string[]).includes(f) ? (f as ReportFormat) : "ams-full";
+}
+
 export async function loadPortfolioForReport(): Promise<PortfolioPayload> {
   const mode = getDataMode();
   if (mode !== "demo" && hasSqlConfig()) {
@@ -320,26 +351,8 @@ export async function buildReportPreview(opts: {
   warning?: string | null;
 }> {
   try {
-    const raw = (opts.format || "ams-full").toLowerCase();
-    const format: ReportFormat =
-      raw === "day-end" ||
-      raw === "period-end" ||
-      raw === "estate" ||
-      raw === "custom-pack" ||
-      raw === "ams-full" ||
-      raw === "ams-weekly" ||
-      raw === "ams-monthly" ||
-      raw === "rmm-service" ||
-      raw === "rmm-availability" ||
-      raw === "rmm-patch" ||
-      raw === "rmm-capacity" ||
-      raw === "cove-service" ||
-      raw === "cove-recovery" ||
-      raw === "epp-service" ||
-      raw === "epp-incidents" ||
-      raw === "services-cover"
-        ? (raw as ReportFormat)
-        : "ams-full";
+    const raw = (opts.format || "ams-full").toLowerCase().trim();
+    const format: ReportFormat = normalizeReportFormat(raw);
 
     let portfolio: PortfolioPayload;
     try {

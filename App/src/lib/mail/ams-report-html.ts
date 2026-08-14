@@ -1954,6 +1954,7 @@ function eppPack(
   const covered = (es?.deviceCount ?? 0) > 0 || devices.length > 0;
   const title = kind === "incidents" ? "Incidents & Quarantine" : "Endpoint Security Pack";
   const sections: string[] = [];
+  sections.push(`<p class="note">This pack is <strong>Bitdefender / Endpoint Security only</strong>. It does not include Pulseway / RMM devices.</p>`);
   if (!covered) {
     sections.push(`<p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
   } else {
