@@ -68,10 +68,53 @@ function Sql-Lit([string]$s) {
   return "N'" + ($s.Replace("'", "''")) + "'"
 }
 
+function Invoke-AdoSql {
+  param([string]$Server, [string]$Db, [string]$User, [string]$Pass, [string]$SqlText, [switch]$Tsv)
+  $csb = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
+  $csb['Data Source'] = $Server
+  $csb['Initial Catalog'] = $Db
+  $csb['User ID'] = $User
+  $csb['Password'] = $Pass
+  $csb['Encrypt'] = $true
+  $csb['TrustServerCertificate'] = $true
+  $csb['Connect Timeout'] = 45
+  $conn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
+  try {
+    $conn.Open()
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandTimeout = 180
+    $cmd.CommandText = $SqlText
+    if ($Tsv) {
+      $reader = $cmd.ExecuteReader()
+      $lines = New-Object System.Collections.Generic.List[string]
+      while ($reader.Read()) {
+        $cols = New-Object System.Collections.Generic.List[string]
+        for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+          if ($reader.IsDBNull($i)) { [void]$cols.Add('') }
+          else { [void]$cols.Add([string]$reader.GetValue($i)) }
+        }
+        [void]$lines.Add(($cols.ToArray() -join '|'))
+      }
+      $reader.Close()
+      return @{ ExitCode = 0; Text = ($lines.ToArray() -join "`n") }
+    }
+    [void]$cmd.ExecuteNonQuery()
+    return @{ ExitCode = 0; Text = '' }
+  } catch {
+    return @{ ExitCode = 1; Text = $_.Exception.Message }
+  } finally {
+    $conn.Dispose()
+  }
+}
+
 function Invoke-CentralSql {
   param([string]$SqlText, [switch]$Tsv)
+  $ado = Invoke-AdoSql -Server $CentralDataSource -Db $CentralDatabase -User $CentralSqlUser -Pass $CentralSqlPassword -SqlText $SqlText -Tsv:$Tsv
+  if ($ado.ExitCode -eq 0) { return $ado }
+
   $sqlcmd = $null
   foreach ($c in @(
+    "C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\180\Tools\Binn\SQLCMD.EXE",
     "C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE",
     "C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\130\Tools\Binn\SQLCMD.EXE"
   )) { if (Test-Path $c) { $sqlcmd = $c; break } }
@@ -79,20 +122,24 @@ function Invoke-CentralSql {
     $g = Get-Command sqlcmd.exe -EA SilentlyContinue
     if ($g) { $sqlcmd = $g.Source }
   }
-  if (-not $sqlcmd) { throw "sqlcmd.exe not found" }
+  if (-not $sqlcmd) { return $ado }
 
   $tmp = Join-Path $env:TEMP ("rpma_agent_" + [guid]::NewGuid().ToString("N") + ".sql")
   [IO.File]::WriteAllText($tmp, $SqlText, [Text.UTF8Encoding]::new($false))
+  $old = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
   try {
-    $args = @("-S", $CentralDataSource, "-d", $CentralDatabase, "-U", $CentralSqlUser, "-N", "-C", "-b", "-I")
+    $args = @("-S", $CentralDataSource, "-d", $CentralDatabase, "-U", $CentralSqlUser, "-C", "-b", "-I")
     if ($Tsv) { $args += @("-h", "-1", "-W", "-s", "|") }
     $args += @("-i", $tmp)
     $prev = $env:SQLCMDPASSWORD
     $env:SQLCMDPASSWORD = $CentralSqlPassword
     $out = & $sqlcmd @args 2>&1 | Out-String
     $code = $LASTEXITCODE
+    if ($out -match 'Data source name not found') { return $ado }
     return @{ ExitCode = $code; Text = $out }
   } finally {
+    $ErrorActionPreference = $old
     if ($null -eq $prev) { Remove-Item Env:SQLCMDPASSWORD -EA SilentlyContinue }
     else { $env:SQLCMDPASSWORD = $prev }
     Remove-Item $tmp -Force -EA SilentlyContinue
