@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.2.0"
+$AgentVersion = "2.3.0"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -266,7 +266,7 @@ WHERE HostName = $(Sql-Lit $HostName)
     [void](Invoke-CentralSql -SqlText @"
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
-SET LastStatus = N'UPDATING', LastMessage = N'applying 2.2.0'
+SET LastStatus = N'UPDATING', LastMessage = N'applying 2.3.0'
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
     $upd = Join-Path $AgentRoot 'Update-From-Assure.ps1'
@@ -281,7 +281,7 @@ WHERE HostName = $(Sql-Lit $HostName);
       [void](Invoke-CentralSql -SqlText @"
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
-SET LastStatus = N'ONLINE', LastMessage = N'updated 2.2.0', AgentVersion = N'2.2.0'
+SET LastStatus = N'ONLINE', LastMessage = N'updated 2.3.0', AgentVersion = N'2.3.0'
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
       W 'UPDATE applied - service will restart'
@@ -383,6 +383,17 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
         Args = @("-ConfigPath", $cfg.FullName)
       }
     }
+    $iopsRunner = Join-Path $AgentRoot "Collect-Host-Iops.ps1"
+    if (-not (Test-Path $iopsRunner)) { $iopsRunner = Join-Path $SqlRoot "agent\Collect-Host-Iops.ps1" }
+    if (Test-Path $iopsRunner) {
+      $jobs += @{
+        Name = "host-iops-$code"
+        Customer = $code
+        IntervalMin = $light
+        Script = $iopsRunner
+        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
+      }
+    }
   }
   W ("jobs queued: " + $jobs.Count + " from " + $configs.Count + " config(s)")
 }
@@ -429,7 +440,7 @@ foreach ($j in $jobs) {
   $name = $j.Name
   $interval = [int]$j.IntervalMin
   $cust = if ($j.Customer) { [string]$j.Customer } else { $CustomerCode }
-  $forced = $ForceJob -eq $name -or (($forceCodes -contains $cust.ToUpperInvariant()) -and $name -like 'syspro-core-*')
+  $forced = $ForceJob -eq $name -or (($forceCodes -contains $cust.ToUpperInvariant()) -and ($name -like 'syspro-core-*' -or $name -like 'host-iops-*'))
   if (-not $forced -and -not (Test-JobDue -Name $name -IntervalMin $interval)) {
     W "SKIP $name not due (interval ${interval}m)"
     continue

@@ -1538,7 +1538,7 @@ export function RmmDevicesSection({
                         ? Math.round(selected.diskIopsMax).toLocaleString("en-ZA")
                         : "Not reported"
                     }
-                    hint="Pulseway REST v3 does not publish IOPS — only when the agent sends it"
+                    hint="From the Assure Edge Agent on this SYSPRO/SQL host. Pulseway API does not send IOPS."
                   />
                   <StatTile
                     label="CPU usage"

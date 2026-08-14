@@ -81,6 +81,31 @@ END
 ELSE PRINT 'Agent_JobRun exists';
 GO
 
+IF OBJECT_ID(N'dbo.Agent_DiskIops', N'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.Agent_DiskIops (
+    SnapshotUtc   datetime2(0)  NOT NULL,
+    CustomerCode  nvarchar(32)  NOT NULL,
+    HostName      nvarchar(128) NOT NULL,
+    DriveLetter   nvarchar(16)  NOT NULL,
+    TotalGb       decimal(18,2) NULL,
+    FreeGb        decimal(18,2) NULL,
+    UsedPct       decimal(6,2)  NULL,
+    MediaType     nvarchar(40)  NULL,
+    ReadIops      decimal(18,2) NULL,
+    WriteIops     decimal(18,2) NULL,
+    TotalIops     decimal(18,2) NULL,
+    QueueLen      decimal(18,2) NULL,
+    SampleSec     decimal(6,2)  NULL,
+    ImportedAt    datetime2(3)  NOT NULL CONSTRAINT DF_Agent_DiskIops_Imp DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_Agent_DiskIops PRIMARY KEY (SnapshotUtc, CustomerCode, HostName, DriveLetter)
+  );
+  CREATE INDEX IX_Agent_DiskIops_Cust ON dbo.Agent_DiskIops (CustomerCode, HostName, SnapshotUtc DESC);
+  PRINT 'Agent_DiskIops created';
+END
+ELSE PRINT 'Agent_DiskIops exists';
+GO
+
 IF OBJECT_ID(N'dbo.Agent_JobDefinition', N'U') IS NULL
 BEGIN
   CREATE TABLE dbo.Agent_JobDefinition (
@@ -103,6 +128,7 @@ USING (VALUES
   (N'syspro-core',     N'SYSPRO core collect',     15, N'jobs\Run-Syspro-Core.ps1',     1, N'syspro', N'Operators license health DTR'),
   (N'syspro-native',   N'SYSPRO FinSight native',  15, N'jobs\Run-Syspro-Native.ps1',   1, N'syspro', N'INV AP AR WIP L1-3 without Datarapt'),
   (N'syspro-jobs',     N'SYSPRO full jobs',      1440, N'jobs\Run-Syspro-Jobs.ps1',     1, N'syspro', N'Nightly full job extract'),
+  (N'host-iops',       N'Host disk IOPS',          15, N'Collect-Host-Iops.ps1',        1, N'syspro', N'Windows LogicalDisk IOPS on this SQL host'),
   (N'heartbeat-only',  N'Heartbeat only',           5, NULL,                             1, N'all',    N'No payload job')
 ) AS s (JobName, DisplayName, DefaultIntervalMin, ScriptRelativePath, IsEnabled, AppliesToRoles, Notes)
 ON t.JobName = s.JobName
@@ -141,6 +167,7 @@ BEGIN TRY
   GRANT SELECT, INSERT, UPDATE ON dbo.Agent_Registry TO [Rpm_collect];
   GRANT SELECT, INSERT ON dbo.Agent_Heartbeat TO [Rpm_collect];
   GRANT SELECT, INSERT ON dbo.Agent_JobRun TO [Rpm_collect];
+  GRANT SELECT, INSERT, DELETE ON dbo.Agent_DiskIops TO [Rpm_collect];
   GRANT SELECT ON dbo.Agent_JobDefinition TO [Rpm_collect];
   GRANT SELECT ON dbo.vw_Agent_Status_Latest TO [Rpm_collect];
   PRINT 'Granted Rpm_collect';
@@ -150,6 +177,7 @@ BEGIN TRY
   GRANT SELECT, INSERT, UPDATE ON dbo.Agent_Registry TO [rpmassure];
   GRANT SELECT, INSERT ON dbo.Agent_Heartbeat TO [rpmassure];
   GRANT SELECT, INSERT ON dbo.Agent_JobRun TO [rpmassure];
+  GRANT SELECT, INSERT, DELETE ON dbo.Agent_DiskIops TO [rpmassure];
   GRANT SELECT ON dbo.Agent_JobDefinition TO [rpmassure];
   GRANT SELECT ON dbo.vw_Agent_Status_Latest TO [rpmassure];
   PRINT 'Granted rpmassure write';

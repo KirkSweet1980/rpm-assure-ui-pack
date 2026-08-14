@@ -4691,6 +4691,126 @@ WHERE d.CustomerCode = @code
             }
           }
 
+          // Overlay IOPS from Assure Edge Agent (this SYSPRO / SQL host).
+          // Pulseway REST v3 does not publish IOPS — match device name to agent HostName.
+          try {
+            const iopsRes = await pool
+              .request()
+              .input("code", sql.NVarChar(50), code)
+              .query(`
+SELECT d.HostName, d.DriveLetter, d.TotalGb, d.FreeGb, d.UsedPct, d.MediaType,
+       d.ReadIops, d.WriteIops, d.TotalIops, d.QueueLen, d.SnapshotUtc
+FROM dbo.Agent_DiskIops AS d WITH (NOLOCK)
+INNER JOIN (
+  SELECT CustomerCode, HostName, MAX(SnapshotUtc) AS mx
+  FROM dbo.Agent_DiskIops WITH (NOLOCK)
+  WHERE CustomerCode = @code
+    AND SnapshotUtc >= DATEADD(hour, -6, SYSUTCDATETIME())
+  GROUP BY CustomerCode, HostName
+) m ON m.CustomerCode = d.CustomerCode AND m.HostName = d.HostName AND m.mx = d.SnapshotUtc
+WHERE d.CustomerCode = @code`);
+            const iopsRows = (iopsRes.recordset ?? []) as Array<{
+              HostName?: string;
+              DriveLetter?: string;
+              TotalGb?: number | null;
+              FreeGb?: number | null;
+              UsedPct?: number | null;
+              MediaType?: string | null;
+              ReadIops?: number | null;
+              WriteIops?: number | null;
+              TotalIops?: number | null;
+            }>;
+            if (iopsRows.length) {
+              const byHost = new Map<string, typeof iopsRows>();
+              for (const row of iopsRows) {
+                const h = String(row.HostName || "").toUpperCase();
+                if (!h) continue;
+                const arr = byHost.get(h) ?? [];
+                arr.push(row);
+                byHost.set(h, arr);
+              }
+              const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+              for (const d of rmm.devices) {
+                const dn = norm(d.name || "");
+                let hit: typeof iopsRows | undefined;
+                for (const [h, rows] of byHost) {
+                  const hn = norm(h);
+                  if (dn && hn && (dn === hn || dn.startsWith(hn) || hn.startsWith(dn))) {
+                    hit = rows;
+                    break;
+                  }
+                }
+                if (!hit) continue;
+                if (!d.disks) d.disks = [];
+                let maxIops = d.diskIopsMax ?? null;
+                for (const row of hit) {
+                  const letter = String(row.DriveLetter || "").toUpperCase();
+                  if (!letter) continue;
+                  const readIops =
+                    row.ReadIops != null && Number.isFinite(Number(row.ReadIops))
+                      ? Number(row.ReadIops)
+                      : null;
+                  const writeIops =
+                    row.WriteIops != null && Number.isFinite(Number(row.WriteIops))
+                      ? Number(row.WriteIops)
+                      : null;
+                  let totalIops =
+                    row.TotalIops != null && Number.isFinite(Number(row.TotalIops))
+                      ? Number(row.TotalIops)
+                      : null;
+                  if (totalIops == null && (readIops != null || writeIops != null)) {
+                    totalIops = (readIops ?? 0) + (writeIops ?? 0);
+                  }
+                  const existing = d.disks.find(
+                    (x) => String(x.driveLetter || "").toUpperCase() === letter,
+                  );
+                  if (existing) {
+                    if (existing.totalIops == null && totalIops != null) {
+                      existing.readIops = readIops ?? undefined;
+                      existing.writeIops = writeIops ?? undefined;
+                      existing.totalIops = totalIops;
+                    }
+                    if (!existing.mediaType && row.MediaType) {
+                      existing.mediaType = String(row.MediaType);
+                    }
+                  } else {
+                    const totalGb =
+                      row.TotalGb != null && Number.isFinite(Number(row.TotalGb))
+                        ? Number(row.TotalGb)
+                        : null;
+                    const freeGb =
+                      row.FreeGb != null && Number.isFinite(Number(row.FreeGb))
+                        ? Number(row.FreeGb)
+                        : null;
+                    d.disks.push({
+                      driveLetter: letter,
+                      totalGb,
+                      freeGb,
+                      usedGb:
+                        totalGb != null && freeGb != null
+                          ? Math.round((totalGb - freeGb) * 100) / 100
+                          : undefined,
+                      usedPct:
+                        row.UsedPct != null && Number.isFinite(Number(row.UsedPct))
+                          ? Number(row.UsedPct)
+                          : null,
+                      mediaType: row.MediaType ? String(row.MediaType) : null,
+                      readIops: readIops ?? undefined,
+                      writeIops: writeIops ?? undefined,
+                      totalIops: totalIops ?? undefined,
+                    });
+                  }
+                  if (totalIops != null && (maxIops == null || totalIops > maxIops)) {
+                    maxIops = totalIops;
+                  }
+                }
+                d.diskIopsMax = maxIops;
+              }
+            }
+          } catch {
+            /* Agent_DiskIops missing until first agent cycle */
+          }
+
         }
       } catch {
         /* disks optional */
