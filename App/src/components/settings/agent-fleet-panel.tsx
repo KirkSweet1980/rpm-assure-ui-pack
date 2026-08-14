@@ -107,9 +107,9 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
     <div className="rpma-panel space-y-3 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[13px] font-semibold text-fg">SYSPRO Edge Agents</p>
+          <p className="text-[13px] font-semibold text-fg">RPM Assure Agent · SYSPRO</p>
           <p className="text-[11px] text-muted">
-            Identifier per customer · green = connected · red = not installed / stale
+            Per-customer agent ID · green = connected · red = not installed. Other services use APIs.
           </p>
         </div>
         <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>

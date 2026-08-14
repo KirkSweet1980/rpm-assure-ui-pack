@@ -44,6 +44,9 @@ function HealthTile({ item }: { item: ConfigHealthItem }) {
         </span>
         <span className="min-w-0 truncate text-[13px] font-bold text-fg">{item.label}</span>
       </span>
+      <span className="text-[10px] uppercase tracking-wide text-muted">
+        {item.source === "agent" ? "SYSPRO · RPM Assure Agent" : item.source === "api" ? "API" : "Platform"}
+      </span>
       <span className={cn("text-[12px] font-semibold", item.ok ? "text-rag-green" : "text-rag-red")}>
         {item.ok ? "Connected" : "Not connected"}
       </span>

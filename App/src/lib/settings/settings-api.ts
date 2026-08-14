@@ -1474,6 +1474,7 @@ export type ConfigHealthItem = {
   lastAt: string | null;
   detail: string;
   href: string;
+  source: "sql" | "agent" | "api";
 };
 
 async function probeIso(
@@ -1519,26 +1520,28 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
       ? `${dbg.server ?? "configured"}${dbg.port ? `,${dbg.port}` : ""} · ${dbg.database ?? "RPMAssure_App"}`
       : getLastPoolError() ?? "Not connected — set credentials in SQL Server",
     href: "/settings/sql",
+    source: "sql",
   });
 
   const rest: Array<[string, string, string]> = [
-    ["rmm", "Pulseway (RMM)", "/settings/integrations"],
-    ["cove", "Cove (Backup)", "/settings/integrations"],
-    ["epp", "Bitdefender (EPP)", "/settings/integrations"],
-    ["csp", "Microsoft Graph", "/settings/integrations"],
+    ["rmm", "Pulseway API", "/settings/integrations"],
+    ["cove", "Cove API", "/settings/integrations"],
+    ["epp", "Bitdefender API", "/settings/integrations"],
+    ["csp", "Microsoft Graph API", "/settings/integrations"],
   ];
 
   if (!pool) {
     items.push({
       id: "syspro",
-      label: "SYSPRO Agents",
+      label: "RPM Assure Agent",
       ok: false,
       lastAt: null,
       detail: "SQL not connected",
       href: "/settings/agents",
+      source: "agent",
     });
     for (const [id, label, href] of rest) {
-      items.push({ id, label, ok: false, lastAt: null, detail: "SQL not connected", href });
+      items.push({ id, label, ok: false, lastAt: null, detail: "SQL not connected", href, source: "api" });
     }
     return { ok: false as const, generatedAt: new Date().toISOString(), items };
   }
@@ -1555,20 +1558,22 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
     const tot = Number(row.TotalCnt ?? 0);
     items.push({
       id: "syspro",
-      label: "SYSPRO Agents",
+      label: "RPM Assure Agent",
       ok: on > 0,
       lastAt: row.t ? new Date(row.t).toISOString() : null,
       detail: tot === 0 ? "No agents registered" : `${on} online · ${tot} registered`,
       href: "/settings/agents",
+      source: "agent",
     });
   } catch {
     items.push({
       id: "syspro",
-      label: "SYSPRO Agents",
+      label: "RPM Assure Agent",
       ok: false,
       lastAt: null,
       detail: "Agent tables not installed",
       href: "/settings/agents",
+      source: "agent",
     });
   }
 
@@ -1596,7 +1601,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
   for (const [id, label, href] of rest) {
     const lastAt = times[id] ?? null;
     const a = ageDetail(lastAt);
-    items.push({ id, label, ok: a.ok && Boolean(lastAt), lastAt, detail: a.detail, href });
+    items.push({ id, label, ok: a.ok && Boolean(lastAt), lastAt, detail: a.detail, href, source: "api" });
   }
 
   return {

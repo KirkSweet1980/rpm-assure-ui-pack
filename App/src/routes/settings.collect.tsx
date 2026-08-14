@@ -116,12 +116,12 @@ function CollectInventoryPage() {
             </thead>
             <tbody>
               {[
-                ["SYSPRO", "Overview / Operators / Jobs / FinSight / Licence / Day End", "Customer SQL collect (not this API sync)"],
-                ["RPM Remote Management", "Overview / Servers / Workstations / Patch / Alerts", "Pulseway API → Fact_Rmm_*"],
-                ["RPM Cloud Backup", "Overview / Devices / Recovery / Retention", "Cove API → Fact_Cove_*"],
-                ["RPM Endpoint Security", "Overview / Endpoints / Incidents / Quarantine", "Bitdefender API → Fact_Epp_*"],
-                ["Microsoft 365 CSP", "Tenant / Secure Score / MFA / Admins / Licences", "Microsoft Graph → Fact_Csp_*"],
-                ["Customer Assurance", "Incidents / Risks / SLA", "Fact_Ams_* + SLA clocks (not a vendor API)"],
+                ["SYSPRO EcoSystem", "Overview / Operators / Jobs / FinSight / Licence / Day End", "RPM Assure Agent on customer SQL"],
+                ["RPM Remote Management", "Overview / Servers / Workstations / Patch / Alerts", "Pulseway API"],
+                ["RPM Cloud Backup", "Overview / Devices / Recovery / Retention", "Cove API"],
+                ["RPM Endpoint Security", "Overview / Endpoints / Incidents / Quarantine", "Bitdefender API"],
+                ["Microsoft 365 CSP", "Tenant / Secure Score / MFA / Admins / Licences", "Microsoft Graph API"],
+                ["Customer Assurance", "Customer Incidents / Risks / SLA", "Assure AMS (not a vendor API)"],
               ].map((r) => (
                 <tr key={r[0]} className="border-t border-border">
                   <td className="px-2 py-1.5 font-semibold">{r[0]}</td>

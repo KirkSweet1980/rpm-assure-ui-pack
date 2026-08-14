@@ -11,12 +11,12 @@ export const Route = createFileRoute("/settings/")({
 });
 
 const OPTIONS: { href: string; title: string; blurb: string }[] = [
-  { href: "/settings/integrations", title: "Integrations", blurb: "Health ticks for SQL, Pulseway, Cove, EPP, Graph." },
+  { href: "/settings/integrations", title: "Integrations", blurb: "API sources: Pulseway, Cove, Bitdefender, Microsoft Graph." },
   { href: "/settings/sql", title: "SQL Server", blurb: "Central connections and credentials." },
   { href: "/settings/ssl", title: "SSL / HTTPS", blurb: "Certificate for the public hostname." },
   { href: "/settings/users", title: "Users", blurb: "Staff accounts, roles, and scope." },
-  { href: "/settings/collect", title: "Collect", blurb: "Last import and schedule health." },
-  { href: "/settings/agents", title: "Edge agents", blurb: "SQL-host Windows service heartbeats." },
+  { href: "/settings/agents", title: "RPM Assure Agent", blurb: "SYSPRO source: SQL-host Windows service, identifier, sync." },
+  { href: "/settings/collect", title: "Collect Inventory", blurb: "Last import per customer from Agent and APIs." },
   { href: "/settings/query", title: "SQL Query", blurb: "Read-only explorer." },
   { href: "/settings/theme", title: "Theme", blurb: "Light / dark and palette." },
   { href: "/settings/dashboard", title: "Dashboard", blurb: "Which panels show on Exco." },
@@ -58,6 +58,9 @@ function SettingsHub() {
                 <span className="block truncate text-[11px] font-bold text-fg">{i.label}</span>
                 <span className={cn("block truncate text-[10px]", i.ok ? "text-rag-green" : "text-rag-red")}>
                   {i.ok ? "Connected" : "Not connected"}
+                </span>
+                <span className="block truncate text-[9px] uppercase tracking-wide text-muted">
+                  {i.source === "agent" ? "SYSPRO · Agent" : i.source === "api" ? "API" : "Platform"}
                 </span>
               </span>
             </SpaLink>
