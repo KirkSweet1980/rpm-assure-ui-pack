@@ -133,15 +133,16 @@ function IntegrationsPage() {
     void load();
   }, [load]);
 
-  const okN = health.filter((i) => i.ok).length;
+  const apiHealth = health.filter((i) => i.id !== "sql");
+  const okN = apiHealth.filter((i) => i.ok).length;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Configuration health</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Vendor connections</p>
           <p className="text-[13px] text-fg">
-            {okN} of {health.length || 6} connected
+            {okN} of {apiHealth.length || 5} connected
           </p>
         </div>
         <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
@@ -151,7 +152,7 @@ function IntegrationsPage() {
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {health.map((item) => (
+        {apiHealth.map((item) => (
           <HealthTile key={item.id} item={item} />
         ))}
       </div>
