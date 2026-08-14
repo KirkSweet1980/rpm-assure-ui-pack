@@ -54,12 +54,12 @@ function SettingsHub() {
                 {i.ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[11px] font-bold text-fg">{i.label}</span>
+                <span className="block text-[11px] font-bold leading-snug text-fg">{i.label}</span>
                 <span className={cn("block truncate text-[10px]", i.ok ? "text-rag-green" : "text-rag-red")}>
                   {i.ok ? "Connected" : "Not connected"}
                 </span>
-                <span className="block truncate text-[9px] uppercase tracking-wide text-muted">
-                  {i.source === "agent" ? "SYSPRO · Agent" : i.source === "api" ? "API" : "Platform"}
+                <span className="block text-[9px] leading-snug text-muted">
+                  {i.source === "sql" ? i.detail : i.source === "agent" ? "SYSPRO · Agent" : i.source === "api" ? "API" : "Platform"}
                 </span>
               </span>
             </SpaLink>
