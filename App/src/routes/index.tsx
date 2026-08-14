@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
 import { RagBadge } from "@/components/portfolio/rag-badge";
@@ -13,6 +13,14 @@ import { finsightOobAttention } from "@/lib/brand/finsight";
 import { cn } from "@/lib/utils";
 import { ChevronRight, RefreshCw } from "lucide-react";
 import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
+import { CustomizeWidgetsButton, CustomizeWidgetsPanel } from "@/components/exco/customize-widgets";
+import {
+  DEFAULT_EXCO_WIDGET_LAYOUT,
+  readExcoWidgetLayout,
+  widgetMeta,
+  type ExcoWidgetId,
+  type ExcoWidgetLayout,
+} from "@/lib/exco-widgets";
 import {
   ESTATE_VIEWS,
   allEstateViews,
@@ -715,10 +723,13 @@ function ExcoInsightPage() {
   const [drill, setDrill] = useState<DrillKind | null>(null);
   const [customViews, setCustomViews] = useState<EstateView[]>([]);
   const [activeView, setActiveView] = useState<string>("all");
+  const [widgetLayout, setWidgetLayout] = useState<ExcoWidgetLayout>(DEFAULT_EXCO_WIDGET_LAYOUT);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
 
   useEffect(() => {
     const custom = readCustomEstateViews();
     setCustomViews(custom);
+    setWidgetLayout(readExcoWidgetLayout());
     const saved = readActiveEstateView();
     const hit = allEstateViews(custom).find((v) => v.id === saved);
     if (hit) {
@@ -990,6 +1001,17 @@ function ExcoInsightPage() {
     stale: scoreboard.filter((b) => b.coverSyspro && !b.collectFresh).length,
   };
 
+  function wgt(id: ExcoWidgetId) {
+    const meta = widgetMeta(id);
+    return {
+      "data-span": meta.span,
+      style: {
+        order: widgetLayout.order.indexOf(id),
+        display: widgetLayout.hidden.includes(id) ? "none" : undefined,
+      } as CSSProperties,
+    };
+  }
+
   return (
     <RequireAuth>
       <AppShell>
@@ -1032,8 +1054,20 @@ function ExcoInsightPage() {
                 Save This View
               </button>
             ) : null}
+            <CustomizeWidgetsButton
+              open={customizeOpen}
+              onClick={() => setCustomizeOpen((v) => !v)}
+            />
           </div>
-          <section className="rpma-pane">
+          {customizeOpen ? (
+            <CustomizeWidgetsPanel
+              layout={widgetLayout}
+              onChange={setWidgetLayout}
+              onClose={() => setCustomizeOpen(false)}
+            />
+          ) : null}
+          <div className="rpma-exco-board">
+          <section className="rpma-pane" {...wgt("brief")}>
             <h2 className="rpma-pane-head">Executive Brief</h2>
             <div className="rpma-pane-body">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1096,8 +1130,7 @@ function ExcoInsightPage() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <section className="rpma-pane">
+          <section className="rpma-pane" {...wgt("cover")}>
               <h2 className="rpma-pane-head">Services On Cover</h2>
               <ul className="rpma-pane-body space-y-2">
                 {[
@@ -1118,7 +1151,7 @@ function ExcoInsightPage() {
                 ))}
               </ul>
             </section>
-            <section className="rpma-pane">
+            <section className="rpma-pane" {...wgt("sla")}>
               <h2 className="rpma-pane-head">SLA By Service</h2>
               <ul className="rpma-pane-body space-y-2">
                 {[
@@ -1142,7 +1175,7 @@ function ExcoInsightPage() {
                 })}
               </ul>
             </section>
-            <section className="rpma-pane">
+            <section className="rpma-pane" {...wgt("pulse")}>
               <h2 className="rpma-pane-head">Operations Pulse</h2>
               <div className="rpma-pane-body grid grid-cols-2 gap-2">
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
@@ -1171,10 +1204,8 @@ function ExcoInsightPage() {
                 </div>
               </div>
             </section>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <section className="rpma-pane xl:col-span-4">
+            <section className="rpma-pane" {...wgt("matrix")}>
               <h2 className="rpma-pane-head">Risk Matrix</h2>
               <div className="rpma-pane-body">
               <div className="rpma-heat">
@@ -1210,7 +1241,7 @@ function ExcoInsightPage() {
               </div>
             </section>
 
-            <section className="rpma-pane xl:col-span-4">
+            <section className="rpma-pane" {...wgt("impact")}>
               <h2 className="rpma-pane-head">Impact</h2>
               <ol className="rpma-impact rpma-pane-body">
                 {[...riskPoints]
@@ -1238,7 +1269,7 @@ function ExcoInsightPage() {
               </ol>
             </section>
 
-            <section className="rpma-pane xl:col-span-4">
+            <section className="rpma-pane" {...wgt("m365")}>
               <h2 className="rpma-pane-head">Microsoft 365 CSP</h2>
               <div className="rpma-pane-body">
               <div className="grid grid-cols-2 gap-2">
@@ -1264,10 +1295,8 @@ function ExcoInsightPage() {
               </p>
               </div>
             </section>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <section className="rpma-pane xl:col-span-5">
+            <section className="rpma-pane" {...wgt("decisions")}>
               <h2 className="rpma-pane-head">
                 {drill ? drillTitle : "Who Needs A Decision"}
               </h2>
@@ -1295,7 +1324,7 @@ function ExcoInsightPage() {
               </div>
             </section>
 
-            <section className="rpma-pane xl:col-span-4">
+            <section className="rpma-pane" {...wgt("incidents")}>
               <div className="rpma-pane-head-row">
                 <h2 className="rpma-pane-head">
                   {drill ? drillTitle : "Major Incidents"}
@@ -1338,7 +1367,7 @@ function ExcoInsightPage() {
               </div>
             </section>
 
-            <section className="rpma-pane xl:col-span-3">
+            <section className="rpma-pane" {...wgt("finsight")}>
               <h2 className="rpma-pane-head">FinSight Close</h2>
               <div className="rpma-pane-body">
               {finsightEstate.worst.length === 0 ? (
