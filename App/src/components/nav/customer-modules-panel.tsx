@@ -46,9 +46,9 @@ type NavItem = { label: string; path: string; icon: LucideIcon; color: string };
 export const ECOSYSTEM_MODULES: NavItem[] = [
   { label: "Tenant Overview", path: "", icon: LayoutDashboard, color: "#0d9488" },
   { label: "Customer Assurance", path: "/ams", icon: ShieldCheck, color: "#2563eb" },
-  { label: "Incidents", path: "/ams/incidents", icon: AlertTriangle, color: "#dc2626" },
-  { label: "Risks", path: "/ams/risks", icon: Activity, color: "#d97706" },
-  { label: "SLA", path: "/ams/sla", icon: Gauge, color: "#7c3aed" },
+  { label: "Customer Incidents", path: "/ams/incidents", icon: AlertTriangle, color: "#dc2626" },
+  { label: "Customer Risks", path: "/ams/risks", icon: Activity, color: "#d97706" },
+  { label: "Customer SLA", path: "/ams/sla", icon: Gauge, color: "#7c3aed" },
 ];
 
 export const CUSTOMER_PILLARS: {
@@ -165,7 +165,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
     <aside className="rpma-pillar-rail" aria-label="Customer navigation">
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
-          <h2>Ecosystem</h2>
+          <h2>Customer EcoSystem</h2>
         </div>
         <div className="rpma-eco-list">
           {ECOSYSTEM_MODULES.map((m) => {
@@ -176,7 +176,7 @@ export function CustomerPillarRail({ code, cover }: Props) {
               <SpaLink
                 key={href}
                 href={href}
-                title={`${m.label} — Ecosystem`}
+                title={`${m.label} — Customer EcoSystem`}
                 className={cn("rpma-eco-item", selected && "is-on")}
                 onClick={() => setPicked(null)}
               >

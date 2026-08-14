@@ -285,9 +285,9 @@ function CustomerLayout() {
     pageTitle = "Customer Assurance";
   } else if (pathBits[2] === "ams" && pathBits[3]) {
     const map: Record<string, string> = {
-      incidents: "Incidents",
-      risks: "Risks",
-      sla: "SLA",
+      incidents: "Customer Incidents",
+      risks: "Customer Risks",
+      sla: "Customer SLA",
     };
     pageTitle = `Customer Assurance · ${map[pathBits[3]] || pathBits[3]}`;
   }
