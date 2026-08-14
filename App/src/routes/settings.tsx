@@ -39,7 +39,6 @@ const CONFIG_SERVICES: CorpService[] = [
     overview: "/settings/infrastructure",
     modules: [
       { label: "Assure Infrastructure Status", path: "/settings/infrastructure" },
-      { label: "Integrations", path: "/settings/integrations" },
       { label: "RAG", path: "/settings/rag" },
       { label: "Collect", path: "/settings/collect" },
     ],

@@ -1,10 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Check, Server, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Check, RefreshCw, Server, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { SpaLink } from "@/components/nav/spa-link";
-import { fetchConfigHealth, type ConfigHealthItem } from "@/lib/settings/settings-api";
+import {
+  fetchConfigHealth,
+  fetchIntegrations,
+  type ConfigHealthItem,
+} from "@/lib/settings/settings-api";
 import { fetchInfraAgents, type InfraAgentRow } from "@/lib/settings/infra-status";
-import { cn } from "@/lib/utils";
+import { cn, formatSastDateTime } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/infrastructure")({
   component: InfrastructureStatusPage,
@@ -34,33 +39,103 @@ const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string }> =
   { key: "csp", label: "CSP" },
 ];
 
+const KIND_LABEL: Record<string, string> = {
+  erp: "SYSPRO",
+  rmm: "RMM",
+  epp: "EPP",
+  backup: "BACKUP",
+  licensing: "CSP",
+};
+
+function kindLabel(raw: string) {
+  return KIND_LABEL[raw.trim().toLowerCase()] ?? raw.trim().toUpperCase();
+}
+
+function kindToHealthId(raw: string) {
+  const k = raw.trim().toLowerCase();
+  if (k === "erp") return "syspro";
+  if (k === "rmm") return "rmm";
+  if (k === "epp") return "epp";
+  if (k === "backup") return "cove";
+  if (k === "licensing") return "csp";
+  return "";
+}
+
+function syncTone(iso: string | null): { tone: "green" | "amber" | "red"; result: string } {
+  if (!iso) return { tone: "red", result: "Never" };
+  const h = (Date.now() - new Date(iso).getTime()) / 3600000;
+  if (!Number.isFinite(h) || h < 0) return { tone: "red", result: "Never" };
+  if (h <= 24) return { tone: "green", result: "OK" };
+  if (h <= 72) return { tone: "amber", result: "Stale" };
+  return { tone: "red", result: "Stale" };
+}
+
+type ConnRow = {
+  connectionCode: string;
+  displayName: string;
+  sourceKind: string;
+  status: string;
+  lastSyncAt: string | null;
+};
+
 function InfrastructureStatusPage() {
   const [items, setItems] = useState<ConfigHealthItem[]>([]);
+  const [conns, setConns] = useState<ConnRow[]>([]);
   const [agents, setAgents] = useState<InfraAgentRow[]>([]);
   const [agentMsg, setAgentMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    void fetchConfigHealth()
-      .then((r) => setItems(r.items ?? []))
-      .catch(() => setItems([]));
-    void fetchInfraAgents()
-      .then((r) => {
-        setAgents(r.rows ?? []);
-        setAgentMsg(r.ok ? null : r.message);
-      })
-      .catch((e) => setAgentMsg(e instanceof Error ? e.message : String(e)));
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const [h, i, a] = await Promise.all([
+        fetchConfigHealth(),
+        fetchIntegrations(),
+        fetchInfraAgents(),
+      ]);
+      setItems(h.items ?? []);
+      setConns(i.rows ?? []);
+      setAgents(a.rows ?? []);
+      setAgentMsg(a.ok ? null : a.message);
+    } catch (e) {
+      setAgentMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
   }, []);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   const okN = items.filter((i) => i.ok).length;
+  const connRows: ConnRow[] =
+    conns.length > 0
+      ? conns
+      : items
+          .filter((i) => i.id !== "sql")
+          .map((i) => ({
+            connectionCode: i.id,
+            displayName: healthTitle(i),
+            sourceKind: i.id === "syspro" ? "erp" : i.id === "cove" ? "backup" : i.id === "csp" ? "licensing" : i.id,
+            status: i.ok ? "Live" : "Down",
+            lastSyncAt: i.lastAt,
+          }));
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Configuration</p>
-        <h1 className="mt-1 flex items-center gap-2 text-[18px] font-semibold tracking-tight text-fg">
-          <Server className="h-5 w-5 text-muted" />
-          Assure Infrastructure Status
-        </h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Configuration</p>
+          <h1 className="mt-1 flex items-center gap-2 text-[18px] font-semibold tracking-tight text-fg">
+            <Server className="h-5 w-5 text-muted" />
+            Assure Infrastructure Status
+          </h1>
+        </div>
+        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
+          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+          Recheck
+        </Button>
       </div>
 
       <section className="rpma-panel p-4">
@@ -102,6 +177,66 @@ function InfrastructureStatusPage() {
         ) : (
           <p className="text-[13px] text-muted">Checking connections…</p>
         )}
+      </section>
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="flex items-end justify-between gap-3 px-4 py-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Collect</p>
+            <h2 className="mt-0.5 text-[16px] font-semibold text-fg">Collect Connections</h2>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[12px]">
+            <thead className="rpma-table-head">
+              <tr>
+                <th className="px-4 py-2 font-semibold">Connection</th>
+                <th className="px-4 py-2 font-semibold">Kind</th>
+                <th className="px-4 py-2 font-semibold">Status</th>
+                <th className="px-4 py-2 font-semibold">Last Sync</th>
+                <th className="px-4 py-2 font-semibold">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {connRows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-muted">
+                    No collect connections yet.
+                  </td>
+                </tr>
+              ) : (
+                connRows.map((r) => {
+                  const hid = kindToHealthId(r.sourceKind);
+                  const live = items.find((h) => h.id === hid);
+                  const lastAt = r.lastSyncAt || live?.lastAt || null;
+                  const { tone, result } = syncTone(lastAt);
+                  return (
+                    <tr key={r.connectionCode} className="border-t border-border/40">
+                      <td className="px-4 py-2.5 font-semibold text-fg">{r.displayName}</td>
+                      <td className="px-4 py-2.5 text-muted">{kindLabel(r.sourceKind)}</td>
+                      <td className="px-4 py-2.5">{r.status}</td>
+                      <td className="px-4 py-2.5 text-muted">
+                        {lastAt ? formatSastDateTime(lastAt) : "No collect yet"}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            tone === "green" && "text-rag-green",
+                            tone === "amber" && "text-amber-400",
+                            tone === "red" && "text-rag-red",
+                          )}
+                        >
+                          {result}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="rpma-panel overflow-hidden p-0">

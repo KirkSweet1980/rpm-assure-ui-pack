@@ -46,7 +46,7 @@ export function NoCoverPanel({
       </p>
       <p className="mt-3">
         <Link
-          to="/settings/integrations"
+          to="/settings/infrastructure"
           className="text-[12px] font-semibold text-[var(--bs-primary)] hover:underline"
         >
           Map this service in Configuration

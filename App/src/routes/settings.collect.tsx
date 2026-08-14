@@ -1,14 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHead } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   fetchCollectInventory,
   runAllApiSync,
   type CollectInventoryRow,
 } from "@/lib/settings/settings-api";
+import { SpaLink } from "@/components/nav/spa-link";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/collect")({
@@ -29,11 +28,20 @@ function fmt(iso: string | null) {
 }
 
 function ragClass(r: string) {
-  if (r === "Red") return "bg-red-500/15 text-red-700 dark:text-red-300";
-  if (r === "Amber") return "bg-amber-500/15 text-amber-800 dark:text-amber-200";
-  if (r === "None") return "bg-muted/40 text-muted-foreground";
-  return "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200";
+  if (r === "Red") return "text-rag-red";
+  if (r === "Amber") return "text-amber-400";
+  if (r === "None") return "text-muted";
+  return "text-rag-green";
 }
+
+const SOURCE_MAP: Array<[string, string, string]> = [
+  ["SYSPRO EcoSystem", "Overview / Operators / Jobs / FinSight / Licence / Day End", "RPM Assure Agent"],
+  ["RPM Remote Management", "Overview / Servers / Workstations / Patch / Alerts", "Pulseway API"],
+  ["RPM Cloud Backup", "Overview / Devices / Recovery / Retention", "N-Able Cove Backup"],
+  ["RPM Endpoint Security", "Overview / Endpoints / Incidents / Quarantine", "Bitdefender API"],
+  ["Microsoft 365 CSP", "Tenant / Secure Score / MFA / Admins / Licences", "Microsoft Graph API"],
+  ["Customer Assurance", "Customer Incidents / Risks / SLA", "Assure AMS"],
+];
 
 function CollectInventoryPage() {
   const [rows, setRows] = useState<CollectInventoryRow[]>([]);
@@ -66,9 +74,16 @@ function CollectInventoryPage() {
   const stale = covered.filter((r) => r.stale);
 
   return (
-    <Card>
-      <CardHead className="flex flex-wrap items-center justify-between gap-2">
-        <span>Collect inventory</span>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Configuration</p>
+          <h1 className="mt-1 text-[18px] font-semibold tracking-tight text-fg">Collect Inventory</h1>
+          <p className="mt-1 text-[13px] text-muted">
+            SYSPRO last import by customer. Stale only applies on SYSPRO cover when operators
+            are older than {staleHours} hours.
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -85,176 +100,129 @@ function CollectInventoryPage() {
           >
             {syncing ? "Starting sync…" : "Sync All APIs"}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={() => void load()}
-          >
-            <RefreshCw className={cn("size-4", busy && "animate-spin")} />
+          <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
+            <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
             Refresh
           </Button>
         </div>
-      </CardHead>
-      <CardContent className="space-y-3">
-        <p className="text-xs text-muted">
-          SYSPRO collect status by customer. <strong>Stale</strong> only applies
-          when the customer is on SYSPRO cover and operators were not imported
-          within {staleHours} hours. Customers without SYSPRO show{" "}
-          <strong>No Cover</strong> (not stale).
-        </p>
-        {syncMsg ? <p className="text-xs font-semibold text-fg">{syncMsg}</p> : null}
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-left text-[11px]">
-            <thead className="bg-surface-2 uppercase tracking-wide text-muted">
-              <tr>
-                <th className="px-2 py-1.5">Service</th>
-                <th className="px-2 py-1.5">Module</th>
-                <th className="px-2 py-1.5">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["SYSPRO EcoSystem", "Overview / Operators / Jobs / FinSight / Licence / Day End", "RPM Assure Agent on customer SQL"],
-                ["RPM Remote Management", "Overview / Servers / Workstations / Patch / Alerts", "Pulseway API"],
-                ["RPM Cloud Backup", "Overview / Devices / Recovery / Retention", "Cove API"],
-                ["RPM Endpoint Security", "Overview / Endpoints / Incidents / Quarantine", "Bitdefender API"],
-                ["Microsoft 365 CSP", "Tenant / Secure Score / MFA / Admins / Licences", "Microsoft Graph API"],
-                ["Customer Assurance", "Customer Incidents / Risks / SLA", "Assure AMS (not a vendor API)"],
-              ].map((r) => (
-                <tr key={r[0]} className="border-t border-border">
-                  <td className="px-2 py-1.5 font-semibold">{r[0]}</td>
-                  <td className="px-2 py-1.5">{r[1]}</td>
-                  <td className="px-2 py-1.5 text-muted">{r[2]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      </div>
+
+      {syncMsg ? <p className="text-[12px] font-semibold text-fg">{syncMsg}</p> : null}
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="px-4 py-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Sources</p>
+          <h2 className="mt-0.5 text-[16px] font-semibold text-fg">Where each service is collected from</h2>
         </div>
-        {msg && <p className="text-xs text-muted">{msg}</p>}
-        {covered.length > 0 && (
-          <p className="text-xs text-muted">
-            On cover: {covered.length} · Stale: {stale.length}
-            {stale.length > 0 && (
-              <span className="text-amber-700 dark:text-amber-300">
-                {" "}
-                (
-                {stale.map((s) => s.customerCode).join(", ")})
-              </span>
-            )}
+        <table className="w-full text-left text-[12px]">
+          <thead className="rpma-table-head">
+            <tr>
+              <th className="px-4 py-2 font-semibold">Service</th>
+              <th className="px-4 py-2 font-semibold">Modules</th>
+              <th className="px-4 py-2 font-semibold">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SOURCE_MAP.map((r) => (
+              <tr key={r[0]} className="border-t border-border/40">
+                <td className="px-4 py-2 font-semibold text-fg">{r[0]}</td>
+                <td className="px-4 py-2 text-muted">{r[1]}</td>
+                <td className="px-4 py-2">{r[2]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="flex flex-wrap items-end justify-between gap-3 px-4 py-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">SYSPRO</p>
+            <h2 className="mt-0.5 text-[16px] font-semibold text-fg">Customer Collect</h2>
+          </div>
+          <p className="text-[12px] text-muted">
+            On cover {covered.length} · Stale {stale.length}
+            {stale.length > 0 ? ` (${stale.map((s) => s.customerCode).join(", ")})` : ""}
           </p>
-        )}
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[720px] text-left text-xs">
-            <thead className="bg-surface-2 text-[11px] uppercase tracking-wide text-muted">
+        </div>
+        {msg ? <p className="px-4 pb-2 text-[12px] text-muted">{msg}</p> : null}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-[12px]">
+            <thead className="rpma-table-head">
               <tr>
-                <th className="px-2 py-2">Customer</th>
-                <th className="px-2 py-2">Instance</th>
-                <th className="px-2 py-2">Health</th>
-                <th className="px-2 py-2">Ops last</th>
-                <th className="px-2 py-2">Age (h)</th>
-                <th className="px-2 py-2">Jobs / err</th>
-                <th className="px-2 py-2">FinSight Out of Balance</th>
-                <th className="px-2 py-2">License</th>
+                <th className="px-4 py-2 font-semibold">Customer</th>
+                <th className="px-4 py-2 font-semibold">Instance</th>
+                <th className="px-4 py-2 font-semibold">Health</th>
+                <th className="px-4 py-2 font-semibold">Ops Last</th>
+                <th className="px-4 py-2 font-semibold">Age (h)</th>
+                <th className="px-4 py-2 font-semibold">Jobs / Err</th>
+                <th className="px-4 py-2 font-semibold">FinSight OOB</th>
+                <th className="px-4 py-2 font-semibold">Licence</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-2 py-6 text-center text-muted">
+                  <td colSpan={8} className="px-4 py-6 text-muted">
                     No rows — check SQL connection and Dim_Customer.
                   </td>
                 </tr>
               ) : (
                 rows.map((row) => (
-                  <tr
-                    key={row.customerCode}
-                    className="border-t border-border/80 hover:bg-surface-2/60"
-                  >
-                    <td className="px-2 py-2">
-                      <Link
-                        to="/customers/$code"
-                        params={{ code: row.customerCode }}
-                        className="font-medium text-primary hover:underline"
+                  <tr key={row.customerCode} className="border-t border-border/40">
+                    <td className="px-4 py-2.5">
+                      <SpaLink
+                        href={`/customers/${encodeURIComponent(row.customerCode)}`}
+                        className="font-semibold text-fg no-underline hover:underline"
                       >
                         {row.displayName}
-                      </Link>
+                      </SpaLink>
                       <div className="text-[10px] text-muted">
                         {row.customerCode}
-                        {!row.active && " · inactive"}
+                        {!row.active ? " · inactive" : ""}
                       </div>
                     </td>
-                    <td className="px-2 py-2 font-mono text-[11px]">
+                    <td className="px-4 py-2.5 font-mono text-[11px] text-muted">
                       {row.sqlInstanceName || "—"}
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-4 py-2.5">
                       {!row.sysproCovered ? (
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] font-bold text-amber-700 dark:text-amber-300 border-amber-500/40"
-                        >
-                          No Cover
-                        </Badge>
+                        <span className="text-muted">No Cover</span>
                       ) : (
-                        <>
-                          <span
-                            className={cn(
-                              "inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold",
-                              ragClass(row.healthRag),
-                            )}
-                          >
-                            {row.healthRag}
-                          </span>
-                          {row.stale && (
-                            <Badge variant="outline" className="ml-1 text-[10px]">
-                              Stale
-                            </Badge>
-                          )}
-                        </>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className={cn("font-semibold", ragClass(row.healthRag))}>{row.healthRag}</span>
+                          {row.stale ? <span className="text-[11px] text-amber-400">Stale</span> : null}
+                        </span>
                       )}
                     </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       {row.sysproCovered ? (
                         <>
                           {fmt(row.lastOpsUtc)}
-                          <div className="text-[10px] text-muted">
-                            {row.opsCount} ops
-                          </div>
+                          <div className="text-[10px] text-muted">{row.opsCount} ops</div>
                         </>
                       ) : (
                         "—"
                       )}
                     </td>
-                    <td className="px-2 py-2">
-                      {!row.sysproCovered
-                        ? "—"
-                        : row.hoursSinceOps == null
-                          ? "—"
-                          : row.hoursSinceOps}
+                    <td className="px-4 py-2.5">
+                      {!row.sysproCovered ? "—" : row.hoursSinceOps == null ? "—" : row.hoursSinceOps}
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-4 py-2.5">
                       {!row.sysproCovered ? (
                         "—"
                       ) : (
                         <>
                           {row.jobsCount}
-                          {row.jobErrors > 0 && (
-                            <span className="text-red-600 dark:text-red-400">
-                              {" "}
-                              / {row.jobErrors} err
-                            </span>
-                          )}
-                          <div className="text-[10px] text-muted">
-                            {fmt(row.lastJobsUtc)}
-                          </div>
+                          {row.jobErrors > 0 ? (
+                            <span className="text-rag-red"> / {row.jobErrors} err</span>
+                          ) : null}
+                          <div className="text-[10px] text-muted">{fmt(row.lastJobsUtc)}</div>
                         </>
                       )}
                     </td>
-                    <td className="px-2 py-2">
-                      {row.sysproCovered ? row.dtrVarLines : "—"}
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
+                    <td className="px-4 py-2.5">{row.sysproCovered ? row.dtrVarLines : "—"}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       {row.sysproCovered ? fmt(row.lastLicenseUtc) : "—"}
                     </td>
                   </tr>
@@ -263,7 +231,7 @@ function CollectInventoryPage() {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+      </section>
+    </div>
   );
 }
