@@ -60,6 +60,7 @@ import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfE
 import { buildExcoPillarSla, hasSlaCover } from "./exco-sla-stats";
 import { auditPortfolioRows } from "./pillar-audit";
 import { getPool, sql } from "./sql-pool";
+import { vendorNameHits } from "./vendor-name-match";
 
 type CustRow = {
   CustomerCode: string;
@@ -2114,9 +2115,79 @@ FROM dbo.Syspro_SystemLicense WITH (NOLOCK);
 
 
 
+async function restampBlankVendorCodes(
+  pool: NonNullable<Awaited<ReturnType<typeof getPool>>>,
+): Promise<void> {
+  try {
+    await pool.request().query(`
+UPDATE d SET d.CustomerCode = m.CustomerCode
+FROM dbo.Cove_DeviceStatistics AS d
+INNER JOIN dbo.Dim_Cove_PartnerMap AS m ON ISNULL(m.Active,1)=1
+WHERE (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode)) = N'')
+  AND (
+    (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
+    OR UPPER(LTRIM(RTRIM(ISNULL(d.Product,N'')))) = UPPER(LTRIM(RTRIM(m.PartnerName)))
+    OR (
+      LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
+      AND UPPER(ISNULL(d.Product,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+    )
+  )`);
+  } catch (e) {
+    console.warn("[rpm-assure] Cove restamp:", e instanceof Error ? e.message : e);
+  }
+  try {
+    await pool.request().query(`
+UPDATE d SET d.CustomerCode = c.CustomerCode
+FROM dbo.Cove_DeviceStatistics AS d
+INNER JOIN dbo.Dim_Customer AS c ON ISNULL(c.Active,1)=1
+WHERE (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode)) = N'')
+  AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
+  AND (
+    UPPER(ISNULL(d.Product,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+    OR UPPER(ISNULL(d.DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+    OR UPPER(ISNULL(d.MachineName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+  )`);
+  } catch (e) {
+    console.warn("[rpm-assure] Cove name restamp:", e instanceof Error ? e.message : e);
+  }
+  try {
+    await pool.request().query(`
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'CompanyName') IS NOT NULL
+UPDATE e SET e.CustomerCode = m.CustomerCode
+FROM dbo.Bitdefender_Endpoints AS e
+INNER JOIN dbo.Dim_Bitdefender_CompanyMap AS m ON ISNULL(m.Active,1)=1
+WHERE (e.CustomerCode IS NULL OR LTRIM(RTRIM(e.CustomerCode)) = N'')
+  AND m.CompanyName NOT LIKE N'Invalid%'
+  AND (
+    UPPER(LTRIM(RTRIM(ISNULL(e.CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
+    OR (
+      LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
+      AND UPPER(ISNULL(e.CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
+    )
+  )`);
+  } catch (e) {
+    console.warn("[rpm-assure] EPP company restamp:", e instanceof Error ? e.message : e);
+  }
+  try {
+    await pool.request().query(`
+UPDATE e SET e.CustomerCode = c.CustomerCode
+FROM dbo.Bitdefender_Endpoints AS e
+INNER JOIN dbo.Dim_Customer AS c ON ISNULL(c.Active,1)=1
+WHERE (e.CustomerCode IS NULL OR LTRIM(RTRIM(e.CustomerCode)) = N'')
+  AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
+  AND (
+    UPPER(ISNULL(e.DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+    OR UPPER(ISNULL(e.Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+  )`);
+  } catch (e) {
+    console.warn("[rpm-assure] EPP name restamp:", e instanceof Error ? e.message : e);
+  }
+}
+
 export async function fetchLivePortfolio(): Promise<PortfolioPayload | null> {
   const pool = await getPool();
   if (!pool) return null;
+  await restampBlankVendorCodes(pool);
 
   const result = await pool.request().query(PORTFOLIO_SQL);
   const rows: PortfolioRow[] = (result.recordset ?? []).map((r: CustRow) => mapCustomer(r));
@@ -2856,6 +2927,7 @@ export async function fetchLiveCustomerDetail(
 
   const pool = await getPool();
   if (!pool) return null;
+  await restampBlankVendorCodes(pool);
 
   // Fast path: resolve single customer from Dim_Customer — do NOT load full estate portfolio
   // (fetchLivePortfolio was taking 10–20s and blocked every customer open).
@@ -4774,7 +4846,19 @@ WHERE (
         AND ISNULL(m.Active, 1) = 1
         AND (
           (NULLIF(LTRIM(RTRIM(m.PartnerName)), N'') IS NOT NULL
-            AND LTRIM(RTRIM(m.PartnerName)) = LTRIM(RTRIM(ISNULL(d.Product, N''))))
+            AND (
+              UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
+              OR (
+                LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
+                AND (
+                  UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+                  OR (
+                    LEN(LTRIM(RTRIM(ISNULL(d.Product, N'')))) >= 6
+                    AND UPPER(LTRIM(RTRIM(m.PartnerName))) LIKE N'%' + UPPER(LTRIM(RTRIM(d.Product))) + N'%'
+                  )
+                )
+              )
+            ))
           OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
         )
     )
@@ -4791,7 +4875,19 @@ WHERE (
           AND ISNULL(m2.Active, 1) = 1
           AND (
             (NULLIF(LTRIM(RTRIM(m2.PartnerName)), N'') IS NOT NULL
-              AND LTRIM(RTRIM(m2.PartnerName)) = LTRIM(RTRIM(ISNULL(d2.Product, N''))))
+              AND (
+                UPPER(LTRIM(RTRIM(m2.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d2.Product, N''))))
+                OR (
+                  LEN(LTRIM(RTRIM(m2.PartnerName))) >= 6
+                  AND (
+                    UPPER(ISNULL(d2.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.PartnerName))) + N'%'
+                    OR (
+                      LEN(LTRIM(RTRIM(ISNULL(d2.Product, N'')))) >= 6
+                      AND UPPER(LTRIM(RTRIM(m2.PartnerName))) LIKE N'%' + UPPER(LTRIM(RTRIM(d2.Product))) + N'%'
+                    )
+                  )
+                )
+              ))
             OR (m2.PartnerId IS NOT NULL AND d2.PartnerId IS NOT NULL AND m2.PartnerId = d2.PartnerId)
           )
       )
@@ -4822,7 +4918,13 @@ WHERE (
       SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
       WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
         AND (
-          LTRIM(RTRIM(m.PartnerName)) = LTRIM(RTRIM(ISNULL(d.Product, N'')))
+          (
+            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
+            OR (
+              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
+              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+            )
+          )
           OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
         )
     )
@@ -4836,7 +4938,13 @@ WHERE (
         SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m2 WITH (NOLOCK)
         WHERE m2.CustomerCode = @code AND ISNULL(m2.Active, 1) = 1
           AND (
-            LTRIM(RTRIM(m2.PartnerName)) = LTRIM(RTRIM(ISNULL(d2.Product, N'')))
+            (
+              UPPER(LTRIM(RTRIM(m2.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d2.Product, N''))))
+              OR (
+                LEN(LTRIM(RTRIM(m2.PartnerName))) >= 6
+                AND UPPER(ISNULL(d2.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.PartnerName))) + N'%'
+              )
+            )
             OR (m2.PartnerId IS NOT NULL AND d2.PartnerId IS NOT NULL AND m2.PartnerId = d2.PartnerId)
           )
       )
@@ -4864,7 +4972,13 @@ WHERE (
       SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
       WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
         AND (
-          LTRIM(RTRIM(m.PartnerName)) = LTRIM(RTRIM(ISNULL(d.Product, N'')))
+          (
+            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
+            OR (
+              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
+              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+            )
+          )
           OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
         )
     )
@@ -4907,11 +5021,11 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
           cove.mapping.map((m) => m.partnerId).filter((x) => x != null) as number[],
         );
         coveRows = all.filter((r: any) => {
-          const pn = String(r.PartnerName ?? r.Product ?? "")
-            .toLowerCase()
-            .trim();
+          const pn = String(r.PartnerName ?? r.Product ?? "");
           const pid = r.PartnerId != null ? Number(r.PartnerId) : null;
-          return (pn && names.has(pn)) || (pid != null && ids.has(pid));
+          if (pid != null && ids.has(pid)) return true;
+          if (cove.mapping.some((m) => vendorNameHits(pn, m.partnerName))) return true;
+          return vendorNameHits(pn, customer.displayName);
         });
       } catch {
         /* optional */
@@ -5169,7 +5283,13 @@ WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
       SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
       WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
         AND (
-          LTRIM(RTRIM(m.PartnerName)) = LTRIM(RTRIM(ISNULL(d.Product, N'')))
+          (
+            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
+            OR (
+              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
+              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+            )
+          )
           OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
         )
     )
@@ -5217,7 +5337,13 @@ WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
       SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
       WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
         AND (
-          LTRIM(RTRIM(m.PartnerName)) = LTRIM(RTRIM(ISNULL(d.Product, N'')))
+          (
+            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
+            OR (
+              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
+              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+            )
+          )
           OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
         )
     )
@@ -5346,20 +5472,94 @@ ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
 SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
        PolicyName, SnapshotDate
 FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-WHERE UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+WHERE (
+    UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m WITH (NOLOCK)
+      WHERE m.CustomerCode = @code AND ISNULL(m.Active,1) = 1
+        AND m.CompanyName NOT LIKE N'Invalid%'
+        AND (
+          UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
+          OR (
+            LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
+            AND UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
+          )
+        )
+    )
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
+      WHERE c.CustomerCode = @code
+        AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
+        AND (
+          UPPER(ISNULL(DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+          OR UPPER(ISNULL(Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+          OR UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+        )
+    )
+  )
   AND SnapshotDate = (
-    SELECT MAX(SnapshotDate) FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-    WHERE UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+    SELECT MAX(e2.SnapshotDate) FROM dbo.Bitdefender_Endpoints AS e2 WITH (NOLOCK)
+    WHERE (
+      UPPER(LTRIM(RTRIM(ISNULL(e2.CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+      OR EXISTS (
+        SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m2 WITH (NOLOCK)
+        WHERE m2.CustomerCode = @code AND ISNULL(m2.Active,1) = 1
+          AND (
+            UPPER(LTRIM(RTRIM(ISNULL(e2.CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m2.CompanyName)))
+            OR (
+              LEN(LTRIM(RTRIM(m2.CompanyName))) >= 6
+              AND UPPER(ISNULL(e2.CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.CompanyName))) + N'%'
+            )
+          )
+      )
+    )
   )
 ORDER BY DeviceName`
       : `
 SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
        CAST(NULL AS nvarchar(200)) AS PolicyName, SnapshotDate
 FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-WHERE UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+WHERE (
+    UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m WITH (NOLOCK)
+      WHERE m.CustomerCode = @code AND ISNULL(m.Active,1) = 1
+        AND m.CompanyName NOT LIKE N'Invalid%'
+        AND (
+          UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
+          OR (
+            LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
+            AND UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
+          )
+        )
+    )
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
+      WHERE c.CustomerCode = @code
+        AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
+        AND (
+          UPPER(ISNULL(DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+          OR UPPER(ISNULL(Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+          OR UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+        )
+    )
+  )
   AND SnapshotDate = (
-    SELECT MAX(SnapshotDate) FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-    WHERE UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+    SELECT MAX(e2.SnapshotDate) FROM dbo.Bitdefender_Endpoints AS e2 WITH (NOLOCK)
+    WHERE (
+      UPPER(LTRIM(RTRIM(ISNULL(e2.CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+      OR EXISTS (
+        SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m2 WITH (NOLOCK)
+        WHERE m2.CustomerCode = @code AND ISNULL(m2.Active,1) = 1
+          AND (
+            UPPER(LTRIM(RTRIM(ISNULL(e2.CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m2.CompanyName)))
+            OR (
+              LEN(LTRIM(RTRIM(m2.CompanyName))) >= 6
+              AND UPPER(ISNULL(e2.CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.CompanyName))) + N'%'
+            )
+          )
+      )
+    )
   )
 ORDER BY DeviceName`;
     const epRes = await pool
@@ -5431,7 +5631,31 @@ ORDER BY AsOfDate DESC`);
 SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
        ${hasPolicyName ? "PolicyName" : "CAST(NULL AS nvarchar(200)) AS PolicyName"}, SnapshotDate
 FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-WHERE UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+WHERE (
+    UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m WITH (NOLOCK)
+      WHERE m.CustomerCode = @code AND ISNULL(m.Active,1) = 1
+        AND m.CompanyName NOT LIKE N'Invalid%'
+        AND (
+          UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
+          OR (
+            LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
+            AND UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
+          )
+        )
+    )
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
+      WHERE c.CustomerCode = @code
+        AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
+        AND (
+          UPPER(ISNULL(DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+          OR UPPER(ISNULL(Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+          OR UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
+        )
+    )
+  )
 ORDER BY SnapshotDate DESC, DeviceName`);
         epp.devices = (fallback.recordset ?? []).map((r: any) => ({
           endpointId: String(r.EndpointId ?? ""),

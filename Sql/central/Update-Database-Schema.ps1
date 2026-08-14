@@ -80,5 +80,17 @@ if (-not $ok) {
 }
 
 W Green 'SCHEMA UPDATE OK'
+
+$restamp = Join-Path $PSScriptRoot '440_Restamp_Cove_Epp_CustomerCodes.sql'
+if (-not (Test-Path $restamp)) { $restamp = 'C:\RPM-Assure\Sql\central\440_Restamp_Cove_Epp_CustomerCodes.sql' }
+if (Test-Path $restamp) {
+  W Cyan '--- Restamp Cove + EPP CustomerCode (blank rows only) ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $restamp @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'Cove/EPP restamp OK' } else { W Yellow 'Cove/EPP restamp warned — UI will still try a live restamp.' }
+}
+
 Write-Host 'Agents, RequestSyncUtc, vendor maps, and pillar columns are in place.'
-Write-Host 'Hard-refresh Assure. Redsun Cloud Backup is green if a Cove partner map exists.'
+Write-Host 'Hard-refresh Assure. Cloud Backup and EPP fill from stamped devices, not just the map lamp.'
