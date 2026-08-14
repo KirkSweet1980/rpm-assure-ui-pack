@@ -35,6 +35,7 @@ function Read-RpmaStatus {
   $sync = $null
   $msg = 'no status yet'
   $online = $false
+  $err = $false
   if (Test-Path $statusFile) {
     try {
       $j = Get-Content -LiteralPath $statusFile -Raw | ConvertFrom-Json
@@ -42,10 +43,22 @@ function Read-RpmaStatus {
       $sync = $j.lastSyncUtc
       $msg = [string]$j.lastMessage
       $online = [bool]$j.online
+      $err = [bool]$j.error
+      if ($msg -match 'fail|error|JOB_FAIL') { $err = $true }
+      if ($hb) {
+        $ageMin = ((Get-Date).ToUniversalTime() - [datetime]$hb).TotalMinutes
+        if ($ageMin -gt 20) { $online = $false }
+      } else { $online = $false }
     } catch {}
   }
-  if (-not $svcUp) { $online = $false }
+  if (-not $svcUp) { $online = $false; $err = $false }
+  $kind = 'red'
+  $state = 'DISCONNECTED'
+  if ($online -and $err) { $kind = 'amber'; $state = 'ERROR' }
+  elseif ($online) { $kind = 'green'; $state = 'OK' }
   return [pscustomobject]@{
+    kind  = $kind
+    state = $state
     online = $online
     svcUp  = $svcUp
     hb     = $hb
@@ -93,12 +106,11 @@ $miExit.add_Click({
 
 function Update-Tray {
   $s = Read-RpmaStatus
-  $state = if ($s.online) { 'ONLINE' } elseif ($s.svcUp) { 'SERVICE UP / NO HEARTBEAT' } else { 'OFFLINE' }
-  $tip = "RPM Assure`n$state`nLast sync: $(FmtUtc $s.sync)`nHeartbeat: $(FmtUtc $s.hb)"
+  $tip = "RPM Assure $($s.state) | sync $(FmtUtc $s.sync)"
   if ($tip.Length -gt 63) { $tip = $tip.Substring(0, 63) }
   $notify.Text = $tip
-  $notify.Icon = if ($s.online) { $iconOn } elseif ($s.svcUp) { $iconWait } else { $iconOff }
-  $miState.Text = "Status: $state"
+  $notify.Icon = if ($s.kind -eq 'green') { $iconOn } elseif ($s.kind -eq 'amber') { $iconWait } else { $iconOff }
+  $miState.Text = "Status: $($s.state)"
   $miSync.Text = "Last sync: $(FmtUtc $s.sync)"
 }
 

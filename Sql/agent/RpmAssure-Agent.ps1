@@ -42,7 +42,7 @@ function W([string]$m) {
 }
 
 function Write-RpmaStatusFile {
-  param([bool]$Online, [string]$Message)
+  param([bool]$Online, [string]$Message, [bool]$HadError = $false)
   $lastSync = $null
   $sf = Get-ChildItem $LogDir -Filter 'last_syspro-core-*.txt' -EA SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   if ($sf) {
@@ -53,6 +53,7 @@ function Write-RpmaStatusFile {
     lastHeartbeatUtc = (Get-Date).ToUniversalTime().ToString('o')
     lastSyncUtc      = $lastSync
     lastMessage      = $Message
+    error            = [bool]$HadError
     host             = $HostName
     customer         = $CustomerCode
     version          = $AgentVersion
@@ -307,6 +308,7 @@ foreach ($j in $jobs) {
   W "DONE $name exit=$code"
   Report-JobRun -Name $name -Started $started -Finished $finished -ExitCode $code -Message ("exit=" + $code) -LogTail $tail -Code $(if ($j.Customer) { $j.Customer } else { $CustomerCode })
   if ($code -eq 0) { Set-JobRan -Name $name }
+  else { $script:RpmaJobFailed = $true }
 }
 
 if ($forceCodes.Count) {
@@ -323,5 +325,5 @@ WHERE HostName = $(Sql-Lit $HostName) AND RequestSyncUtc IS NOT NULL;
 }
 
 W "=== Agent cycle done log=$log ==="
-Write-RpmaStatusFile -Online ($r.ExitCode -eq 0) -Message 'cycle done'
+Write-RpmaStatusFile -Online ($r.ExitCode -eq 0) -Message $(if ($script:RpmaJobFailed) { 'job error' } else { 'cycle done' }) -HadError ([bool]$script:RpmaJobFailed)
 exit 0
