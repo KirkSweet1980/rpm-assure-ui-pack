@@ -86,7 +86,7 @@ function LoginPage() {
         <h1 className="rpma-dc-word">RPM Assure</h1>
 
         <div className="rpma-dc-card">
-          <p className="rpma-dc-tag">- Assurance Delivered -</p>
+          <p className="rpma-dc-tag">- Single Source of Truth -</p>
           <IdleLogoutBanner />
 
           {!authEnabled ? (
