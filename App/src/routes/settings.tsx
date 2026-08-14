@@ -13,7 +13,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/settings/sql": { title: "SQL Server", subtitle: "Connections and credentials for Live SQL and tools." },
   "/settings/ssl": { title: "SSL / HTTPS", subtitle: "Let's Encrypt or upload your own certificate for the public hostname." },
   "/settings/smtp": { title: "Email", subtitle: "Outbound email is disabled in this release." },
-  "/settings/integrations": { title: "Integrations", subtitle: "Live collect connections: SYSPRO, Remote Management, Cloud Backup, EPP, Microsoft 365 Tenant." },
+  "/settings/integrations": { title: "Integrations", subtitle: "Pulseway, N-Able Cove Backup, Bitdefender, Microsoft Graph." },
   "/settings/dashboard": { title: "Dashboard Configuration", subtitle: "Which KPI cards and panels show on Exco Insight and customer workspaces." },
   "/settings/chrome": { title: "Menu style", subtitle: "Pick how selected tabs and nav chips look. Applies immediately." },
   "/settings/theme": { title: "Theme tokens", subtitle: "CSS variables that paint the UI. Light / dark maps and palette presets." },
@@ -39,7 +39,6 @@ const CONFIG_SERVICES: CorpService[] = [
     modules: [
       { label: "Integrations", path: "/settings/integrations" },
       { label: "RAG", path: "/settings/rag" },
-      { label: "Reports", path: "/settings/reports" },
       { label: "Collect", path: "/settings/collect" },
       { label: "RPM Assure Agent", path: "/settings/agents" },
     ],
@@ -54,7 +53,6 @@ const CONFIG_SERVICES: CorpService[] = [
       { label: "Users", path: "/settings/users" },
       { label: "Audit Log", path: "/settings/audit" },
       { label: "SSL", path: "/settings/ssl" },
-      { label: "Integrations", path: "/settings/integrations" },
     ],
   },
   {
@@ -85,12 +83,6 @@ function SettingsLayout() {
   if (!SETTINGS_MENU_ENABLED) {
     return <Navigate to="/" />;
   }
-  const meta =
-    TITLES[pathname] ??
-    Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] ?? {
-      title: "Configuration",
-      subtitle: "Platform configuration — SQL, SSL, and tools.",
-    };
 
   const svc =
     CONFIG_SERVICES.find((s) =>
