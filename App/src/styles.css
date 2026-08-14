@@ -866,6 +866,19 @@ html.dark .bg-white { background-color: #141a22 !important; }
 .rpma-exco-board > [data-span="5"] { grid-column: span 5; }
 .rpma-exco-board > [data-span="4"] { grid-column: span 4; }
 .rpma-exco-board > [data-span="3"] { grid-column: span 3; }
+.rpma-eco-board {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.rpma-eco-board > [data-span="12"] { grid-column: span 12; }
+.rpma-eco-board > [data-span="8"] { grid-column: span 8; }
+.rpma-eco-board > [data-span="6"] { grid-column: span 6; }
+.rpma-eco-board > [data-span="4"] { grid-column: span 4; }
+.rpma-eco-board > [data-span="3"] { grid-column: span 3; }
+@media (max-width: 1100px) {
+  .rpma-eco-board > [data-span] { grid-column: span 12; }
+}
 @media (max-width: 1100px) {
   .rpma-exco-board > [data-span] { grid-column: span 12; }
 }

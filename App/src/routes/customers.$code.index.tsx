@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ExecBriefSection } from "@/components/customer/customer-sections";
+import { EcoBoard } from "@/components/customer/eco-board";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
 import { softMissingCustomer } from "@/lib/data/soft-customer";
 
@@ -31,5 +31,5 @@ function ExecPage() {
   if (!data?.customer) {
     return <p className="text-sm text-muted">Loading customer workspace…</p>;
   }
-  return <ExecBriefSection data={data} />;
+  return <EcoBoard data={data} />;
 }
