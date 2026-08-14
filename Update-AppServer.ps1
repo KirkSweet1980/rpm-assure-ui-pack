@@ -1,7 +1,7 @@
 # Update-AppServer.ps1
 # Canonical APP server update: Git first. Nothing is written to Downloads.
 # Clone / pull: C:\RPM-Assure\deploy\ui-pack
-# Then copy App\src, apply schema, restart RPMAssure-App.
+# Then copy App\src and restart RPMAssure-App.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\Update-AppServer.ps1
 
@@ -123,6 +123,16 @@ if (Test-Path $agentSrc) {
   robocopy $agentSrc $agentDest /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
 
+foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway')) {
+  $from = Join-Path $Pack $rel
+  if (Test-Path $from) {
+    $to = Join-Path $Root $rel
+    New-Item -ItemType Directory -Force -Path $to | Out-Null
+    W Cyan ("--- Copy " + $rel + " from git ---")
+    robocopy $from $to /E /NFL /NDL /NJH /NJS /nc /ns /np /XF Pulseway.Config.ps1 Csp.Config.ps1 Csp.Config.*.ps1 | Out-Null
+  }
+}
+
 $centralSrc = Join-Path $Pack 'Sql\central'
 if (Test-Path $centralSrc) {
   $centralDest = Join-Path $Root 'Sql\central'
@@ -134,7 +144,7 @@ if (Test-Path $centralSrc) {
     W Cyan '--- Update database schema ---'
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $schemaPs1
     if ($LASTEXITCODE -ne 0) {
-      W Yellow 'Schema update warned - UI still copied. Re-run Sql\central\Update-Database-Schema.ps1 as sysadmin if tables are missing.'
+      W Yellow 'Schema update warned — UI still copied. Re-run Sql\central\Update-Database-Schema.ps1 as sysadmin if tables are missing.'
     }
   }
 }
