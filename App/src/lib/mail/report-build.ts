@@ -24,7 +24,7 @@ import {
   buildEppServiceHtml,
   buildEppIncidentsHtml,
 } from "@/lib/mail/ams-report-html";
-import { resolveFieldIds } from "@/lib/data/report-fields";
+import { resolveFieldIds, defaultCustomFieldIds } from "@/lib/data/report-fields";
 
 
 export type ReportFormat =
@@ -312,20 +312,7 @@ export function buildPack(
     return buildCustomPackHtml({
       customer,
       portfolio,
-      fieldIds: [
-        "health_rag",
-        "collect_freshness",
-        "cover_strip",
-        "assurance_score",
-        "rmm_fleet",
-        "rmm_patches",
-        "cove_summary",
-        "cove_recovery",
-        "epp_summary",
-        "csp_summary",
-        "finsight_exceptions",
-        "syspro_jobs",
-      ],
+      fieldIds: defaultCustomFieldIds(),
     });
   }
   if (format === "custom-pack") {

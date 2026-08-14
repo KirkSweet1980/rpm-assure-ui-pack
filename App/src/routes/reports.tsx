@@ -71,7 +71,7 @@ const PACKS: {
     id: "ams-full",
     title: "Full Assurance Pack",
     when: "On demand",
-    blurb: "Board-length RPM Assure pack for any tenant.",
+    blurb: "Board pack — SYSPRO plus every service on cover (RMM, Backup, EPP, M365).",
     needsCustomer: true,
     service: "ams",
   },
@@ -461,10 +461,10 @@ function ReportsPage() {
     const now = new Date();
     if (format === "ams-weekly") return "Weekly digest (current SAST week)";
     if (format === "ams-monthly") {
-      return `Monthly AMS pack · ${now.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })} · SYSPRO + AMS only`;
+      return `Monthly AMS pack · ${now.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })} · all services on cover`;
     }
     if (format === "ams-full") {
-      return `Monthly board pack · ${now.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}`;
+      return `Full assurance pack · ${now.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })} · SYSPRO + RMM + Backup + EPP + M365`;
     }
     if (format === "day-end") {
       return `Day end · ${now.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" })}`;

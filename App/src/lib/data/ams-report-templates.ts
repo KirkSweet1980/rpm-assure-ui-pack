@@ -207,9 +207,11 @@ export const AMS_REPORT_TEMPLATES: AmsReportTemplate[] = [
     name: "Weekly Assurance Pack",
     audience: "ExCo",
     cadence: "Weekly",
-    summary: "Estate snapshot — attention list, jobs, FinSight, collect freshness.",
+    summary: "Estate snapshot — all services on cover, attention list, jobs, FinSight, collect freshness.",
     sections: [
+      "Services on cover",
       "Ecosystem health",
+      "RMM / Backup / EPP / M365",
       "Customers needing attention",
       "Job errors",
       "FinSight Out of Balance",
