@@ -365,7 +365,12 @@ $r1 = Invoke-Sql -Sqlcmd $sqlcmd -Server $LocalServer -AuthMode $AdminMode `
   -User $AdminUser -Password $AdminPwd -Query $createSql -TimeoutSec 120
 Log $r1.StdOut
 if ($r1.StdErr) { Log $r1.StdErr }
-if (-not $r1.Ok) { throw 'Failed creating collect login. See log.' }
+if ($r1.StdOut -notmatch 'Local collect login ready') {
+  throw 'Failed creating collect login. See log.'
+}
+if (-not $r1.Ok) {
+  Write-Warn2 'sqlcmd reported errors (some DB grants skipped). Login is ready - continuing.'
+}
 Write-Ok ('Created/updated login ' + $CollectUser)
 
 if ($alsoLegacy -notmatch '^[Nn]' -and $CollectUser -ne 'Rpm_collect') {
