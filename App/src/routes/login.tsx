@@ -10,9 +10,41 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "dc-play-20260814";
-const DC_VIDEO = "/brand/login-datacenter.mp4?v=20260814b";
-const DC_STILL = "/brand/login-datacenter.jpg?v=20260814b";
+const LOGIN_BUILD = "split-assurance-20260814";
+const DC_VIDEO = "/brand/login-datacenter.mp4?v=20260814c";
+const DC_STILL = "/brand/login-datacenter.jpg?v=20260814c";
+
+const WATERMARKS = ["clarity", "evidence", "source of truth", "assurance"] as const;
+
+type Mark = {
+  text: string;
+  top: number;
+  left: number;
+  rot: number;
+  size: number;
+  opacity: number;
+};
+
+function scatterMarks(): Mark[] {
+  const bands = [
+    { top: [7, 18], left: [5, 22] },
+    { top: [28, 42], left: [32, 52] },
+    { top: [52, 64], left: [6, 24] },
+    { top: [74, 86], left: [24, 48] },
+  ];
+  return WATERMARKS.map((text, i) => {
+    const b = bands[i];
+    const long = text.length > 10;
+    return {
+      text,
+      top: b.top[0] + Math.random() * (b.top[1] - b.top[0]),
+      left: b.left[0] + Math.random() * (b.left[1] - b.left[0]),
+      rot: -16 + Math.random() * 32,
+      size: long ? 1.15 + Math.random() * 0.45 : 1.85 + Math.random() * 1.15,
+      opacity: 0.16 + Math.random() * 0.14,
+    };
+  });
+}
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -23,6 +55,7 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
+  const [marks] = useState(scatterMarks);
   const vidRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -92,7 +125,7 @@ function LoginPage() {
     <div className="rpma-dc" data-login-build={LOGIN_BUILD}>
       <style>{DC_CSS}</style>
 
-      <div className={"rpma-dc-stage" + (videoOn ? " is-live" : "")} aria-hidden="true">
+      <section className={"rpma-dc-left" + (videoOn ? " is-live" : "")} aria-hidden="true">
         <img className="rpma-dc-still" src={DC_STILL} alt="" />
         <video
           ref={vidRef}
@@ -107,13 +140,28 @@ function LoginPage() {
           <source src={DC_VIDEO} type="video/mp4" />
         </video>
         <div className="rpma-dc-vignette" />
-      </div>
+        {marks.map((m) => (
+          <span
+            key={m.text}
+            className="rpma-dc-mark"
+            style={{
+              top: `${m.top}%`,
+              left: `${m.left}%`,
+              transform: `rotate(${m.rot}deg)`,
+              fontSize: `${m.size}rem`,
+              opacity: m.opacity,
+            }}
+          >
+            {m.text}
+          </span>
+        ))}
+      </section>
 
-      <div className="rpma-dc-center">
-        <h1 className="rpma-dc-word">RPM Assure</h1>
+      <aside className="rpma-dc-right">
+        <div className="rpma-dc-right-inner">
+          <h1 className="rpma-dc-word">RPM Assure</h1>
+          <p className="rpma-dc-tag">- Assurance Delivered -</p>
 
-        <div className="rpma-dc-card">
-          <p className="rpma-dc-tag">- Single Source of Truth -</p>
           <IdleLogoutBanner />
 
           {!authEnabled ? (
@@ -165,9 +213,8 @@ function LoginPage() {
             </form>
           )}
         </div>
-      </div>
-
-      <p className="rpma-dc-foot">Powered by RPM Resources</p>
+        <p className="rpma-dc-foot">Powered by RPM Resources</p>
+      </aside>
     </div>
   );
 }
@@ -179,14 +226,22 @@ const DC_CSS = `
   --slate: var(--color-brand-slate);
   --ink: var(--color-brand-ink);
   --muted: #4a657c;
+  --field: var(--color-field, #eef2f6);
   position: relative; isolation: isolate;
   min-height: 100dvh; width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(22rem, 26.5rem);
   overflow: hidden;
   background: #071018;
   color: #e8eef4;
   font-family: Inter, system-ui, sans-serif;
 }
-.rpma-dc-stage { position: absolute; inset: 0; z-index: 0; }
+.rpma-dc-left {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #071018;
+}
 .rpma-dc-vid, .rpma-dc-still {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -194,26 +249,46 @@ const DC_CSS = `
 }
 .rpma-dc-still { z-index: 1; }
 .rpma-dc-vid { z-index: 2; opacity: 0; transition: opacity 400ms ease; }
-.rpma-dc-stage.is-live .rpma-dc-vid { opacity: 1; }
-.rpma-dc-stage.is-live .rpma-dc-still { opacity: 0; }
+.rpma-dc-left.is-live .rpma-dc-vid { opacity: 1; }
+.rpma-dc-left.is-live .rpma-dc-still { opacity: 0; }
 .rpma-dc-vignette {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
   background:
-    radial-gradient(ellipse 42% 38% at 50% 38%, rgba(255,255,255,0.18) 0%, transparent 70%),
-    linear-gradient(180deg, rgba(7,16,24,0.18) 0%, transparent 28%, rgba(7,16,24,0.55) 100%);
+    linear-gradient(90deg, rgba(7,16,24,0.18) 0%, transparent 28%, rgba(7,16,24,0.42) 100%),
+    linear-gradient(180deg, rgba(7,16,24,0.22) 0%, transparent 30%, rgba(7,16,24,0.5) 100%);
 }
-.rpma-dc-center {
-  position: relative; z-index: 4;
+.rpma-dc-mark {
+  position: absolute;
+  z-index: 4;
+  margin: 0;
+  max-width: 70%;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+  text-transform: lowercase;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 2px 18px rgba(7,16,24,0.35);
+  user-select: none;
+}
+.rpma-dc-right {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-height: 100dvh;
-  display: flex; flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: clamp(6.5vh, 16vh, 18vh) 1.25rem 3rem;
+  padding: 2.4rem 2.15rem 3.4rem;
+  background: #f4f7fa;
+  color: var(--ink);
+  box-shadow: -18px 0 40px rgba(7,16,24,0.18);
 }
+.rpma-dc-right-inner { width: 100%; max-width: 22rem; margin: 0 auto; }
 .rpma-dc-word {
-  margin: 0 0 clamp(1.1rem, 3.5vh, 2rem);
+  margin: 0 0 0.45rem;
   text-align: center;
-  font-size: clamp(2.4rem, 6.4vw, 4.6rem);
+  font-size: clamp(1.85rem, 3.4vw, 2.45rem);
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1;
@@ -222,27 +297,15 @@ const DC_CSS = `
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 18px rgba(255,255,255,0.75)) drop-shadow(0 0 28px rgba(27,184,166,0.35));
-}
-.rpma-dc-card {
-  width: min(100%, 24rem);
-  padding: 1.2rem 1.35rem 1.2rem;
-  border-radius: 1.05rem;
-  background: rgba(255,255,255,0.94);
-  color: var(--ink);
-  border: 1px solid rgba(255,255,255,0.55);
-  box-shadow: 0 24px 56px rgba(7,16,24,0.32);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 .rpma-dc-tag {
-  margin: 0 0 0.85rem;
+  margin: 0 0 1.35rem;
   text-align: center;
   font-size: 0.68rem; font-weight: 700;
   letter-spacing: 0.16em; text-transform: uppercase;
   color: #5a8a28;
 }
-.rpma-dc-form { display: flex; flex-direction: column; gap: 0.68rem; }
+.rpma-dc-form { display: flex; flex-direction: column; gap: 0.72rem; }
 .rpma-dc-field span { display: block; margin-bottom: 0.24rem; font-size: 12px; font-weight: 600; color: var(--muted); }
 .rpma-dc-wrap { position: relative; display: flex; align-items: center; }
 .rpma-dc-wrap > svg { position: absolute; left: 0.75rem; color: #7b93a6; pointer-events: none; }
@@ -251,7 +314,7 @@ const DC_CSS = `
   padding: 0.68rem 2.5rem 0.68rem 2.3rem;
   border-radius: 0.6rem;
   border: 1px solid #d5dde6;
-  background: var(--color-field);
+  background: var(--field);
   color: var(--ink); font-size: 14px; outline: none;
 }
 .rpma-dc-wrap input::placeholder { color: #8aa0b3; }
@@ -260,7 +323,7 @@ const DC_CSS = `
 .rpma-dc-wrap input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--ink);
   transition: background-color 9999s ease-out 0s;
-  box-shadow: 0 0 0 1000px var(--color-field) inset;
+  box-shadow: 0 0 0 1000px var(--field) inset;
 }
 .rpma-dc-wrap input:focus {
   border-color: var(--teal);
@@ -269,6 +332,7 @@ const DC_CSS = `
 .rpma-dc-eye {
   position: absolute; right: 0.5rem; border: 0; background: transparent;
   color: #6b8496; cursor: pointer; padding: 0.35rem; display: inline-flex;
+  min-width: 40px; min-height: 40px; align-items: center; justify-content: center;
 }
 .rpma-dc-error {
   margin: 0; padding: 0.5rem 0.65rem; border-radius: 0.5rem;
@@ -276,24 +340,36 @@ const DC_CSS = `
   color: #9b2c2c; font-size: 13px;
 }
 .rpma-dc-submit {
-  margin-top: 0.05rem; width: 100%; padding: 0.74rem 1rem; border: 0; border-radius: 0.6rem;
+  margin-top: 0.15rem; width: 100%; padding: 0.74rem 1rem; border: 0; border-radius: 0.6rem;
   background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
   color: #fff;
   font-size: 15px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 8px 18px rgba(27,184,166,0.28);
+  box-shadow: 0 8px 18px rgba(27,184,166,0.22);
   transition: filter 150ms ease-out, transform 150ms ease-out;
 }
 .rpma-dc-submit:hover:not(:disabled) { filter: brightness(1.06); }
 .rpma-dc-submit:active:not(:disabled) { transform: scale(0.97); }
 .rpma-dc-submit:disabled { opacity: 0.65; cursor: wait; }
 .rpma-dc-foot {
-  position: absolute; bottom: 0.7rem; left: 0; right: 0; z-index: 4;
+  position: absolute; bottom: 0.85rem; left: 0; right: 0;
   margin: 0; text-align: center; font-size: 0.72rem;
-  color: rgba(255,255,255,0.72);
-  text-shadow: 0 1px 8px rgba(7,16,24,0.55);
+  color: #7a8c9a;
+}
+@media (max-width: 860px) {
+  .rpma-dc {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(34vh, 38vh) 1fr;
+  }
+  .rpma-dc-left { min-height: 34vh; }
+  .rpma-dc-right {
+    min-height: auto;
+    padding: 1.6rem 1.25rem 3.2rem;
+    box-shadow: 0 -12px 28px rgba(7,16,24,0.16);
+  }
+  .rpma-dc-mark { font-size: 1.1rem !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpma-dc-vid { display: none; }
-  .rpma-dc-stage.is-live .rpma-dc-still { opacity: 1; }
+  .rpma-dc-left.is-live .rpma-dc-still { opacity: 1; }
 }
 `;
