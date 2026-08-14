@@ -511,7 +511,7 @@ function ReportsPage() {
                 <div className="rpma-rpt-hero">
                   <div>
                     <h2>Report catalog</h2>
-                    <p>Pick a pack. Preview in the browser, then print to PDF.</p>
+                    <p>Pick a pack. Preview and print, or send on schedule from Configuration → Report Packs.</p>
                   </div>
                 </div>
                 {REPORT_SERVICES.map((svc) => {

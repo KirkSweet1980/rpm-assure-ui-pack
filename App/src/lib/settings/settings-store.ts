@@ -4,6 +4,7 @@ import {
   DEFAULT_ALERTS,
   DEFAULT_DASHBOARD,
   DEFAULT_RAG,
+  DEFAULT_REPORT_SCHEDULE,
   DEFAULT_SMTP,
   DEFAULT_SSL,
   DEFAULT_UI_LABELS,
@@ -12,6 +13,7 @@ import {
   type AppSettingsFile,
   type DashboardConfig,
   type RagThresholdConfig,
+  type ReportScheduleConfig,
   type SmtpConfig,
   type SslConfig,
   type SqlConnectionConfig,
@@ -39,6 +41,7 @@ function defaultFile(): AppSettingsFile {
     labels: { ...DEFAULT_UI_LABELS },
     cronSecret: "",
     lastWeeklyReportAt: null,
+    reportSchedule: { ...DEFAULT_REPORT_SCHEDULE },
   };
 }
 
@@ -144,6 +147,23 @@ function clampDashboard(d: Partial<DashboardConfig> | undefined): DashboardConfi
   };
 }
 
+function clampSchedule(s: Partial<ReportScheduleConfig> | undefined): ReportScheduleConfig {
+  const base = { ...DEFAULT_REPORT_SCHEDULE, ...(s ?? {}) };
+  return {
+    enabled: base.enabled !== false,
+    to: String(base.to ?? ""),
+    dayEnd: base.dayEnd !== false,
+    weeklyDigest: base.weeklyDigest !== false,
+    monthlyAms: base.monthlyAms !== false,
+    rmmWeekly: base.rmmWeekly !== false,
+    coveWeekly: base.coveWeekly !== false,
+    eppWeekly: base.eppWeekly !== false,
+    lastRunAt: base.lastRunAt ?? null,
+    lastSlot: base.lastSlot ?? null,
+    lastResult: base.lastResult ?? null,
+  };
+}
+
 export function readSettingsFile(): AppSettingsFile {
   try {
     const p = settingsPath();
@@ -163,6 +183,7 @@ export function readSettingsFile(): AppSettingsFile {
       labels: clampLabels(j.labels),
       cronSecret: typeof j.cronSecret === "string" ? j.cronSecret : "",
       lastWeeklyReportAt: j.lastWeeklyReportAt ?? null,
+      reportSchedule: clampSchedule(j.reportSchedule),
     };
   } catch {
     return defaultFile();
@@ -196,6 +217,7 @@ export function writeSettingsFile(data: AppSettingsFile): void {
       data.lastWeeklyReportAt !== undefined
         ? data.lastWeeklyReportAt
         : (prev.lastWeeklyReportAt ?? null),
+    reportSchedule: clampSchedule(data.reportSchedule ?? prev.reportSchedule),
   };
   fs.writeFileSync(settingsPath(), JSON.stringify(out, null, 2), "utf8");
 }
@@ -225,6 +247,18 @@ export function getUiLabels(): UiLabelsConfig {
 
 export function getSmtpConfig(): SmtpConfig {
   return { ...DEFAULT_SMTP, ...(readSettingsFile().smtp ?? {}) };
+}
+
+export function getReportSchedule(): ReportScheduleConfig {
+  return clampSchedule(readSettingsFile().reportSchedule);
+}
+
+export function ensureCronSecret(): string {
+  const f = readSettingsFile();
+  if (f.cronSecret && f.cronSecret.trim()) return f.cronSecret.trim();
+  const secret = crypto.randomUUID().replace(/-/g, "");
+  writeSettingsFile({ ...f, cronSecret: secret });
+  return secret;
 }
 
 export function maskPassword(p: string | undefined | null): string {

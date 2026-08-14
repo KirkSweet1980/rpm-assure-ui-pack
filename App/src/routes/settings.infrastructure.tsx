@@ -294,9 +294,18 @@ function InfrastructureStatusPage() {
               <p className="mt-1 text-muted">
                 {remaining.map((r) => r.displayName).join(" · ")}
               </p>
-              <p className="mt-1 text-muted">
-                On each SQL host (admin): pull git then run Deploy-Syspro-Customer-Agent.ps1
+              <p className="mt-1 font-mono text-[11px] text-muted">
+                On each remaining SQL host (admin PowerShell):
               </p>
+              <pre className="mt-1 overflow-x-auto rounded bg-surface px-2 py-1.5 font-mono text-[11px] text-fg">
+{`$Pack='C:\\RPM-Assure\\deploy\\ui-pack'
+$Repo='https://github.com/KirkSweet1980/rpm-assure-ui-pack.git'
+$git=(Get-Command git -ErrorAction SilentlyContinue).Source
+if (-not $git) { throw 'Install Git for Windows first' }
+if (Test-Path "$Pack\\.git") { git -C $Pack fetch --all --prune; git -C $Pack reset --hard origin/main }
+if (-not (Test-Path "$Pack\\.git")) { git clone --depth 1 --branch main $Repo $Pack }
+powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-Syspro-Customer-Agent.ps1"`}
+              </pre>
             </div>
           );
         })()}

@@ -19,6 +19,7 @@ import {
   DEFAULT_DASHBOARD,
   DEFAULT_UI_LABELS,
   DEFAULT_RAG,
+  DEFAULT_REPORT_SCHEDULE,
   DEFAULT_SMTP,
   DEFAULT_SSL,
   emptySqlConnection,
@@ -26,6 +27,7 @@ import {
   type DashboardConfig,
   type UiLabelsConfig,
   type RagThresholdConfig,
+  type ReportScheduleConfig,
   type SmtpConfig,
   type SqlConnectionConfig,
   type SslConfig,
@@ -113,6 +115,12 @@ export const fetchSettingsBundle = createServerFn({ method: "GET" }).handler(asy
       passwordLength: pwdLen,
     },
     updatedAt: file.updatedAt,
+    reportSchedule: {
+      ...DEFAULT_REPORT_SCHEDULE,
+      ...(file.reportSchedule ?? {}),
+    },
+    lastWeeklyReportAt: file.lastWeeklyReportAt ?? null,
+    cronConfigured: Boolean(file.cronSecret || process.env.RPM_ASSURE_CRON_SECRET),
   };
 });
 
@@ -185,6 +193,24 @@ export const saveSmtpSettings = createServerFn({ method: "POST" })
     };
     writeSettingsFile({ ...prev, smtp });
     return { ok: true as const };
+  });
+
+export const saveReportSchedule = createServerFn({ method: "POST" })
+  .validator((data: { schedule: ReportScheduleConfig }) => data)
+  .handler(async ({ data }) => {
+    const prev = readSettingsFile();
+    writeSettingsFile({
+      ...prev,
+      reportSchedule: { ...DEFAULT_REPORT_SCHEDULE, ...prev.reportSchedule, ...data.schedule },
+    });
+    return { ok: true as const };
+  });
+
+export const runReportSlotNow = createServerFn({ method: "POST" })
+  .validator((data: { slot: "daily" | "weekly" | "monthly" }) => data)
+  .handler(async ({ data }) => {
+    const { runReportSlot } = await import("@/lib/mail/report-schedule");
+    return runReportSlot(data.slot);
   });
 
 export const testSqlConnection = createServerFn({ method: "POST" })

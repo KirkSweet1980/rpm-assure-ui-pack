@@ -13,7 +13,7 @@ export const SETTINGS_PAGE_COPY: Record<string, { title: string; description: st
   },
   "/settings/smtp": {
     title: "Email",
-    description: "Outbound email is disabled in this release.",
+    description: "SMTP and Report To for scheduled packs.",
   },
   "/settings/integrations": {
     title: "Integrations",
@@ -53,7 +53,7 @@ export const SETTINGS_PAGE_COPY: Record<string, { title: string; description: st
   },
   "/settings/reports": {
     title: "Report Packs",
-    description: "On-screen report packs. Email schedules are off.",
+    description: "On-screen packs and scheduled email to Kirk.",
   },
   "/settings/query": {
     title: "SQL Query",

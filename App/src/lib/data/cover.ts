@@ -2,11 +2,13 @@
  * Multi-pillar cover model for RPM Assure.
  * Legs: SYSPRO · RMM (Pulseway) · Cloud Backup (Cove) · EPP · M365.
  *
- * SAME RULE for every customer and every vendor service:
+ * ONE RULE for list, rail, modules, reports, and Exco:
  *   live warehouse evidence OR an active vendor map OR explicit pillar flag
  *     → Covered (green)
- *   none of the above → No Cover (red)
- * SYSPRO only: explicit PillarSyspro = false is a hard deferred off.
+ *   none of the above → No Cover
+ * Exceptions:
+ *   SYSPRO: PillarSyspro = false is a hard deferred off.
+ *   EPP: endpoints only (a map with 0 endpoints is No Cover).
  *
  * Uncovered legs stay in the menu and show "No Cover". They do not drive estate health / SLA.
  */
@@ -41,10 +43,7 @@ function resolveVendor(
   return flag === true;
 }
 
-/**
- * Infer cover from live data + maps. Same function for every customer.
- */
-export function inferCustomerCover(input: {
+export type CoverInput = {
   pillarSyspro?: boolean | null;
   pillarPulseway?: boolean | null;
   pillarCove?: boolean | null;
@@ -71,7 +70,12 @@ export function inferCustomerCover(input: {
   cspUserCount?: number | null;
   cspLicenseCount?: number | null;
   cspMapped?: boolean | null;
-}): CustomerCover {
+};
+
+/**
+ * Infer cover from live data + maps. Same function for every customer and every surface.
+ */
+export function inferCustomerCover(input: CoverInput): CustomerCover {
   const sysproEvidence =
     (Number(input.operatorCount) || 0) > 0 ||
     (Number(input.activeUserCount) || 0) > 0 ||
@@ -103,6 +107,96 @@ export function inferCustomerCover(input: {
     epp: eppEvidence,
     csp: resolveVendor(cspEvidence, input.pillarCsp),
   };
+}
+
+/** Detail payload → same cover rule as the customer list. */
+export function coverFromDetail(data: {
+  customer?: {
+    pillarSyspro?: boolean | null;
+    pillarPulseway?: boolean | null;
+    pillarCove?: boolean | null;
+    pillarEpp?: boolean | null;
+    pillarCsp?: boolean | null;
+    sqlInstanceName?: string | null;
+    operatorCount?: number | null;
+    activeUserCount?: number | null;
+    lastImportAt?: string | null;
+    sysproJobErrorCount?: number | null;
+    sysproDtrVarianceLines?: number | null;
+    pulsewayOrgName?: string | null;
+    pulsewayDeviceCount?: number | null;
+    pulsewayMapped?: boolean | null;
+    coveDeviceCount?: number | null;
+    coveMapped?: boolean | null;
+    covePartnerName?: string | null;
+    eppDeviceCount?: number | null;
+    eppMapped?: boolean | null;
+    cspUserCount?: number | null;
+    cspLicenseSkuCount?: number | null;
+    cspLicenseCount?: number | null;
+    cspMapped?: boolean | null;
+  } | null;
+  license?: unknown;
+  sysproVersion?: unknown;
+  hotfixes?: unknown[] | null;
+  rmm?: {
+    summary?: { deviceCount?: number | null } | null;
+    devices?: unknown[] | null;
+    mapping?: unknown[] | null;
+    pulsewayOrgName?: string | null;
+  } | null;
+  cove?: {
+    summary?: { deviceCount?: number | null } | null;
+    devices?: unknown[] | null;
+    mapping?: unknown[] | null;
+  } | null;
+  epp?: {
+    summary?: { deviceCount?: number | null } | null;
+    devices?: unknown[] | null;
+  } | null;
+  csp?: {
+    summary?: { licensedUserCount?: number | null } | null;
+    users?: unknown[] | null;
+    licenses?: unknown[] | null;
+    enabled?: boolean | null;
+  } | null;
+}): CustomerCover {
+  const c = data.customer;
+  const rmmCount =
+    data.rmm?.summary?.deviceCount ?? data.rmm?.devices?.length ?? c?.pulsewayDeviceCount ?? 0;
+  const coveCount =
+    data.cove?.summary?.deviceCount ?? data.cove?.devices?.length ?? c?.coveDeviceCount ?? 0;
+  const eppCount =
+    data.epp?.summary?.deviceCount ?? data.epp?.devices?.length ?? c?.eppDeviceCount ?? 0;
+  const cspUsers =
+    data.csp?.summary?.licensedUserCount ?? data.csp?.users?.length ?? c?.cspUserCount ?? 0;
+  return inferCustomerCover({
+    pillarSyspro: c?.pillarSyspro,
+    pillarPulseway: c?.pillarPulseway,
+    pillarCove: c?.pillarCove,
+    pillarEpp: c?.pillarEpp,
+    pillarCsp: c?.pillarCsp,
+    sqlInstanceName: c?.sqlInstanceName,
+    operatorCount: c?.operatorCount,
+    activeUserCount: c?.activeUserCount,
+    sysproLastImportAt: c?.lastImportAt,
+    sysproJobErrorCount: c?.sysproJobErrorCount,
+    sysproDtrVarianceLines: c?.sysproDtrVarianceLines,
+    sysproHasLicense: Boolean(data.license),
+    sysproHasVersion: Boolean(data.sysproVersion),
+    sysproHotfixCount: data.hotfixes?.length ?? 0,
+    pulsewayOrgName: data.rmm?.pulsewayOrgName ?? c?.pulsewayOrgName,
+    pulsewayDeviceCount: rmmCount,
+    pulsewayMapped: Boolean(c?.pulsewayMapped) || (data.rmm?.mapping?.length ?? 0) > 0,
+    coveDeviceCount: coveCount,
+    coveMapped: Boolean(c?.coveMapped) || (data.cove?.mapping?.length ?? 0) > 0,
+    covePartnerName: c?.covePartnerName,
+    eppDeviceCount: eppCount,
+    eppMapped: false,
+    cspUserCount: cspUsers,
+    cspLicenseCount: data.csp?.licenses?.length ?? c?.cspLicenseSkuCount ?? c?.cspLicenseCount ?? 0,
+    cspMapped: Boolean(c?.cspMapped) || data.csp?.enabled === true,
+  });
 }
 
 export function isPillarCovered(

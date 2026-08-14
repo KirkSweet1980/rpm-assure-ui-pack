@@ -30,6 +30,37 @@ export type SmtpConfig = {
   reportTo: string;
 };
 
+export type ReportScheduleSlot = "daily" | "weekly" | "monthly";
+
+export type ReportScheduleConfig = {
+  enabled: boolean;
+  /** Blank = SMTP reportTo */
+  to: string;
+  dayEnd: boolean;
+  weeklyDigest: boolean;
+  monthlyAms: boolean;
+  rmmWeekly: boolean;
+  coveWeekly: boolean;
+  eppWeekly: boolean;
+  lastRunAt?: string | null;
+  lastSlot?: string | null;
+  lastResult?: string | null;
+};
+
+export const DEFAULT_REPORT_SCHEDULE: ReportScheduleConfig = {
+  enabled: true,
+  to: "",
+  dayEnd: true,
+  weeklyDigest: true,
+  monthlyAms: true,
+  rmmWeekly: true,
+  coveWeekly: true,
+  eppWeekly: true,
+  lastRunAt: null,
+  lastSlot: null,
+  lastResult: null,
+};
+
 /**
  * HTTPS / reverse-proxy settings for the app host.
  * Certificates are stored as files (never returned to the browser after upload).
@@ -241,8 +272,8 @@ export type AppSettingsFile = {
    * Prefer env RPM_ASSURE_CRON_SECRET in production.
    */
   cronSecret?: string;
-  /** Last successful scheduled/manual weekly send (ISO UTC) */
   lastWeeklyReportAt?: string | null;
+  reportSchedule?: ReportScheduleConfig;
 };
 
 export const DEFAULT_SMTP: SmtpConfig = {

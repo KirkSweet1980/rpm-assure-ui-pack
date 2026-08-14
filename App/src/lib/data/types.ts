@@ -818,6 +818,10 @@ export type ExcoInsightPayload = {
   rmmServerAvailabilityPct?: number | null;
   rmmPatchCompliancePct?: number | null;
   rmmDiskHighTotal?: number;
+  coveFailedTotal?: number;
+  coveStaleTotal?: number;
+  eppUnmanagedTotal?: number;
+  eppEndpointTotal?: number;
   boards: ExcoCustomerBoard[];
   /** P1 cover vs data consistency */
   pillarAudit?: PillarAuditSummary;

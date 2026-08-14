@@ -2780,6 +2780,14 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
       return devices ? Math.round((ok / devices) * 1000) / 10 : null;
     })(),
     rmmDiskHighTotal: boards.reduce((s, b) => s + (b.pulsewayDiskHighCount || 0), 0),
+    coveFailedTotal: rows.reduce((s, r) => s + (r.coveFailedDeviceCount || 0), 0),
+    coveStaleTotal: rows.reduce((s, r) => s + (r.coveStaleDeviceCount || 0), 0),
+    eppEndpointTotal: rows.reduce((s, r) => s + (r.eppDeviceCount || 0), 0),
+    eppUnmanagedTotal: rows.reduce((s, r) => {
+      const all = r.eppDeviceCount || 0;
+      const managed = r.eppManagedCount || 0;
+      return s + Math.max(0, all - managed);
+    }, 0),
     boards,
   };
 

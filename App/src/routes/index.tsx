@@ -570,6 +570,14 @@ function ExcoInsightPage() {
         return devices ? Math.round((ok / devices) * 1000) / 10 : null;
       })(),
       rmmDiskHighTotal: boards.reduce((s, b) => s + (b.pulsewayDiskHighCount || 0), 0),
+      coveFailedTotal: rows.reduce((s, r) => s + (r.coveFailedDeviceCount || 0), 0),
+      coveStaleTotal: rows.reduce((s, r) => s + (r.coveStaleDeviceCount || 0), 0),
+      eppEndpointTotal: rows.reduce((s, r) => s + (r.eppDeviceCount || 0), 0),
+      eppUnmanagedTotal: rows.reduce((s, r) => {
+        const all = r.eppDeviceCount || 0;
+        const managed = r.eppManagedCount || 0;
+        return s + Math.max(0, all - managed);
+      }, 0),
     };
   }, [excoRaw, rows, allRows]);
 
@@ -1214,6 +1222,25 @@ function ExcoInsightPage() {
                   <p className="text-[10px] font-bold uppercase text-muted">Disk At Risk</p>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.rmmDiskHighTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.rmmDiskHighTotal ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Backup Failed</p>
+                  <p className={cn("font-mono text-[15px] font-bold", (exco.coveFailedTotal ?? 0) > 0 ? "text-rag-red" : "text-fg")}>
+                    {exco.coveFailedTotal ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Backup Stale</p>
+                  <p className={cn("font-mono text-[15px] font-bold", (exco.coveStaleTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
+                    {exco.coveStaleTotal ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">EPP Unmanaged</p>
+                  <p className={cn("font-mono text-[15px] font-bold", (exco.eppUnmanagedTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
+                    {exco.eppUnmanagedTotal ?? 0}
+                    <span className="ml-1 text-[10px] font-semibold text-muted">/ {exco.eppEndpointTotal ?? 0}</span>
                   </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">

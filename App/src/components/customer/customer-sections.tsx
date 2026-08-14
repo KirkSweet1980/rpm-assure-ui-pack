@@ -43,8 +43,7 @@ import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { CHART } from "@/lib/brand-colors";
 import { formatProgramLabel } from "@/lib/data/syspro-programs";
 import type { CustomerDetailPayload } from "@/lib/data/types";
-import type { CustomerCover, PillarId } from "@/lib/data/cover";
-import { isPillarCovered } from "@/lib/data/cover";
+import { coverFromDetail, isPillarCovered, type CustomerCover, type PillarId } from "@/lib/data/cover";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
 import { dayEndTone } from "@/lib/data/day-end";
 import {
@@ -178,51 +177,10 @@ function licenseFallback(data: CustomerDetailPayload): string | null {
 /** EXCO default — board language, charts first, less clutter */
 
 /**
- * Effective cover for UI: cover flags from loader + live payload evidence.
- * Rule (all customers, all modules): has data → Covered; no data → No Cover.
- * SYSPRO hard-off (PillarSyspro=false) is already applied server-side (payload cleared).
+ * Same cover rule as the customer list, rail, reports, and Exco.
  */
 function effectiveCover(data: CustomerDetailPayload): CustomerCover {
-  const base = data.cover ?? data.customer?.cover ?? {
-    syspro: false,
-    rmm: false,
-    cove: false,
-    epp: false,
-    csp: false,
-  };
-  const rmm = data.rmm;
-  const cove = data.cove;
-  const epp = data.epp;
-  const rmmData =
-    (rmm?.devices?.length ?? 0) > 0 ||
-    (rmm?.summary?.deviceCount ?? 0) > 0 ||
-    (data.customer?.pulsewayDeviceCount ?? 0) > 0;
-  const coveData =
-    (cove?.devices?.length ?? 0) > 0 ||
-    (cove?.summary?.deviceCount ?? 0) > 0 ||
-    (data.customer?.coveDeviceCount ?? 0) > 0;
-  const eppData =
-    (epp?.devices?.length ?? 0) > 0 ||
-    (epp?.summary?.deviceCount ?? 0) > 0 ||
-    epp?.enabled === true ||
-    (data.customer?.eppDeviceCount ?? 0) > 0;
-  const csp = data.csp;
-  const cspData =
-    (csp?.licenses?.length ?? 0) > 0 ||
-    (csp?.users?.length ?? 0) > 0 ||
-    (csp?.summary?.licensedUserCount ?? 0) > 0 ||
-    csp?.posture != null ||
-    csp?.enabled === true ||
-    (data.customer?.cspUserCount ?? 0) > 0 ||
-    (data.customer?.cspLicenseSkuCount ?? 0) > 0 ||
-    data.customer?.cspSecureScorePct != null;
-  return {
-    syspro: base.syspro === true,
-    rmm: base.rmm === true || rmmData,
-    cove: base.cove === true || coveData,
-    epp: base.epp === true || eppData,
-    csp: base.csp === true || cspData,
-  };
+  return coverFromDetail(data);
 }
 
 /** Return NoCoverPanel when a pillar is not in scope (metrics must not be shown as scored). */
@@ -1143,7 +1101,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                 })}
               </div>
               <p className="mt-2 text-[11px] text-muted">
-                Estate total missing:{" "}
+                Assure Eco-System total missing:{" "}
                 <span className="font-mono font-semibold text-fg">{totalMissingSum}</span>
                 {withMissing.length > topOffenders.length
                   ? ` · showing top ${topOffenders.length} of ${withMissing.length}`
