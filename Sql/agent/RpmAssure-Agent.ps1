@@ -11,8 +11,14 @@ $ErrorActionPreference = "Stop"
 if (-not $ConfigPath) { $ConfigPath = Join-Path $AgentRoot "Agent.Config.ps1" }
 if (-not (Test-Path -LiteralPath $ConfigPath)) { throw "Missing config: $ConfigPath" }
 . $ConfigPath
+$lib = Join-Path $AgentRoot "Lib-SecureConfig.ps1"
+if (Test-Path $lib) {
+  . $lib
+  $script:RpmaAgentRoot = $AgentRoot
+  Import-RpmaAgentSecrets
+}
 
-$AgentVersion = "2.0.0"
+$AgentVersion = "2.1.0"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -56,13 +62,17 @@ function Invoke-CentralSql {
   $tmp = Join-Path $env:TEMP ("rpma_agent_" + [guid]::NewGuid().ToString("N") + ".sql")
   [IO.File]::WriteAllText($tmp, $SqlText, [Text.UTF8Encoding]::new($false))
   try {
-    $args = @("-S", $CentralDataSource, "-d", $CentralDatabase, "-U", $CentralSqlUser, "-P", $CentralSqlPassword, "-C", "-b", "-I")
+    $args = @("-S", $CentralDataSource, "-d", $CentralDatabase, "-U", $CentralSqlUser, "-N", "-C", "-b", "-I")
     if ($Tsv) { $args += @("-h", "-1", "-W", "-s", "|") }
     $args += @("-i", $tmp)
+    $prev = $env:SQLCMDPASSWORD
+    $env:SQLCMDPASSWORD = $CentralSqlPassword
     $out = & $sqlcmd @args 2>&1 | Out-String
     $code = $LASTEXITCODE
     return @{ ExitCode = $code; Text = $out }
   } finally {
+    if ($null -eq $prev) { Remove-Item Env:SQLCMDPASSWORD -EA SilentlyContinue }
+    else { $env:SQLCMDPASSWORD = $prev }
     Remove-Item $tmp -Force -EA SilentlyContinue
   }
 }
@@ -133,18 +143,25 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
   if ($configs.Count -eq 0) { W "WARN no Customer.Config.ps1 under $custRoot" }
   foreach ($cfg in $configs) {
     $code = $cfg.Directory.Name
+    $light = 30
+    $full = 1440
+    if (Get-Command Get-RpmaAgentSettings -EA SilentlyContinue) {
+      $st = Get-RpmaAgentSettings
+      if ($st.collectIntervalMin) { $light = [int]$st.collectIntervalMin }
+      if ($st.jobsIntervalMin) { $full = [int]$st.jobsIntervalMin }
+    }
     if (Test-Path $sysproRunner) {
       $jobs += @{
         Name = "syspro-core-$code"
         Customer = $code
-        IntervalMin = 30
+        IntervalMin = $light
         Script = $sysproRunner
         Args = @("-ConfigPath", $cfg.FullName, "-JobsErrorsOnly")
       }
       $jobs += @{
         Name = "syspro-jobs-$code"
         Customer = $code
-        IntervalMin = 1440
+        IntervalMin = $full
         Script = $sysproRunner
         Args = @("-ConfigPath", $cfg.FullName, "-IncludeJobs")
       }
@@ -153,7 +170,7 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       $jobs += @{
         Name = "syspro-native-$code"
         Customer = $code
-        IntervalMin = 30
+        IntervalMin = $light
         Script = $nativeRunner
         Args = @("-ConfigPath", $cfg.FullName)
       }

@@ -7,6 +7,13 @@ param(
 
 $ErrorActionPreference = "Continue"
 $cycle = Join-Path $AgentRoot "RpmAssure-Agent.ps1"
+$lib = Join-Path $AgentRoot "Lib-SecureConfig.ps1"
+if (Test-Path $lib) {
+  . $lib
+  $script:RpmaAgentRoot = $AgentRoot
+  $st = Get-RpmaAgentSettings
+  if ($st.tickSeconds) { $TickSeconds = [int]$st.tickSeconds }
+}
 $logDir = Join-Path $AgentRoot "logs"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $svcLog = Join-Path $logDir "service.log"

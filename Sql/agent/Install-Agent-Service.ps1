@@ -22,7 +22,7 @@ Write-Host "========================================"
 
 New-Item -ItemType Directory -Force -Path $AgentRoot, (Join-Path $AgentRoot "logs"), (Join-Path $AgentRoot "tools") | Out-Null
 
-foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
+foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
   $src = Join-Path $Here $f
   if (Test-Path $src) { Copy-Item $src (Join-Path $AgentRoot $f) -Force }
 }
@@ -40,24 +40,27 @@ if ($configs.Count -eq 0) {
 }
 
 $cfgPath = Join-Path $AgentRoot "Agent.Config.ps1"
+$centralDs = "102.222.21.220,14333"
+$centralDb = "RPMAssure_App"
+$centralUser = "rpmassure"
+$centralPw = ""
+$localPw = ""
+$firstCode = "HOST"
+$instance = $env:COMPUTERNAME
+if ($configs.Count -gt 0) {
+  . $configs[0].FullName
+  if ($CustomerCode) { $firstCode = $CustomerCode }
+  if ($CentralDataSource) { $centralDs = $CentralDataSource }
+  if ($CentralDatabase) { $centralDb = $CentralDatabase }
+  if ($CentralSqlUser) { $centralUser = $CentralSqlUser }
+  if ($CentralSqlPassword) { $centralPw = $CentralSqlPassword }
+  if ($LocalSqlPassword) { $localPw = $LocalSqlPassword }
+  if ($InstanceName) { $instance = $InstanceName }
+}
+
 if (-not (Test-Path $cfgPath)) {
-  $centralDs = "102.222.21.220,14333"
-  $centralDb = "RPMAssure_App"
-  $centralUser = "rpmassure"
-  $centralPw = ""
-  $firstCode = "HOST"
-  $instance = $env:COMPUTERNAME
-  if ($configs.Count -gt 0) {
-    . $configs[0].FullName
-    if ($CustomerCode) { $firstCode = $CustomerCode }
-    if ($CentralDataSource) { $centralDs = $CentralDataSource }
-    if ($CentralDatabase) { $centralDb = $CentralDatabase }
-    if ($CentralSqlUser) { $centralUser = $CentralSqlUser }
-    if ($CentralSqlPassword) { $centralPw = $CentralSqlPassword }
-    if ($InstanceName) { $instance = $InstanceName }
-  }
   $body = @"
-# Auto-built by Install-Agent-Service.ps1
+# Non-secret agent settings. Passwords are in Agent.Secrets.bin (DPAPI).
 `$CustomerCode = '$firstCode'
 `$DisplayName = '$firstCode'
 `$InstanceName = '$instance'
@@ -65,16 +68,39 @@ if (-not (Test-Path $cfgPath)) {
 `$CentralDataSource = '$centralDs'
 `$CentralDatabase = '$centralDb'
 `$CentralSqlUser = '$centralUser'
-`$CentralSqlPassword = '$centralPw'
 `$SqlRoot = '$SqlRoot'
 `$AgentRoot = '$AgentRoot'
 `$LogDir = '$AgentRoot\logs'
 "@
   [IO.File]::WriteAllText($cfgPath, $body, [Text.UTF8Encoding]::new($false))
-  Write-Host "Wrote $cfgPath"
+  Write-Host "Wrote $cfgPath (no passwords)"
 } else {
   Write-Host "Keeping existing $cfgPath"
 }
+
+. (Join-Path $AgentRoot "Lib-SecureConfig.ps1")
+$script:RpmaAgentRoot = $AgentRoot
+$secretsExist = Test-Path (Get-RpmaSecretsPath)
+if (-not $secretsExist) {
+  Write-Host ""
+  Write-Host "Set the AGENT ADMIN password (required to open settings later)."
+  $a1 = Read-Host "Agent admin password" -AsSecureString
+  $a2 = Read-Host "Confirm" -AsSecureString
+  $p1 = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($a1))
+  $p2 = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($a2))
+  if ($p1 -ne $p2 -or [string]::IsNullOrWhiteSpace($p1)) { throw "Admin passwords did not match." }
+  if (-not $centralPw) {
+    $cp = Read-Host "Central SQL password for $centralUser" -AsSecureString
+    $centralPw = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($cp))
+  }
+  Initialize-RpmaSecureStore -AdminPassword $p1 -CentralSqlPassword $centralPw -LocalSqlPassword $localPw -CentralDataSource $centralDs -CentralDatabase $centralDb -CentralSqlUser $centralUser
+  $p1 = $null; $p2 = $null; $centralPw = $null
+  Write-Host "Secrets encrypted with Windows DPAPI (this machine only)."
+} else {
+  Write-Host "Keeping existing Agent.Secrets.bin"
+}
+Protect-RpmaFolder
+Write-Host "NTFS: SYSTEM + Administrators only on $AgentRoot"
 
 # NSSM
 $nssm = $null
@@ -148,6 +174,6 @@ Write-Host "  Path     : $AgentRoot"
 Write-Host "  Interval : heartbeat every cycle, SYSPRO every 30 min, full jobs nightly"
 Write-Host "  Restart-Service $ServiceName"
 Write-Host "  Logs     : $AgentRoot\logs"
-Write-Host "  Central  : after first cycle, Configuration > Agents"
+Write-Host "  Settings : powershell -File $AgentRoot\Set-AgentSettings.ps1"
 Write-Host "========================================"
 Write-Host "=== Done ==="
