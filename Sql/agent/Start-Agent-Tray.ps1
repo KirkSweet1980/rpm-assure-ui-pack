@@ -97,7 +97,56 @@ $notify.ContextMenuStrip = $menu
 
 $miDo.add_Click({
   [IO.File]::WriteAllText($flagFile, (Get-Date).ToUniversalTime().ToString('o'))
-  [System.Windows.Forms.MessageBox]::Show('Sync requested. The agent will pick it up within a minute.', 'RPM Assure', 'OK', 'Information') | Out-Null
+  $form = New-Object System.Windows.Forms.Form
+  $form.Text = 'RPM Assure — Sync this customer'
+  $form.Size = New-Object System.Drawing.Size(420, 140)
+  $form.StartPosition = 'CenterScreen'
+  $form.FormBorderStyle = 'FixedDialog'
+  $form.MaximizeBox = $false
+  $lbl = New-Object System.Windows.Forms.Label
+  $lbl.AutoSize = $false
+  $lbl.SetBounds(12, 12, 380, 28)
+  $lbl.Text = 'Queued — waiting for this agent…'
+  $bar = New-Object System.Windows.Forms.ProgressBar
+  $bar.SetBounds(12, 48, 380, 22)
+  $bar.Minimum = 0
+  $bar.Maximum = 100
+  $bar.Value = 10
+  $form.Controls.Add($lbl)
+  $form.Controls.Add($bar)
+  $ticks = 0
+  $pt = New-Object System.Windows.Forms.Timer
+  $pt.Interval = 2000
+  $pt.add_Tick({
+    $ticks++
+    $s = Read-RpmaStatus
+    $msg = [string]$s.msg
+    if ($msg -match 'collect running|SYNCING') {
+      $bar.Value = [Math]::Min(90, 30 + $ticks * 4)
+      $lbl.Text = 'Collect running on this customer…'
+    } elseif ($msg -match 'sync complete|cycle done|heartbeat ok') {
+      if ($ticks -gt 2) {
+        $bar.Value = 100
+        $lbl.Text = 'Sync complete'
+        $pt.Stop()
+      } else {
+        $bar.Value = [Math]::Min(40, 10 + $ticks * 8)
+        $lbl.Text = 'Waiting for this customer…'
+      }
+    } elseif ($msg -match 'fail|error') {
+      $bar.Value = 100
+      $lbl.Text = 'Error: ' + $msg
+      $pt.Stop()
+    } else {
+      $bar.Value = [Math]::Min(85, 12 + $ticks * 5)
+      $lbl.Text = 'Waiting for this customer…'
+    }
+    if ($ticks -gt 90) { $pt.Stop(); $lbl.Text = 'Timed out' }
+  })
+  $pt.Start()
+  [void]$form.ShowDialog()
+  $pt.Stop()
+  $form.Dispose()
 })
 $miSet.add_Click({
   Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File', (Join-Path $AgentRoot 'Set-AgentSettings.ps1')) -Verb RunAs

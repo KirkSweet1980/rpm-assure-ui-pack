@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +12,7 @@ type SyncState = { phase: "queued" | "running" | "done" | "error"; pct: number; 
 
 function lamp(status: string) {
   if (status === "ONLINE") return "bg-emerald-500 shadow-[0_0_8px_#10b981]";
-  if (status === "STALE" || status === "QUEUED" || status === "SYNCING") return "bg-amber-400";
+  if (status === "STALE") return "bg-red-500";
   return "bg-red-500";
 }
 
@@ -34,6 +34,9 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sync, setSync] = useState<Record<string, SyncState>>({});
+  const [selected, setSelected] = useState<string | null>(null);
+  const armed = useRef<Set<string>>(new Set());
+  const startedAt = useRef<Record<string, number>>({});
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -44,20 +47,35 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
       setSync((prev) => {
         const next = { ...prev };
         for (const row of r.rows ?? []) {
+          if (!armed.current.has(row.agentId)) continue;
           const st = next[row.agentId];
           if (!st || st.phase === "done" || st.phase === "error") continue;
+          const elapsed = Date.now() - (startedAt.current[row.agentId] ?? Date.now());
           if (row.lastStatus === "QUEUED") {
-            next[row.agentId] = { phase: "queued", pct: 20, note: "Waiting for agent…" };
+            next[row.agentId] = { phase: "queued", pct: 18, note: "Queued — waiting for this agent…" };
           } else if (row.lastStatus === "SYNCING") {
-            next[row.agentId] = { phase: "running", pct: 65, note: "Collect running…" };
-          } else if (
-            row.requestSyncUtc &&
-            row.lastJobUtc &&
-            new Date(row.lastJobUtc).getTime() >= new Date(row.requestSyncUtc).getTime() - 2000
-          ) {
-            next[row.agentId] = { phase: "done", pct: 100, note: "Sync complete" };
-          } else if (row.lastStatus === "OK" && st.phase === "running") {
-            next[row.agentId] = { phase: "done", pct: 100, note: "Sync complete" };
+            next[row.agentId] = {
+              phase: "running",
+              pct: Math.min(88, 35 + Math.round(elapsed / 800)),
+              note: "Collect running on this customer…",
+            };
+          } else if (row.lastStatus === "OK" || row.lastStatus === "ONLINE") {
+            if (st.phase === "queued" || st.phase === "running") {
+              next[row.agentId] = { phase: "done", pct: 100, note: "Sync complete" };
+              armed.current.delete(row.agentId);
+            }
+          } else if (row.lastStatus === "JOB_FAIL") {
+            next[row.agentId] = { phase: "error", pct: 100, note: row.lastMessage ?? "Collect failed" };
+            armed.current.delete(row.agentId);
+          } else if (elapsed > 180000) {
+            next[row.agentId] = { phase: "error", pct: 100, note: "Timed out waiting for this agent" };
+            armed.current.delete(row.agentId);
+          } else {
+            next[row.agentId] = {
+              phase: "running",
+              pct: Math.min(80, 15 + Math.round(elapsed / 1000)),
+              note: "Waiting for this customer only…",
+            };
           }
         }
         return next;
@@ -76,30 +94,29 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
   const polling = Object.values(sync).some((s) => s.phase === "queued" || s.phase === "running");
   useEffect(() => {
     if (!polling) return;
-    const id = window.setInterval(() => void load(), 3000);
+    const id = window.setInterval(() => void load(), 2500);
     return () => window.clearInterval(id);
   }, [polling, load]);
 
   async function syncOne(row: AgentStatusRow) {
     if (!row.hostName) return;
-    setSync((p) => ({
-      ...p,
-      [row.agentId]: { phase: "queued", pct: 8, note: "Queueing…" },
-    }));
+    setSelected(row.agentId);
+    armed.current = new Set([row.agentId]);
+    startedAt.current[row.agentId] = Date.now();
+    setSync({
+      [row.agentId]: { phase: "queued", pct: 8, note: "Queueing this customer…" },
+    });
     const r = await requestAgentSync({
       data: { customerCode: row.customerCode, hostName: row.hostName },
     });
     if (!r.ok) {
-      setSync((p) => ({
-        ...p,
-        [row.agentId]: { phase: "error", pct: 0, note: r.message },
-      }));
+      armed.current.delete(row.agentId);
+      setSync({ [row.agentId]: { phase: "error", pct: 0, note: r.message } });
       return;
     }
-    setSync((p) => ({
-      ...p,
-      [row.agentId]: { phase: "queued", pct: 20, note: "Waiting for agent (up to 1 min)…" },
-    }));
+    setSync({
+      [row.agentId]: { phase: "queued", pct: 20, note: "Waiting for this agent (up to 1 min)…" },
+    });
     void load();
   }
 
@@ -109,7 +126,7 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-[13px] font-semibold text-fg">RPM Assure Agent · SYSPRO</p>
           <p className="text-[11px] text-muted">
-            Per-customer agent ID · green = connected · red = not installed. Other services use APIs.
+            Sync Now runs one customer only. Progress shows on that row.
           </p>
         </div>
         <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
@@ -140,8 +157,17 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
               rows.map((r) => {
                 const st = sync[r.agentId];
                 const online = r.healthStatus === "ONLINE";
+                const isSel = selected === r.agentId;
+                const showBar = Boolean(st);
                 return (
-                  <tr key={r.agentId} className="border-t border-border/60">
+                  <tr
+                    key={r.agentId}
+                    className={cn(
+                      "border-t border-border/60 cursor-pointer",
+                      isSel && "bg-sky-500/10",
+                    )}
+                    onClick={() => setSelected(r.agentId)}
+                  >
                     <td className="px-2 py-2">
                       <span className="font-semibold text-fg">{r.displayName}</span>
                       <span className="ml-1.5 font-mono text-[10px] text-muted">{r.customerCode}</span>
@@ -157,28 +183,38 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
                     </td>
                     {!compact ? <td className="px-2 py-2 text-muted">{fmt(r.lastHeartbeatUtc)}</td> : null}
                     <td className="px-2 py-2">
-                      <div className="flex min-w-[180px] flex-col gap-1">
+                      <div className="flex min-w-[220px] flex-col gap-1.5">
                         <Button
                           type="button"
                           size="sm"
-                          variant="secondary"
+                          variant={isSel ? "default" : "secondary"}
                           disabled={!r.hostName || !online || st?.phase === "queued" || st?.phase === "running"}
-                          onClick={() => void syncOne(r)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void syncOne(r);
+                          }}
                         >
-                          Sync
+                          Sync Now
                         </Button>
-                        {st ? (
+                        {showBar ? (
                           <div>
-                            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                            <div className="flex items-center justify-between text-[10px] text-muted">
+                              <span>{st.note}</span>
+                              <span className="font-mono">{st.pct}%</span>
+                            </div>
+                            <div className="mt-0.5 h-2 overflow-hidden rounded-full bg-black/30">
                               <div
                                 className={cn(
                                   "h-full rounded-full transition-all duration-500",
-                                  st.phase === "error" ? "bg-red-500" : st.phase === "done" ? "bg-emerald-500" : "bg-sky-400",
+                                  st.phase === "error"
+                                    ? "bg-red-500"
+                                    : st.phase === "done"
+                                      ? "bg-emerald-500"
+                                      : "bg-sky-400",
                                 )}
                                 style={{ width: `${st.pct}%` }}
                               />
                             </div>
-                            <p className="mt-0.5 text-[10px] text-muted">{st.note}</p>
                           </div>
                         ) : null}
                       </div>
