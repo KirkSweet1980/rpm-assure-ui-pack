@@ -197,7 +197,6 @@ export function AppShell({
               <span />
             </button>
             <Link to="/" className="dk-brand">
-              <span className="dk-brand-mark" />
               <span className="dk-brand-text">
                 <strong>RPM Assure</strong>
               </span>

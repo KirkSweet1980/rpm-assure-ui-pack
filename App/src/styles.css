@@ -116,9 +116,17 @@ body {
 
 .dk-shell { display: flex; flex-direction: column; min-height: 100dvh; padding-top: var(--pc-header-height); background: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-sans); }
 .dk-brand { height: var(--pc-header-height); display: flex; align-items: center; gap: 12px; padding: 0 20px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
-.dk-brand-mark { width: 32px; height: 32px; border-radius: 8px; background: var(--dk-brand-1); }
+.dk-brand-mark { display: none; }
 .dk-brand-text { display: flex; flex-direction: column; line-height: 1.15; position: relative; padding-bottom: 7px; }
-.dk-brand-text strong { font-size: 15px; font-weight: 700; }
+.dk-brand-text strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: transparent;
+  background: var(--dk-brand-1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 .dk-brand-text em { font-style: normal; font-size: 11px; color: #8996a4; }
 .dk-brand-text::after {
   content: "";
