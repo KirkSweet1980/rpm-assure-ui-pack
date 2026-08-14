@@ -4208,6 +4208,22 @@ WHERE CustomerCode = @code`);
     try {
       // Prefer latest devices with optional agent stats columns
       let devRows: any[] = [];
+      const rmmOwner = `
+(
+  CustomerCode = @code
+  OR LTRIM(RTRIM(OrganizationName)) IN (
+    SELECT LTRIM(RTRIM(OrganizationName))
+    FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)
+    WHERE CustomerCode = @code AND ISNULL(Active, 1) = 1
+      AND NULLIF(LTRIM(RTRIM(OrganizationName)), N'') IS NOT NULL
+  )
+  OR LTRIM(RTRIM(OrganizationName)) IN (
+    SELECT LTRIM(RTRIM(PulsewayOrgName))
+    FROM dbo.Dim_Customer WITH (NOLOCK)
+    WHERE CustomerCode = @code
+      AND NULLIF(LTRIM(RTRIM(PulsewayOrgName)), N'') IS NOT NULL
+  )
+)`;
       const deviceSelects = [
         `SELECT TOP 200
   DeviceId, Name, IsOnline, OsName, DeviceType,
@@ -4217,7 +4233,7 @@ WHERE CustomerCode = @code`);
   OfflineHoursCurrent, OfflineHours7d, OfflineHours30d,
   SnapshotDate, ImportedAt
 FROM dbo.vw_Kpi_Rmm_Devices_Latest WITH (NOLOCK)
-WHERE CustomerCode = @code
+WHERE ${rmmOwner}
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
         `SELECT TOP 200
   DeviceId, Name, IsOnline, OsName, DeviceType,
@@ -4227,10 +4243,8 @@ ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
   OfflineHoursCurrent, OfflineHours7d, OfflineHours30d,
   SnapshotDate, ImportedAt
 FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE CustomerCode = @code
-  AND SnapshotDate = (
-    SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK) WHERE CustomerCode = @code
-  )
+WHERE ${rmmOwner}
+  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
         `SELECT TOP 200
   DeviceId, Name, IsOnline, OsName, DeviceType,
@@ -4239,20 +4253,16 @@ ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
   UptimeDays, LastBootAt, PatchInstalledCount, PatchMissingCount, PatchPendingCount,
   SnapshotDate, ImportedAt
 FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE CustomerCode = @code
-  AND SnapshotDate = (
-    SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK) WHERE CustomerCode = @code
-  )
+WHERE ${rmmOwner}
+  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
         `SELECT TOP 200
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   SnapshotDate, ImportedAt
 FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE CustomerCode = @code
-  AND SnapshotDate = (
-    SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK) WHERE CustomerCode = @code
-  )
+WHERE ${rmmOwner}
+  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
       ];
       for (const q of deviceSelects) {

@@ -1266,6 +1266,20 @@ export function RmmDevicesSection({
     );
   }
 
+  if (devices.length === 0) {
+    const mapped = (data.rmm?.mapping ?? []).map((m) => m.organizationName).filter(Boolean);
+    return (
+      <div className="space-y-2">
+        <h2 className="text-[15px] font-bold text-fg">{title}</h2>
+        <p className="text-sm text-muted">
+          {allDevices.length === 0
+            ? `Pulseway collect has 0 devices for this customer. Mapped org: ${mapped.join(", ") || data.rmm?.pulsewayOrgName || "Sir Fruit"}. Either the org is not in the live API yet, or agents have not reported.`
+            : `${allDevices.length} device(s) on collect, 0 classified as ${title.toLowerCase()}.`}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <ChartCaption
