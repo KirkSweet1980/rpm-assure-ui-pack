@@ -159,7 +159,7 @@ function LoginPage() {
               <span className="rpma-cin-rpm">RPM </span>
               <span className="rpma-cin-assure">Assure</span>
             </h1>
-            <p className="rpma-cin-tag">* - Assurance Delivered -</p>
+            <p className="rpma-cin-tag">- Assurance Delivered -</p>
 
             <IdleLogoutBanner />
 
