@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "dc-aisle-20260814";
+const LOGIN_BUILD = "dc-logo-palette-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -148,6 +148,8 @@ function LoginPage() {
 const DC_CSS = `
 .rpma-dc {
   --teal: #1bb8a6;
+  --lime: #8fce4a;
+  --slate: #2d6a8a;
   --ink: #0b1a3a;
   --muted: #4a657c;
   position: relative; isolation: isolate;
@@ -186,11 +188,12 @@ const DC_CSS = `
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1;
-  color: var(--teal);
-  text-shadow:
-    0 0 18px rgba(255,255,255,0.85),
-    0 0 42px rgba(27,184,166,0.55),
-    0 8px 28px rgba(7,16,24,0.25);
+  color: transparent;
+  background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 46%, var(--lime) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255,255,255,0.75)) drop-shadow(0 0 28px rgba(27,184,166,0.35));
 }
 .rpma-dc-card {
   width: min(100%, 24rem);
@@ -237,7 +240,8 @@ const DC_CSS = `
 }
 .rpma-dc-submit {
   margin-top: 0.05rem; width: 100%; padding: 0.74rem 1rem; border: 0; border-radius: 0.6rem;
-  background: var(--teal); color: #fff;
+  background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
+  color: #fff;
   font-size: 15px; font-weight: 700; cursor: pointer;
   box-shadow: 0 8px 18px rgba(27,184,166,0.28);
   transition: filter 150ms ease-out, transform 150ms ease-out;
