@@ -750,36 +750,23 @@ function Get-PwMeta($json) {
 function Get-PwAll([string]$Path) {
   $all = New-Object System.Collections.Generic.List[object]
   $seen = @{}
-  $page = 1
+  $top = 100
+  $skip = 0
   $maxPages = 80
-  $pageSizeGuess = 0
-  while ($page -le $maxPages) {
+  for ($page = 1; $page -le $maxPages; $page++) {
     $sep = if ($Path -match '\?') { '&' } else { '?' }
-    $tryUrls = @(
-      ($Path + $sep + 'page=' + $page),
-      ($Path + $sep + 'offset=' + (($page - 1) * [math]::Max(50, $pageSizeGuess))),
-      ($Path + $sep + 'skip=' + (($page - 1) * [math]::Max(50, $pageSizeGuess)))
-    )
-    if ($page -eq 1) { $tryUrls = @($Path) + $tryUrls }
-
-    $res = $null
-    $arr = @()
-    foreach ($u in $tryUrls) {
-      $res = Invoke-PwGet $u
-      if (-not $res.Ok) { continue }
-      $arr = @(Get-DataArray $res.Json)
-      if ($arr.Count -gt 0) { break }
-    }
-    if (-not $res -or -not $res.Ok) {
-      Write-Log ("GET $Path page=$page FAIL")
+    $odata = $Path + $sep + '$top=' + $top + '&$skip=' + $skip
+    $res = Invoke-PwGet $odata
+    if (-not $res.Ok -and $skip -eq 0) { $res = Invoke-PwGet $Path }
+    if (-not $res.Ok) {
+      Write-Log ("GET $Path page=$page FAIL status=" + $res.Status)
       break
     }
+    $arr = @(Get-DataArray $res.Json)
     if ($arr.Count -eq 0) {
-      Write-Log ("GET $Path page=$page empty - done")
+      Write-Log ("GET $Path page=$page empty - done skip=$skip")
       break
     }
-    if ($pageSizeGuess -lt $arr.Count) { $pageSizeGuess = $arr.Count }
-
     $new = 0
     foreach ($item in $arr) {
       $id = Get-Prop $item @('Id','id','DeviceId','OrganizationId','Identifier')
@@ -790,19 +777,10 @@ function Get-PwAll([string]$Path) {
       [void]$all.Add($item)
       $new++
     }
-    $meta = Get-PwMeta $res.Json
-    $totalPages = $null
-    $totalItems = $null
-    if ($meta) {
-      $totalPages = Get-Prop $meta @('TotalPages','PageCount','totalPages','Pages')
-      $totalItems = Get-Prop $meta @('TotalItems','TotalCount','totalItems','Count')
-    }
-    Write-Log ("GET $Path page=$page got=$($arr.Count) new=$new total=$($all.Count) metaPages=$totalPages metaItems=$totalItems")
+    Write-Log ("GET $Path page=$page got=$($arr.Count) new=$new total=$($all.Count) skip=$skip")
     if ($new -eq 0) { break }
-    if ($totalPages -and $page -ge [int]$totalPages) { break }
-    if ($totalItems -and $all.Count -ge [int]$totalItems) { break }
-    if (-not $totalPages -and -not $totalItems -and $arr.Count -lt [math]::Max(50, $pageSizeGuess)) { break }
-    $page++
+    $skip += $arr.Count
+    if ($arr.Count -lt $top) { break }
   }
   Write-Log ("GET $Path ALL count=$($all.Count)")
   return ,$all.ToArray()
@@ -819,7 +797,37 @@ foreach ($o in $orgs) {
 }
 Write-Log ('organizations unique=' + $orgs.Count + ' names=' + (($orgs | ForEach-Object { Get-Prop $_ @('Name','OrganizationName','name') }) -join '; '))
 
-Write-Log 'GET devices (all pages)'
+$sirfOrgIds = New-Object 'System.Collections.Generic.HashSet[string]'
+foreach ($o in $orgs) {
+  $oname = [string](Get-Prop $o @('Name','OrganizationName','name'))
+  $oid = Get-Prop $o @('Id','OrganizationId','id')
+  if ($oname -match '(?i)fruit|sirf' -and $oid) {
+    [void]$sirfOrgIds.Add("$oid")
+    if ("$oid" -match '^\d+$') { $idMap[[int]$oid] = 'SIRF' }
+    Write-Log ("SIRF org hit name=$oname id=$oid")
+  }
+}
+
+Write-Log 'GET sites / groups (tree: org > site > group)'
+$sites = @()
+$groups = @()
+try { $sites = @(Get-PwAll 'sites') } catch { Write-Log ('sites skip ' + $_.Exception.Message) }
+try { $groups = @(Get-PwAll 'groups') } catch { Write-Log ('groups skip ' + $_.Exception.Message) }
+Write-Log ('sites=' + $sites.Count + ' groups=' + $groups.Count)
+foreach ($s in @($sites + $groups)) {
+  $sn = [string](Get-Prop $s @('Name','SiteName','GroupName','name'))
+  $parent = [string](Get-Prop $s @('OrganizationName','Organization','ParentName','name'))
+  $pid = Get-Prop $s @('OrganizationId','organization_id','ParentId','id')
+  if ($sn -match '(?i)fruit|sirf' -or $parent -match '(?i)fruit|sirf') {
+    Write-Log ("SIRF tree node name=$sn parent=$parent orgId=$pid")
+    if ($pid) { [void]$sirfOrgIds.Add("$pid") }
+  }
+  if ($pid -and $sirfOrgIds.Contains("$pid") -and "$pid" -match '^\d+$') {
+    $idMap[[int]$pid] = 'SIRF'
+  }
+}
+
+Write-Log 'GET devices (all pages, OData $top/$skip)'
 $devices = @(Get-PwAll 'devices')
 if ($devices.Count -lt 1) {
   $devRes = Invoke-PwGet 'devices'
@@ -827,6 +835,34 @@ if ($devices.Count -lt 1) {
   $devices = @(Get-DataArray $devRes.Json)
 }
 Write-Log ('devices count=' + $devices.Count)
+
+# Pull devices that sit under Sir Fruit even if the global list omitted them
+$devById = @{}
+foreach ($d in $devices) {
+  $did = Get-Prop $d @('Id','DeviceId','Identifier','id')
+  if ($did) { $devById["$did"] = $d }
+}
+foreach ($oid in @($sirfOrgIds)) {
+  if (-not $oid) { continue }
+  foreach ($p in @(
+      ("devices?organizationid=$oid"),
+      ("organizations/$oid/devices")
+    )) {
+    try {
+      $extra = @(Get-PwAll $p)
+    } catch { $extra = @() }
+    $added = 0
+    foreach ($d in $extra) {
+      $did = Get-Prop $d @('Id','DeviceId','Identifier','id')
+      if (-not $did -or $devById.ContainsKey("$did")) { continue }
+      $devById["$did"] = $d
+      $devices += $d
+      $added++
+    }
+    Write-Log ("SIRF extra $p added=$added")
+  }
+}
+Write-Log ('devices after SIRF org pull=' + $devices.Count)
 
 # Sample first device property names for log
 if ($devices.Count -gt 0) {
@@ -1487,6 +1523,10 @@ foreach ($d in $devices) {
   if ($null -ne $patchMiss) { $patchMiss = Get-IntLoose $patchMiss }
   if ($null -ne $patchPend) { $patchPend = Get-IntLoose $patchPend }
   $code = Resolve-Customer $oname $oid
+  if (-not $code -and $oid -and $sirfOrgIds -and $sirfOrgIds.Contains("$oid")) {
+    $code = 'SIRF'
+    if (-not $oname) { $oname = 'Sir Fruit' }
+  }
   if (-not $code) {
     $nmLow = ([string]$name).ToLowerInvariant()
     $onLow = ([string]$oname).ToLowerInvariant()
@@ -1601,6 +1641,12 @@ if ($notifs.Count -gt 0) {
 [void]$sb.AppendLine('SELECT COUNT(*) AS DevicesToday FROM dbo.Pulseway_Devices WHERE SnapshotDate = @Snap;')
 [void]$sb.AppendLine("UPDATE d SET d.CustomerCode = m.CustomerCode FROM dbo.Pulseway_Devices d INNER JOIN dbo.Dim_Pulseway_OrgMap m ON LTRIM(RTRIM(d.OrganizationName)) = LTRIM(RTRIM(m.OrganizationName)) AND ISNULL(m.Active,1)=1 WHERE d.SnapshotDate = @Snap AND (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode))=N'');")
 [void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'SIRF' WHERE SnapshotDate = @Snap AND (OrganizationName LIKE N'%Fruit%' OR OrganizationName LIKE N'%SIRF%' OR OrganizationName LIKE N'%Sir Fruit%' OR Name LIKE N'SIRZA%' OR Name LIKE N'%SirFruit%' OR Name LIKE N'%Sir Fruit%');")
+if ($sirfOrgIds.Count -gt 0) {
+  $idList = (@($sirfOrgIds) | Where-Object { $_ -match '^\d+$' }) -join ','
+  if ($idList) {
+    [void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'SIRF', OrganizationName = COALESCE(NULLIF(LTRIM(RTRIM(OrganizationName)),N''), N'Sir Fruit') WHERE SnapshotDate = @Snap AND OrganizationId IN ($idList);")
+  }
+}
 [void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'RSR' WHERE SnapshotDate = @Snap AND (CustomerCode IS NULL OR LTRIM(RTRIM(CustomerCode))=N'' OR CustomerCode = N'RSR') AND (OrganizationName LIKE N'%Redsun%' OR OrganizationName LIKE N'%Raisin%');")
 [void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'RSR' WHERE SnapshotDate = @Snap AND OrganizationName LIKE N'%Redsun%';")
 [void]$sb.AppendLine("SELECT OrganizationName, COUNT(*) AS Cnt, SUM(CASE WHEN CustomerCode IS NULL OR LTRIM(RTRIM(CustomerCode))=N'' THEN 1 ELSE 0 END) AS Unmapped FROM dbo.Pulseway_Devices WHERE SnapshotDate = @Snap GROUP BY OrganizationName ORDER BY Cnt DESC;")
