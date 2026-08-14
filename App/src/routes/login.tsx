@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Eye, EyeOff, Lock, ShieldCheck, User, Download } from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { IdleLogoutBanner } from "@/lib/auth/idle-logout";
@@ -12,75 +12,61 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-/** A — split: left CLI stack | right brand + login */
-const LOGIN_BUILD = "cmd-centre-A-v3-split-20260812";
+const LOGIN_BUILD = "cinema-glass-D-20260814";
 
-type FWinLine = { text: string; kind?: "prompt" | "ok" | "comment" | "kw" };
+const SQL_LINES: { t: string; k?: "kw" | "cm" | "st" | "ok" }[] = [
+  { t: "-- RPM Assure  |  live collect  |  central RPMAssure_App", k: "cm" },
+  { t: "SET NOCOUNT ON;" },
+  { t: "DECLARE @Snap date = CONVERT(date, SYSUTCDATETIME());", k: "kw" },
+  { t: "" },
+  { t: "SELECT c.CustomerCode, c.DisplayName, c.Active", k: "kw" },
+  { t: "FROM dbo.Dim_Customer AS c WITH (NOLOCK)" },
+  { t: "WHERE c.Active = 1" },
+  { t: "ORDER BY c.DisplayName;" },
+  { t: "" },
+  { t: "SELECT SnapshotDate, OrganizationName, DeviceId, IsOnline", k: "kw" },
+  { t: "FROM dbo.Pulseway_Devices WITH (NOLOCK)" },
+  { t: "WHERE SnapshotDate = @Snap" },
+  { t: "  AND CustomerCode = N'SIRF';", k: "st" },
+  { t: "" },
+  { t: "-- 28 servers online  ·  0 offline", k: "ok" },
+  { t: "" },
+  { t: "SELECT TenantId, SecureScore, MfaRegisteredPct", k: "kw" },
+  { t: "FROM dbo.Csp_TenantPosture WITH (NOLOCK)" },
+  { t: "WHERE SnapshotDate = @Snap;" },
+  { t: "" },
+  { t: "MERGE dbo.Agent_Registry AS t", k: "kw" },
+  { t: "USING (SELECT N'SIRF' CustomerCode) AS s" },
+  { t: "ON t.CustomerCode = s.CustomerCode" },
+  { t: "WHEN MATCHED THEN UPDATE SET LastHeartbeatUtc = SYSUTCDATETIME();" },
+  { t: "" },
+  { t: "SELECT LastStatus, LastHeartbeatUtc", k: "kw" },
+  { t: "FROM dbo.Agent_Registry WITH (NOLOCK)" },
+  { t: "WHERE CustomerCode = N'SIRF';", k: "st" },
+  { t: "-- ONLINE  2026-08-14 08:44:15Z", k: "ok" },
+  { t: "" },
+  { t: "SELECT CompanyDb, JobName, ErrorCount", k: "kw" },
+  { t: "FROM dbo.Fact_SysproJob WITH (NOLOCK)" },
+  { t: "WHERE SnapshotDate = @Snap AND ErrorCount > 0;" },
+  { t: "" },
+  { t: "GO", k: "kw" },
+];
 
-function FloatWin({
-  variant,
-  title,
-  lines,
-}: {
-  variant: "ps" | "linux";
-  title: string;
-  lines: FWinLine[];
-}) {
+function SqlColumn({ className }: { className?: string }) {
+  const block = [...SQL_LINES, { t: "" }, ...SQL_LINES, { t: "" }, ...SQL_LINES];
   return (
-    <div
-      className={`rpma-cmd-fwin rpma-cmd-fwin--${variant}`}
-      aria-hidden="true"
-    >
-      <div className="rpma-cmd-fwin-bar">
-        <span className="rpma-cmd-fwin-dots">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span className="rpma-cmd-fwin-title">{title}</span>
-      </div>
-      <div className="rpma-cmd-fwin-body">
-        {lines.map((ln, i) => (
-          <div
-            key={i}
-            className={
-              ln.kind === "prompt"
-                ? "is-prompt"
-                : ln.kind === "ok"
-                  ? "is-ok"
-                  : ln.kind === "comment"
-                    ? "is-comment"
-                    : ln.kind === "kw"
-                      ? "is-kw"
-                      : undefined
-            }
-          >
-            {ln.text}
+    <div className={className} aria-hidden="true">
+      <div className="rpma-cin-track">
+        {block.map((ln, i) => (
+          <div key={i} className={`rpma-cin-line${ln.k ? ` is-${ln.k}` : ""}`}>
+            <span className="rpma-cin-gutter">{String((i % SQL_LINES.length) + 1).padStart(3, " ")}</span>
+            <span className="rpma-cin-text">{ln.t || " "}</span>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-const PS_LINES: FWinLine[] = [
-  { text: "PS C:\\Scripts> Get-Service | ? Status -eq Running", kind: "prompt" },
-  { text: "Status  Name       DisplayName", kind: "ok" },
-  { text: "Running WinRM      Windows Remote Management" },
-  { text: "Running EventLog   Windows Event Log" },
-  { text: "PS C:\\Scripts> .\\Invoke-HealthCheck.ps1", kind: "prompt" },
-  { text: ">> Result: Healthy", kind: "ok" },
-  { text: "PS C:\\Scripts> _", kind: "prompt" },
-];
-
-const LINUX_LINES: FWinLine[] = [
-  { text: "admin@srv01:~$ uptime", kind: "prompt" },
-  { text: " 12:04:11 up 42 days,  3:18,  2 users", kind: "ok" },
-  { text: "admin@srv01:~$ df -h /", kind: "prompt" },
-  { text: "Filesystem  Size  Used  Avail  Use%", kind: "ok" },
-  { text: "/dev/sda1    100G   42G    53G   44%", kind: "ok" },
-  { text: "admin@srv01:~$ _", kind: "prompt" },
-];
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -133,441 +119,84 @@ function LoginPage() {
   }
 
   return (
-    <div className="rpma-cmd" data-login-build={LOGIN_BUILD}>
-      <style>{`
-.rpma-cmd {
-  position: relative !important;
-  isolation: isolate !important;
-  min-height: 100dvh !important;
-  width: 100% !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  color: #e8f4ff !important;
-  background: #050d18 !important;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
-}
-.rpma-cmd-bg {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-  background:
-    radial-gradient(ellipse 90% 80% at 18% 40%, rgba(27, 184, 166, 0.16) 0%, transparent 52%),
-    radial-gradient(ellipse 70% 60% at 82% 50%, rgba(43, 111, 174, 0.32) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 45% at 50% 0%, rgba(20, 80, 120, 0.4) 0%, transparent 55%),
-    linear-gradient(155deg, #061018 0%, #0a1a2e 40%, #071525 75%, #040a12 100%) !important;
-}
-.rpma-cmd-grid {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-  background-image:
-    linear-gradient(rgba(27, 184, 166, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(43, 111, 174, 0.11) 1px, transparent 1px) !important;
-  background-size: 44px 44px !important;
-  mask-image: radial-gradient(ellipse 95% 90% at 50% 50%, #000 12%, transparent 90%) !important;
-  -webkit-mask-image: radial-gradient(ellipse 95% 90% at 50% 50%, #000 12%, transparent 90%) !important;
-}
-/* Hide legacy global login layers */
-.rpma-cmd .rpma-login-sql-bg,
-.rpma-cmd .rpma-login-page-words,
-.rpma-cmd .rpma-login-brand-words,
-.rpma-cmd .rpma-login-fwin,
-.rpma-cmd .rpma-login-ps-stage,
-.rpma-cmd .rpma-login-hero-center {
-  display: none !important;
-}
+    <div className="rpma-cin" data-login-build={LOGIN_BUILD}>
+      <style>{CINEMA_CSS}</style>
 
-/* ===== SPLIT SHELL ===== */
-.rpma-cmd-shell {
-  position: relative !important;
-  z-index: 3 !important;
-  flex: 1 1 auto !important;
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-  min-height: 100dvh !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
+      <div className="rpma-cin-wall" aria-hidden="true">
+        <SqlColumn className="rpma-cin-col rpma-cin-col--a" />
+        <SqlColumn className="rpma-cin-col rpma-cin-col--b" />
+        <SqlColumn className="rpma-cin-col rpma-cin-col--c" />
+      </div>
+      <div className="rpma-cin-vignette" aria-hidden="true" />
 
-/* LEFT: CLI windows */
-.rpma-cmd-left {
-  position: relative !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 1.35rem !important;
-  padding: clamp(1.25rem, 4vh, 2.5rem) clamp(1rem, 3.5vw, 2.5rem) !important;
-  box-sizing: border-box !important;
-  border-right: 1px solid rgba(27, 184, 166, 0.18) !important;
-  background:
-    linear-gradient(90deg, rgba(4, 12, 22, 0.35) 0%, transparent 100%) !important;
-}
-.rpma-cmd-left-label {
-  align-self: flex-start !important;
-  margin: 0 0 0.25rem 0.15rem !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.2em !important;
-  text-transform: uppercase !important;
-  color: rgba(27, 184, 166, 0.75) !important;
-}
-.rpma-cmd-fwin {
-  position: relative !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  width: min(100%, 420px) !important;
-  max-width: 100% !important;
-  border-radius: 10px !important;
-  border: 1px solid rgba(62, 207, 191, 0.35) !important;
-  background: linear-gradient(160deg, rgba(8, 28, 48, 0.96) 0%, rgba(6, 18, 32, 0.94) 100%) !important;
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(27, 184, 166, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  overflow: hidden !important;
-  opacity: 0.95 !important;
-  display: block !important;
-  transform: none !important;
-}
-.rpma-cmd-fwin--ps {
-  transform: rotate(-1.2deg) !important;
-}
-.rpma-cmd-fwin--linux {
-  transform: rotate(1deg) !important;
-}
-.rpma-cmd-fwin-bar {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-  padding: 0.4rem 0.65rem !important;
-  background: rgba(10, 40, 64, 0.92) !important;
-  border-bottom: 1px solid rgba(27, 184, 166, 0.22) !important;
-  font-size: 10px !important;
-  color: rgba(200, 230, 255, 0.75) !important;
-}
-.rpma-cmd-fwin-dots {
-  display: flex !important;
-  gap: 4px !important;
-}
-.rpma-cmd-fwin-dots i {
-  display: block !important;
-  width: 7px !important;
-  height: 7px !important;
-  border-radius: 50% !important;
-  background: #ff5f57 !important;
-}
-.rpma-cmd-fwin-dots i:nth-child(2) { background: #febc2e !important; }
-.rpma-cmd-fwin-dots i:nth-child(3) { background: #28c840 !important; }
-.rpma-cmd-fwin-title {
-  font-family: ui-monospace, Consolas, monospace !important;
-  font-size: 10px !important;
-  opacity: 0.85 !important;
-}
-.rpma-cmd-fwin-body {
-  padding: 0.55rem 0.7rem 0.75rem !important;
-  font-family: ui-monospace, Consolas, "Cascadia Code", monospace !important;
-  font-size: 11.5px !important;
-  line-height: 1.5 !important;
-  color: rgba(180, 220, 255, 0.85) !important;
-}
-.rpma-cmd-fwin--ps .is-prompt { color: #3ecfbf !important; }
-.rpma-cmd-fwin--ps .is-ok { color: #8fce4a !important; }
-.rpma-cmd-fwin--linux .rpma-cmd-fwin-body { color: #7dce7d !important; }
-.rpma-cmd-fwin--linux .is-prompt { color: #55ff99 !important; font-weight: 600 !important; }
-.rpma-cmd-fwin--linux .is-ok { color: #b8f0b8 !important; }
-.rpma-cmd-fwin--linux .rpma-cmd-fwin-dots i:nth-child(1) { background: #e95420 !important; }
-.rpma-cmd-fwin--linux .rpma-cmd-fwin-dots i:nth-child(2) { background: #77216f !important; }
-.rpma-cmd-fwin--linux .rpma-cmd-fwin-dots i:nth-child(3) { background: #5e2750 !important; }
-
-/* RIGHT: brand + login */
-.rpma-cmd-right {
-  position: relative !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 1.35rem !important;
-  padding: clamp(1.5rem, 5vh, 3rem) clamp(1.25rem, 4vw, 3rem) 3.5rem !important;
-  box-sizing: border-box !important;
-  background:
-    radial-gradient(ellipse 80% 70% at 50% 40%, rgba(27, 184, 166, 0.08) 0%, transparent 65%),
-    linear-gradient(270deg, rgba(4, 12, 22, 0.2) 0%, transparent 55%) !important;
-}
-.rpma-cmd-brand {
-  text-align: center !important;
-  max-width: 22rem !important;
-}
-.rpma-cmd-brand-mark {
-  display: flex !important;
-  justify-content: center !important;
-  filter: drop-shadow(0 0 32px rgba(27, 184, 166, 0.5)) !important;
-}
-.rpma-cmd-title {
-  margin: 0.85rem 0 0 !important;
-  font-size: clamp(2.4rem, 4.5vw, 3.35rem) !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.03em !important;
-  line-height: 1.05 !important;
-}
-.rpma-cmd-rpm {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-.rpma-cmd-assure {
-  color: #1bb8a6 !important;
-  -webkit-text-fill-color: #1bb8a6 !important;
-}
-.rpma-cmd-tag {
-  margin: 0.6rem 0 0 !important;
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.22em !important;
-  text-transform: uppercase !important;
-  color: rgba(27, 184, 166, 0.95) !important;
-}
-.rpma-cmd-glass {
-  width: 100% !important;
-  max-width: 24rem !important;
-  box-sizing: border-box !important;
-  padding: 1.65rem 1.5rem 1.5rem !important;
-  border-radius: 1.15rem !important;
-  text-align: left !important;
-  background: linear-gradient(
-    165deg,
-    rgba(18, 42, 68, 0.82) 0%,
-    rgba(10, 24, 40, 0.9) 100%
-  ) !important;
-  border: 1px solid rgba(100, 180, 220, 0.28) !important;
-  box-shadow:
-    0 28px 70px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(27, 184, 166, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(20px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.25) !important;
-}
-.rpma-cmd-glass-head {
-  display: flex !important;
-  align-items: flex-start !important;
-  gap: 0.65rem !important;
-  margin-bottom: 1rem !important;
-}
-.rpma-cmd-glass-head svg {
-  flex-shrink: 0 !important;
-  margin-top: 0.2rem !important;
-  color: #1bb8a6 !important;
-}
-.rpma-cmd-glass-title {
-  margin: 0 !important;
-  font-size: 1.35rem !important;
-  font-weight: 700 !important;
-  color: #fff !important;
-}
-.rpma-cmd-glass-sub {
-  margin: 0.3rem 0 0 !important;
-  font-size: 13px !important;
-  color: rgba(200, 220, 240, 0.72) !important;
-}
-.rpma-cmd-form {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.9rem !important;
-}
-.rpma-cmd-field { display: block !important; }
-.rpma-cmd-field-label {
-  display: block !important;
-  margin-bottom: 0.35rem !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  color: rgba(210, 230, 245, 0.85) !important;
-}
-.rpma-cmd-field-wrap {
-  position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-}
-.rpma-cmd-field-icon {
-  position: absolute !important;
-  left: 0.75rem !important;
-  color: rgba(140, 180, 200, 0.75) !important;
-  pointer-events: none !important;
-}
-.rpma-cmd-field-wrap input {
-  width: 100% !important;
-  box-sizing: border-box !important;
-  padding: 0.7rem 2.5rem 0.7rem 2.35rem !important;
-  border-radius: 0.65rem !important;
-  border: 1px solid rgba(100, 160, 200, 0.28) !important;
-  background: rgba(6, 16, 28, 0.65) !important;
-  color: #f0f7ff !important;
-  font-size: 14px !important;
-  outline: none !important;
-}
-.rpma-cmd-field-wrap input::placeholder {
-  color: rgba(150, 180, 200, 0.45) !important;
-}
-.rpma-cmd-field-wrap input:focus {
-  border-color: rgba(27, 184, 166, 0.65) !important;
-  box-shadow: 0 0 0 3px rgba(27, 184, 166, 0.18) !important;
-}
-.rpma-cmd-field-eye {
-  position: absolute !important;
-  right: 0.55rem !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0.35rem !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: rgba(160, 190, 210, 0.8) !important;
-  cursor: pointer !important;
-}
-.rpma-cmd-error {
-  margin: 0 !important;
-  padding: 0.55rem 0.7rem !important;
-  border-radius: 0.5rem !important;
-  border: 1px solid rgba(220, 80, 80, 0.4) !important;
-  background: rgba(80, 20, 20, 0.35) !important;
-  color: #ffb4b4 !important;
-  font-size: 13px !important;
-}
-.rpma-cmd-submit {
-  margin-top: 0.15rem !important;
-  width: 100% !important;
-  padding: 0.75rem 1rem !important;
-  border: 0 !important;
-  border-radius: 0.65rem !important;
-  background: linear-gradient(180deg, #22c9b6 0%, #1bb8a6 55%, #159e8f 100%) !important;
-  color: #041016 !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  cursor: pointer !important;
-  box-shadow: 0 8px 24px rgba(27, 184, 166, 0.35) !important;
-}
-.rpma-cmd-submit:hover:not(:disabled) { filter: brightness(1.06) !important; }
-.rpma-cmd-submit:disabled { opacity: 0.65 !important; cursor: wait !important; }
-.rpma-cmd-footer {
-  position: absolute !important;
-  bottom: 0.9rem !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 6 !important;
-  margin: 0 !important;
-  text-align: center !important;
-  font-size: 0.78rem !important;
-  color: rgba(180, 210, 230, 0.55) !important;
-  pointer-events: none !important;
-}
-
-@media (max-width: 900px) {
-  .rpma-cmd-shell {
-    grid-template-columns: 1fr !important;
-    min-height: auto !important;
-  }
-  .rpma-cmd-left {
-    border-right: 0 !important;
-    border-bottom: 1px solid rgba(27, 184, 166, 0.15) !important;
-    padding-top: 1.25rem !important;
-    padding-bottom: 1rem !important;
-    min-height: auto !important;
-  }
-  .rpma-cmd-fwin--linux { display: none !important; }
-  .rpma-cmd-fwin--ps { transform: none !important; opacity: 0.75 !important; }
-  .rpma-cmd-right {
-    min-height: 70dvh !important;
-    padding-bottom: 3.25rem !important;
-  }
-}
-`}</style>
-
-      <div className="rpma-cmd-bg" aria-hidden="true" />
-      <div className="rpma-cmd-grid" aria-hidden="true" />
-
-      <div className="rpma-cmd-shell">
-        {/* LEFT — CLI only */}
-        <aside className="rpma-cmd-left" aria-hidden="true">
-          <p className="rpma-cmd-left-label">Operations</p>
-          <FloatWin
-            variant="ps"
-            title="Windows PowerShell"
-            lines={PS_LINES}
-          />
-          <FloatWin
-            variant="linux"
-            title="bash — admin@srv01"
-            lines={LINUX_LINES}
-          />
+      <div className="rpma-cin-shell">
+        <aside className="rpma-cin-left" aria-hidden="true">
+          <div className="rpma-cin-editor">
+            <div className="rpma-cin-editor-bar">
+              <span className="rpma-cin-dots">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span>collect.sql — RPMAssure_App</span>
+            </div>
+            <SqlColumn className="rpma-cin-col rpma-cin-col--focus" />
+          </div>
         </aside>
 
-        {/* RIGHT — brand + login */}
-        <section className="rpma-cmd-right">
-          <div className="mb-3 flex justify-end">
+        <div className="rpma-cin-divider" aria-hidden="true" />
+
+        <section className="rpma-cin-right">
+          <div className="rpma-cin-tools">
             <ThemeToggle />
           </div>
-          <div className="rpma-cmd-brand">
-            <div className="rpma-cmd-brand-mark">
-              <RpmAssureMark size={88} showWordmark={false} staticMark />
-            </div>
-            <h1 className="rpma-cmd-title">
-              <span className="rpma-cmd-rpm">RPM </span>
-              <span className="rpma-cmd-assure">Assure</span>
-            </h1>
-            <p className="rpma-cmd-tag">Assurance Delivered</p>
-          </div>
 
-          <div className="rpma-cmd-glass">
-            <div className="rpma-cmd-glass-head">
-              <ShieldCheck size={20} aria-hidden />
-              <div>
-                <h2 className="rpma-cmd-glass-title">Welcome to RPM Assure</h2>
-                <p className="rpma-cmd-glass-sub">Secure login for staff</p>
-              </div>
+          <div className="rpma-cin-card">
+            <div className="rpma-cin-mark">
+              <RpmAssureMark size={84} showWordmark={false} staticMark />
             </div>
+            <h1 className="rpma-cin-title">
+              <span className="rpma-cin-rpm">RPM </span>
+              <span className="rpma-cin-assure">Assure</span>
+            </h1>
+            <p className="rpma-cin-tag">* - Assurance Delivered -</p>
 
             <IdleLogoutBanner />
 
             {!authEnabled ? (
-              <p className="rpma-cmd-error">Auth is disabled.</p>
+              <p className="rpma-cin-error">Auth is disabled.</p>
             ) : (
-              <form className="rpma-cmd-form" onSubmit={onSubmit}>
-                <label className="rpma-cmd-field">
-                  <span className="rpma-cmd-field-label">Username</span>
-                  <span className="rpma-cmd-field-wrap">
-                    <User size={16} className="rpma-cmd-field-icon" aria-hidden />
+              <form className="rpma-cin-form" onSubmit={onSubmit}>
+                <label className="rpma-cin-field">
+                  <span>Username</span>
+                  <span className="rpma-cin-wrap">
+                    <User size={16} aria-hidden />
                     <input
                       type="text"
                       required
                       autoComplete="username"
-                      placeholder="Enter your username"
+                      placeholder="Username"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                     />
                   </span>
                 </label>
-
-                <label className="rpma-cmd-field">
-                  <span className="rpma-cmd-field-label">Password</span>
-                  <span className="rpma-cmd-field-wrap">
-                    <Lock size={16} className="rpma-cmd-field-icon" aria-hidden />
+                <label className="rpma-cin-field">
+                  <span>Password</span>
+                  <span className="rpma-cin-wrap">
+                    <Lock size={16} aria-hidden />
                     <input
                       type={showPw ? "text" : "password"}
                       required
                       minLength={8}
                       autoComplete="current-password"
-                      placeholder="Enter your password"
+                      placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <button
                       type="button"
-                      className="rpma-cmd-field-eye"
+                      className="rpma-cin-eye"
                       onClick={() => setShowPw((v) => !v)}
                       aria-label={showPw ? "Hide password" : "Show password"}
                       tabIndex={-1}
@@ -576,27 +205,194 @@ function LoginPage() {
                     </button>
                   </span>
                 </label>
-
-                {error ? <p className="rpma-cmd-error">{error}</p> : null}
-
-                <button type="submit" className="rpma-cmd-submit" disabled={busy}>
+                {error ? <p className="rpma-cin-error">{error}</p> : null}
+                <button type="submit" className="rpma-cin-submit" disabled={busy}>
                   {busy ? "Signing in..." : "Sign in"}
                 </button>
-                <a
-                  href="/downloads/RPMAssure-Exco-SoftBoard.zip"
-                  download="RPMAssure-Exco-SoftBoard.zip"
-                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 text-sm font-semibold text-white hover:bg-white/20"
-                >
-                  <Download size={16} />
-                  Download install ZIP
-                </a>
               </form>
             )}
           </div>
         </section>
       </div>
 
-      <p className="rpma-cmd-footer">Powered by RPM Resources</p>
+      <p className="rpma-cin-foot">Powered by RPM Resources</p>
     </div>
   );
 }
+
+const CINEMA_CSS = `
+.rpma-cin {
+  position: relative; isolation: isolate; min-height: 100dvh; width: 100%;
+  overflow: hidden; display: flex; flex-direction: column;
+  background: #061018; color: #e8f4ff;
+  font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+}
+.rpma-cin .rpma-login-sql-bg,
+.rpma-cin .rpma-login-page-words,
+.rpma-cin .rpma-login-brand-words,
+.rpma-cin .rpma-login-fwin,
+.rpma-cin .rpma-login-ps-stage,
+.rpma-cin .rpma-login-hero-center { display: none !important; }
+
+.rpma-cin-wall {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  opacity: 0.28;
+}
+.rpma-cin-vignette {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 80% at 78% 48%, rgba(6,16,24,0.15) 0%, transparent 55%),
+    linear-gradient(90deg, rgba(6,16,24,0.15) 0%, rgba(6,16,24,0.55) 52%, rgba(10,24,40,0.82) 100%);
+}
+.rpma-cin-col { overflow: hidden; }
+.rpma-cin-track {
+  padding: 1rem 0.75rem 2rem;
+  animation: rpmaCinSql 42s linear infinite;
+  will-change: transform;
+}
+.rpma-cin-col--b .rpma-cin-track { animation-duration: 56s; animation-direction: reverse; }
+.rpma-cin-col--c .rpma-cin-track { animation-duration: 48s; }
+.rpma-cin-col--focus .rpma-cin-track { animation-duration: 36s; padding: 0.85rem 1rem 1.5rem; }
+@keyframes rpmaCinSql { 0% { transform: translateY(0); } 100% { transform: translateY(-33.333%); } }
+@media (prefers-reduced-motion: reduce) {
+  .rpma-cin-track { animation: none; }
+}
+.rpma-cin-line {
+  display: flex; gap: 0.65rem; font-family: ui-monospace, Consolas, "Cascadia Code", monospace;
+  font-size: 11.5px; line-height: 1.55; white-space: pre;
+}
+.rpma-cin-gutter { flex: 0 0 1.7rem; text-align: right; color: rgba(120,150,170,0.38); }
+.rpma-cin-text { color: rgba(180,214,232,0.78); }
+.rpma-cin-line.is-kw .rpma-cin-text { color: #3ecfbf; font-weight: 650; }
+.rpma-cin-line.is-cm .rpma-cin-text { color: #8fce4a; font-style: italic; }
+.rpma-cin-line.is-st .rpma-cin-text { color: #9ec8ee; }
+.rpma-cin-line.is-ok .rpma-cin-text { color: #8fce4a; }
+
+.rpma-cin-shell {
+  position: relative; z-index: 3; flex: 1;
+  display: grid; grid-template-columns: minmax(0,1.05fr) 1px minmax(22rem, 0.95fr);
+  min-height: 100dvh;
+}
+.rpma-cin-left {
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(1.25rem, 4vh, 2.5rem) clamp(1rem, 3.5vw, 2.75rem);
+}
+.rpma-cin-editor {
+  width: min(100%, 40rem); height: min(78dvh, 40rem);
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(62,207,191,0.28);
+  background: linear-gradient(165deg, rgba(8,28,46,0.72) 0%, rgba(6,16,28,0.82) 100%);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.rpma-cin-editor-bar {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid rgba(27,184,166,0.18);
+  background: rgba(10,40,64,0.55);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px; color: rgba(200,230,255,0.7);
+}
+.rpma-cin-dots { display: flex; gap: 5px; }
+.rpma-cin-dots i { width: 8px; height: 8px; border-radius: 50%; display: block; background: #ff5f57; }
+.rpma-cin-dots i:nth-child(2) { background: #febc2e; }
+.rpma-cin-dots i:nth-child(3) { background: #28c840; }
+.rpma-cin-col--focus { flex: 1; min-height: 0; }
+.rpma-cin-col--focus .rpma-cin-line { font-size: 12.5px; line-height: 1.62; }
+
+.rpma-cin-divider {
+  width: 1px; align-self: stretch;
+  background: linear-gradient(180deg, transparent, rgba(143,206,74,0.55), rgba(27,184,166,0.55), transparent);
+  box-shadow: 0 0 18px rgba(27,184,166,0.35);
+}
+
+.rpma-cin-right {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: clamp(1.5rem, 5vh, 3rem) clamp(1.25rem, 4vw, 3rem) 3.4rem;
+}
+.rpma-cin-tools { position: absolute; top: 1rem; right: 1.1rem; }
+.rpma-cin-card {
+  width: min(100%, 26rem);
+  padding: 1.85rem 1.7rem 1.65rem;
+  border-radius: 18px;
+  text-align: center;
+  background: linear-gradient(165deg, rgba(16,40,64,0.55) 0%, rgba(8,20,34,0.72) 100%);
+  border: 1px solid rgba(143,206,74,0.38);
+  box-shadow:
+    0 28px 70px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(27,184,166,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.12);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}
+.rpma-cin-mark {
+  display: flex; justify-content: center;
+  filter: drop-shadow(0 0 28px rgba(27,184,166,0.45));
+}
+.rpma-cin-title {
+  margin: 0.85rem 0 0;
+  font-size: clamp(2.15rem, 4vw, 2.75rem);
+  font-weight: 800; letter-spacing: -0.03em; line-height: 1.05;
+}
+.rpma-cin-rpm { color: #ffffff; }
+.rpma-cin-assure { color: #1bb8a6; }
+.rpma-cin-tag {
+  margin: 0.55rem 0 1.25rem;
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: #8fce4a;
+}
+.rpma-cin-form { display: flex; flex-direction: column; gap: 0.85rem; text-align: left; }
+.rpma-cin-field span { display: block; margin-bottom: 0.3rem; font-size: 12px; font-weight: 600; color: rgba(210,230,245,0.85); }
+.rpma-cin-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.rpma-cin-wrap > svg { position: absolute; left: 0.75rem; color: rgba(140,180,200,0.75); pointer-events: none; }
+.rpma-cin-wrap input {
+  width: 100%; box-sizing: border-box;
+  padding: 0.72rem 2.5rem 0.72rem 2.3rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(100,160,200,0.28);
+  background: rgba(6,16,28,0.62);
+  color: #f0f7ff; font-size: 14px; outline: none;
+}
+.rpma-cin-wrap input:focus {
+  border-color: rgba(27,184,166,0.7);
+  box-shadow: 0 0 0 3px rgba(27,184,166,0.18);
+}
+.rpma-cin-eye {
+  position: absolute; right: 0.5rem; border: 0; background: transparent;
+  color: rgba(160,190,210,0.8); cursor: pointer; padding: 0.35rem; display: inline-flex;
+}
+.rpma-cin-error {
+  margin: 0; padding: 0.55rem 0.7rem; border-radius: 0.5rem;
+  border: 1px solid rgba(220,80,80,0.4); background: rgba(80,20,20,0.35);
+  color: #ffb4b4; font-size: 13px;
+}
+.rpma-cin-submit {
+  margin-top: 0.2rem; width: 100%; padding: 0.78rem 1rem; border: 0; border-radius: 0.65rem;
+  background: linear-gradient(180deg, #22c9b6 0%, #1bb8a6 55%, #159e8f 100%);
+  color: #041016; font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(27,184,166,0.35);
+  transition: filter 150ms ease-out, transform 150ms ease-out;
+}
+.rpma-cin-submit:hover:not(:disabled) { filter: brightness(1.06); }
+.rpma-cin-submit:active:not(:disabled) { transform: scale(0.96); }
+.rpma-cin-submit:disabled { opacity: 0.65; cursor: wait; }
+.rpma-cin-foot {
+  position: absolute; bottom: 0.85rem; left: 0; right: 0; z-index: 6;
+  margin: 0; text-align: center; font-size: 0.75rem;
+  color: rgba(180,210,230,0.5); pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .rpma-cin-shell { grid-template-columns: 1fr; }
+  .rpma-cin-left, .rpma-cin-divider { display: none; }
+  .rpma-cin-vignette {
+    background: radial-gradient(ellipse 90% 70% at 50% 40%, rgba(6,16,24,0.35) 0%, rgba(6,16,24,0.78) 100%);
+  }
+  .rpma-cin-right { min-height: 100dvh; padding-bottom: 3.2rem; }
+}
+`;
