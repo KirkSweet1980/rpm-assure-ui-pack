@@ -116,7 +116,7 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
   return (
     <div className="rpma-panel space-y-2 p-2.5">
       <div className="flex flex-wrap items-center justify-between gap-1.5">
-        <p className="text-[11px] font-semibold tracking-wide text-fg">RPM Assure Agent · SYSPRO</p>
+        <p className="text-[11px] font-semibold tracking-wide text-fg">RPM Assure SQL Agent Status</p>
         <div className="flex items-center gap-1">
           <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[10px]" disabled={busy} onClick={() => void load()}>
             <RefreshCw className={cn("size-3", busy && "animate-spin")} />

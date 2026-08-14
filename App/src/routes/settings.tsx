@@ -21,7 +21,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/settings/rag": { title: "RAG thresholds", subtitle: "Job error and FinSight rules for Red / Amber / Green — no code deploy." },
   "/settings/alerts": { title: "Alerts", subtitle: "In-app rules for Red health, job errors, and stale collect." },
   "/settings/collect": { title: "Collect inventory", subtitle: "Last import per customer / instance and schedule health." },
-  "/settings/agents": { title: "RPM Assure Agent", subtitle: "SQL-host Windows service: heartbeat and SYSPRO collect." },
+  "/settings/agents": { title: "RPM Assure SQL Agent Status", subtitle: "SQL-host Windows service: heartbeat and SYSPRO collect." },
   "/settings/reports": { title: "Reports", subtitle: "On-screen report packs (email schedules off)." },
   "/settings/query": { title: "SQL Query", subtitle: "Read-only explorer against the configured database." },
   "/settings/users": { title: "Users", subtitle: "Staff accounts, roles, scope, plus your profile and 2FA." },
