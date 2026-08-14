@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "dc-logo-palette-20260814";
+const LOGIN_BUILD = "dc-fields-glass-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -199,39 +199,47 @@ const DC_CSS = `
   width: min(100%, 24rem);
   padding: 1.2rem 1.35rem 1.2rem;
   border-radius: 1.05rem;
-  background: rgba(255,255,255,0.94);
-  color: var(--ink);
-  border: 1px solid rgba(255,255,255,0.55);
-  box-shadow: 0 24px 56px rgba(7,16,24,0.32);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.28);
+  box-shadow: 0 24px 56px rgba(7,16,24,0.28);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .rpma-dc-tag {
   margin: 0 0 0.85rem;
   text-align: center;
   font-size: 0.68rem; font-weight: 700;
   letter-spacing: 0.16em; text-transform: uppercase;
-  color: #5a8a28;
+  color: #c8f0a8;
 }
 .rpma-dc-form { display: flex; flex-direction: column; gap: 0.68rem; }
-.rpma-dc-field span { display: block; margin-bottom: 0.24rem; font-size: 12px; font-weight: 600; color: var(--muted); }
+.rpma-dc-field span { display: block; margin-bottom: 0.24rem; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.82); }
 .rpma-dc-wrap { position: relative; display: flex; align-items: center; }
-.rpma-dc-wrap > svg { position: absolute; left: 0.75rem; color: #7b93a6; pointer-events: none; }
+.rpma-dc-wrap > svg { position: absolute; left: 0.75rem; color: rgba(255,255,255,0.7); pointer-events: none; }
 .rpma-dc-wrap input {
   width: 100%; box-sizing: border-box;
   padding: 0.68rem 2.5rem 0.68rem 2.3rem;
   border-radius: 0.6rem;
-  border: 1px solid #c9d3e2;
-  background: #fff;
-  color: var(--ink); font-size: 14px; outline: none;
+  border: 1px solid rgba(255,255,255,0.42);
+  background: transparent;
+  color: #fff; font-size: 14px; outline: none;
+}
+.rpma-dc-wrap input::placeholder { color: rgba(255,255,255,0.55); }
+.rpma-dc-wrap input:-webkit-autofill,
+.rpma-dc-wrap input:-webkit-autofill:hover,
+.rpma-dc-wrap input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  transition: background-color 9999s ease-out 0s;
+  box-shadow: 0 0 0 1000px transparent inset;
 }
 .rpma-dc-wrap input:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(27,184,166,0.18);
+  box-shadow: 0 0 0 3px rgba(27,184,166,0.22);
 }
 .rpma-dc-eye {
   position: absolute; right: 0.5rem; border: 0; background: transparent;
-  color: #6b8496; cursor: pointer; padding: 0.35rem; display: inline-flex;
+  color: rgba(255,255,255,0.72); cursor: pointer; padding: 0.35rem; display: inline-flex;
 }
 .rpma-dc-error {
   margin: 0; padding: 0.5rem 0.65rem; border-radius: 0.5rem;
