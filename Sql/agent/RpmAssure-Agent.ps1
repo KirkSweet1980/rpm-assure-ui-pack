@@ -146,7 +146,54 @@ function Invoke-CentralSql {
   }
 }
 
-W "=== Agent cycle start v$AgentVersion host=$HostName customer=$CustomerCode ==="
+function Get-RpmaHostCustomers {
+  $hostU = $env:COMPUTERNAME.ToUpperInvariant()
+  $out = @()
+  $custRoot = Join-Path $SqlRoot "customers"
+  $files = @()
+  if (Test-Path $custRoot) {
+    $files = @(Get-ChildItem -Path $custRoot -Filter "Customer.Config.ps1" -Recurse -EA SilentlyContinue)
+  }
+  foreach ($f in $files) {
+    $raw = ""
+    try { $raw = Get-Content -LiteralPath $f.FullName -Raw -EA Stop } catch { continue }
+    $code = $f.Directory.Name
+    $m = [regex]::Match($raw, '(?m)^\s*\$CustomerCode\s*=\s*''([^'']+)''')
+    if ($m.Success) { $code = $m.Groups[1].Value }
+    $inst = ""
+    $mi = [regex]::Match($raw, '(?m)^\s*\$InstanceName\s*=\s*''([^'']+)''')
+    if ($mi.Success) { $inst = $mi.Groups[1].Value }
+    $instU = $inst.ToUpperInvariant()
+    $ok = $false
+    if ($instU -and ($instU -eq $hostU -or $instU.Contains($hostU) -or $hostU.Contains($instU))) { $ok = $true }
+    if ($ok) {
+      $out += [pscustomobject]@{ Code = $code.ToUpperInvariant(); Instance = $inst; Path = $f.FullName }
+    }
+  }
+  if ($out.Count -eq 0 -and $files.Count -eq 1) {
+    $code = $files[0].Directory.Name
+    $out += [pscustomobject]@{ Code = $code.ToUpperInvariant(); Instance = $env:COMPUTERNAME; Path = $files[0].FullName }
+  }
+  if ($out.Count -eq 0 -and $CustomerCode) {
+    $one = Join-Path $SqlRoot "customers\$CustomerCode\Customer.Config.ps1"
+    if (Test-Path $one) {
+      $out += [pscustomobject]@{ Code = $CustomerCode.ToUpperInvariant(); Instance = $env:COMPUTERNAME; Path = $one }
+    }
+  }
+  return $out
+}
+
+$hostCustomers = @(Get-RpmaHostCustomers)
+if ($hostCustomers.Count) {
+  $CustomerCode = $hostCustomers[0].Code
+  if ($hostCustomers[0].Instance) { $InstanceName = $hostCustomers[0].Instance }
+} else {
+  Write-Host "WARN no Customer.Config.ps1 matched this host $HostName"
+}
+W "=== Agent cycle start v$AgentVersion host=$HostName customer=$CustomerCode matched=$($hostCustomers.Count) ==="
+if ($hostCustomers.Count) {
+  W ("Host customers: " + (($hostCustomers | ForEach-Object { $_.Code }) -join ','))
+}
 
 # --- Heartbeat metrics (best effort) ---
 $os = $null; $cpu = $null; $mem = $null; $disk = $null
@@ -165,28 +212,38 @@ $detail = @{
   sqlRoot = $SqlRoot
 } | ConvertTo-Json -Compress
 
-$hbSql = @"
+$hbFailed = $false
+foreach ($hc in $hostCustomers) {
+  $cc = $hc.Code
+  $hbSql = @"
 SET NOCOUNT ON;
 MERGE dbo.Agent_Registry AS t
-USING (SELECT $(Sql-Lit $CustomerCode) AS CustomerCode, $(Sql-Lit $HostName) AS HostName) s
+USING (SELECT $(Sql-Lit $cc) AS CustomerCode, $(Sql-Lit $HostName) AS HostName) s
 ON t.CustomerCode = s.CustomerCode AND t.HostName = s.HostName
 WHEN MATCHED THEN UPDATE SET
   LastHeartbeatUtc = SYSUTCDATETIME(),
   AgentVersion = $(Sql-Lit $AgentVersion),
   RoleTags = $(Sql-Lit $RoleTags),
-  InstanceName = $(Sql-Lit $InstanceName),
+  InstanceName = $(Sql-Lit $hc.Instance),
   InstallPath = $(Sql-Lit $AgentRoot),
   LastStatus = N'ONLINE',
   LastMessage = N'heartbeat ok'
 WHEN NOT MATCHED THEN INSERT (CustomerCode, HostName, InstanceName, AgentVersion, RoleTags, InstallPath, LastHeartbeatUtc, LastStatus, LastMessage)
-  VALUES ($(Sql-Lit $CustomerCode), $(Sql-Lit $HostName), $(Sql-Lit $InstanceName), $(Sql-Lit $AgentVersion), $(Sql-Lit $RoleTags), $(Sql-Lit $AgentRoot), SYSUTCDATETIME(), N'ONLINE', N'registered');
+  VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $hc.Instance), $(Sql-Lit $AgentVersion), $(Sql-Lit $RoleTags), $(Sql-Lit $AgentRoot), SYSUTCDATETIME(), N'ONLINE', N'registered');
 
 INSERT INTO dbo.Agent_Heartbeat (CustomerCode, HostName, AgentVersion, OsCaption, MemFreeMb, DiskFreeGb, DetailJson)
-VALUES ($(Sql-Lit $CustomerCode), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Lit $os), $(if ($null -eq $mem) { 'NULL' } else { $mem }), $(if ($null -eq $disk) { 'NULL' } else { $disk }), $(Sql-Lit $detail));
+VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Lit $os), $(if ($null -eq $mem) { 'NULL' } else { $mem }), $(if ($null -eq $disk) { 'NULL' } else { $disk }), $(Sql-Lit $detail));
 "@
-$r = Invoke-CentralSql -SqlText $hbSql
-if ($r.ExitCode -ne 0) { W "WARN heartbeat push: $($r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))"; Write-RpmaStatusFile -Online $false -Message 'heartbeat failed' }
-else { W "Heartbeat pushed"; Write-RpmaStatusFile -Online $true -Message 'heartbeat ok' }
+  $r = Invoke-CentralSql -SqlText $hbSql
+  if ($r.ExitCode -ne 0) {
+    W ("WARN heartbeat $cc : " + $r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))
+    $hbFailed = $true
+  } else {
+    W "Heartbeat pushed $cc@$HostName"
+  }
+}
+if (-not $hostCustomers.Count) { $hbFailed = $true }
+Write-RpmaStatusFile -Online (-not $hbFailed) -Message $(if ($hbFailed) { 'heartbeat failed' } else { 'heartbeat ok' })
 
 $forceCodes = @()
 $flag = Join-Path $AgentRoot 'request-sync.flag'
@@ -241,15 +298,10 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
   $sysproRunner = Join-Path $SqlRoot "base\syspro-direct\Run-Syspro-Collect-Direct.ps1"
   $nativeRunner = Join-Path $SqlRoot "base\syspro-direct\Collect-Dtr-Native-Fallback.ps1"
   $configs = @()
-  $custRoot = Join-Path $SqlRoot "customers"
-  if (Test-Path $custRoot) {
-    $configs = @(Get-ChildItem -Path $custRoot -Filter "Customer.Config.ps1" -Recurse -EA SilentlyContinue)
+  foreach ($hc in $hostCustomers) {
+    if (Test-Path $hc.Path) { $configs += Get-Item $hc.Path }
   }
-  if ($configs.Count -eq 0 -and $CustomerCode) {
-    $one = Join-Path $SqlRoot "customers\$CustomerCode\Customer.Config.ps1"
-    if (Test-Path $one) { $configs = @(Get-Item $one) }
-  }
-  if ($configs.Count -eq 0) { W "WARN no Customer.Config.ps1 under $custRoot" }
+  if ($configs.Count -eq 0) { W "WARN no host-matched Customer.Config.ps1" }
   foreach ($cfg in $configs) {
     $code = $cfg.Directory.Name
     $light = 30
