@@ -1083,7 +1083,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg border border-border/70 bg-card px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase text-muted">Online</p>
+                    <p className="rpma-online">Online</p>
                     <p className="font-mono text-xl font-bold tabular-nums text-fg">
                       {onlineMissing}
                     </p>
@@ -1231,7 +1231,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                       {d.isOnline == null
                         ? "—"
                         : d.isOnline
-                          ? "Online"
+                          ? <span className="rpma-online">Online</span>
                           : "Offline"}
                     </td>
                     <td
@@ -1352,7 +1352,7 @@ export function RmmDevicesSection({
                           {d.name ?? d.deviceId}
                         </span>
                         {d.isOnline == null ? null : d.isOnline ? (
-                          <Badge className="shrink-0 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200">
+                          <Badge variant="online" className="shrink-0">
                             Online
                           </Badge>
                         ) : (
@@ -1415,9 +1415,7 @@ export function RmmDevicesSection({
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {selected.isOnline == null ? null : selected.isOnline ? (
-                      <Badge className="bg-emerald-500/15 text-emerald-800 dark:text-emerald-200">
-                        Online
-                      </Badge>
+                      <Badge variant="online">Online</Badge>
                     ) : (
                       <Badge variant="amber">Offline</Badge>
                     )}

@@ -12,6 +12,7 @@ const badgeVariants = cva(
         muted: "bg-[#f3f5f7] text-[#8996a4]",
         outline: "border border-[#dbe0e5] bg-transparent text-[#5b6b79]",
         green: "bg-[#17c6661a] text-[#17c666]",
+        online: "bg-[#16a34a] text-white",
         amber: "bg-[#ffa21d1a] text-[#e67e22]",
         red: "bg-[#ea4d4d1a] text-[#ea4d4d]",
         nav: "bg-white/15 text-nav-fg",

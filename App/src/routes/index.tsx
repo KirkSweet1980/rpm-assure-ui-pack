@@ -1144,7 +1144,7 @@ function ExcoInsightPage() {
               <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">Operations Pulse</h2>
               <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                 <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">Servers Online</p>
+                  <p className="rpma-online">Online</p>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{serversOnline}</p>
                 </div>
                 <div className="rpma-exco-tile px-2 py-1.5">

@@ -39,6 +39,8 @@ export function StatCard({
           ? "var(--color-rag-green)"
           : "var(--color-accent)";
 
+  const onlineLabel = /^online$/i.test(label.trim()) || /\bonline\b/i.test(label) && !/%/.test(label);
+
   return (
     <div
       className={cn(
@@ -50,7 +52,11 @@ export function StatCard({
       title={tip || hint}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-medium leading-none text-muted">{label}</p>
+        {onlineLabel ? (
+          <span className="rpma-online">{label}</span>
+        ) : (
+          <p className="text-[11px] font-medium leading-none text-muted">{label}</p>
+        )}
         {trend ? (
           <span
             className={cn(
