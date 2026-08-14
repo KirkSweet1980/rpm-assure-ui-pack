@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-centered-20260814";
-const DC_STILL = "/brand/login-boardroom.jpg?v=20260814g";
+const LOGIN_BUILD = "boardroom-pane-lock-20260814";
+const DC_STILL = "/brand/login-boardroom.jpg?v=20260814h";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -69,15 +69,17 @@ function LoginPage() {
 
       <section className="rpma-dc-left" aria-hidden="true">
         <div className="rpma-dc-scene">
-          <img className="rpma-dc-still" src={DC_STILL} alt="" />
+          <div className="rpma-dc-art">
+            <img className="rpma-dc-still" src={DC_STILL} alt="" />
+            <div className="rpma-dc-marks">
+              <span className="m-clarity">clarity</span>
+              <span className="m-evidence">evidence</span>
+              <span className="m-sot">source of truth</span>
+              <span className="m-assurance">assurance</span>
+            </div>
+          </div>
         </div>
         <div className="rpma-dc-vignette" />
-        <div className="rpma-dc-marks">
-          <span className="m-clarity">clarity</span>
-          <span className="m-evidence">evidence</span>
-          <span className="m-sot">source of truth</span>
-          <span className="m-assurance">assurance</span>
-        </div>
       </section>
 
       <aside className="rpma-dc-right">
@@ -167,12 +169,23 @@ const DC_CSS = `
 }
 .rpma-dc-scene {
   position: absolute; inset: 0;
-  width: 100%; height: 100%;
+  overflow: hidden;
+}
+.rpma-dc-art {
+  --art-w: 1568;
+  --art-h: 1045;
+  position: absolute;
+  left: 28%;
+  top: 28%;
+  width: max(100%, calc(100dvh * 1568 / 1045));
+  height: max(100%, calc(100% * 1045 / 1568));
+  transform: translate(-28%, -28%);
 }
 .rpma-dc-still {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  object-fit: cover; object-position: 28% 28%;
+  object-fit: fill;
+  display: block;
 }
 .rpma-dc-marks {
   position: absolute; inset: 0; z-index: 4;
@@ -192,10 +205,10 @@ const DC_CSS = `
   user-select: none;
   transform: translate(-50%, -50%);
 }
-.m-clarity { left: 25.5%; top: 15.5%; font-size: clamp(1.55rem, 3.2vw, 2.4rem); }
-.m-evidence { left: 58.5%; top: 15.5%; font-size: clamp(1.55rem, 3.2vw, 2.4rem); }
-.m-sot { left: 25.5%; top: 41%; font-size: clamp(0.95rem, 1.7vw, 1.3rem); }
-.m-assurance { left: 58.5%; top: 41%; font-size: clamp(1.45rem, 2.9vw, 2.2rem); }
+.m-clarity { left: 37.5%; top: 16.5%; font-size: clamp(1.55rem, 3.05vw, 2.35rem); }
+.m-evidence { left: 62.5%; top: 16.5%; font-size: clamp(1.55rem, 3.05vw, 2.35rem); }
+.m-sot { left: 37.5%; top: 36.5%; font-size: clamp(0.88rem, 1.45vw, 1.18rem); }
+.m-assurance { left: 62.5%; top: 36.5%; font-size: clamp(1.4rem, 2.7vw, 2.05rem); }
 .rpma-dc-vignette {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
   background:
