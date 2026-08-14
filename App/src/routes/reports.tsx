@@ -1,18 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  Building2,
-  FileSpreadsheet,
-  Loader2,
-  Printer,
-  RefreshCw,
-  Send,
-  Shield,
-} from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Loader2, Printer, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
 import { CorpPathTrail, CorpWorkspaceRail, type CorpService } from "@/components/nav/corp-workspace-rail";
-import { RagBadge } from "@/components/portfolio/rag-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { fetchPortfolio } from "@/lib/data/portfolio";
@@ -187,8 +178,8 @@ function ReportsPage() {
   const navigate = useNavigate({ from: "/reports" });
   const rows = data?.rows ?? [];
 
-  const [format, setFormat] = useState<ReportFormat>(
-    (search.format as ReportFormat) || "ams-monthly",
+  const [format, setFormat] = useState<ReportFormat | null>(
+    PACKS.some((p) => p.id === search.format) ? (search.format as ReportFormat) : null,
   );
   const [customerCode, setCustomerCode] = useState(
     search.customer || rows[0]?.customerCode || "",
@@ -201,12 +192,13 @@ function ReportsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const pack = PACKS.find((p) => p.id === format) ?? PACKS[0];
-  const needsCustomer = pack.needsCustomer;
+  const pack = PACKS.find((p) => p.id === format) ?? null;
+  const needsCustomer = pack?.needsCustomer ?? false;
 
   useEffect(() => {
     const ok = PACKS.some((p) => p.id === search.format);
     if (ok && search.format) setFormat(search.format as ReportFormat);
+    if (!search.format) setFormat(null);
     if (search.customer) setCustomerCode(search.customer);
   }, [search.format, search.customer]);
 
@@ -223,6 +215,12 @@ function ReportsPage() {
   }, [customFields]);
 
   const loadPreview = useCallback(async () => {
+    if (!format) {
+      setPreviewHtml(null);
+      setPreviewSubject("");
+      setMsg(null);
+      return;
+    }
     if (needsCustomer && !customerCode) {
       setPreviewHtml(null);
       setPreviewSubject("");
@@ -369,9 +367,7 @@ function ReportsPage() {
     return "On-demand pack";
   }, [format, selectedCount]);
 
-  const attention = rows.filter((r) => r.healthRag === "Red" || r.healthRag === "Amber");
-
-  const reportPath = `/reports?format=${format}`;
+  const reportPath = format ? `/reports?format=${format}` : "/reports";
   const reportSvc = REPORT_SERVICES.find((s) =>
     s.modules.some((m) => m.path === reportPath),
   );
@@ -380,14 +376,15 @@ function ReportsPage() {
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-d3-workspace is-dual">
+        <div className="rpma-d3-workspace is-tool">
           <CorpWorkspaceRail
             heading="Reporting"
             homeHref="/reports"
             services={REPORT_SERVICES}
-            pathname={reportPath}
+            pathname={format ? `/reports?format=${format}` : "/reports"}
             servicesHeading="Services"
             modulesHeading="Service Modules"
+            stacked
           />
           <div className="rpma-d3-detail min-w-0">
             <div className="rpma-modnav">
@@ -398,291 +395,204 @@ function ReportsPage() {
                 moduleLabel={reportMod?.label}
               />
             </div>
-        <section className="mb-5">
-          <h2 className="mb-2 text-sm font-bold text-fg">1. Choose pack</h2>
-          <p className="mb-3 text-xs text-muted">
-            Preview and print in the browser. Outbound email schedules are disabled in this
-            release — use Print / PDF for board packs.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {PACKS.map((p) => {
-              const active = format === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => selectFormat(p.id)}
-                  className={cn(
-                    "rounded-xl border p-4 text-left transition",
-                    active
-                      ? "border-accent bg-accent-soft ring-2 ring-accent/30"
-                      : "border-border bg-surface hover:border-accent/40",
-                  )}
-                >
-                  <div className="mb-2 flex items-center gap-2">
-                    {p.icon === "day" ? (
-                      <FileSpreadsheet className="h-5 w-5 text-accent" />
-                    ) : p.icon === "estate" ? (
-                      <Building2 className="h-5 w-5 text-accent" />
-                    ) : p.icon === "rmm" ? (
-                      <Shield className="h-5 w-5 text-accent" />
-                    ) : (
-                      <Send className="h-5 w-5 text-accent" />
-                    )}
-                    <span className="text-sm font-bold text-fg">{p.title}</span>
+
+            {!pack ? (
+              <section>
+                <div className="rpma-rpt-hero">
+                  <div>
+                    <h2>Reporting</h2>
+                    <p>
+                      Choose a service on the left, then a pack. Preview in the browser and
+                      print to PDF. Outbound email schedules are off in this release.
+                    </p>
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                    {p.when}
-                  </p>
-                  <p className="mt-1.5 text-[13px] leading-snug text-muted">{p.blurb}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                </div>
+                <div className="rpma-rpt-grid">
+                  {PACKS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => selectFormat(p.id)}
+                      className="rpma-rpt-card"
+                    >
+                      <p className="when">{p.when}</p>
+                      <h3>{p.title}</h3>
+                      <p className="blurb">{p.blurb}</p>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <>
+                <div className="rpma-rpt-hero">
+                  <div>
+                    <h2>{pack.title}</h2>
+                    <p>{pack.blurb}</p>
+                  </div>
+                </div>
 
-        <div className="mb-5 rounded-xl border border-accent/25 bg-accent-soft/50 px-4 py-3 text-sm">
-          <p className="font-semibold text-fg">
-            Reporting period · <span className="font-normal text-muted">{periodBanner}</span>
-          </p>
-        </div>
+                <div className="rpma-rpt-toolbar">
+                  {needsCustomer ? (
+                    <label>
+                      <span>Customer Tenant</span>
+                      <select
+                        value={customerCode}
+                        onChange={(e) => {
+                          setCustomerCode(e.target.value);
+                          void navigate({
+                            search: { format: pack.id, customer: e.target.value },
+                          });
+                        }}
+                      >
+                        {rows.map((r) => (
+                          <option key={r.customerCode} value={r.customerCode}>
+                            {r.displayName}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <p className="text-sm text-muted">
+                      Assure Eco-System pack covers all customers.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" disabled={busy} onClick={() => void loadPreview()}>
+                      {busy ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="mr-1.5 h-4 w-4" />
+                      )}
+                      Refresh preview
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={busy || !previewHtml}
+                      onClick={openPrint}
+                    >
+                      <Printer className="mr-1.5 h-4 w-4" />
+                      Print / PDF
+                    </Button>
+                  </div>
+                </div>
 
-        {format === "custom-pack" ? (
-          <section className="mb-5">
-            <h2 className="mb-2 text-sm font-bold text-fg">1b. Custom report fields</h2>
-            <p className="mb-3 text-xs text-muted">
-              Select the data blocks to include. Selection is remembered in this browser.
-              Fields with no cover for the customer show as No cover in the pack.
-            </p>
-            <div className="mb-3 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => setCustomFields(defaultCustomFieldIds())}
-              >
-                Defaults
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => setCustomFields(REPORT_FIELDS.map((f) => f.id))}
-              >
-                Select all
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => setCustomFields([])}
-              >
-                Clear
-              </Button>
-              <span className="self-center text-xs text-muted">
-                {selectedCount} selected
-              </span>
-            </div>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {REPORT_FIELD_GROUPS.map((g) => {
-                const fields = REPORT_FIELDS.filter((f) => f.group === g.id);
-                const allOn = fields.every((f) => customFields.includes(f.id));
-                return (
-                  <Card key={g.id}>
-                    <CardHead>
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span>{g.label}</span>
-                        <button
-                          type="button"
-                          className="text-[11px] font-semibold text-accent hover:underline"
-                          onClick={() => selectGroup(g.id, !allOn)}
-                        >
-                          {allOn ? "Clear group" : "All in group"}
-                        </button>
-                      </div>
-                      <p className="mt-0.5 text-[11px] font-normal normal-case text-muted">
-                        {g.blurb}
-                      </p>
-                    </CardHead>
-                    <CardContent className="space-y-1.5 pt-2">
-                      {fields.map((f) => {
-                        const on = customFields.includes(f.id);
+                <p className="mb-3 text-xs text-muted">{periodBanner}</p>
+
+                {format === "custom-pack" ? (
+                  <section className="mb-5">
+                    <h2 className="mb-2 text-sm font-bold text-fg">Custom report fields</h2>
+                    <p className="mb-3 text-xs text-muted">
+                      Select the data blocks to include. Selection is remembered in this browser.
+                    </p>
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setCustomFields(defaultCustomFieldIds())}
+                      >
+                        Defaults
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setCustomFields(REPORT_FIELDS.map((f) => f.id))}
+                      >
+                        Select all
+                      </Button>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setCustomFields([])}>
+                        Clear
+                      </Button>
+                      <span className="self-center text-xs text-muted">{selectedCount} selected</span>
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {REPORT_FIELD_GROUPS.map((g) => {
+                        const fields = REPORT_FIELDS.filter((f) => f.group === g.id);
+                        const allOn = fields.every((f) => customFields.includes(f.id));
                         return (
-                          <label
-                            key={f.id}
-                            className={cn(
-                              "flex cursor-pointer gap-2 rounded-lg border px-2.5 py-2 text-sm transition",
-                              on
-                                ? "border-accent/40 bg-accent-soft/40"
-                                : "border-border bg-surface hover:border-accent/25",
-                            )}
-                          >
-                            <input
-                              type="checkbox"
-                              className="mt-0.5"
-                              checked={on}
-                              onChange={() => toggleField(f.id)}
-                            />
-                            <span>
-                              <span className="font-semibold text-fg">{f.label}</span>
-                              <span className="mt-0.5 block text-[11px] text-muted">
-                                {f.blurb}
-                              </span>
-                            </span>
-                          </label>
+                          <Card key={g.id}>
+                            <CardHead>
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span>{g.label}</span>
+                                <button
+                                  type="button"
+                                  className="text-[11px] font-semibold text-accent hover:underline"
+                                  onClick={() => selectGroup(g.id, !allOn)}
+                                >
+                                  {allOn ? "Clear group" : "All in group"}
+                                </button>
+                              </div>
+                              <p className="mt-0.5 text-[11px] font-normal normal-case text-muted">
+                                {g.blurb}
+                              </p>
+                            </CardHead>
+                            <CardContent className="space-y-1.5 pt-2">
+                              {fields.map((f) => {
+                                const on = customFields.includes(f.id);
+                                return (
+                                  <label
+                                    key={f.id}
+                                    className={cn(
+                                      "flex cursor-pointer gap-2 rounded-lg border px-2.5 py-2 text-sm transition",
+                                      on
+                                        ? "border-accent/40 bg-accent-soft/40"
+                                        : "border-border bg-surface hover:border-accent/25",
+                                    )}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="mt-0.5"
+                                      checked={on}
+                                      onChange={() => toggleField(f.id)}
+                                    />
+                                    <span>
+                                      <span className="font-semibold text-fg">{f.label}</span>
+                                      <span className="mt-0.5 block text-[11px] text-muted">
+                                        {f.blurb}
+                                      </span>
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </CardContent>
+                          </Card>
                         );
                       })}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
+                    </div>
+                  </section>
+                ) : null}
 
-        <section className="mb-5">
-          <h2 className="mb-2 text-sm font-bold text-fg">2. Customer & actions</h2>
-          <Card>
-            <CardContent className="space-y-3 pt-4">
-              <div className="flex flex-wrap items-end gap-3">
-                {needsCustomer ? (
-                  <label className="min-w-[14rem] flex-1">
-                    <span className="mb-1 block text-xs font-bold text-fg">Customer</span>
-                    <select
-                      className="field w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm font-semibold text-fg"
-                      value={customerCode}
-                      onChange={(e) => {
-                        setCustomerCode(e.target.value);
-                        void navigate({
-                          search: { format, customer: e.target.value },
-                        });
-                      }}
-                    >
-                      {rows.map((r) => (
-                        <option key={r.customerCode} value={r.customerCode}>
-                          {r.displayName}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <p className="flex-1 text-sm text-muted">
-                    Assure Eco-System pack covers all customers — no single customer needed.
+                {msg ? (
+                  <p className="mb-3 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg">
+                    {msg}
                   </p>
-                )}
-              </div>
+                ) : null}
 
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" disabled={busy} onClick={() => void loadPreview()}>
-                  {busy ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                {previewSubject ? (
+                  <p className="mb-2 text-xs text-muted">
+                    <span className="font-bold text-fg">Subject: </span>
+                    {previewSubject}
+                  </p>
+                ) : null}
+
+                <div className="rpma-rpt-preview">
+                  {previewUrl ? (
+                    <iframe title="Report preview" src={previewUrl} />
                   ) : (
-                    <RefreshCw className="mr-1.5 h-4 w-4" />
+                    <div className="flex min-h-[16rem] items-center justify-center text-sm text-muted">
+                      {busy ? "Generating preview…" : "Select a customer and refresh to preview."}
+                    </div>
                   )}
-                  Refresh preview
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={busy || !previewHtml}
-                  onClick={openPrint}
-                >
-                  <Printer className="mr-1.5 h-4 w-4" />
-                  Print / PDF
-                </Button>
-              </div>
-
-              {msg ? (
-                <p className="rounded-lg border border-border bg-bg px-3 py-2 text-sm text-fg">
-                  {msg}
-                </p>
-              ) : null}
-
-              {previewSubject ? (
-                <p className="text-xs text-muted">
-                  <span className="font-bold text-fg">Subject: </span>
-                  {previewSubject}
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="mb-5">
-          <h2 className="mb-2 text-sm font-bold text-fg">3. Preview</h2>
-          <Card className="overflow-hidden">
-            <CardHead>
-              {pack.title}
-              {busy ? (
-                <span className="ml-2 text-xs font-normal normal-case text-muted">
-                  Generating…
-                </span>
-              ) : null}
-            </CardHead>
-            <CardContent className="p-0">
-              {previewUrl ? (
-                <iframe
-                  title="Report preview"
-                  className="min-h-[min(75vh,720px)] w-full border-0 bg-white"
-                  src={previewUrl}
-                  sandbox="allow-same-origin allow-modals allow-popups allow-scripts"
-                />
-              ) : (
-                <p className="p-6 text-sm text-muted">
-                  {busy
-                    ? "Generating preview…"
-                    : msg
-                      ? "Preview could not be generated — see message above."
-                      : "Preview will appear here. Print from the browser when ready."}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
-        {attention.length > 0 ? (
-          <section>
-            <h2 className="mb-2 text-sm font-bold text-fg">Customers needing attention</h2>
-            <ul className="space-y-1.5">
-              {attention.slice(0, 8).map((r) => (
-                <li
-                  key={r.customerCode}
-                  className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-                >
-                  <RagBadge rag={r.healthRag} />
-                  <span className="font-bold text-fg">{r.displayName}</span>
-                  <span className="text-xs text-muted">{r.healthSummary}</span>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="ml-auto"
-                    onClick={() => {
-                      setCustomerCode(r.customerCode);
-                      selectFormat("ams-full");
-                      void navigate({
-                        search: { format: "ams-full", customer: r.customerCode },
-                      });
-                    }}
-                  >
-                    RPM Assure pack
-                  </Button>
-                  <Link
-                    to="/customers/$code"
-                    params={{ code: r.customerCode }}
-                    className="text-xs font-semibold text-accent underline-offset-2 hover:underline"
-                  >
-                    Open
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </AppShell>
     </RequireAuth>
   );
 }
+
