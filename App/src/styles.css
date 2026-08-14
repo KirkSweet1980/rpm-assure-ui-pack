@@ -379,6 +379,43 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
   font-weight: 700;
   color: var(--color-fg);
 }
+.rpma-pane {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rpma-pane-head {
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  background: color-mix(in srgb, var(--color-nav) 8%, var(--color-surface));
+  border-bottom: 1px solid var(--color-border);
+}
+.rpma-pane-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--color-nav) 8%, var(--color-surface));
+  border-bottom: 1px solid var(--color-border);
+}
+.rpma-pane-head-row .rpma-pane-head {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.rpma-pane-body { padding: 12px 16px; }
+html[data-theme="dark"] .rpma-pane-head,
+html.dark .rpma-pane-head,
+html[data-theme="dark"] .rpma-pane-head-row,
+html.dark .rpma-pane-head-row {
+  background: color-mix(in srgb, var(--color-nav) 45%, #10151c);
+}
 html[data-theme="dark"] .rpma-xls th,
 html.dark .rpma-xls th,
 html[data-theme="dark"] .rpma-xls td,

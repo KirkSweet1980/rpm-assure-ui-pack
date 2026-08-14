@@ -991,8 +991,15 @@ function ExcoInsightPage() {
 
   return (
     <RequireAuth>
-      <AppShell subtitle={`${source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · ${formatSastDateTime(exco.generatedAt || summary.generatedAt)}`}>
-        <div className="rpma-exco rpma-exco-compact space-y-2">
+      <AppShell>
+        <div className="rpma-exco space-y-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Estate</p>
+            <h1 className="mt-1 text-[18px] font-extrabold tracking-tight text-fg">Assure Eco-System</h1>
+            <p className="mt-0.5 text-[12px] text-muted">
+              {source.liveOk || summary.dataMode === "live" ? "Live SQL" : "Demo data"} · {formatSastDateTime(exco.generatedAt || summary.generatedAt)}
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {allEstateViews(customViews).map((v) => (
               <span key={v.id} className="inline-flex items-center">
@@ -1033,25 +1040,26 @@ function ExcoInsightPage() {
               </button>
             ) : null}
           </div>
-          <section className="rpma-glass px-3 py-2.5">
+          <section className="rpma-pane">
+            <h2 className="rpma-pane-head">Executive Brief</h2>
+            <div className="rpma-pane-body">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Executive brief</p>
-                <h2 className="text-[17px] font-bold tracking-tight text-fg">
-                  Estate is{" "}
+                <h3 className="text-[15px] font-extrabold tracking-tight text-fg">
+                  Assure Eco-System is{" "}
                   <span className={rag.overall === "Green" ? "text-rag-green" : rag.overall === "Amber" ? "text-rag-amber" : "text-rag-red"}>
                     {rag.overall}
                   </span>
-                  <span className="ml-2 text-[11px] font-semibold text-muted">
+                  <span className="ml-2 text-[12px] font-semibold text-muted">
                     {rag.red} red · {rag.amber} amber · {rag.green} green · {attention.length} attention
                   </span>
-                </h2>
+                </h3>
               </div>
-              <p className="text-[10px] text-muted">{liveLabel} · SLA {slaAvg}%</p>
+              <p className="text-[12px] text-muted">{liveLabel} · SLA {slaAvg}%</p>
             </div>
-            <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-border/70 pt-2">
+            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
               {collectFreshness.map((x) => (
-                <li key={x.k} className="flex items-center gap-1.5 text-[11px]">
+                <li key={x.k} className="flex items-center gap-1.5 text-[12px]">
                   <span className="font-semibold text-muted">{x.k}</span>
                   <span className={cn(
                     "font-medium",
@@ -1063,7 +1071,7 @@ function ExcoInsightPage() {
                 </li>
               ))}
             </ul>
-            <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-6 lg:grid-cols-12">
+            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-12">
               {[
                 { k: "rag-red" as DrillKind, l: "Red", v: rag.red, t: "red" as const },
                 { k: "rag-amber" as DrillKind, l: "Amber", v: rag.amber, t: "amber" as const },
@@ -1082,9 +1090,9 @@ function ExcoInsightPage() {
                   key={`${x.l}-${i}`}
                   type="button"
                   onClick={() => toggleDrill(x.k)}
-                  className={cn("rpma-exco-tile px-2 py-1.5 text-left", drill === x.k && "ring-1 ring-[var(--bs-primary)]")}
+                  className={cn("rounded-md bg-surface-2 px-2 py-1.5 text-left", drill === x.k && "ring-1 ring-[var(--color-nav)]")}
                 >
-                  <p className="truncate text-[9px] font-bold uppercase tracking-wide text-muted">{x.l}</p>
+                  <p className="truncate text-[10px] font-bold uppercase tracking-wide text-muted">{x.l}</p>
                   <p className={cn("font-mono text-[15px] font-bold tabular-nums leading-tight",
                     x.t === "red" && Number(x.v) > 0 ? "text-rag-red" :
                     x.t === "amber" && Number(x.v) > 0 ? "text-rag-amber" :
@@ -1092,12 +1100,13 @@ function ExcoInsightPage() {
                 </button>
               ))}
             </div>
+            </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
-            <section className="rpma-glass px-3 py-2.5">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">Services On Cover</h2>
-              <ul className="mt-1.5 space-y-1">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <section className="rpma-pane">
+              <h2 className="rpma-pane-head">Services On Cover</h2>
+              <ul className="rpma-pane-body space-y-2">
                 {[
                   ["SYSPRO", coverStats.syspro],
                   ["Remote Management", coverStats.rmm],
@@ -1116,9 +1125,9 @@ function ExcoInsightPage() {
                 ))}
               </ul>
             </section>
-            <section className="rpma-glass px-3 py-2.5">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">SLA By Service</h2>
-              <ul className="mt-1.5 space-y-1">
+            <section className="rpma-pane">
+              <h2 className="rpma-pane-head">SLA By Service</h2>
+              <ul className="rpma-pane-body space-y-2">
                 {[
                   ["SYSPRO", slaByService.syspro],
                   ["Remote Management", slaByService.rmm],
@@ -1140,41 +1149,42 @@ function ExcoInsightPage() {
                 })}
               </ul>
             </section>
-            <section className="rpma-glass px-3 py-2.5">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">Operations Pulse</h2>
-              <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                <div className="rpma-exco-tile px-2 py-1.5">
+            <section className="rpma-pane">
+              <h2 className="rpma-pane-head">Operations Pulse</h2>
+              <div className="rpma-pane-body grid grid-cols-2 gap-2">
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
                   <p className="rpma-online">Online</p>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{serversOnline}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">Servers Offline</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Servers Offline</p>
                   <p className={cn("font-mono text-[15px] font-bold", serversOffline > 0 ? "text-rag-red" : "text-fg")}>{serversOffline}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">Collect Fresh</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Collect Fresh</p>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{exco.collectFreshCount}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">Collect Stale</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Collect Stale</p>
                   <p className={cn("font-mono text-[15px] font-bold", exco.collectStaleCount > 0 ? "text-rag-amber" : "text-fg")}>{exco.collectStaleCount}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">FinSight Clear</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">FinSight Clear</p>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{finsightEstate.clearCustomers}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">OOB Lines</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">OOB Lines</p>
                   <p className={cn("font-mono text-[15px] font-bold", finsightEstate.totalOobLines > 0 ? "text-rag-amber" : "text-fg")}>{finsightEstate.totalOobLines}</p>
                 </div>
               </div>
             </section>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-12">
-            <section className="rpma-glass px-3 py-2.5 xl:col-span-4">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">Risk Matrix</h2>
-              <div className="rpma-heat mt-1">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <section className="rpma-pane xl:col-span-4">
+              <h2 className="rpma-pane-head">Risk Matrix</h2>
+              <div className="rpma-pane-body">
+              <div className="rpma-heat">
                 <span className="rpma-heat-ylab">Impact</span>
                 <div className="rpma-heat-grid">
                   <span />
@@ -1204,11 +1214,12 @@ function ExcoInsightPage() {
                   ))}
                 </div>
               </div>
+              </div>
             </section>
 
-            <section className="rpma-glass px-3 py-2.5 xl:col-span-4">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">Impact</h2>
-              <ol className="rpma-impact mt-1">
+            <section className="rpma-pane xl:col-span-4">
+              <h2 className="rpma-pane-head">Impact</h2>
+              <ol className="rpma-impact rpma-pane-body">
                 {[...riskPoints]
                   .sort((a, b) => b.impactScore - a.impactScore || b.likeScore - a.likeScore)
                   .slice(0, 7)
@@ -1234,43 +1245,46 @@ function ExcoInsightPage() {
               </ol>
             </section>
 
-            <section className="rpma-glass px-3 py-2.5 xl:col-span-4">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">Microsoft 365 CSP</h2>
-              <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">Tenants</p>
+            <section className="rpma-pane xl:col-span-4">
+              <h2 className="rpma-pane-head">Microsoft 365 CSP</h2>
+              <div className="rpma-pane-body">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Tenants</p>
                   <p className="font-mono text-[15px] font-bold">{m365Estate.tenants}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">Secure Score</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Secure Score</p>
                   <p className="font-mono text-[15px] font-bold">{m365Estate.avgScore == null ? "—" : `${m365Estate.avgScore}%`}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">MFA Gaps</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">MFA Gaps</p>
                   <p className={cn("font-mono text-[15px] font-bold", m365Estate.mfaGap > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.mfaGap}</p>
                 </div>
-                <div className="rpma-exco-tile px-2 py-1.5">
-                  <p className="text-[9px] font-bold uppercase text-muted">High GA Count</p>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">High GA Count</p>
                   <p className={cn("font-mono text-[15px] font-bold", m365Estate.highGa > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.highGa}</p>
                 </div>
               </div>
-              <p className="mt-2 text-[10px] text-muted">
+              <p className="mt-3 text-[12px] text-muted">
                 Seats {m365Estate.assigned} / {m365Estate.seats || "—"} assigned
               </p>
+              </div>
             </section>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-12">
-            <section className="rpma-glass px-3 py-2.5 xl:col-span-5">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <section className="rpma-pane xl:col-span-5">
+              <h2 className="rpma-pane-head">
                 {drill ? drillTitle : "Who Needs A Decision"}
               </h2>
+              <div className="rpma-pane-body">
               {(drill ? drillRows : attention).length === 0 ? (
-                <p className="mt-2 text-[12px] text-muted">
-                  {drill ? "No customers in this view." : "Estate is clear."}
+                <p className="text-[12px] text-muted">
+                  {drill ? "No customers in this view." : "Assure Eco-System is clear."}
                 </p>
               ) : (
-                <ul className="mt-1 space-y-0.5">
+                <ul className="space-y-1">
                   {(drill ? drillRows : attention).slice(0, 8).map((b) => (
                     <li key={b.customerCode}>
                       <Link to="/customers/$code" params={{ code: b.customerCode }} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
@@ -1285,22 +1299,24 @@ function ExcoInsightPage() {
                   ))}
                 </ul>
               )}
+              </div>
             </section>
 
-            <section className="rpma-glass px-3 py-2.5 xl:col-span-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">
+            <section className="rpma-pane xl:col-span-4">
+              <div className="rpma-pane-head-row">
+                <h2 className="rpma-pane-head">
                   {drill ? drillTitle : "Major Incidents"}
                 </h2>
                 {drill ? (
-                  <button type="button" onClick={() => setDrill(null)} className="text-[10px] font-bold text-[var(--bs-primary)]">Clear</button>
+                  <button type="button" onClick={() => setDrill(null)} className="text-[11px] font-bold text-fg">Clear</button>
                 ) : null}
               </div>
+              <div className="rpma-pane-body">
               {!drill ? (
                 incidents.length === 0 ? (
-                  <p className="mt-2 text-[12px] text-muted">No major incidents.</p>
+                  <p className="text-[12px] text-muted">No major incidents.</p>
                 ) : (
-                  <ul className="mt-1 space-y-0.5">
+                  <ul className="space-y-1">
                     {incidents.slice(0, 7).map((it, i) => (
                       <li key={`${it.customerCode}-${i}`}>
                         <Link to={it.to} className="flex items-center gap-1.5 rounded px-1 py-1 text-[12px] hover:bg-surface-2">
@@ -1313,9 +1329,9 @@ function ExcoInsightPage() {
                   </ul>
                 )
               ) : drillRows.length === 0 ? (
-                <p className="mt-2 text-[12px] text-muted">Nothing in this slice.</p>
+                <p className="text-[12px] text-muted">Nothing in this slice.</p>
               ) : (
-                <ul className="mt-1 max-h-56 space-y-0.5 overflow-y-auto">
+                <ul className="max-h-56 space-y-1 overflow-y-auto">
                   {drillRows.map((b) => (
                     <li key={b.customerCode}>
                       <Link to="/customers/$code" params={{ code: b.customerCode }} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
@@ -1326,14 +1342,16 @@ function ExcoInsightPage() {
                   ))}
                 </ul>
               )}
+              </div>
             </section>
 
-            <section className="rpma-glass px-3 py-2.5 xl:col-span-3">
-              <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted">FinSight Close</h2>
+            <section className="rpma-pane xl:col-span-3">
+              <h2 className="rpma-pane-head">FinSight Close</h2>
+              <div className="rpma-pane-body">
               {finsightEstate.worst.length === 0 ? (
-                <p className="mt-2 text-[12px] text-muted">Control accounts clear on covered SYSPRO tenants.</p>
+                <p className="text-[12px] text-muted">Control accounts clear on covered SYSPRO tenants.</p>
               ) : (
-                <ul className="mt-1 space-y-0.5">
+                <ul className="space-y-1">
                   {finsightEstate.worst.map((b) => (
                     <li key={b.customerCode}>
                       <Link to="/customers/$code/syspro/dtr" params={{ code: b.customerCode }} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] hover:bg-surface-2">
@@ -1344,6 +1362,7 @@ function ExcoInsightPage() {
                   ))}
                 </ul>
               )}
+              </div>
             </section>
           </div>
         </div>
