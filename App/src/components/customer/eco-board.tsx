@@ -23,6 +23,7 @@ import { finsightModuleName } from "@/lib/brand/finsight";
 import { CHART } from "@/lib/brand-colors";
 import {
   DEFAULT_ECO_WIDGET_LAYOUT,
+  ECO_WIDGETS,
   ecoWidgetMeta,
   readEcoWidgetLayout,
   type EcoWidgetId,
@@ -71,7 +72,7 @@ function Pane({
 }
 
 export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
-  const { customer, risks, issues, incidents, dtrLevel1, license, dayEnd, jobErrors } = data;
+  const { customer, risks, issues, incidents, dtrLevel1, license, dayEnd, jobErrors, extraSummary, sysproHotfixes, operators } = data;
   const cover = coverFromDetail(data);
   const base = `/customers/${customer.customerCode}`;
   const [layout, setLayout] = useState<EcoWidgetLayout>(DEFAULT_ECO_WIDGET_LAYOUT);
@@ -187,7 +188,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     <div className="rpma-eco-visuals space-y-3">
       <div className="rpma-viewbar">
         <span className="text-[11px] font-bold uppercase tracking-wide text-muted">
-          Customer EcoSystem
+          Customer EcoSystem · {ECO_WIDGETS.length} widgets
         </span>
         <EcoCustomizeButton open={customizeOpen} onClick={() => setCustomizeOpen((v) => !v)} />
       </div>
@@ -539,6 +540,31 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           ) : (
             <p className="text-[12px] text-muted">No cover — RMM is not in scope.</p>
           )}
+        </Pane>
+
+        <Pane title="SYSPRO operators" {...wgt("operators")}>
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard label="Active" value={customer.activeUserCount} tone={customer.activeUserCount > 0 ? "green" : "amber"} />
+            <StatCard label="Total" value={Math.max(customer.operatorCount, (operators ?? []).length)} />
+          </div>
+        </Pane>
+
+        <Pane title="SYSPRO hotfixes" {...wgt("hotfixes")}>
+          <StatCard label="Applied" value={(sysproHotfixes ?? []).length} />
+          <p className="mt-1 text-[12px] text-muted">
+            {(sysproHotfixes ?? []).slice(0, 2).map((h) => h.hotfixName || h.hotfixCode).filter(Boolean).join(" · ") || "No hotfix rows"}
+          </p>
+        </Pane>
+
+        <Pane title="SQL health" {...wgt("sqlhealth")}>
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard label="Checks" value={extraSummary?.sqlHealthCount ?? 0} />
+            <StatCard
+              label="Failed"
+              value={extraSummary?.sqlHealthFailCount ?? 0}
+              tone={(extraSummary?.sqlHealthFailCount ?? 0) > 0 ? "red" : "green"}
+            />
+          </div>
         </Pane>
       </div>
     </div>

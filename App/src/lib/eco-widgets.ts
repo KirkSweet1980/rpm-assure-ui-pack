@@ -16,7 +16,10 @@ export type EcoWidgetId =
   | "license"
   | "dayend"
   | "jobs"
-  | "patch";
+  | "patch"
+  | "operators"
+  | "hotfixes"
+  | "sqlhealth";
 
 export type EcoWidgetMeta = {
   id: EcoWidgetId;
@@ -44,6 +47,9 @@ export const ECO_WIDGETS: EcoWidgetMeta[] = [
   { id: "dayend", label: "Day End", span: 3, hint: "Automated close status" },
   { id: "jobs", label: "Job Logging", span: 6, hint: "SYSPRO job errors" },
   { id: "patch", label: "Server Patch", span: 6, hint: "Missing patches on servers" },
+  { id: "operators", label: "SYSPRO Operators", span: 4, hint: "Active vs quiet operators" },
+  { id: "hotfixes", label: "SYSPRO Hotfixes", span: 4, hint: "Applied hotfix count" },
+  { id: "sqlhealth", label: "SQL Health", span: 4, hint: "SYSPRO SQL health checks" },
 ];
 
 export type EcoWidgetLayout = {
@@ -51,13 +57,13 @@ export type EcoWidgetLayout = {
   hidden: EcoWidgetId[];
 };
 
-const KEY = "rpma-eco-widgets-v1";
+const KEY = "rpma-eco-widgets-v2";
 const ALL_IDS = ECO_WIDGETS.map((w) => w.id);
 
-/** First-visit: keep the original six plus a few high-value extras. */
+/** All widgets on — user hides what they do not want. */
 export const DEFAULT_ECO_WIDGET_LAYOUT: EcoWidgetLayout = {
   order: [...ALL_IDS],
-  hidden: ["epp", "incidents", "risks", "license", "dayend", "jobs", "patch"],
+  hidden: [],
 };
 
 export function ecoWidgetMeta(id: EcoWidgetId): EcoWidgetMeta {

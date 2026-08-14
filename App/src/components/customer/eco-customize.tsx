@@ -53,7 +53,7 @@ export function EcoCustomizePanel({
   function reset() {
     commit({
       order: ECO_WIDGETS.map((w) => w.id),
-      hidden: ["epp", "incidents", "risks", "license", "dayend", "jobs", "patch"],
+      hidden: [],
     });
   }
 
