@@ -15,11 +15,15 @@ param(
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $ConfigPath)) { throw "Missing config: $ConfigPath" }
 . $ConfigPath
+$cfgLocalUser = $LocalSqlUser
+$cfgLocalPass = $LocalSqlPassword
 $agentLib = 'C:\RPM-Assure\Agent\Lib-SecureConfig.ps1'
 if (Test-Path $agentLib) {
   . $agentLib
   Import-RpmaAgentSecrets
 }
+if ($cfgLocalPass) { $LocalSqlPassword = $cfgLocalPass }
+if ($cfgLocalUser) { $LocalSqlUser = $cfgLocalUser }
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $here 'Lib-Sqlcmd.ps1')
@@ -31,11 +35,18 @@ Initialize-RpmaCollect -LogDir $LogDir -Prefix ("syspro_{0}" -f $CustomerCode)
 Write-RpmaLog "START customer=$CustomerCode instance=$InstanceName host=$env:COMPUTERNAME"
 Write-RpmaLog "flags IncludeJobs=$IncludeJobs JobsOnly=$JobsOnly JobsErrorsOnly=$JobsErrorsOnly SkipDtr=$SkipDtr SkipSecurity=$SkipSecurity"
 
+$tryServers = @('.', $env:COMPUTERNAME)
+if ($InstanceName) { $tryServers += @($InstanceName, ".\$InstanceName") }
+$tryServers = $tryServers | Select-Object -Unique
+$r = $null
 $LocalS = '.'
-
-$r = Invoke-RpmaSql -Server $LocalS -User $LocalSqlUser -Pass $LocalSqlPassword -SqlText "SET NOCOUNT ON; SELECT SUSER_SNAME(), @@SERVERNAME;" -Tsv
-if ($r.ExitCode -ne 0) { throw "Local SQL failed: $($r.Text)" }
-Write-RpmaLog ("local OK " + ((Get-RpmaDataRows $r.Text) -join ' | '))
+foreach ($s in $tryServers) {
+  Write-RpmaLog "try local $s"
+  $r = Invoke-RpmaSql -Server $s -User $LocalSqlUser -Pass $LocalSqlPassword -SqlText "SET NOCOUNT ON; SELECT SUSER_SNAME(), @@SERVERNAME;" -Tsv
+  if ($r.ExitCode -eq 0) { $LocalS = $s; break }
+}
+if (-not $r -or $r.ExitCode -ne 0) { throw "Local SQL failed: $($r.Text)" }
+Write-RpmaLog ("local OK " + $LocalS + " " + ((Get-RpmaDataRows $r.Text) -join ' | '))
 
 $r = Invoke-RpmaSql -Server $CentralDataSource -User $CentralSqlUser -Pass $CentralSqlPassword -Database $CentralDatabase -SqlText "SET NOCOUNT ON; SELECT DB_NAME(), SUSER_SNAME();" -Tsv
 if ($r.ExitCode -ne 0) { throw "Central SQL failed: $($r.Text)" }
