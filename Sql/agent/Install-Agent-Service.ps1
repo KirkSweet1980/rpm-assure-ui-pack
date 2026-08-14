@@ -154,13 +154,11 @@ $ps = (Get-Command powershell.exe).Source
 $loop = Join-Path $AgentRoot "RpmAssure-Agent-Loop.ps1"
 if (-not (Test-Path $loop)) { throw "Missing $loop" }
 $cmd = Join-Path $AgentRoot "start-edge.cmd"
-if (-not (Test-Path $cmd)) {
-  @(
-    '@echo off',
-    'cd /d C:\RPM-Assure\Agent',
-    'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Agent\RpmAssure-Agent-Loop.ps1" -AgentRoot "C:\RPM-Assure\Agent"'
-  ) | Set-Content -LiteralPath $cmd -Encoding ASCII
-}
+@(
+  '@echo off',
+  'cd /d C:\RPM-Assure\Agent',
+  'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Agent\RpmAssure-Agent-Loop.ps1" -AgentRoot "C:\RPM-Assure\Agent"'
+) | Set-Content -LiteralPath $cmd -Encoding ASCII
 
 $existing = Get-Service -Name $ServiceName -EA SilentlyContinue
 if ($existing) {
@@ -188,9 +186,17 @@ if ($existing) {
 & $nssm set $ServiceName AppStopMethodSkip 6
 & $nssm set $ServiceName AppThrottle 1500
 
-Start-Service $ServiceName
-Start-Sleep 2
+$oldE = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+& $nssm start $ServiceName
+Start-Sleep 4
+$ErrorActionPreference = $oldE
 Get-Service $ServiceName | Format-Table Name, Status, StartType -AutoSize
+$st = (Get-Service $ServiceName -EA SilentlyContinue).Status
+if ($st -ne 'Running') {
+  Write-Host 'WARN: service not running yet. Showing logs:'
+  Get-Content (Join-Path $AgentRoot 'logs\service-stderr.log') -Tail 20 -EA SilentlyContinue
+}
 
 # Tray icon at user logon
 $tray = Join-Path $AgentRoot 'Start-Agent-Tray.ps1'
