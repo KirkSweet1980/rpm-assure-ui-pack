@@ -15,7 +15,7 @@ export function CorpWorkspaceRail({
   homeHref,
   services,
   pathname,
-  servicesHeading = "Services",
+  servicesHeading = "Settings",
   modulesHeading = "Service Modules",
 }: {
   heading: string;
@@ -39,64 +39,68 @@ export function CorpWorkspaceRail({
   const active = services.find((s) => s.id === picked) ?? null;
 
   return (
-    <aside className="rpma-pillar-rail" aria-label={heading}>
-      <section className="rpma-nav-block">
-        <div className="rpma-pillar-rail-head">
-          <h2>{heading}</h2>
-        </div>
-        <div className="rpma-pillar-mods is-eco">
-          <SpaLink
-            href={homeHref}
-            className={cn("rpma-modbtn", (path === homeHref || path === `${homeHref}/`) && "is-on")}
-            onClick={() => setPicked(null)}
-          >
-            Overview
-          </SpaLink>
-        </div>
-      </section>
-
-      <section className="rpma-nav-block">
-        <div className="rpma-pillar-rail-head">
-          <h2>{servicesHeading}</h2>
-        </div>
-        <div className="rpma-svc-static" role="navigation" aria-label="Services">
-          {services.map((s) => (
+    <>
+      <aside className="rpma-pillar-rail" aria-label={heading}>
+        <section className="rpma-nav-block">
+          <div className="rpma-pillar-rail-head">
+            <h2>{heading}</h2>
+          </div>
+          <div className="rpma-pillar-mods is-eco">
             <SpaLink
-              key={s.id}
-              href={s.overview}
-              className={cn("rpma-svc-row is-cover", picked === s.id && "is-on")}
-              onClick={() => setPicked(s.id)}
+              href={homeHref}
+              className={cn("rpma-modbtn", (path === homeHref || path === `${homeHref}/`) && "is-on")}
+              onClick={() => setPicked(null)}
             >
-              <span className="rpma-svc-row-name">{s.title}</span>
+              Overview
             </SpaLink>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <section className="rpma-nav-block">
-        <div className="rpma-pillar-rail-head">
-          <h2>{modulesHeading}</h2>
-        </div>
-        <div className="rpma-mod-static" role="navigation" aria-label="Service Modules">
-          {active ? (
-            active.modules.map((m) => {
-              const selected = path === m.path || path.startsWith(`${m.path}/`);
-              return (
-                <SpaLink
-                  key={m.path}
-                  href={m.path}
-                  className={cn("rpma-mod-row", selected && "is-on")}
-                >
-                  {m.label}
-                </SpaLink>
-              );
-            })
-          ) : (
-            <p className="rpma-list-empty">Select a service</p>
-          )}
-        </div>
-      </section>
-    </aside>
+        <section className="rpma-nav-block">
+          <div className="rpma-pillar-rail-head">
+            <h2>{servicesHeading}</h2>
+          </div>
+          <div className="rpma-svc-static" role="navigation" aria-label={servicesHeading}>
+            {services.map((s) => (
+              <SpaLink
+                key={s.id}
+                href={s.overview}
+                className={cn("rpma-svc-row is-cover", picked === s.id && "is-on")}
+                onClick={() => setPicked(s.id)}
+              >
+                <span className="rpma-svc-row-name">{s.title}</span>
+              </SpaLink>
+            ))}
+          </div>
+        </section>
+      </aside>
+
+      <aside className="rpma-pillar-rail" aria-label={modulesHeading}>
+        <section className="rpma-nav-block">
+          <div className="rpma-pillar-rail-head">
+            <h2>{modulesHeading}</h2>
+          </div>
+          <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
+            {active ? (
+              active.modules.map((m) => {
+                const selected = path === m.path || path.startsWith(`${m.path}/`);
+                return (
+                  <SpaLink
+                    key={m.path}
+                    href={m.path}
+                    className={cn("rpma-mod-row", selected && "is-on")}
+                  >
+                    {m.label}
+                  </SpaLink>
+                );
+              })
+            ) : (
+              <p className="rpma-list-empty">Select a setting</p>
+            )}
+          </div>
+        </section>
+      </aside>
+    </>
   );
 }
 
@@ -122,7 +126,7 @@ export function CorpPathTrail({
       {service ? (
         <span className="rpma-crumb-a">{service}</span>
       ) : (
-        <span className="rpma-crumb-muted">Service</span>
+        <span className="rpma-crumb-muted">Settings</span>
       )}
       <span className="rpma-crumb-arr" aria-hidden>
         ›
