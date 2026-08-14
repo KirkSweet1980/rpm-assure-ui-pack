@@ -99,7 +99,7 @@ export function CoveEsrPanel({ data }: { data: CustomerDetailPayload }) {
         </p>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Kpi label="Data backed up" value={esr.dataBackedUpLabel} />
-          <Kpi label="Average backup time" value="—" />
+          <Kpi label="Average backup time" value={esr.avgBackupTimeLabel} />
           <Kpi label="Devices" value={esr.deviceCount} />
           <Kpi label="Used storage" value={esr.usedStorageLabel} />
         </div>

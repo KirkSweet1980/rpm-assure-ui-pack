@@ -91,7 +91,7 @@ A robust cyber resilience strategy is essential for maintaining business continu
 Backup success rate indicates the effectiveness of the backup process, which is crucial for ensuring that data can be recovered when needed, minimizing downtime and preventing data loss.</p>
 <table class="esr-kpis"><tr>
   ${kpi("Data backed up", esr.dataBackedUpLabel)}
-  ${kpi("Average backup time", "—")}
+  ${kpi("Average backup time", esr.avgBackupTimeLabel)}
   ${kpi("Devices", String(esr.deviceCount))}
   ${kpi("Used storage", esr.usedStorageLabel)}
 </tr></table>

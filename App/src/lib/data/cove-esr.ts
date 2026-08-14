@@ -32,6 +32,7 @@ export type CoveEsr = {
   successCaption: string;
   dataBackedUpLabel: string;
   usedStorageLabel: string;
+  avgBackupTimeLabel: string;
   deviceCount: number;
   okCount: number;
   failedCount: number;
@@ -48,6 +49,14 @@ export type CoveEsr = {
   deviceTypes: CoveEsrSlice[];
   retention: CoveEsrSlice[];
 };
+
+function durationLabel(sec: number | null): string {
+  if (sec == null || !Number.isFinite(sec) || sec < 0) return "—";
+  if (sec < 60) return "< 1 min";
+  if (sec < 3600) return `${Math.round(sec / 60)} min`;
+  const h = sec / 3600;
+  return `${h >= 10 ? Math.round(h) : h.toFixed(1)} h`;
+}
 
 function bytesLabel(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return "0 B";
@@ -131,6 +140,10 @@ export function buildCoveEsr(data: CustomerDetailPayload): CoveEsr {
 
   const selected = devices.reduce((s, d) => s + (d.selectedBytes ?? d.usedBytes ?? 0), 0);
   const used = devices.reduce((s, d) => s + (d.usedBytes ?? 0), 0);
+  const durs = devices
+    .map((d) => d.backupDurationSec)
+    .filter((n): n is number => n != null && Number.isFinite(n) && n >= 0 && n <= 86400);
+  const avgDur = durs.length ? durs.reduce((a, b) => a + b, 0) / durs.length : null;
 
   const within24 = devices.filter((d) => {
     const h = hoursAgo(d.lastSuccessTime);
@@ -189,6 +202,7 @@ export function buildCoveEsr(data: CustomerDetailPayload): CoveEsr {
     successCaption,
     dataBackedUpLabel: bytesLabel(selected || used),
     usedStorageLabel: bytesLabel(used || selected),
+    avgBackupTimeLabel: durationLabel(avgDur),
     deviceCount: cs?.deviceCount ?? devices.length,
     okCount: ok,
     failedCount: failed,

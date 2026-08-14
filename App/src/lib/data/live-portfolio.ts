@@ -4762,7 +4762,8 @@ SELECT TOP 500
   d.RetentionSql,
   d.RetentionVmware,
   d.RetentionNetwork,
-  d.SelectedBytes
+  d.SelectedBytes,
+  d.LastBackupDurationSec
 FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
 WHERE (
     d.CustomerCode = @code
@@ -4960,6 +4961,8 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
         r.RetentionNetwork != null ? String(r.RetentionNetwork) : null,
       selectedBytes:
         r.SelectedBytes != null ? Number(r.SelectedBytes) : null,
+      backupDurationSec:
+        r.LastBackupDurationSec != null ? Number(r.LastBackupDurationSec) : null,
     }));
 
     // Summary: real view columns (LastImportAt, not ImportedAt; no HealthRag)

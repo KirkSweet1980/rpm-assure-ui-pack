@@ -4356,6 +4356,7 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
                 <th className="px-3 py-2">Partner</th>
                 <th className="px-3 py-2">Backup health</th>
                 <th className="px-3 py-2">Backup size</th>
+                <th className="px-3 py-2">Backup time</th>
                 <th className="px-3 py-2">Retention policy</th>
                 <th className="px-3 py-2">Last success</th>
                 <th className="px-3 py-2">Recovery plan</th>
@@ -4399,6 +4400,15 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
                   </td>
                   <td className="px-3 py-2 text-xs tabular-nums text-muted">
                     {formatCoveBytes(d.usedBytes ?? d.selectedBytes)}
+                  </td>
+                  <td className="px-3 py-2 text-xs tabular-nums text-muted">
+                    {d.backupDurationSec == null
+                      ? "—"
+                      : d.backupDurationSec < 60
+                        ? "< 1 min"
+                        : d.backupDurationSec < 3600
+                          ? `${Math.round(d.backupDurationSec / 60)} min`
+                          : `${(d.backupDurationSec / 3600).toFixed(1)} h`}
                   </td>
                   <td className="px-3 py-2 text-xs text-muted" title={d.profileName || undefined}>
                     {d.retentionPolicy || "—"}

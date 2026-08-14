@@ -576,6 +576,8 @@ export type CoveDeviceRow = {
   lastBackupStatus?: string | null;
   lastSuccessTime?: string | null;
   usedBytes?: number | null;
+  /** Last backup session duration in seconds (Cove T07) */
+  backupDurationSec?: number | null;
   /** Selected backup size when UsedBytes empty */
   selectedBytes?: number | null;
   /** Cove PN — Retention Policy name */
