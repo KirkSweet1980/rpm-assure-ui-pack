@@ -67,7 +67,7 @@ function Get-PwAll([string]$Path) {
     $new = 0
     foreach ($it in $items) {
       $id = $null
-      foreach ($n in @('Id','id','DeviceId','OrganizationId','Identifier')) {
+      foreach ($n in @('Identifier','DeviceId','Id','id','Name')) {
         if ($it.PSObject.Properties.Name -contains $n -and $it.$n) { $id = [string]$it.$n; break }
       }
       $key = $id
@@ -82,7 +82,7 @@ function Get-PwAll([string]$Path) {
     $skip += $items.Count
     if ($items.Count -lt $top) { break }
   }
-  return ,$all.ToArray()
+  return $all
 }
 
 function Name-Of($o) {

@@ -769,9 +769,9 @@ function Get-PwAll([string]$Path) {
     }
     $new = 0
     foreach ($item in $arr) {
-      $id = Get-Prop $item @('Id','id','DeviceId','OrganizationId','Identifier')
-      $key = if ($id) { "$id" } else { [string](Get-Prop $item @('Name','OrganizationName','name')) }
-      if (-not $key) { $key = 'row-' + $all.Count }
+      # Identifier first — OrganizationId is shared by every device in an org
+      $id = Get-Prop $item @('Identifier','DeviceId','Id','id','Name')
+      $key = if ($id) { "$id" } else { 'row-' + $all.Count }
       if ($seen.ContainsKey($key)) { continue }
       $seen[$key] = 1
       [void]$all.Add($item)
@@ -783,12 +783,27 @@ function Get-PwAll([string]$Path) {
     if ($arr.Count -lt $top) { break }
   }
   Write-Log ("GET $Path ALL count=$($all.Count)")
-  return ,$all.ToArray()
+  return $all
+}
+
+function Flatten-PwItems($x) {
+  $out = New-Object System.Collections.Generic.List[object]
+  foreach ($i in @($x)) {
+    if ($null -eq $i) { continue }
+    if ($i -is [System.Management.Automation.PSCustomObject]) { [void]$out.Add($i); continue }
+    $isEnum = ($i -is [System.Collections.IEnumerable]) -and -not ($i -is [string])
+    if ($isEnum) {
+      foreach ($j in $i) { if ($null -ne $j) { [void]$out.Add($j) } }
+      continue
+    }
+    [void]$out.Add($i)
+  }
+  return $out
 }
 
 # --- API fetch ---
 Write-Log 'GET organizations (all pages)'
-$orgs = @(Get-PwAll 'organizations')
+$orgs = Flatten-PwItems (Get-PwAll 'organizations')
 $orgById = @{}
 foreach ($o in $orgs) {
   $oid = Get-Prop $o @('Id','OrganizationId','id')
@@ -811,8 +826,8 @@ foreach ($o in $orgs) {
 Write-Log 'GET sites / groups (tree: org > site > group)'
 $sites = @()
 $groups = @()
-try { $sites = @(Get-PwAll 'sites') } catch { Write-Log ('sites skip ' + $_.Exception.Message) }
-try { $groups = @(Get-PwAll 'groups') } catch { Write-Log ('groups skip ' + $_.Exception.Message) }
+try { $sites = Flatten-PwItems (Get-PwAll 'sites') } catch { Write-Log ('sites skip ' + $_.Exception.Message) }
+try { $groups = Flatten-PwItems (Get-PwAll 'groups') } catch { Write-Log ('groups skip ' + $_.Exception.Message) }
 Write-Log ('sites=' + $sites.Count + ' groups=' + $groups.Count)
 foreach ($s in @($sites + $groups)) {
   $sn = [string](Get-Prop $s @('Name','SiteName','GroupName','name'))
@@ -828,11 +843,11 @@ foreach ($s in @($sites + $groups)) {
 }
 
 Write-Log 'GET devices (all pages, OData $top/$skip)'
-$devices = @(Get-PwAll 'devices')
+$devices = Flatten-PwItems (Get-PwAll 'devices')
 if ($devices.Count -lt 1) {
   $devRes = Invoke-PwGet 'devices'
   if (-not $devRes.Ok) { throw 'devices required' }
-  $devices = @(Get-DataArray $devRes.Json)
+  $devices = Flatten-PwItems (Get-DataArray $devRes.Json)
 }
 Write-Log ('devices count=' + $devices.Count)
 
@@ -849,7 +864,7 @@ foreach ($oid in @($sirfOrgIds)) {
       ("organizations/$oid/devices")
     )) {
     try {
-      $extra = @(Get-PwAll $p)
+      $extra = Flatten-PwItems (Get-PwAll $p)
     } catch { $extra = @() }
     $added = 0
     foreach ($d in $extra) {
