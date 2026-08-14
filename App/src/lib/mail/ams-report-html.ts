@@ -10,6 +10,14 @@ import { formatProgramLabel } from "@/lib/data/syspro-programs";
 import { formatSastDate, formatSastDateTime } from "@/lib/utils";
 import { REPORT_FIELDS, type ReportFieldDef } from "@/lib/data/report-fields";
 import { isRmmServer, isRmmWorkstation } from "@/lib/data/rmm-device-class";
+import {
+  availabilityOf,
+  capacityOf,
+  fmtN,
+  patchOf,
+  splitRmmDevices,
+} from "@/lib/mail/rmm-report-metrics";
+import type { RmmDeviceRow } from "@/lib/data/types";
 import { RPM_CONTRACT_CLOCKS, RPM_SECURITY_ADMIN, RPM_SLA_REVISION } from "@/lib/data/sla-metrics";
 import { buildDayEndSnapshot } from "@/lib/data/day-end";
 
@@ -1625,19 +1633,213 @@ export function buildRmmServiceHtml(opts: {
   customer: CustomerDetailPayload;
   portfolio: PortfolioPayload;
 }): { subject: string; html: string; text: string } {
-  return buildCustomPackHtml({
-    customer: opts.customer,
-    portfolio: opts.portfolio,
-    fieldIds: [
-      "health_rag",
-      "cover_strip",
-      "rmm_fleet",
-      "rmm_alerts",
-      "rmm_patches",
-      "rmm_patch_table",
-      "rmm_disks",
-      "rmm_offline",
-      "rmm_reboot",
-    ],
+  return rmmPack({
+    ...opts,
+    kind: "service",
+    title: "Remote Management Pack",
+    note: "Fleet, alerts, patches, and offline. Servers feed SLA. Workstations are visibility only.",
   });
+}
+
+export function buildRmmAvailabilityHtml(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+}): { subject: string; html: string; text: string } {
+  return rmmPack({
+    ...opts,
+    kind: "availability",
+    title: "Server Availability",
+    note: "Server uptime and offline duration. Workstations listed separately — not in SLA.",
+  });
+}
+
+export function buildRmmPatchHtml(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+}): { subject: string; html: string; text: string } {
+  return rmmPack({
+    ...opts,
+    kind: "patch",
+    title: "Patch Compliance",
+    note: "Server patch compliance first. Workstation backlog is visibility only.",
+  });
+}
+
+export function buildRmmCapacityHtml(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+}): { subject: string; html: string; text: string } {
+  return rmmPack({
+    ...opts,
+    kind: "capacity",
+    title: "Capacity & Performance",
+    note: "Disk at risk (≥85%), CPU ≥80%, memory ≥85%, peak IOPS. Servers first.",
+  });
+}
+
+function rmmPack(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+  kind: "service" | "availability" | "patch" | "capacity";
+  title: string;
+  note: string;
+}): { subject: string; html: string; text: string } {
+  const detail = opts.customer;
+  const c = detail.customer;
+  const name = c.displayName;
+  const code = c.customerCode;
+  const now = formatSastDateTime(new Date().toISOString());
+  const dateLabel = formatSastDate(new Date().toISOString());
+  const rmm = detail.rmm;
+  const rs = rmm?.summary;
+  const { servers, workstations, all } = splitRmmDevices(rmm?.devices);
+  const sav = availabilityOf(servers);
+  const wav = availabilityOf(workstations);
+  const sp = patchOf(servers);
+  const wp = patchOf(workstations);
+  const scap = capacityOf(servers);
+  const wcap = capacityOf(workstations);
+  const covered = Boolean(rmm?.enabled || rs || all.length);
+
+  const sections: string[] = [];
+  if (!covered) {
+    sections.push(
+      `<p class="note"><strong class="warn">No cover</strong> — no RMM / Pulseway data for this customer.</p>`,
+    );
+  } else {
+    sections.push(`<p class="note">${esc(opts.note)}</p>`);
+
+    if (opts.kind === "service" || opts.kind === "availability") {
+      sections.push(`<h2 class="sec">Availability</h2>${kvTable([
+        ["Servers online / offline", `${fmtN(sav.online)} / ${fmtN(sav.offline)}`],
+        ["Server availability now", fmtN(sav.onlinePctNow, "%")],
+        ["Server avg online %", fmtN(sav.avgOnlinePct, "%")],
+        ["Server offline hours (7d avg)", fmtN(sav.offlineHours7d, "h")],
+        ["Server offline hours (30d avg)", fmtN(sav.offlineHours30d, "h")],
+        ["Maintenance (estate)", fmtN(rs?.maintenanceCount)],
+        ["Critical / elevated alerts", `${fmtN(rs?.criticalAlerts)} / ${fmtN(rs?.elevatedAlerts)}`],
+        ["Workstations online / offline (not SLA)", `${fmtN(wav.online)} / ${fmtN(wav.offline)}`],
+        ["Health", rs ? `<span class="${ragClass(rs.healthRag)}">${esc(rs.healthRag)}</span> — ${esc(rs.healthSummary)}` : "—"],
+      ])}`);
+    }
+
+    if (opts.kind === "service" || opts.kind === "patch") {
+      sections.push(`<h2 class="sec">Patch compliance</h2>${kvTable([
+        ["Server devices reporting", fmtN(sp.reporting)],
+        ["Servers current (0 missing)", fmtN(sp.compliant)],
+        ["Server compliance", fmtN(sp.compliancePct, "%")],
+        ["Server outstanding / pending", `${fmtN(sp.missing)} / ${fmtN(sp.pending)}`],
+        ["Workstation compliance (visibility)", fmtN(wp.compliancePct, "%")],
+        ["Workstation outstanding", fmtN(wp.missing)],
+      ])}`);
+    }
+
+    if (opts.kind === "service" || opts.kind === "capacity") {
+      sections.push(`<h2 class="sec">Capacity & performance</h2>${kvTable([
+        ["Server disk used / free GB", `${fmtN(scap.diskUsedGb)} / ${fmtN(scap.diskFreeGb)}`],
+        ["Server volumes at risk (≥85%)", fmtN(scap.atRiskVolumes)],
+        ["Server avg CPU / memory", `${fmtN(scap.avgCpu, "%")} / ${fmtN(scap.avgMem, "%")}`],
+        ["Servers CPU ≥80% / memory ≥85%", `${fmtN(scap.cpuHot)} / ${fmtN(scap.memHot)}`],
+        ["Server peak IOPS", fmtN(scap.maxIops)],
+        ["Workstation volumes at risk (visibility)", fmtN(wcap.atRiskVolumes)],
+      ])}`);
+    }
+
+    if (opts.kind === "availability") {
+      sections.push(rmmDeviceTable("Servers — availability", servers, "availability"));
+      sections.push(rmmDeviceTable("Workstations — visibility only", workstations, "availability"));
+    }
+    if (opts.kind === "patch" || opts.kind === "service") {
+      sections.push(rmmDeviceTable("Servers — patch backlog", sp.offenders.slice(0, 40), "patch"));
+      if (opts.kind === "patch") {
+        sections.push(rmmDeviceTable("Workstations — visibility only", wp.offenders.slice(0, 25), "patch"));
+      }
+    }
+    if (opts.kind === "capacity") {
+      sections.push(rmmDeviceTable("Servers — capacity", servers, "capacity"));
+      sections.push(rmmDeviceTable("Workstations — visibility only", workstations.slice(0, 25), "capacity"));
+    }
+    if (opts.kind === "service" || opts.kind === "availability") {
+      const off = all.filter((d) => d.isOnline === false).slice(0, 30);
+      sections.push(`<h2 class="sec">Offline devices</h2>
+      <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Class</th><th class="dark">Last seen</th><th class="dark">Offline now</th><th class="dark">7d off</th></tr></thead>
+      <tbody>${
+        off.length
+          ? off
+              .map(
+                (d) =>
+                  `<tr><td>${esc(d.name || d.deviceId)}</td><td>${esc(isRmmServer(d) ? "Server" : "Workstation")}</td><td>${esc(fmtDt(d.lastSeenOnline))}</td><td>${esc(d.offlineHoursCurrent != null ? `${d.offlineHoursCurrent}h` : "—")}</td><td>${esc(fmtN(d.offlineHours7d, "h"))}</td></tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="5" class="muted">No offline devices on latest snapshot.</td></tr>`
+      }</tbody></table>`);
+    }
+  }
+
+  const body = `
+<div class="cover">
+  <div class="cover-arc"></div>
+  <div class="cover-dot"></div>
+  <h1>${esc(opts.title)} — ${esc(dateLabel)}</h1>
+  <h2>${esc(name)} (${esc(code)})</h2>
+  <div class="brand-row">
+    <div class="brand">RPM <span>Assure</span></div>
+    <div class="muted" style="font-size:11pt">RPM RMM · Pulseway snapshot</div>
+  </div>
+</div>
+<div class="page">
+  <div class="teal-banner"><h1>${esc(name)}</h1><span class="when">${esc(dateLabel)}</span></div>
+  ${sections.join("\n")}
+</div>`;
+
+  return {
+    subject: `RPM Assure — ${opts.title} — ${name} — ${dateLabel}`,
+    html: shell(`${opts.title} — ${name} — ${dateLabel}`, body, now),
+    text: `${opts.title} ${name}`,
+  };
+}
+
+function rmmDeviceTable(
+  heading: string,
+  list: RmmDeviceRow[],
+  mode: "availability" | "patch" | "capacity",
+): string {
+  if (mode === "availability") {
+    const rows = list
+      .slice(0, 40)
+      .map(
+        (d) =>
+          `<tr><td>${esc(d.name || d.deviceId)}</td><td>${d.isOnline === false ? "Offline" : d.isOnline ? "Online" : "—"}</td><td>${esc(fmtDt(d.lastSeenOnline))}</td><td style="text-align:right">${esc(fmtN(d.onlinePct, "%"))}</td><td style="text-align:right">${esc(fmtN(d.offlineHours7d, "h"))}</td><td style="text-align:right">${esc(fmtN(d.offlineHours30d, "h"))}</td><td style="text-align:right">${esc(fmtN(d.daysSinceReboot))}</td></tr>`,
+      )
+      .join("");
+    return `<h2 class="sec">${esc(heading)}</h2>
+    <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">State</th><th class="dark">Last seen</th><th class="dark">Online %</th><th class="dark">7d off</th><th class="dark">30d off</th><th class="dark">Reboot days</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="7" class="muted">None</td></tr>`}</tbody></table>`;
+  }
+  if (mode === "patch") {
+    const rows = list
+      .slice(0, 40)
+      .map(
+        (d) =>
+          `<tr><td>${esc(d.name || d.deviceId)}</td><td>${d.isOnline === false ? "Offline" : d.isOnline ? "Online" : "—"}</td><td style="text-align:right" class="${(d.patchMissing ?? 0) > 0 ? "bad" : "ok"}">${esc(d.patchMissing ?? "—")}</td><td style="text-align:right">${esc(d.patchPending ?? "—")}</td><td style="text-align:right">${esc(d.patchInstalled ?? "—")}</td><td>${esc(d.osName || "—")}</td></tr>`,
+      )
+      .join("");
+    return `<h2 class="sec">${esc(heading)}</h2>
+    <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">State</th><th class="dark">Missing</th><th class="dark">Pending</th><th class="dark">Installed</th><th class="dark">OS</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="6" class="muted">None reporting patches</td></tr>`}</tbody></table>`;
+  }
+  const rows = list
+    .slice(0, 40)
+    .map((d) => {
+      const risk = (d.disks ?? []).filter((v) => (v.usedPct ?? 0) >= 85).length;
+      const usedPct =
+        d.diskTotalGb && d.diskUsedGb != null
+          ? Math.round((d.diskUsedGb / d.diskTotalGb) * 1000) / 10
+          : null;
+      return `<tr><td>${esc(d.name || d.deviceId)}</td><td style="text-align:right">${esc(fmtN(d.cpuPct, "%"))}</td><td style="text-align:right">${esc(fmtN(d.memoryPct, "%"))}</td><td style="text-align:right">${esc(fmtN(usedPct, "%"))}</td><td style="text-align:right" class="${risk ? "bad" : ""}">${risk || "—"}</td><td style="text-align:right">${esc(fmtN(d.diskIopsMax))}</td></tr>`;
+    })
+    .join("");
+  return `<h2 class="sec">${esc(heading)}</h2>
+  <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">CPU</th><th class="dark">Memory</th><th class="dark">Disk used</th><th class="dark">Volumes ≥85%</th><th class="dark">Peak IOPS</th></tr></thead>
+  <tbody>${rows || `<tr><td colspan="6" class="muted">None</td></tr>`}</tbody></table>`;
 }

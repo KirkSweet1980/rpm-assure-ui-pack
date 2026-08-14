@@ -34,6 +34,9 @@ type ReportFormat =
   | "estate"
   | "custom-pack"
   | "rmm-service"
+  | "rmm-availability"
+  | "rmm-patch"
+  | "rmm-capacity"
   | "services-cover";
 
 const PACKS: {
@@ -86,9 +89,33 @@ const PACKS: {
   },
   {
     id: "rmm-service",
-    title: "RMM service pack",
+    title: "Remote Management Pack",
     when: "On demand",
-    blurb: "Remote Management: fleet, patches (servers + WS), alerts, offline devices.",
+    blurb: "Fleet, alerts, patches, offline. Servers feed SLA. Workstations visibility only.",
+    needsCustomer: true,
+    icon: "rmm",
+  },
+  {
+    id: "rmm-availability",
+    title: "Server Availability",
+    when: "On demand",
+    blurb: "Server uptime %, offline hours 7d/30d, last seen, reboot age. Workstations listed, not SLA.",
+    needsCustomer: true,
+    icon: "rmm",
+  },
+  {
+    id: "rmm-patch",
+    title: "Patch Compliance",
+    when: "On demand",
+    blurb: "Server compliance %, missing/pending backlog. Workstation backlog is visibility only.",
+    needsCustomer: true,
+    icon: "rmm",
+  },
+  {
+    id: "rmm-capacity",
+    title: "Capacity & Performance",
+    when: "On demand",
+    blurb: "Disk ≥85%, CPU ≥80%, memory ≥85%, peak IOPS. Servers first.",
     needsCustomer: true,
     icon: "rmm",
   },
@@ -144,7 +171,9 @@ const REPORT_SERVICES: CorpService[] = [
     overview: "/reports?format=rmm-service",
     modules: [
       { label: "Remote Management Pack", path: "/reports?format=rmm-service" },
-      { label: "Services On Cover", path: "/reports?format=services-cover" },
+      { label: "Server Availability", path: "/reports?format=rmm-availability" },
+      { label: "Patch Compliance", path: "/reports?format=rmm-patch" },
+      { label: "Capacity & Performance", path: "/reports?format=rmm-capacity" },
     ],
   },
   {
@@ -153,6 +182,7 @@ const REPORT_SERVICES: CorpService[] = [
     overview: "/reports?format=estate",
     modules: [
       { label: "Assure Eco-System Overview", path: "/reports?format=estate" },
+      { label: "Services On Cover", path: "/reports?format=services-cover" },
       { label: "Custom Pack", path: "/reports?format=custom-pack" },
     ],
   },
@@ -361,7 +391,10 @@ function ReportsPage() {
     }
     if (format === "period-end") return "Period end · FinSight readiness";
     if (format === "estate") return "Assure Eco-System overview · all active customers";
-    if (format === "rmm-service") return "RMM service pack · latest Pulseway snapshot";
+    if (format === "rmm-service") return "Remote Management Pack · latest Pulseway snapshot";
+    if (format === "rmm-availability") return "Server Availability · servers only for SLA";
+    if (format === "rmm-patch") return "Patch Compliance · servers first";
+    if (format === "rmm-capacity") return "Capacity & Performance · disk / CPU / memory / IOPS";
     if (format === "services-cover") return "Services on cover · multi-pillar snapshot";
     if (format === "custom-pack") return `Custom · ${selectedCount} field(s) selected`;
     return "On-demand pack";

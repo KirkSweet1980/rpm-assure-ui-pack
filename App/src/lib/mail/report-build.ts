@@ -16,6 +16,9 @@ import {
   buildPeriodEndFinSightHtml,
   buildPortfolioAmsHtml,
   buildRmmServiceHtml,
+  buildRmmAvailabilityHtml,
+  buildRmmPatchHtml,
+  buildRmmCapacityHtml,
 } from "@/lib/mail/ams-report-html";
 import { resolveFieldIds } from "@/lib/data/report-fields";
 
@@ -29,6 +32,9 @@ export type ReportFormat =
   | "estate"
   | "custom-pack"
   | "rmm-service"
+  | "rmm-availability"
+  | "rmm-patch"
+  | "rmm-capacity"
   | "services-cover";
 
 export type ReportPack = {
@@ -242,6 +248,15 @@ export function buildPack(
   if (format === "rmm-service") {
     return buildRmmServiceHtml({ customer, portfolio });
   }
+  if (format === "rmm-availability") {
+    return buildRmmAvailabilityHtml({ customer, portfolio });
+  }
+  if (format === "rmm-patch") {
+    return buildRmmPatchHtml({ customer, portfolio });
+  }
+  if (format === "rmm-capacity") {
+    return buildRmmCapacityHtml({ customer, portfolio });
+  }
   if (format === "services-cover") {
     return buildCustomPackHtml({
       customer,
@@ -295,6 +310,9 @@ export async function buildReportPreview(opts: {
       raw === "ams-weekly" ||
       raw === "ams-monthly" ||
       raw === "rmm-service" ||
+      raw === "rmm-availability" ||
+      raw === "rmm-patch" ||
+      raw === "rmm-capacity" ||
       raw === "services-cover"
         ? (raw as ReportFormat)
         : "ams-full";
