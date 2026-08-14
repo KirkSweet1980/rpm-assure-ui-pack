@@ -101,6 +101,14 @@ New-Item -ItemType Directory -Force -Path $destSrc | Out-Null
 robocopy (Join-Path $srcRoot 'src') $destSrc /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed $LASTEXITCODE" }
 
+$agentSrc = Join-Path $Pack 'Sql\agent'
+if (Test-Path $agentSrc) {
+  $agentDest = Join-Path $Root 'Sql\agent'
+  New-Item -ItemType Directory -Force -Path $agentDest | Out-Null
+  W Cyan '--- Copy Sql\agent from git ---'
+  robocopy $agentSrc $agentDest /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+}
+
 if ($svcObj) {
   Start-Service -Name $SvcName
   Start-Sleep -Seconds 4
