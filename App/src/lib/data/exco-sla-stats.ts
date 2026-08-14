@@ -253,15 +253,23 @@ export function slaInputFromDetail(
     cover,
     collectFresh: collectAgeHours != null && collectAgeHours <= 24,
     collectAgeHours,
-    jobErrorCount: data.jobErrors?.length ?? data.customer?.sysproJobErrorCount ?? 0,
+    jobErrorCount: (data.jobErrors?.length || data.customer?.sysproJobErrorCount) ?? 0,
     dtrVarianceLines:
       data.customer?.sysproDtrVarianceLines ?? data.dtrLevel1?.length ?? 0,
-    serverOnline: data.rmm?.summary?.serverOnline ?? 0,
-    serverOffline: data.rmm?.summary?.serverOffline ?? 0,
-    criticalAlerts: data.rmm?.summary?.criticalAlerts ?? 0,
+    serverOnline:
+      data.rmm?.summary?.serverOnline ?? data.customer?.pulsewayServerOnline ?? 0,
+    serverOffline:
+      data.rmm?.summary?.serverOffline ?? data.customer?.pulsewayServerOffline ?? 0,
+    criticalAlerts:
+      data.rmm?.summary?.criticalAlerts ?? data.customer?.pulsewayCriticalAlerts ?? 0,
     backupHealthy,
-    coveDeviceCount: coveN,
-    eppDeviceCount: data.epp?.summary?.deviceCount ?? data.epp?.devices?.length ?? 0,
+    coveDeviceCount:
+      coveN || data.customer?.coveDeviceCount || 0,
+    eppDeviceCount:
+      data.epp?.summary?.deviceCount ??
+      data.epp?.devices?.length ??
+      data.customer?.eppDeviceCount ??
+      0,
     eppManagedCount: data.epp?.summary?.managedCount ?? null,
     healthRag: data.customer?.healthRag,
   };

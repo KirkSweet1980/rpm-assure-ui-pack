@@ -196,13 +196,10 @@ function effectiveCover(data: CustomerDetailPayload): CustomerCover {
   const rmmData =
     (rmm?.devices?.length ?? 0) > 0 ||
     (rmm?.summary?.deviceCount ?? 0) > 0 ||
-    (rmm?.mapping?.length ?? 0) > 0 ||
-    Boolean(rmm?.pulsewayOrgName && String(rmm.pulsewayOrgName).trim()) ||
     (data.customer?.pulsewayDeviceCount ?? 0) > 0;
   const coveData =
     (cove?.devices?.length ?? 0) > 0 ||
     (cove?.summary?.deviceCount ?? 0) > 0 ||
-    (cove?.mapping?.length ?? 0) > 0 ||
     (data.customer?.coveDeviceCount ?? 0) > 0;
   const eppData =
     (epp?.devices?.length ?? 0) > 0 ||
@@ -963,14 +960,14 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Devices reporting"
-          value={s?.patchDevicesReporting ?? reporting.length}
+          value={reporting.length}
           hint="Agents that sent Updates counters"
         />
         <StatCard
           label="Outstanding updates"
-          value={s?.patchMissing ?? totalMissingSum ?? "—"}
-          tone={(s?.patchMissing ?? totalMissingSum ?? 0) > 0 ? "amber" : "default"}
-          hint="Critical + Important + Unspecified (Pulseway)"
+          value={totalMissingSum ?? "—"}
+          tone={(totalMissingSum ?? 0) > 0 ? "amber" : "default"}
+          hint="Critical + Important + Unspecified (this list only)"
         />
         <StatCard
           label="Agents with backlog"
@@ -1785,8 +1782,8 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="space-y-4">
       <ChartCaption
-        title="Server Alerts"
-        why="Pulseway notifications for this customer (latest day). Critical first. Pair with Devices for CPU, disk, and reboot age."
+        title="RMM Alerts"
+        why="Pulseway notifications for this customer (latest day). Critical first. Pair with Servers / Workstations for CPU, disk, and reboot age."
       />
       <div className="grid gap-2 sm:grid-cols-3">
         <StatCard label="Alert rows" value={alerts.length} />
@@ -4352,10 +4349,13 @@ function formatRecoveryTestStatus(
 export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
   const devices = data.cove?.devices ?? [];
   const totalUsed = devices.reduce(
-    (sum, d) => sum + (d.usedBytes != null && Number.isFinite(d.usedBytes) ? d.usedBytes : 0),
+    (sum, d) => {
+      const n = d.usedBytes ?? d.selectedBytes;
+      return sum + (n != null && Number.isFinite(n) ? n : 0);
+    },
     0,
   );
-  const sizedCount = devices.filter((d) => d.usedBytes != null && d.usedBytes > 0).length;
+  const sizedCount = devices.filter((d) => (d.usedBytes ?? d.selectedBytes ?? 0) > 0).length;
   if (!effectiveCover(data).cove) {
     return (
       <NoCoverPanel
@@ -4446,7 +4446,7 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-xs tabular-nums text-muted">
-                    {formatCoveBytes(d.usedBytes)}
+                    {formatCoveBytes(d.usedBytes ?? d.selectedBytes)}
                   </td>
                   <td className="px-3 py-2 text-xs text-muted" title={d.profileName || undefined}>
                     {d.retentionPolicy || "—"}
@@ -4694,7 +4694,10 @@ export function CoveRetentionSection({ data }: { data: CustomerDetailPayload }) 
           label="Total backup size"
           value={formatCoveBytes(
             devices.reduce(
-              (s, d) => s + (d.usedBytes != null && Number.isFinite(d.usedBytes) ? d.usedBytes : 0),
+              (s, d) => {
+                const n = d.usedBytes ?? d.selectedBytes;
+                return s + (n != null && Number.isFinite(n) ? n : 0);
+              },
               0,
             ),
           )}
@@ -4782,7 +4785,7 @@ export function CoveRetentionSection({ data }: { data: CustomerDetailPayload }) 
                     {formatRetentionPeriod(d.retentionNetwork)}
                   </td>
                   <td className="px-3 py-2 text-xs tabular-nums text-muted">
-                    {formatCoveBytes(d.usedBytes)}
+                    {formatCoveBytes(d.usedBytes ?? d.selectedBytes)}
                   </td>
                 </tr>
               ))}

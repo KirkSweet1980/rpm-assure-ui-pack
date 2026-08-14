@@ -5946,10 +5946,10 @@ ORDER BY UserPrincipalName, DisplayName`);
       : 0) ||
     Number(customer.eppDeviceCount) ||
     0;
-  if (eppCount > 0 || epp?.enabled || customer.pillarEpp === true) {
+  if (eppCount > 0) {
     cover = { ...cover, epp: true };
     customer.eppDeviceCount = eppCount || customer.eppDeviceCount || 0;
-    epp.enabled = eppCount > 0 || customer.pillarEpp === true;
+    epp.enabled = true;
     if (eppCount > 0 && epp.message?.toLowerCase().includes("no cover")) {
       epp.message = null;
     }

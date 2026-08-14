@@ -93,7 +93,7 @@ async function loadCustomer(
         console.info(
           `[rpm-assure] customer ${code} SQL ${Date.now() - t0}ms live=${!!live}`,
         );
-        if (live) result = fillCustomerPanels(live);
+        if (live) result = live;
       } catch (e) {
         console.error("[rpm-assure] customer SQL error after retries", e);
       }
