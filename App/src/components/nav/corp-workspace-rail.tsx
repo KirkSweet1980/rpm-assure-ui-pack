@@ -75,14 +75,14 @@ export function CorpWorkspaceRail({
         </section>
       </aside>
 
-      <aside className="rpma-pillar-rail" aria-label={modulesHeading}>
-        <section className="rpma-nav-block">
-          <div className="rpma-pillar-rail-head">
-            <h2>{modulesHeading}</h2>
-          </div>
-          <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
-            {active ? (
-              active.modules.map((m) => {
+      {active ? (
+        <aside className="rpma-pillar-rail" aria-label={modulesHeading}>
+          <section className="rpma-nav-block">
+            <div className="rpma-pillar-rail-head">
+              <h2>{modulesHeading}</h2>
+            </div>
+            <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
+              {active.modules.map((m) => {
                 const selected = path === m.path || path.startsWith(`${m.path}/`);
                 return (
                   <SpaLink
@@ -93,13 +93,11 @@ export function CorpWorkspaceRail({
                     {m.label}
                   </SpaLink>
                 );
-              })
-            ) : (
-              <p className="rpma-list-empty">Select a setting</p>
-            )}
-          </div>
-        </section>
-      </aside>
+              })}
+            </div>
+          </section>
+        </aside>
+      ) : null}
     </>
   );
 }
@@ -120,22 +118,22 @@ export function CorpPathTrail({
       <SpaLink href={rootHref} className="rpma-crumb-a">
         {rootLabel}
       </SpaLink>
-      <span className="rpma-crumb-arr" aria-hidden>
-        ›
-      </span>
       {service ? (
-        <span className="rpma-crumb-a">{service}</span>
-      ) : (
-        <span className="rpma-crumb-muted">Settings</span>
-      )}
-      <span className="rpma-crumb-arr" aria-hidden>
-        ›
-      </span>
+        <>
+          <span className="rpma-crumb-arr" aria-hidden>
+            ›
+          </span>
+          <span className="rpma-crumb-a">{service}</span>
+        </>
+      ) : null}
       {moduleLabel ? (
-        <span className="rpma-crumb-now">{moduleLabel}</span>
-      ) : (
-        <span className="rpma-crumb-muted">Service module</span>
-      )}
+        <>
+          <span className="rpma-crumb-arr" aria-hidden>
+            ›
+          </span>
+          <span className="rpma-crumb-now">{moduleLabel}</span>
+        </>
+      ) : null}
     </nav>
   );
 }

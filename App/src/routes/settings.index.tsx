@@ -4,27 +4,24 @@ import { Check, X } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { fetchConfigHealth, type ConfigHealthItem } from "@/lib/settings/settings-api";
 import { AgentFleetPanel } from "@/components/settings/agent-fleet-panel";
-import { cn } from "@/lib/utils";
+import { cn, formatSastDateTime } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/")({
   component: SettingsHub,
 });
 
-const OPTIONS: { href: string; title: string; blurb: string }[] = [
-  { href: "/settings/integrations", title: "Integrations", blurb: "API sources: Pulseway, N-Able Cove Backup, Bitdefender, Microsoft Graph." },
-  { href: "/settings/sql", title: "SQL Server", blurb: "Central connections and credentials." },
-  { href: "/settings/ssl", title: "SSL / HTTPS", blurb: "Certificate for the public hostname." },
-  { href: "/settings/users", title: "Users", blurb: "Staff accounts, roles, and scope." },
-  { href: "/settings/collect", title: "Collect Inventory", blurb: "Last import per customer from Agent and APIs." },
-  { href: "/settings/query", title: "SQL Query", blurb: "Read-only explorer." },
-  { href: "/settings/theme", title: "Theme", blurb: "Light / dark and palette." },
-  { href: "/settings/dashboard", title: "Dashboard", blurb: "Which panels show on Exco." },
-  { href: "/settings/rag", title: "RAG thresholds", blurb: "Red / Amber / Green rules." },
-  { href: "/settings/alerts", title: "Alerts", blurb: "Health, jobs, and stale collect." },
-  { href: "/settings/labels", title: "UI Labels", blurb: "Rename modules and cover chips." },
-  { href: "/settings/reports", title: "Report schedules", blurb: "On-screen report packs." },
-  { href: "/settings/audit", title: "Audit log", blurb: "Who changed platform settings." },
-];
+function healthTitle(item: ConfigHealthItem) {
+  if (item.id === "cove") return "N-Able Cove Backup";
+  if (item.id === "sql") return "SQL Server";
+  return item.label;
+}
+
+function healthSource(item: ConfigHealthItem) {
+  if (item.source === "sql") return item.detail;
+  if (item.source === "agent") return "SYSPRO \u00b7 RPM Assure Agent";
+  if (item.source === "api") return "API";
+  return "Platform";
+}
 
 function SettingsHub() {
   const [items, setItems] = useState<ConfigHealthItem[]>([]);
@@ -35,50 +32,56 @@ function SettingsHub() {
       .catch(() => setItems([]));
   }, []);
 
+  const okN = items.filter((i) => i.ok).length;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Platform connections</p>
+        <p className="mt-1 text-[18px] font-semibold tracking-tight text-fg">
+          {items.length ? `${okN} of ${items.length} connected` : "Checking connections\u2026"}
+        </p>
+      </div>
+
       {items.length ? (
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((i) => (
             <SpaLink
               key={i.id}
               href={i.href}
-              className="rpma-panel flex items-center gap-2 px-2.5 py-2 no-underline"
+              className={cn(
+                "rpma-panel flex min-h-[7.25rem] flex-col justify-between gap-3 px-4 py-4 no-underline",
+                i.ok ? "ring-1 ring-rag-green/25" : "ring-1 ring-rag-red/25",
+              )}
             >
-              <span
-                className={cn(
-                  "grid h-5 w-5 shrink-0 place-items-center rounded-full text-white",
-                  i.ok ? "bg-rag-green" : "bg-rag-red",
-                )}
-              >
-                {i.ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[11px] font-bold leading-snug text-fg">
-                  {i.id === "cove" ? "N-Able Cove Backup" : i.label}
+              <span className="flex items-start gap-3">
+                <span
+                  className={cn(
+                    "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-white",
+                    i.ok ? "bg-rag-green" : "bg-rag-red",
+                  )}
+                >
+                  {i.ok ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
                 </span>
-                <span className={cn("block truncate text-[10px]", i.ok ? "text-rag-green" : "text-rag-red")}>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-semibold leading-snug text-fg">{healthTitle(i)}</span>
+                  <span className="mt-1 block text-[11px] uppercase tracking-wide text-muted">{healthSource(i)}</span>
+                </span>
+              </span>
+              <span className="flex items-end justify-between gap-2">
+                <span className={cn("text-[13px] font-semibold", i.ok ? "text-rag-green" : "text-rag-red")}>
                   {i.ok ? "Connected" : "Not connected"}
                 </span>
-                <span className="block text-[9px] leading-snug text-muted">
-                  {i.source === "sql" ? i.detail : i.source === "agent" ? "SYSPRO \u00b7 Agent" : i.source === "api" ? "API" : "Platform"}
-                </span>
+                {i.lastAt ? (
+                  <span className="text-[11px] text-subtle">Last {formatSastDateTime(i.lastAt)}</span>
+                ) : null}
               </span>
             </SpaLink>
           ))}
         </div>
       ) : null}
 
-      <AgentFleetPanel compact />
-
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {OPTIONS.map((o) => (
-          <SpaLink key={o.href} href={o.href} className="rpma-panel block px-4 py-3 no-underline">
-            <p className="text-[13px] font-semibold text-fg">{o.title}</p>
-            <p className="mt-1 text-[12px] text-muted">{o.blurb}</p>
-          </SpaLink>
-        ))}
-      </div>
+      <AgentFleetPanel />
     </div>
   );
 }

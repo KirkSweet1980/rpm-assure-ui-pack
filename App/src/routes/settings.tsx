@@ -110,7 +110,7 @@ function SettingsLayout() {
             </p>
           </div>
         ) : (
-          <div className="rpma-d3-workspace">
+          <div className={svc ? "rpma-d3-workspace" : "rpma-d3-workspace is-tool"}>
             <CorpWorkspaceRail
               heading="Configuration"
               homeHref="/settings"
