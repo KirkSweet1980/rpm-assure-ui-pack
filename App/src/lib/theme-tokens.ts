@@ -33,11 +33,11 @@ export const TOKEN_GROUPS: { id: TokenGroupId; title: string; blurb: string }[] 
   ];
 
 export const THEME_TOKENS: TokenDef[] = [
-  { css: "--color-brand-blue", label: "Brand navy", group: "brand", kind: "color", used: "Header bar, logo-adjacent chrome" },
-  { css: "--color-brand-blue-deep", label: "Brand deep", group: "brand", kind: "color", used: "Utility strip, active nav fill" },
-  { css: "--color-brand-teal", label: "Logo steel", group: "brand", kind: "color", used: "Mark, primary buttons, chart 1" },
-  { css: "--color-brand-lime", label: "Light steel", group: "brand", kind: "color", used: "Kickers, active underline" },
-  { css: "--color-brand-cyan", label: "Cyan", group: "brand", kind: "color", used: "Reserved highlight" },
+  { css: "--color-brand-slate", label: "Logo slate", group: "brand", kind: "color", used: "R in RPM, left of wordmark and Sign in" },
+  { css: "--color-brand-teal", label: "Logo teal", group: "brand", kind: "color", used: "P in RPM, accent, mark, charts" },
+  { css: "--color-brand-lime", label: "Logo lime", group: "brand", kind: "color", used: "M in RPM, kickers, selected chip edge" },
+  { css: "--color-brand-ink", label: "Brand ink", group: "brand", kind: "color", used: "Login field text" },
+  { css: "--color-field", label: "Field fill", group: "surface", kind: "color", used: "Username / password fill" },
 
   { css: "--color-bg", label: "Page", group: "surface", kind: "color", used: "body, .antler-shell, main canvas" },
   { css: "--color-surface", label: "Card", group: "surface", kind: "color", used: ".rpma-card, settings cards" },
@@ -245,6 +245,9 @@ export const PALETTES: Record<
     name: "Teal",
     blurb: "Original RPM teal accent and mint selected tabs.",
     light: {
+      "--color-brand-slate": "#2d6a8a",
+      "--color-brand-teal": "#1bb8a6",
+      "--color-brand-lime": "#8fce4a",
       "--color-accent": "#1bb8a6",
       "--color-accent-soft": "#1bb8a61f",
       "--color-accent-fg": "#ffffff",
@@ -257,6 +260,9 @@ export const PALETTES: Record<
       "--ui-nav-link-active-fg": "#04201c",
     },
     dark: {
+      "--color-brand-slate": "#2d6a8a",
+      "--color-brand-teal": "#1bb8a6",
+      "--color-brand-lime": "#8fce4a",
       "--color-accent": "#3ecfbf",
       "--color-accent-soft": "#3ecfbf28",
       "--color-accent-fg": "#04201c",

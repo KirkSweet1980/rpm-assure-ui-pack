@@ -13,7 +13,14 @@
   --color-subtle: #8996a4;
   --color-border: #e9ecef;
   --color-border-strong: #d5dbe3;
-  --color-accent: #7267ef;
+  --color-brand-slate: #2d6a8a;
+  --color-brand-teal: #1bb8a6;
+  --color-brand-lime: #8fce4a;
+  --color-brand-ink: #0b1a3a;
+  --color-field: #eef2f6;
+  --color-accent: var(--color-brand-teal);
+  --color-accent-soft: color-mix(in srgb, var(--color-brand-teal) 16%, transparent);
+  --color-accent-fg: #ffffff;
   --color-nav: #263544;
   --color-rag-green: #17c666;
   --color-rag-amber: #ffa21d;
@@ -24,15 +31,15 @@
 }
 
 :root {
-  --bs-primary: #7267ef;
+  --bs-primary: var(--color-brand-teal);
   --bs-body-bg: #f0f2f8;
   --bs-body-color: #293240;
   --pc-heading-color: #1d2630;
   --pc-sidebar-background: #263544;
   --pc-sidebar-color: #a9b7d0;
-  --pc-sidebar-caption-color: #7267ef;
+  --pc-sidebar-caption-color: var(--color-brand-teal);
   --pc-sidebar-icon-color: #778290;
-  --pc-sidebar-active-color: #7267ef;
+  --pc-sidebar-active-color: var(--color-brand-teal);
   --pc-active-background: #39465a;
   --pc-brand-background: #161c25;
   --pc-header-background: rgba(255, 255, 255, 0.72);
@@ -40,8 +47,8 @@
   --pc-header-shadow: 0 1px 20px rgba(69, 90, 100, 0.08);
   --pc-header-height: 56px;
   --pc-sidebar-width: 280px;
-  --dk-soft-primary: rgba(114, 103, 239, 0.1);
-  --dk-brand-1: linear-gradient(83.31deg, #1de9b6 21.22%, #1dc4e9 88.54%);
+  --dk-soft-primary: color-mix(in srgb, var(--color-brand-teal) 12%, transparent);
+  --dk-brand-1: linear-gradient(83deg, var(--color-brand-slate) 0%, var(--color-brand-teal) 48%, var(--color-brand-lime) 100%);
 }
 
 html[data-theme="dark"], html.dark {
@@ -413,20 +420,20 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
   transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 .rpma-rpt-card:hover {
-  border-color: #1bb8a6;
+  border-color: var(--color-brand-teal);
   transform: translateY(-1px);
   box-shadow: 0 8px 18px color-mix(in srgb, #0b1a22 8%, transparent);
 }
 .rpma-rpt-card.is-on {
-  border-color: #1bb8a6;
-  box-shadow: inset 3px 0 0 #1bb8a6;
-  background: color-mix(in srgb, #1bb8a6 6%, var(--color-surface));
+  border-color: var(--color-brand-teal);
+  box-shadow: inset 3px 0 0 var(--color-brand-teal);
+  background: color-mix(in srgb, var(--color-brand-teal) 6%, var(--color-surface));
 }
 .rpma-rpt-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rpma-rpt-ico {
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; border-radius: 8px;
-  background: color-mix(in srgb, #1bb8a6 12%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-brand-teal) 12%, var(--color-surface));
   color: #0f7f86;
 }
 .rpma-rpt-card h3 { margin: 0; font-size: 13.5px; font-weight: 750; color: var(--color-fg); line-height: 1.3; }
@@ -566,7 +573,7 @@ html.dark .rpma-pane-head-row {
   border-right: 1px solid var(--color-border);
 }
 .rpma-hud-cell:last-child { border-right: 0; }
-.rpma-hud-ico { width: 15px; height: 15px; flex: 0 0 auto; color: #1bb8a6; }
+.rpma-hud-ico { width: 15px; height: 15px; flex: 0 0 auto; color: var(--color-brand-teal); }
 .rpma-hud-k {
   margin: 0;
   display: inline-flex;

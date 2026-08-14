@@ -3,7 +3,8 @@
  * Logo: blue → teal → lime
  */
 export const BRAND = {
-  blue: "#2b6fae",
+  slate: "#2d6a8a",
+  blue: "#2d6a8a",
   blueDeep: "#1a4d7a",
   teal: "#1bb8a6",
   cyan: "#3ecfbf",

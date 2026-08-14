@@ -45,7 +45,7 @@ export function SettingsTreeMenu({
       {variant === "dropdown" ? (
         <>
           <SpaLink
-            href={adminOnly ? "/settings/sql" : "/settings/profile"}
+            href={adminOnly ? "/settings/infrastructure" : "/settings/profile"}
             className="rpma-dd-head"
             onClick={onNavigate}
           >
@@ -202,7 +202,7 @@ function LeafLink({
         depth === 0 && "font-bold",
         isDark &&
           (active
-            ? "bg-white/15 text-white shadow-[inset_3px_0_0_0_#1bb8a6]"
+            ? "bg-white/15 text-white shadow-[inset_3px_0_0_0_var(--color-brand-teal)]"
             : "text-white/80 hover:bg-white/10 hover:text-white"),
         variant === "sidebar" &&
           (active

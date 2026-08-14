@@ -16,7 +16,7 @@ const badgeVariants = cva(
         amber: "bg-[#ffa21d1a] text-[#e67e22]",
         red: "bg-[#ea4d4d1a] text-[#ea4d4d]",
         nav: "bg-white/15 text-nav-fg",
-        accent: "bg-[#7267ef1a] text-[#7267ef]",
+        accent: "bg-[color-mix(in_srgb,var(--color-brand-teal)_12%,transparent)] text-[var(--color-brand-teal)]",
       },
     },
     defaultVariants: { variant: "default" },

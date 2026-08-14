@@ -77,7 +77,7 @@ function TreeNode({
     "rpma-tree-item group flex w-full items-center gap-1 rounded-md text-left text-[13px] font-medium transition-colors",
     variant === "sidebar" &&
       (active
-        ? "bg-white/15 text-white shadow-[inset_3px_0_0_0_#1bb8a6]"
+        ? "bg-white/15 text-white shadow-[inset_3px_0_0_0_var(--color-brand-teal)]"
         : childActive
           ? "text-white/95"
           : "text-white/75 hover:bg-white/10 hover:text-white"),

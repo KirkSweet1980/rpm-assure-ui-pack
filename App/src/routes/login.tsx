@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "dc-fields-grey-20260814";
+const LOGIN_BUILD = "dc-theme-tokens-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -147,10 +147,10 @@ function LoginPage() {
 
 const DC_CSS = `
 .rpma-dc {
-  --teal: #1bb8a6;
-  --lime: #8fce4a;
-  --slate: #2d6a8a;
-  --ink: #0b1a3a;
+  --teal: var(--color-brand-teal);
+  --lime: var(--color-brand-lime);
+  --slate: var(--color-brand-slate);
+  --ink: var(--color-brand-ink);
   --muted: #4a657c;
   position: relative; isolation: isolate;
   min-height: 100dvh; width: 100%;
@@ -222,7 +222,7 @@ const DC_CSS = `
   padding: 0.68rem 2.5rem 0.68rem 2.3rem;
   border-radius: 0.6rem;
   border: 1px solid #d5dde6;
-  background: #eef2f6;
+  background: var(--color-field);
   color: var(--ink); font-size: 14px; outline: none;
 }
 .rpma-dc-wrap input::placeholder { color: #8aa0b3; }
@@ -231,7 +231,7 @@ const DC_CSS = `
 .rpma-dc-wrap input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--ink);
   transition: background-color 9999s ease-out 0s;
-  box-shadow: 0 0 0 1000px #eef2f6 inset;
+  box-shadow: 0 0 0 1000px var(--color-field) inset;
 }
 .rpma-dc-wrap input:focus {
   border-color: var(--teal);
