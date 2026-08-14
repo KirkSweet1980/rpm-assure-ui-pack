@@ -36,7 +36,7 @@ function Copy-RpmaFile([string]$From, [string]$To) {
   Copy-Item -LiteralPath $From -Destination $To -Force
 }
 
-foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Start-Agent-Tray.ps1", "Install-Agent-Tray.ps1", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
+foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Start-Agent-Tray.ps1", "Install-Agent-Tray.ps1", "start-edge.cmd", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
   Copy-RpmaFile (Join-Path $Here $f) (Join-Path $AgentRoot $f)
 }
 if (Test-Path (Join-Path $Here 'tray')) {
@@ -153,6 +153,14 @@ Write-Host "nssm = $nssm"
 $ps = (Get-Command powershell.exe).Source
 $loop = Join-Path $AgentRoot "RpmAssure-Agent-Loop.ps1"
 if (-not (Test-Path $loop)) { throw "Missing $loop" }
+$cmd = Join-Path $AgentRoot "start-edge.cmd"
+if (-not (Test-Path $cmd)) {
+  @(
+    '@echo off',
+    'cd /d C:\RPM-Assure\Agent',
+    'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\RPM-Assure\Agent\RpmAssure-Agent-Loop.ps1" -AgentRoot "C:\RPM-Assure\Agent"'
+  ) | Set-Content -LiteralPath $cmd -Encoding ASCII
+}
 
 $existing = Get-Service -Name $ServiceName -EA SilentlyContinue
 if ($existing) {
@@ -163,8 +171,7 @@ if ($existing) {
   Start-Sleep 1
 }
 
-& $nssm install $ServiceName $ps
-& $nssm set $ServiceName AppParameters "-NoProfile -ExecutionPolicy Bypass -File `"$loop`" -AgentRoot `"$AgentRoot`""
+& $nssm install $ServiceName $cmd
 & $nssm set $ServiceName AppDirectory $AgentRoot
 & $nssm set $ServiceName DisplayName "RPM Assure Edge Agent"
 & $nssm set $ServiceName Description "Collects SYSPRO on a schedule and writes heartbeats back to central Assure."
@@ -175,6 +182,8 @@ if ($existing) {
 & $nssm set $ServiceName AppRotateBytes 2000000
 & $nssm set $ServiceName AppExit Default Restart
 & $nssm set $ServiceName AppRestartDelay 8000
+& $nssm set $ServiceName AppStopMethodSkip 6
+& $nssm set $ServiceName AppThrottle 1500
 
 Start-Service $ServiceName
 Start-Sleep 2
