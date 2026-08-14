@@ -10,10 +10,15 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-20260814";
-const DC_STILL = "/brand/login-boardroom.jpg?v=20260814d";
+const LOGIN_BUILD = "boardroom-panes-20260814";
+const DC_STILL = "/brand/login-boardroom.jpg?v=20260814e";
 
-const WATERMARKS = ["clarity", "evidence", "source of truth", "assurance"] as const;
+const PANE_MARKS: Mark[] = [
+  { text: "clarity", top: 11, left: 5, rot: -6, size: 2.45, opacity: 0.36 },
+  { text: "evidence", top: 18, left: 36, rot: 5, size: 2.2, opacity: 0.34 },
+  { text: "source of truth", top: 34, left: 6, rot: -3, size: 1.42, opacity: 0.32 },
+  { text: "assurance", top: 13, left: 58, rot: 4, size: 2.15, opacity: 0.35 },
+];
 
 type Mark = {
   text: string;
@@ -24,27 +29,6 @@ type Mark = {
   opacity: number;
 };
 
-function scatterMarks(): Mark[] {
-  const bands = [
-    { top: [8, 16], left: [6, 18] },
-    { top: [30, 40], left: [28, 46] },
-    { top: [54, 64], left: [5, 18] },
-    { top: [76, 86], left: [22, 42] },
-  ];
-  return WATERMARKS.map((text, i) => {
-    const b = bands[i];
-    const long = text.length > 10;
-    return {
-      text,
-      top: b.top[0] + Math.random() * (b.top[1] - b.top[0]),
-      left: b.left[0] + Math.random() * (b.left[1] - b.left[0]),
-      rot: -12 + Math.random() * 24,
-      size: long ? 1.25 + Math.random() * 0.4 : 2.05 + Math.random() * 0.85,
-      opacity: 0.18 + Math.random() * 0.1,
-    };
-  });
-}
-
 function LoginPage() {
   const navigate = useNavigate();
   const { user, isPending } = useCurrentUserState();
@@ -53,11 +37,6 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [marks, setMarks] = useState<Mark[]>([]);
-
-  useEffect(() => {
-    setMarks(scatterMarks());
-  }, []);
 
   useEffect(() => {
     if (!isPending && user) {
@@ -105,23 +84,25 @@ function LoginPage() {
       <style>{DC_CSS}</style>
 
       <section className="rpma-dc-left" aria-hidden="true">
-        <img className="rpma-dc-still" src={DC_STILL} alt="" />
+        <div className="rpma-dc-scene">
+          <img className="rpma-dc-still" src={DC_STILL} alt="" />
+          {PANE_MARKS.map((m) => (
+            <span
+              key={m.text}
+              className="rpma-dc-mark"
+              style={{
+                top: `${m.top}%`,
+                left: `${m.left}%`,
+                transform: `rotate(${m.rot}deg)`,
+                fontSize: `${m.size}rem`,
+                opacity: m.opacity,
+              }}
+            >
+              {m.text}
+            </span>
+          ))}
+        </div>
         <div className="rpma-dc-vignette" />
-        {marks.map((m) => (
-          <span
-            key={m.text}
-            className="rpma-dc-mark"
-            style={{
-              top: `${m.top}%`,
-              left: `${m.left}%`,
-              transform: `rotate(${m.rot}deg)`,
-              fontSize: `${m.size}rem`,
-              opacity: m.opacity,
-            }}
-          >
-            {m.text}
-          </span>
-        ))}
       </section>
 
       <aside className="rpma-dc-right">
@@ -209,15 +190,19 @@ const DC_CSS = `
   overflow: hidden;
   background: #cfd8e2;
 }
-.rpma-dc-still {
-  position: absolute; inset: -4%;
-  width: 108%; height: 108%;
-  object-fit: cover; object-position: 42% 55%;
+.rpma-dc-scene {
+  position: absolute; inset: -3%;
+  width: 106%; height: 106%;
   animation: rpma-kb 28s ease-in-out infinite alternate;
+}
+.rpma-dc-still {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: 38% 38%;
 }
 @keyframes rpma-kb {
   from { transform: scale(1) translate3d(0, 0, 0); }
-  to { transform: scale(1.08) translate3d(-1.6%, -1.2%, 0); }
+  to { transform: scale(1.06) translate3d(-1.2%, -0.8%, 0); }
 }
 .rpma-dc-vignette {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
@@ -229,8 +214,7 @@ const DC_CSS = `
   position: absolute;
   z-index: 4;
   margin: 0;
-  max-width: 72%;
-  color: #163044;
+  color: #102436;
   font-weight: 800;
   letter-spacing: 0.03em;
   line-height: 0.95;
@@ -238,6 +222,7 @@ const DC_CSS = `
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
+  text-shadow: 0 1px 10px rgba(255,255,255,0.35);
 }
 .rpma-dc-right {
   position: relative;
@@ -336,6 +321,6 @@ const DC_CSS = `
   .rpma-dc-mark { font-size: 1.05rem !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpma-dc-still { animation: none; }
+  .rpma-dc-scene { animation: none; }
 }
 `;
