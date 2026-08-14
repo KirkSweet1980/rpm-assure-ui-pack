@@ -11,7 +11,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "ssot-cinema-20260814";
+const LOGIN_BUILD = "ssot-boardroom-hi-20260814";
 
 function LoginPage() {
   const navigate = useNavigate();
