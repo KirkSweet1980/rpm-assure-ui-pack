@@ -1611,6 +1611,8 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
   };
 });
 
+export const SHIPPED_AGENT_VERSION = "2.2.0";
+
 export type AgentStatusRow = {
   customerCode: string;
   displayName: string;
@@ -1625,6 +1627,7 @@ export type AgentStatusRow = {
   healthStatus: string;
   minutesSinceHeartbeat: number | null;
   requestSyncUtc: string | null;
+  needsUpdate: boolean;
 };
 
 async function ensureAgentSyncColumn(pool: NonNullable<Awaited<ReturnType<typeof getPool>>>) {
@@ -1668,6 +1671,11 @@ function mapAgentRow(row: Record<string, unknown>): AgentStatusRow {
     minutesSinceHeartbeat:
       row.MinutesSinceHeartbeat != null ? Number(row.MinutesSinceHeartbeat) : null,
     requestSyncUtc: row.RequestSyncUtc ? new Date(row.RequestSyncUtc as string).toISOString() : null,
+    needsUpdate:
+      Boolean(host) &&
+      String(row.AgentVersion ?? "") !== SHIPPED_AGENT_VERSION &&
+      String(row.LastStatus ?? "") !== "UPDATE" &&
+      String(row.LastStatus ?? "") !== "UPDATING",
   };
 }
 
@@ -1678,6 +1686,18 @@ export const fetchAgentStatus = createServerFn({ method: "GET" }).handler(async 
   }
   try {
     await ensureAgentSyncColumn(pool);
+    try {
+      await pool.request().input("v", sqlTypes.NVarChar(32), SHIPPED_AGENT_VERSION).query(`
+UPDATE dbo.Agent_Registry
+SET LastStatus = N'UPDATE',
+    LastMessage = N'update requested ' + @v
+WHERE LastHeartbeatUtc >= DATEADD(minute, -60, SYSUTCDATETIME())
+  AND (AgentVersion IS NULL OR AgentVersion <> @v)
+  AND ISNULL(LastStatus, N'') NOT IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING');
+`);
+    } catch {
+      /* best-effort auto queue */
+    }
     const hasSync = await agentHasSyncColumn(pool);
     const syncCol = hasSync ? "r.RequestSyncUtc" : "CAST(NULL AS datetime2) AS RequestSyncUtc";
     const r = await pool.request().query(`
@@ -1707,6 +1727,7 @@ FROM (
     r.LastMessage,
     ${syncCol},
     CASE
+      WHEN r.LastStatus IN (N'UPDATE', N'UPDATING') THEN r.LastStatus
       WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
       WHEN r.LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
       ELSE N'ONLINE'
@@ -1795,6 +1816,43 @@ SELECT @@ROWCOUNT AS n;`);
       const n = Number((r.recordset?.[0] as { n?: number } | undefined)?.n ?? 0);
       if (n < 1) return { ok: false as const, message: `No agent registered for ${code}@${host}` };
       return { ok: true as const, message: `Sync queued for ${code}@${host}` };
+    } catch (e) {
+      return { ok: false as const, message: e instanceof Error ? e.message : String(e) };
+    }
+  });
+
+export const requestAgentUpdate = createServerFn({ method: "POST" })
+  .validator((data: { customerCode?: string; hostName?: string; all?: boolean }) => data)
+  .handler(async ({ data }) => {
+    const pool = await getPool();
+    if (!pool) return { ok: false as const, message: "SQL not connected" };
+    try {
+      const msg = `update requested ${SHIPPED_AGENT_VERSION}`;
+      if (data.all) {
+        const r = await pool.request().input("m", sqlTypes.NVarChar(200), msg).query(`
+UPDATE dbo.Agent_Registry
+SET LastStatus = N'UPDATE', LastMessage = @m
+WHERE LastHeartbeatUtc >= DATEADD(minute, -120, SYSUTCDATETIME());
+SELECT @@ROWCOUNT AS n;`);
+        const n = Number((r.recordset?.[0] as { n?: number } | undefined)?.n ?? 0);
+        return { ok: true as const, message: `Update queued for ${n} agent(s)` };
+      }
+      const code = (data.customerCode ?? "").trim().toUpperCase();
+      const host = (data.hostName ?? "").trim();
+      if (!code || !host) return { ok: false as const, message: "Customer and host required" };
+      const r = await pool
+        .request()
+        .input("c", sqlTypes.NVarChar(32), code)
+        .input("h", sqlTypes.NVarChar(128), host)
+        .input("m", sqlTypes.NVarChar(200), msg)
+        .query(`
+UPDATE dbo.Agent_Registry
+SET LastStatus = N'UPDATE', LastMessage = @m
+WHERE CustomerCode = @c AND HostName = @h;
+SELECT @@ROWCOUNT AS n;`);
+      const n = Number((r.recordset?.[0] as { n?: number } | undefined)?.n ?? 0);
+      if (n < 1) return { ok: false as const, message: `No agent for ${code}@${host}` };
+      return { ok: true as const, message: `Update queued for ${code}@${host}` };
     } catch (e) {
       return { ok: false as const, message: e instanceof Error ? e.message : String(e) };
     }

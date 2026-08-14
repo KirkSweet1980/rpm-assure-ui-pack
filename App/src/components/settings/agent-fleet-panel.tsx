@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import {
   fetchAgentStatus,
   requestAgentSync,
+  requestAgentUpdate,
+  SHIPPED_AGENT_VERSION,
   type AgentStatusRow,
 } from "@/lib/settings/settings-api";
 import { cn } from "@/lib/utils";
@@ -47,6 +49,14 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
       setSync((prev) => {
         const next = { ...prev };
         for (const row of r.rows ?? []) {
+          if (row.lastStatus === "UPDATE") {
+            next[row.agentId] = { phase: "queued", pct: 15, note: `Update to ${SHIPPED_AGENT_VERSION} queued…` };
+            continue;
+          }
+          if (row.lastStatus === "UPDATING") {
+            next[row.agentId] = { phase: "running", pct: 55, note: "This agent is updating…" };
+            continue;
+          }
           if (!armed.current.has(row.agentId)) continue;
           const st = next[row.agentId];
           if (!st || st.phase === "done" || st.phase === "error") continue;
@@ -126,12 +136,26 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-[13px] font-semibold text-fg">RPM Assure Agent · SYSPRO</p>
           <p className="text-[11px] text-muted">
-            Sync Now runs one customer only. Progress shows on that row.
+            Sync Now = this customer only. Agents on {SHIPPED_AGENT_VERSION} auto-update from Assure.
           </p>
         </div>
         <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
           <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
           Refresh
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={busy}
+          onClick={() => {
+            void requestAgentUpdate({ data: { all: true } }).then((r) => {
+              setMsg(r.message);
+              void load();
+            });
+          }}
+        >
+          Update all agents
         </Button>
       </div>
       {msg ? <p className="text-[11px] text-muted">{msg}</p> : null}
@@ -170,7 +194,10 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
                   >
                     <td className="px-2 py-2">
                       <span className="font-semibold text-fg">{r.displayName}</span>
-                      <span className="ml-1.5 font-mono text-[10px] text-muted">{r.customerCode}</span>
+                      <span className="ml-1.5 font-mono text-[10px] text-muted">
+                        {r.customerCode}
+                        {r.agentVersion ? ` · v${r.agentVersion}` : ""}
+                      </span>
                     </td>
                     <td className="px-2 py-2 font-mono text-[11px] text-fg">{r.agentId}</td>
                     <td className="px-2 py-2">

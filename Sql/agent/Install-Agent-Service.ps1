@@ -36,7 +36,7 @@ function Copy-RpmaFile([string]$From, [string]$To) {
   Copy-Item -LiteralPath $From -Destination $To -Force
 }
 
-foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Start-Agent-Tray.ps1", "Install-Agent-Tray.ps1", "start-edge.cmd", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
+foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureConfig.ps1", "Set-AgentSettings.ps1", "Start-Agent-Tray.ps1", "Install-Agent-Tray.ps1", "start-edge.cmd", "Update-Agent-From-Central.ps1", "VERSION", "Agent.Config.example.ps1", "470_Ensure_Agent_Tables.sql", "README.md")) {
   Copy-RpmaFile (Join-Path $Here $f) (Join-Path $AgentRoot $f)
 }
 if (Test-Path (Join-Path $Here 'tray')) {

@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.1.0"
+$AgentVersion = "2.2.0"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -244,6 +244,52 @@ VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Li
 }
 if (-not $hostCustomers.Count) { $hbFailed = $true }
 Write-RpmaStatusFile -Online (-not $hbFailed) -Message $(if ($hbFailed) { 'heartbeat failed' } else { 'heartbeat ok' })
+
+# Auto-update when Assure queued LastStatus=UPDATE
+try {
+  $qUp = @"
+SET NOCOUNT ON;
+SELECT TOP 1 LastMessage
+FROM dbo.Agent_Registry WITH (NOLOCK)
+WHERE HostName = $(Sql-Lit $HostName)
+  AND (LastStatus = N'UPDATE' OR LastMessage LIKE N'update requested%');
+"@
+  $ur = Invoke-CentralSql -SqlText $qUp -Tsv
+  $needUp = $false
+  if ($ur.ExitCode -eq 0 -and $ur.Text) {
+    foreach ($line in ($ur.Text -split "`r?`n")) {
+      if ($line.Trim() -and $line -notmatch 'LastMessage|---') { $needUp = $true }
+    }
+  }
+  if ($needUp) {
+    W 'UPDATE queued by Assure - pulling pack'
+    [void](Invoke-CentralSql -SqlText @"
+SET NOCOUNT ON;
+UPDATE dbo.Agent_Registry
+SET LastStatus = N'UPDATING', LastMessage = N'applying 2.2.0'
+WHERE HostName = $(Sql-Lit $HostName);
+"@)
+    $upd = Join-Path $AgentRoot 'Update-Agent-From-Central.ps1'
+    if (-not (Test-Path $upd)) { $upd = Join-Path $SqlRoot 'agent\Update-Agent-From-Central.ps1' }
+    if (Test-Path $upd) {
+      $old = $ErrorActionPreference
+      $ErrorActionPreference = 'Continue'
+      $out = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $upd -AgentRoot $AgentRoot 2>&1 | Out-String
+      $ErrorActionPreference = $old
+      W ("UPDATE result: " + $out.Substring(0, [Math]::Min(300, $out.Length)))
+      [void](Invoke-CentralSql -SqlText @"
+SET NOCOUNT ON;
+UPDATE dbo.Agent_Registry
+SET LastStatus = N'ONLINE', LastMessage = N'updated 2.2.0', AgentVersion = N'2.2.0'
+WHERE HostName = $(Sql-Lit $HostName);
+"@)
+      W 'UPDATE applied - service will restart'
+      exit 0
+    } else {
+      W 'WARN update script missing'
+    }
+  }
+} catch { W ("WARN update check " + $_.Exception.Message) }
 
 $forceCodes = @()
 $flag = Join-Path $AgentRoot 'request-sync.flag'
