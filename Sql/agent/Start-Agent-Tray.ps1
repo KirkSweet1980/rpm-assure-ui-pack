@@ -9,24 +9,27 @@ Add-Type -AssemblyName System.Drawing
 $statusFile = Join-Path $AgentRoot 'status.json'
 $flagFile = Join-Path $AgentRoot 'request-sync.flag'
 
-function New-RpmaIcon([string]$hex) {
+function New-RpmaIconFromPng([string]$path, [string]$fallbackHex) {
+  if (Test-Path -LiteralPath $path) {
+    $bmp = [System.Drawing.Bitmap]::FromFile($path)
+    $h = $bmp.GetHicon()
+    $ico = [System.Drawing.Icon]::FromHandle($h)
+    return $ico.Clone()
+  }
   $bmp = New-Object System.Drawing.Bitmap 16, 16
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   $g.SmoothingMode = 'AntiAlias'
   $g.Clear([System.Drawing.Color]::Transparent)
-  $brush = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml($hex))
+  $brush = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml($fallbackHex))
   $g.FillEllipse($brush, 1, 1, 13, 13)
-  $g.DrawEllipse([System.Drawing.Pens]::White, 1, 1, 13, 13)
   $g.Dispose()
-  $h = $bmp.GetHicon()
-  $ico = [System.Drawing.Icon]::FromHandle($h)
-  $clone = $ico.Clone()
-  return $clone
+  return [System.Drawing.Icon]::FromHandle($bmp.GetHicon()).Clone()
 }
 
-$iconOn = New-RpmaIcon '#16a34a'
-$iconOff = New-RpmaIcon '#dc2626'
-$iconWait = New-RpmaIcon '#d97706'
+$trayDir = Join-Path $AgentRoot 'tray'
+$iconOn   = New-RpmaIconFromPng (Join-Path $trayDir 'assure-ok-32.png')   '#16a34a'
+$iconWait = New-RpmaIconFromPng (Join-Path $trayDir 'assure-error-32.png') '#d97706'
+$iconOff  = New-RpmaIconFromPng (Join-Path $trayDir 'assure-off-32.png')  '#dc2626'
 
 function Read-RpmaStatus {
   $svc = Get-Service -Name 'RPMAssure-Edge' -ErrorAction SilentlyContinue

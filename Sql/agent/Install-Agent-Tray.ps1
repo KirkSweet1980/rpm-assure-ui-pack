@@ -4,10 +4,16 @@
 param([string]$AgentRoot = 'C:\RPM-Assure\Agent')
 
 $ErrorActionPreference = 'Stop'
-$src = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'Start-Agent-Tray.ps1'
+$srcDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$src = Join-Path $srcDir 'Start-Agent-Tray.ps1'
 $destTray = Join-Path $AgentRoot 'Start-Agent-Tray.ps1'
 if ((Test-Path $src) -and ((Resolve-Path $src).Path -ne (Resolve-Path -LiteralPath $destTray -ErrorAction SilentlyContinue).Path)) {
   Copy-Item $src $destTray -Force
+}
+$iconSrc = Join-Path $srcDir 'tray'
+if (Test-Path $iconSrc) {
+  New-Item -ItemType Directory -Force -Path (Join-Path $AgentRoot 'tray') | Out-Null
+  Copy-Item (Join-Path $iconSrc '*') (Join-Path $AgentRoot 'tray') -Force
 }
 $tray = Join-Path $AgentRoot 'Start-Agent-Tray.ps1'
 if (-not (Test-Path $tray)) { throw "Missing $tray" }

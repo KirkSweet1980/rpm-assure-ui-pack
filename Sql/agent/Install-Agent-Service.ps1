@@ -26,6 +26,10 @@ foreach ($f in @("RpmAssure-Agent.ps1", "RpmAssure-Agent-Loop.ps1", "Lib-SecureC
   $src = Join-Path $Here $f
   if (Test-Path $src) { Copy-Item $src (Join-Path $AgentRoot $f) -Force }
 }
+if (Test-Path (Join-Path $Here 'tray')) {
+  New-Item -ItemType Directory -Force -Path (Join-Path $AgentRoot 'tray') | Out-Null
+  Copy-Item (Join-Path $Here 'tray\*') (Join-Path $AgentRoot 'tray') -Force
+}
 Copy-Item (Join-Path $Here "Install-Agent-Service.ps1") (Join-Path $AgentRoot "Install-Agent-Service.ps1") -Force -EA SilentlyContinue
 
 $configs = @()
