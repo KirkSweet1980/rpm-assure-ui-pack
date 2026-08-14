@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { Bot, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   fetchAgentStatus,
@@ -12,23 +12,19 @@ import { cn } from "@/lib/utils";
 
 type SyncState = { phase: "queued" | "running" | "done" | "error"; pct: number; note: string };
 
-function lamp(status: string) {
-  if (status === "ONLINE") return "bg-emerald-500 shadow-[0_0_8px_#10b981]";
-  if (status === "STALE") return "bg-red-500";
-  return "bg-red-500";
+function toneOf(row: AgentStatusRow, st?: SyncState): "green" | "amber" | "red" {
+  if (st?.phase === "queued" || st?.phase === "running") return "amber";
+  if (row.lastStatus === "UPDATE" || row.lastStatus === "UPDATING" || row.lastStatus === "QUEUED" || row.lastStatus === "SYNCING") {
+    return "amber";
+  }
+  if (row.healthStatus === "ONLINE") return "green";
+  return "red";
 }
 
-function fmt(iso: string | null) {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString("en-ZA", {
-      timeZone: "Africa/Johannesburg",
-      dateStyle: "short",
-      timeStyle: "short",
-    });
-  } catch {
-    return iso;
-  }
+function labelOf(tone: "green" | "amber" | "red") {
+  if (tone === "green") return "Connected";
+  if (tone === "amber") return "Busy";
+  return "Disconnected";
 }
 
 export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
@@ -50,11 +46,11 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
         const next = { ...prev };
         for (const row of r.rows ?? []) {
           if (row.lastStatus === "UPDATE") {
-            next[row.agentId] = { phase: "queued", pct: 15, note: `Update to ${SHIPPED_AGENT_VERSION} queued…` };
+            next[row.agentId] = { phase: "queued", pct: 15, note: `Update ${SHIPPED_AGENT_VERSION}` };
             continue;
           }
           if (row.lastStatus === "UPDATING") {
-            next[row.agentId] = { phase: "running", pct: 55, note: "This agent is updating…" };
+            next[row.agentId] = { phase: "running", pct: 55, note: "Updating" };
             continue;
           }
           if (!armed.current.has(row.agentId)) continue;
@@ -62,30 +58,18 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
           if (!st || st.phase === "done" || st.phase === "error") continue;
           const elapsed = Date.now() - (startedAt.current[row.agentId] ?? Date.now());
           if (row.lastStatus === "QUEUED") {
-            next[row.agentId] = { phase: "queued", pct: 18, note: "Queued — waiting for this agent…" };
+            next[row.agentId] = { phase: "queued", pct: 18, note: "Queued" };
           } else if (row.lastStatus === "SYNCING") {
-            next[row.agentId] = {
-              phase: "running",
-              pct: Math.min(88, 35 + Math.round(elapsed / 800)),
-              note: "Collect running on this customer…",
-            };
+            next[row.agentId] = { phase: "running", pct: Math.min(88, 35 + Math.round(elapsed / 800)), note: "Collect" };
           } else if (row.lastStatus === "OK" || row.lastStatus === "ONLINE") {
-            if (st.phase === "queued" || st.phase === "running") {
-              next[row.agentId] = { phase: "done", pct: 100, note: "Sync complete" };
-              armed.current.delete(row.agentId);
-            }
+            next[row.agentId] = { phase: "done", pct: 100, note: "Done" };
+            armed.current.delete(row.agentId);
           } else if (row.lastStatus === "JOB_FAIL") {
-            next[row.agentId] = { phase: "error", pct: 100, note: row.lastMessage ?? "Collect failed" };
+            next[row.agentId] = { phase: "error", pct: 100, note: row.lastMessage ?? "Failed" };
             armed.current.delete(row.agentId);
           } else if (elapsed > 180000) {
-            next[row.agentId] = { phase: "error", pct: 100, note: "Timed out waiting for this agent" };
+            next[row.agentId] = { phase: "error", pct: 100, note: "Timed out" };
             armed.current.delete(row.agentId);
-          } else {
-            next[row.agentId] = {
-              phase: "running",
-              pct: Math.min(80, 15 + Math.round(elapsed / 1000)),
-              note: "Waiting for this customer only…",
-            };
           }
         }
         return next;
@@ -113,9 +97,7 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
     setSelected(row.agentId);
     armed.current = new Set([row.agentId]);
     startedAt.current[row.agentId] = Date.now();
-    setSync({
-      [row.agentId]: { phase: "queued", pct: 8, note: "Queueing this customer…" },
-    });
+    setSync({ [row.agentId]: { phase: "queued", pct: 8, note: "Queueing" } });
     const r = await requestAgentSync({
       data: { customerCode: row.customerCode, hostName: row.hostName },
     });
@@ -124,135 +106,122 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
       setSync({ [row.agentId]: { phase: "error", pct: 0, note: r.message } });
       return;
     }
-    setSync({
-      [row.agentId]: { phase: "queued", pct: 20, note: "Waiting for this agent (up to 1 min)…" },
-    });
+    setSync({ [row.agentId]: { phase: "queued", pct: 20, note: "Waiting" } });
     void load();
   }
 
+  const sel = rows.find((r) => r.agentId === selected);
+  const selSt = sel ? sync[sel.agentId] : undefined;
+
   return (
-    <div className="rpma-panel space-y-3 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-[13px] font-semibold text-fg">RPM Assure Agent · SYSPRO</p>
-          <p className="text-[11px] text-muted">
-            Sync Now = this customer only. Agents on {SHIPPED_AGENT_VERSION} auto-update from Assure.
-          </p>
+    <div className="rpma-panel space-y-2 p-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        <p className="text-[11px] font-semibold tracking-wide text-fg">RPM Assure Agent · SYSPRO</p>
+        <div className="flex items-center gap-1">
+          <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[10px]" disabled={busy} onClick={() => void load()}>
+            <RefreshCw className={cn("size-3", busy && "animate-spin")} />
+            Refresh
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 text-[10px]"
+            disabled={busy}
+            onClick={() => {
+              void requestAgentUpdate({ data: { all: true } }).then((r) => {
+                setMsg(r.message);
+                void load();
+              });
+            }}
+          >
+            Update all
+          </Button>
         </div>
-        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
-          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
-          Refresh
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => {
-            void requestAgentUpdate({ data: { all: true } }).then((r) => {
-              setMsg(r.message);
-              void load();
-            });
-          }}
-        >
-          Update all agents
-        </Button>
       </div>
-      {msg ? <p className="text-[11px] text-muted">{msg}</p> : null}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[12px]">
-          <thead className="text-[10px] uppercase tracking-wide text-muted">
-            <tr>
-              <th className="px-2 py-1.5">Customer</th>
-              <th className="px-2 py-1.5">Agent ID</th>
-              <th className="px-2 py-1.5">Link</th>
-              {!compact ? <th className="px-2 py-1.5">Heartbeat</th> : null}
-              <th className="px-2 py-1.5">Sync</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={compact ? 4 : 5} className="px-2 py-3 text-muted">
-                  No active customers, or agent tables not applied.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => {
-                const st = sync[r.agentId];
-                const online = r.healthStatus === "ONLINE";
-                const isSel = selected === r.agentId;
-                const showBar = Boolean(st);
-                return (
-                  <tr
-                    key={r.agentId}
+      {msg ? <p className="text-[10px] text-muted">{msg}</p> : null}
+
+      <div className="flex flex-wrap gap-1.5">
+        {rows.length === 0 ? (
+          <p className="text-[10px] text-muted">No agents registered.</p>
+        ) : (
+          rows.map((r) => {
+            const st = sync[r.agentId];
+            const tone = toneOf(r, st);
+            const on = selected === r.agentId;
+            return (
+              <button
+                key={r.agentId}
+                type="button"
+                title={`${r.displayName} · ${r.agentId} · ${labelOf(tone)}`}
+                onClick={() => setSelected(r.agentId)}
+                className={cn(
+                  "inline-flex min-h-8 items-center gap-1.5 rounded-md border px-2 py-1 text-left transition-colors",
+                  on ? "border-fg/30 bg-surface-2" : "border-transparent bg-surface-2/70 hover:bg-surface-2",
+                )}
+              >
+                <Bot
+                  className={cn(
+                    "size-3.5 shrink-0",
+                    tone === "green" && "text-emerald-500",
+                    tone === "amber" && "text-amber-400",
+                    tone === "red" && "text-red-500",
+                  )}
+                  strokeWidth={2.25}
+                />
+                <span className="min-w-0">
+                  <span className="block max-w-[9rem] truncate text-[10px] font-semibold leading-tight text-fg">
+                    {r.displayName}
+                  </span>
+                  <span
                     className={cn(
-                      "border-t border-border/60 cursor-pointer",
-                      isSel && "bg-sky-500/10",
+                      "block text-[9px] font-medium leading-tight",
+                      tone === "green" && "text-emerald-500",
+                      tone === "amber" && "text-amber-500",
+                      tone === "red" && "text-red-500",
                     )}
-                    onClick={() => setSelected(r.agentId)}
                   >
-                    <td className="px-2 py-2">
-                      <span className="font-semibold text-fg">{r.displayName}</span>
-                      <span className="ml-1.5 font-mono text-[10px] text-muted">
-                        {r.customerCode}
-                        {r.agentVersion ? ` · v${r.agentVersion}` : ""}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 font-mono text-[11px] text-fg">{r.agentId}</td>
-                    <td className="px-2 py-2">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className={cn("inline-block h-2.5 w-2.5 rounded-full", lamp(r.healthStatus))} />
-                        <span className={cn("text-[11px] font-semibold", online ? "text-emerald-400" : "text-red-400")}>
-                          {online ? "Connected" : r.healthStatus === "NOT_INSTALLED" ? "Not installed" : r.healthStatus}
-                        </span>
-                      </span>
-                    </td>
-                    {!compact ? <td className="px-2 py-2 text-muted">{fmt(r.lastHeartbeatUtc)}</td> : null}
-                    <td className="px-2 py-2">
-                      <div className="flex min-w-[220px] flex-col gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={isSel ? "default" : "secondary"}
-                          disabled={!r.hostName || !online || st?.phase === "queued" || st?.phase === "running"}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void syncOne(r);
-                          }}
-                        >
-                          Sync Now
-                        </Button>
-                        {showBar ? (
-                          <div>
-                            <div className="flex items-center justify-between text-[10px] text-muted">
-                              <span>{st.note}</span>
-                              <span className="font-mono">{st.pct}%</span>
-                            </div>
-                            <div className="mt-0.5 h-2 overflow-hidden rounded-full bg-black/30">
-                              <div
-                                className={cn(
-                                  "h-full rounded-full transition-all duration-500",
-                                  st.phase === "error"
-                                    ? "bg-red-500"
-                                    : st.phase === "done"
-                                      ? "bg-emerald-500"
-                                      : "bg-sky-400",
-                                )}
-                                style={{ width: `${st.pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                    {labelOf(tone)}
+                    {r.agentVersion ? ` · v${r.agentVersion}` : ""}
+                  </span>
+                </span>
+              </button>
+            );
+          })
+        )}
       </div>
+
+      {sel ? (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-1.5">
+          <span className="font-mono text-[9px] text-muted">{sel.agentId}</span>
+          <Button
+            type="button"
+            size="sm"
+            className="h-6 px-2 text-[10px]"
+            disabled={!sel.hostName || toneOf(sel, selSt) === "red" || selSt?.phase === "queued" || selSt?.phase === "running"}
+            onClick={() => void syncOne(sel)}
+          >
+            Sync Now
+          </Button>
+          {selSt ? (
+            <div className="min-w-[120px] flex-1">
+              <div className="flex justify-between text-[9px] text-muted">
+                <span>{selSt.note}</span>
+                <span>{selSt.pct}%</span>
+              </div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-black/25">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    selSt.phase === "error" ? "bg-red-500" : selSt.phase === "done" ? "bg-emerald-500" : "bg-amber-400",
+                  )}
+                  style={{ width: `${selSt.pct}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

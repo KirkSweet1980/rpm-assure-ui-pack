@@ -15,7 +15,6 @@ const OPTIONS: { href: string; title: string; blurb: string }[] = [
   { href: "/settings/sql", title: "SQL Server", blurb: "Central connections and credentials." },
   { href: "/settings/ssl", title: "SSL / HTTPS", blurb: "Certificate for the public hostname." },
   { href: "/settings/users", title: "Users", blurb: "Staff accounts, roles, and scope." },
-  { href: "/settings/agents", title: "RPM Assure Agent", blurb: "SYSPRO source: SQL-host Windows service, identifier, sync." },
   { href: "/settings/collect", title: "Collect Inventory", blurb: "Last import per customer from Agent and APIs." },
   { href: "/settings/query", title: "SQL Query", blurb: "Read-only explorer." },
   { href: "/settings/theme", title: "Theme", blurb: "Light / dark and palette." },

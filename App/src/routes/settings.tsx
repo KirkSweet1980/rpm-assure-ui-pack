@@ -41,7 +41,6 @@ const CONFIG_SERVICES: CorpService[] = [
       { label: "SQL Server", path: "/settings/sql" },
       { label: "Certificates", path: "/settings/ssl" },
       { label: "Email", path: "/settings/smtp" },
-      { label: "RPM Assure Agent", path: "/settings/agents" },
       { label: "API Integrations", path: "/settings/integrations" },
       { label: "Collect Inventory", path: "/settings/collect" },
     ],
