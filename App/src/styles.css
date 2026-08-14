@@ -261,10 +261,10 @@ body {
 .rpma-modbtn.is-on, html[data-theme="dark"] .rpma-modbtn.is-on { background: #263544; color: #fff; border-color: #263544; }
 
 .rpma-d3-workspace {
-  display: grid; grid-template-columns: minmax(24rem, 30vw) minmax(16rem, 22vw) minmax(0, 1fr);
+  display: grid; grid-template-columns: minmax(15.5rem, 18vw) minmax(12.75rem, 15vw) minmax(0, 1fr);
   gap: 0.55rem; align-items: start; min-height: calc(100dvh - 8rem);
 }
-.rpma-d3-workspace.is-inspect { grid-template-columns: minmax(24rem, 30vw) minmax(16rem, 22vw) minmax(0, 1fr); }
+.rpma-d3-workspace.is-inspect { grid-template-columns: minmax(15.5rem, 18vw) minmax(12.75rem, 15vw) minmax(0, 1fr); }
 .rpma-d3-workspace.is-tool { grid-template-columns: 18.5rem minmax(0, 1fr); }
 .rpma-split-arrow { align-self: stretch; min-height: 8rem; border: 0; background: transparent; color: #b0b8c2; display: grid; place-items: center; cursor: pointer; }
 .rpma-crumb { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; }

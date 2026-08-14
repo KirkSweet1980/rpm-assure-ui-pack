@@ -6,7 +6,6 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { IdleLogoutBanner } from "@/lib/auth/idle-logout";
 import { normalizeLoginIdentifier } from "@/lib/auth/root-admin";
 import { RpmAssureMark } from "@/components/brand/rpm-assure-mark";
-import { ThemeToggle } from "@/components/portfolio/theme-toggle";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -147,10 +146,6 @@ function LoginPage() {
         <div className="rpma-cin-divider" aria-hidden="true" />
 
         <section className="rpma-cin-right">
-          <div className="rpma-cin-tools">
-            <ThemeToggle />
-          </div>
-
           <div className="rpma-cin-card">
             <div className="rpma-cin-mark">
               <RpmAssureMark size={84} showWordmark={false} staticMark />
