@@ -1770,7 +1770,7 @@ export function buildRmmCapacityHtml(opts: {
     ...opts,
     kind: "capacity",
     title: "Capacity & Performance",
-    note: "Disk at risk (≥85%), CPU ≥80%, memory ≥85%, peak IOPS. Servers first.",
+    note: "Disk at risk (≥85%), CPU ≥80%, memory ≥85%. Peak IOPS only if Pulseway publishes it (v3 API does not).",
   });
 }
 

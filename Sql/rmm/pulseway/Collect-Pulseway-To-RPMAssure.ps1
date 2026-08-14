@@ -1582,6 +1582,8 @@ foreach ($d in $devices) {
       Write-Log ('disk sample: ' + $dj)
     }
   }
+  $script:DiskIopsHits = 0
+  $script:DiskIopsTried = 0
   foreach ($drv in $drives) {
     if ($null -eq $drv) { continue }
     $letter = $null
@@ -1602,6 +1604,10 @@ foreach ($d in $devices) {
     $usedPct = $pair.UsedPct
     $media = Get-DiskMediaType $drv
     $iops = Get-DiskIops $drv
+    $script:DiskIopsTried++
+    if ($null -ne $iops.Read -or $null -ne $iops.Write -or $null -ne $iops.Total) {
+      $script:DiskIopsHits++
+    }
     [void]$diskSb.AppendLine((
       "INSERT INTO dbo.Pulseway_Disks (SnapshotDate, DeviceId, DriveLetter, CustomerCode, DeviceName, TotalGb, FreeGb, UsedPct, MediaType, ReadIops, WriteIops, TotalIops, ImportedAt) VALUES (@Snap, {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, @Imp);" -f `
         (SqlEsc ([string]$did)), (SqlEsc $letter), (SqlEsc $code), (SqlEsc $name), (SqlDec $total), (SqlDec $free), (SqlDec $usedPct), (SqlEsc $media), (SqlDec $iops.Read), (SqlDec $iops.Write), (SqlDec $iops.Total)
@@ -1725,7 +1731,14 @@ if ($diskSb -and $diskSb.Length -gt 0) {
   [void]$diskSql.AppendLine('END')
   $diskIns = ([regex]::Matches($diskSb.ToString(), 'INSERT INTO')).Count
   Write-Log ("Writing disks... insertRows=$diskIns")
-  # Sample first disk INSERT for culture/decimal check
+  $hits = 0
+  if ($script:DiskIopsHits) { $hits = [int]$script:DiskIopsHits }
+  $tried = 0
+  if ($script:DiskIopsTried) { $tried = [int]$script:DiskIopsTried }
+  Write-Log ("disk IOPS from API: rowsWithIops=$hits / $tried (Pulseway v3 Disks = Name,System,FreePercentage,TotalValue only)")
+  if ($hits -eq 0) {
+    Write-Log 'IOPS not published by Pulseway REST v3. Capacity pack shows Not reported. Do not invent values.'
+  }
   $dm = [regex]::Match($diskSb.ToString(), 'INSERT INTO dbo\.Pulseway_Disks[^;]+;')
   if ($dm.Success) {
     $snip = $dm.Value

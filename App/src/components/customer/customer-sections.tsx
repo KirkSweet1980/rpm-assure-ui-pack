@@ -1351,13 +1351,20 @@ export function RmmDevicesSection({
                         {" · "}
                         {d.ipAddress ?? "no IP"}
                       </span>
-                      {mode === "servers" ? (
+                      {mode === "servers" && d.diskIopsMax != null ? (
                         <span className="font-mono text-[10px] text-subtle">
-                          IOPS{" "}
-                          {d.diskIopsMax != null
-                            ? Math.round(d.diskIopsMax).toLocaleString("en-ZA")
-                            : "—"}
+                          IOPS {Math.round(d.diskIopsMax).toLocaleString("en-ZA")}
                           {" · "}
+                          Off 7d{" "}
+                          {d.offlineHours7d != null
+                            ? formatOfflineHours(d.offlineHours7d)
+                            : "—"}
+                          {d.isOnline === false && d.offlineHoursCurrent != null
+                            ? ` · now ${formatOfflineHours(d.offlineHoursCurrent)}`
+                            : ""}
+                        </span>
+                      ) : mode === "servers" ? (
+                        <span className="font-mono text-[10px] text-subtle">
                           Off 7d{" "}
                           {d.offlineHours7d != null
                             ? formatOfflineHours(d.offlineHours7d)
@@ -1531,7 +1538,7 @@ export function RmmDevicesSection({
                         ? Math.round(selected.diskIopsMax).toLocaleString("en-ZA")
                         : "Not reported"
                     }
-                    hint="Peak Total IOPS across volumes when Pulseway reports it"
+                    hint="Pulseway REST v3 does not publish IOPS — only when the agent sends it"
                   />
                   <StatTile
                     label="CPU usage"
@@ -1576,7 +1583,7 @@ export function RmmDevicesSection({
                   </p>
                   {(selected.disks?.length ?? 0) === 0 ? (
                     <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted">
-                      No disk inventory from Pulseway for this device. Collect tries devices, systems, assets, and disk/metric API paths. Media type and IOPS appear when the agent reports them.
+                      No disk inventory from Pulseway for this device. Collect stores Name, free %, and size. IOPS is not in the Pulseway v3 API.
                     </p>
                   ) : (
                     <div className="space-y-2">
