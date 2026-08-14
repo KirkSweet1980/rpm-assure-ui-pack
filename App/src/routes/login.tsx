@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -10,7 +10,9 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "dc-theme-tokens-20260814";
+const LOGIN_BUILD = "dc-play-20260814";
+const DC_VIDEO = "/brand/login-datacenter.mp4?v=20260814b";
+const DC_STILL = "/brand/login-datacenter.jpg?v=20260814b";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -20,12 +22,36 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [videoOn, setVideoOn] = useState(false);
+  const vidRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (!isPending && user) {
       void navigate({ to: "/" });
     }
   }, [isPending, user, navigate]);
+
+  useEffect(() => {
+    const v = vidRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.defaultMuted = true;
+    v.playsInline = true;
+    const play = () => {
+      void v.play().then(() => setVideoOn(true)).catch(() => setVideoOn(false));
+    };
+    const onPlaying = () => setVideoOn(true);
+    const onFail = () => setVideoOn(false);
+    v.addEventListener("playing", onPlaying);
+    v.addEventListener("canplay", play);
+    v.addEventListener("error", onFail);
+    play();
+    return () => {
+      v.removeEventListener("playing", onPlaying);
+      v.removeEventListener("canplay", play);
+      v.removeEventListener("error", onFail);
+    };
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -66,19 +92,20 @@ function LoginPage() {
     <div className="rpma-dc" data-login-build={LOGIN_BUILD}>
       <style>{DC_CSS}</style>
 
-      <div className="rpma-dc-stage" aria-hidden="true">
+      <div className={"rpma-dc-stage" + (videoOn ? " is-live" : "")} aria-hidden="true">
+        <img className="rpma-dc-still" src={DC_STILL} alt="" />
         <video
+          ref={vidRef}
           className="rpma-dc-vid"
-          poster="/brand/login-datacenter.jpg"
+          poster={DC_STILL}
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
         >
-          <source src="/brand/login-datacenter.mp4" type="video/mp4" />
+          <source src={DC_VIDEO} type="video/mp4" />
         </video>
-        <img className="rpma-dc-still" src="/brand/login-datacenter.jpg" alt="" />
         <div className="rpma-dc-vignette" />
       </div>
 
@@ -166,7 +193,9 @@ const DC_CSS = `
   object-fit: cover; object-position: center 45%;
 }
 .rpma-dc-still { z-index: 1; }
-.rpma-dc-vid { z-index: 2; }
+.rpma-dc-vid { z-index: 2; opacity: 0; transition: opacity 400ms ease; }
+.rpma-dc-stage.is-live .rpma-dc-vid { opacity: 1; }
+.rpma-dc-stage.is-live .rpma-dc-still { opacity: 0; }
 .rpma-dc-vignette {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
   background:
@@ -265,5 +294,6 @@ const DC_CSS = `
 }
 @media (prefers-reduced-motion: reduce) {
   .rpma-dc-vid { display: none; }
+  .rpma-dc-stage.is-live .rpma-dc-still { opacity: 1; }
 }
 `;
