@@ -1,4 +1,3 @@
-import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -9,27 +8,23 @@ export function ThemeToggle({
   compact?: boolean;
 }) {
   const { theme, setPreference } = useTheme();
+  const dark = theme === "dark";
 
   return (
-    <div className={cn("dn-theme", className)} role="group" aria-label="Snow or Carbon">
+    <label
+      className={cn("rpma-theme-switch", className)}
+      title={dark ? "Dark Mode On" : "Dark Mode Off"}
+    >
+      <span className="rpma-theme-switch-label">{dark ? "Dark Mode On" : "Dark Mode Off"}</span>
       <button
         type="button"
-        className={cn("dn-theme-btn", theme === "light" && "is-active")}
-        onClick={() => setPreference("light")}
-        title="Snow Edition"
-        aria-pressed={theme === "light"}
+        role="switch"
+        aria-checked={dark}
+        className={cn("rpma-theme-track", dark && "is-on")}
+        onClick={() => setPreference(dark ? "light" : "dark")}
       >
-        <Sun className="h-[18px] w-[18px]" />
+        <span className="rpma-theme-thumb" />
       </button>
-      <button
-        type="button"
-        className={cn("dn-theme-btn", theme === "dark" && "is-active")}
-        onClick={() => setPreference("dark")}
-        title="Carbon Edition"
-        aria-pressed={theme === "dark"}
-      >
-        <Moon className="h-[18px] w-[18px]" />
-      </button>
-    </div>
+    </label>
   );
 }

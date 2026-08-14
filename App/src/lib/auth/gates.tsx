@@ -52,29 +52,27 @@ export function UserButton() {
   if (!user) return null;
   const label = user.displayName ?? user.primaryEmail ?? "Account";
   return (
-    <div className="flex items-center gap-2">
+    <div className="rpma-userchip">
       {user.profileImageUrl ? (
         <img
           src={user.profileImageUrl}
           alt=""
-          className="h-8 w-8 rounded-full object-cover"
+          className="rpma-userchip-avatar"
         />
       ) : (
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-black/10 text-sm font-medium dark:bg-white/20">
+        <span className="rpma-userchip-initial">
           {label.charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="text-sm font-medium">{label}</span>
+      <span className="rpma-userchip-name">{label}</span>
       {authEnabled && (
-        <>
-          <button
-            type="button"
-            onClick={() => void signOut()}
-            className="cursor-pointer text-sm underline-offset-4 opacity-70 hover:underline"
-          >
-            Sign out
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="rpma-userchip-out"
+        >
+          Sign out
+        </button>
       )}
     </div>
   );

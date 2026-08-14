@@ -1,5 +1,4 @@
-import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { RefreshCw } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "@/components/portfolio/theme-toggle";
 import { DkSidebarNav } from "@/components/nav/dk-sidebar-nav";
@@ -39,7 +38,6 @@ export function AppShell({
   const [masterCustomers, setMasterCustomers] = useState<MasterCustomer[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const router = useRouter();
   const { profile } = useStaffProfile();
   useIdleLogout();
 
@@ -215,22 +213,7 @@ export function AppShell({
               />
             </div>
             <div className="dk-header-right">
-              <ThemeToggle compact />
-              <button
-                type="button"
-                className="dk-iconbtn"
-                aria-label="Refresh data"
-                onClick={() => {
-                  try {
-                    sessionStorage.removeItem("rpma_portfolio_cache_v1");
-                  } catch {
-                    /* */
-                  }
-                  void router.invalidate();
-                }}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
+              <ThemeToggle />
               <UserButton />
             </div>
           </div>
