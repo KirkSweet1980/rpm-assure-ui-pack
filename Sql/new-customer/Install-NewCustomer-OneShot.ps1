@@ -15,7 +15,10 @@
 param(
   [string]$PreCustomerCode = '',
   [string]$PreDisplayName = '',
-  [string]$PreInstanceName = ''
+  [string]$PreInstanceName = '',
+  [string]$PreAuthMode = '',
+  [string]$PreAdminUser = '',
+  [string]$PreAdminPwd = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -123,19 +126,26 @@ $InstanceName = Read-Default 'SYSPRO instance name (stored in Assure)' $instDef
 
 # ---------- current admin creds ----------
 Write-Step '--- Current SQL access (how YOU connect today) ---'
-Write-Host '  1) Windows authentication (current Windows user, e.g. SIR\KirkS)'
-Write-Host '  2) SQL login (sa or other sysadmin you already have)'
-$authPick = Read-Default 'Choose 1 or 2' '1'
 $AdminMode = 'windows'
 $AdminUser = ''
 $AdminPwd  = ''
-if ($authPick -eq '2') {
+if ($PreAuthMode -eq 'sql' -and $PreAdminUser -and $PreAdminPwd) {
   $AdminMode = 'sql'
-  $AdminUser = Read-Default 'SQL login' 'sa'
-  $AdminPwd  = Read-Secret 'SQL password'
-  if (-not $AdminPwd) { throw 'SQL password is required for option 2.' }
+  $AdminUser = $PreAdminUser
+  $AdminPwd  = $PreAdminPwd
+  Write-Host ('Using SQL login ' + $AdminUser + ' (from onboard pack)')
 } else {
-  Write-Host ('Using Windows auth as ' + $env:USERDOMAIN + '\' + $env:USERNAME)
+  Write-Host '  1) Windows authentication (current Windows user)'
+  Write-Host '  2) SQL login (sa or other sysadmin you already have)'
+  $authPick = Read-Default 'Choose 1 or 2' '1'
+  if ($authPick -eq '2') {
+    $AdminMode = 'sql'
+    $AdminUser = Read-Default 'SQL login' 'sa'
+    $AdminPwd  = Read-Secret 'SQL password'
+    if (-not $AdminPwd) { throw 'SQL password is required for option 2.' }
+  } else {
+    Write-Host ('Using Windows auth as ' + $env:USERDOMAIN + '\' + $env:USERNAME)
+  }
 }
 
 Write-Step 'Testing current access...'
