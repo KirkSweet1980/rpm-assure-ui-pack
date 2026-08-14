@@ -34,10 +34,17 @@ function Ensure-Git {
 
 function Invoke-Git {
   param([Parameter(Mandatory)][string[]]$GitArgs)
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
   $out = & $script:GitExe @GitArgs 2>&1
   $code = $LASTEXITCODE
+  $ErrorActionPreference = $prev
   foreach ($line in @($out)) {
-    $s = [string]$line
+    if ($line -is [System.Management.Automation.ErrorRecord]) {
+      $s = [string]$line.Exception.Message
+    } else {
+      $s = [string]$line
+    }
     if ($s.Trim()) { Write-Host $s }
   }
   return $code
