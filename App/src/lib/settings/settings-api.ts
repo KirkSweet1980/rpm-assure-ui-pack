@@ -1575,6 +1575,59 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
   };
 });
 
+export type AgentStatusRow = {
+  customerCode: string;
+  hostName: string;
+  instanceName: string | null;
+  agentVersion: string | null;
+  lastHeartbeatUtc: string | null;
+  lastJobUtc: string | null;
+  lastStatus: string | null;
+  lastMessage: string | null;
+  healthStatus: string;
+  minutesSinceHeartbeat: number | null;
+};
+
+export const fetchAgentStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const pool = await getPool();
+  if (!pool) {
+    return { ok: false as const, message: getLastPoolError() ?? "SQL not connected", rows: [] as AgentStatusRow[] };
+  }
+  try {
+    const r = await pool.request().query(`
+SELECT CustomerCode, HostName, InstanceName, AgentVersion,
+       LastHeartbeatUtc, LastJobUtc, LastStatus, LastMessage,
+       HealthStatus, MinutesSinceHeartbeat
+FROM dbo.vw_Agent_Status_Latest WITH (NOLOCK)
+ORDER BY CustomerCode, HostName`);
+    const rows: AgentStatusRow[] = (r.recordset ?? []).map((row: Record<string, unknown>) => ({
+      customerCode: String(row.CustomerCode ?? ""),
+      hostName: String(row.HostName ?? ""),
+      instanceName: row.InstanceName != null ? String(row.InstanceName) : null,
+      agentVersion: row.AgentVersion != null ? String(row.AgentVersion) : null,
+      lastHeartbeatUtc: row.LastHeartbeatUtc
+        ? new Date(row.LastHeartbeatUtc as string).toISOString()
+        : null,
+      lastJobUtc: row.LastJobUtc ? new Date(row.LastJobUtc as string).toISOString() : null,
+      lastStatus: row.LastStatus != null ? String(row.LastStatus) : null,
+      lastMessage: row.LastMessage != null ? String(row.LastMessage) : null,
+      healthStatus: String(row.HealthStatus ?? "NEVER"),
+      minutesSinceHeartbeat:
+        row.MinutesSinceHeartbeat != null ? Number(row.MinutesSinceHeartbeat) : null,
+    }));
+    return { ok: true as const, message: `${rows.length} agent(s)`, rows };
+  } catch (e) {
+    return {
+      ok: false as const,
+      message:
+        e instanceof Error
+          ? e.message
+          : "Agent tables missing — apply Sql/agent/470_Ensure_Agent_Tables.sql",
+      rows: [] as AgentStatusRow[],
+    };
+  }
+});
+
 export const runAllApiSync = createServerFn({ method: "POST" }).handler(async () => {
   try {
     const { cacheInvalidate } = await import("@/lib/data/query-cache");

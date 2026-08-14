@@ -24,6 +24,7 @@ import { Route as ApiReportPreviewRouteImport } from './routes/api/report-previe
 import { Route as CustomersCodeRouteImport } from './routes/customers.$code'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAboutRouteImport } from './routes/settings.about'
+import { Route as SettingsAgentsRouteImport } from './routes/settings.agents'
 import { Route as SettingsAlertsRouteImport } from './routes/settings.alerts'
 import { Route as SettingsAuditRouteImport } from './routes/settings.audit'
 import { Route as SettingsChromeRouteImport } from './routes/settings.chrome'
@@ -164,6 +165,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const SettingsAboutRoute = SettingsAboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAgentsRoute = SettingsAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsAlertsRoute = SettingsAlertsRouteImport.update({
@@ -533,6 +539,7 @@ export interface FileRoutesByFullPath {
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/customers/$code': typeof CustomersCodeRouteWithChildren
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/agents': typeof SettingsAgentsRoute
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
@@ -614,6 +621,7 @@ export interface FileRoutesByTo {
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/agents': typeof SettingsAgentsRoute
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
@@ -692,6 +700,7 @@ export interface FileRoutesById {
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/customers/$code': typeof CustomersCodeRouteWithChildren
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/agents': typeof SettingsAgentsRoute
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
@@ -777,6 +786,7 @@ export interface FileRouteTypes {
     | '/api/report-preview'
     | '/customers/$code'
     | '/settings/about'
+    | '/settings/agents'
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
@@ -858,6 +868,7 @@ export interface FileRouteTypes {
     | '/api/portfolio-refresh'
     | '/api/report-preview'
     | '/settings/about'
+    | '/settings/agents'
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
@@ -935,6 +946,7 @@ export interface FileRouteTypes {
     | '/api/report-preview'
     | '/customers/$code'
     | '/settings/about'
+    | '/settings/agents'
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
@@ -1128,6 +1140,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/settings/about'
       preLoaderRoute: typeof SettingsAboutRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/agents': {
+      id: '/settings/agents'
+      path: '/agents'
+      fullPath: '/settings/agents'
+      preLoaderRoute: typeof SettingsAgentsRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/alerts': {
@@ -1597,6 +1616,7 @@ declare module '@tanstack/react-router' {
 
 interface SettingsRouteChildren {
   SettingsAboutRoute: typeof SettingsAboutRoute
+  SettingsAgentsRoute: typeof SettingsAgentsRoute
   SettingsAlertsRoute: typeof SettingsAlertsRoute
   SettingsAuditRoute: typeof SettingsAuditRoute
   SettingsChromeRoute: typeof SettingsChromeRoute
@@ -1619,6 +1639,7 @@ interface SettingsRouteChildren {
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAboutRoute: SettingsAboutRoute,
+  SettingsAgentsRoute: SettingsAgentsRoute,
   SettingsAlertsRoute: SettingsAlertsRoute,
   SettingsAuditRoute: SettingsAuditRoute,
   SettingsChromeRoute: SettingsChromeRoute,

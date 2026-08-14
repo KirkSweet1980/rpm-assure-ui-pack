@@ -15,6 +15,7 @@ const OPTIONS: { href: string; title: string; blurb: string }[] = [
   { href: "/settings/ssl", title: "SSL / HTTPS", blurb: "Certificate for the public hostname." },
   { href: "/settings/users", title: "Users", blurb: "Staff accounts, roles, and scope." },
   { href: "/settings/collect", title: "Collect", blurb: "Last import and schedule health." },
+  { href: "/settings/agents", title: "Edge agents", blurb: "SQL-host Windows service heartbeats." },
   { href: "/settings/query", title: "SQL Query", blurb: "Read-only explorer." },
   { href: "/settings/theme", title: "Theme", blurb: "Light / dark and palette." },
   { href: "/settings/dashboard", title: "Dashboard", blurb: "Which panels show on Exco." },
