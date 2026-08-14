@@ -2,7 +2,7 @@
 # Creates cron secret if missing. Daily 18:00, Friday 07:00, 1st 07:00.
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Install-Report-Schedules.ps1
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 $AppUrl = 'http://127.0.0.1:8081'
 $AppDir = 'C:\RPM-Assure\App'
 $DataDir = Join-Path $AppDir 'data'
@@ -55,17 +55,23 @@ Write-Host ('cronSecret written length=' + $secret.Length)
 function Register-Slot([string]$Name, [string]$Slot, [string]$Schedule, [string]$Start, [string]$Modifier) {
   $url = "$AppUrl/api/cron/weekly-report?slot=$Slot&secret=$secret"
   $tr = "powershell.exe -NoProfile -WindowStyle Hidden -Command `"try { Invoke-WebRequest -UseBasicParsing -Uri '$url' | Out-Null } catch {}\`""
-  schtasks /Delete /TN $Name /F 2>$null | Out-Null
+  cmd /c "schtasks /Delete /TN `"$Name`" /F >nul 2>&1"
+  $ok = $false
   if ($Modifier) {
-    schtasks /Create /TN $Name /SC $Schedule /D $Modifier /ST $Start /RL LIMITED /F /TR $tr | Out-Null
-  } else {
-    schtasks /Create /TN $Name /SC $Schedule /ST $Start /RL LIMITED /F /TR $tr | Out-Null
+    schtasks /Create /TN $Name /SC $Schedule /D $Modifier /ST $Start /RL LIMITED /F /TR $tr
+    if ($LASTEXITCODE -eq 0) { $ok = $true }
   }
-  Write-Host "Registered $Name $Schedule $Start slot=$Slot"
+  if (-not $Modifier) {
+    schtasks /Create /TN $Name /SC $Schedule /ST $Start /RL LIMITED /F /TR $tr
+    if ($LASTEXITCODE -eq 0) { $ok = $true }
+  }
+  if ($ok) { Write-Host "Registered $Name $Schedule $Start slot=$Slot" }
+  if (-not $ok) { Write-Host "FAILED $Name exit=$LASTEXITCODE" }
 }
 
 Register-Slot 'RPMAssure-Reports-Daily' 'daily' 'DAILY' '18:00' $null
 Register-Slot 'RPMAssure-Reports-Weekly' 'weekly' 'WEEKLY' '07:00' 'FRI'
 Register-Slot 'RPMAssure-Reports-Monthly' 'monthly' 'MONTHLY' '07:00' '1'
+schtasks /Query /TN RPMAssure-Reports-Daily /FO LIST /V | Select-String -Pattern 'TaskName|Status|Start Time|Repeat'
 Write-Host 'OK. Configuration > Email: turn SMTP on and set Report To.'
 Write-Host 'Then Configuration > Report Packs: Send daily now to prove.'
