@@ -20,6 +20,8 @@ import {
 import type { RmmDeviceRow } from "@/lib/data/types";
 import { RPM_CONTRACT_CLOCKS, RPM_SECURITY_ADMIN, RPM_SLA_REVISION } from "@/lib/data/sla-metrics";
 import { buildDayEndSnapshot } from "@/lib/data/day-end";
+import { buildCoveEsr } from "@/lib/data/cove-esr";
+import { COVE_ESR_CSS, coveEsrSections } from "@/lib/mail/cove-esr-html";
 
 function esc(s: string | number | null | undefined): string {
   if (s == null) return "";
@@ -147,7 +149,7 @@ const CSS = `
     table.ams { page-break-inside: auto; }
     tr { page-break-inside: avoid; }
   }
-`;
+` + COVE_ESR_CSS;
 
 function ragClass(rag: string): string {
   if (rag === "Red") return "rag-red";
@@ -1903,52 +1905,12 @@ function covePack(
   const c = opts.customer.customer;
   const now = formatSastDateTime(new Date().toISOString());
   const dateLabel = formatSastDate(new Date().toISOString());
-  const cove = opts.customer.cove;
-  const cs = cove?.summary;
-  const rec = cove?.recovery || cs?.recovery;
-  const devices = cove?.devices ?? [];
-  const covered = Boolean(cove?.enabled || cs || devices.length);
-  const title = kind === "recovery" ? "Recovery Testing" : "Cloud Backup Pack";
-  const sections: string[] = [];
-  if (!covered) {
-    sections.push(`<p class="note"><strong class="warn">No cover</strong> — no Cove backup data for this customer.</p>`);
-  } else {
-    sections.push(`<p class="note">Cloud backup only. RMM / EPP / M365 stay on their own packs.</p>`);
-    if (kind === "service") {
-      sections.push(`<h2 class="sec">Backup summary</h2>${kvTable([
-        ["Devices", esc(String(cs?.deviceCount ?? devices.length))],
-        ["OK / failed / stale", `${esc(String(cs?.okCount ?? "—"))} / ${esc(String(cs?.failedCount ?? "—"))} / ${esc(String(cs?.staleCount ?? "—"))}`],
-        ["Last success (any)", esc(fmtDt(cs?.lastSuccessAny))],
-        ["Last import", esc(fmtDt(cs?.lastImportAt))],
-        ["Health", cs?.healthRag ? `<span class="${ragClass(cs.healthRag)}">${esc(cs.healthRag)}</span> — ${esc(cs.healthSummary || "")}` : "—"],
-      ])}`);
-      const bad = devices.filter((d) => {
-        const s = (d.lastBackupStatus || "").toLowerCase();
-        return s.includes("fail") || s.includes("error") || s.includes("stale");
-      });
-      const show = (bad.length ? bad : devices).slice(0, 40);
-      sections.push(`<h2 class="sec">${bad.length ? "Failed / stale devices" : "Devices on backup"}</h2>
-      <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Status</th><th class="dark">Last success</th><th class="dark">Size</th><th class="dark">Retention</th></tr></thead>
-      <tbody>${
-        show.length
-          ? show
-              .map(
-                (d) =>
-                  `<tr><td>${esc(d.deviceName || d.machineName || "—")}</td><td class="${(d.lastBackupStatus || "").toLowerCase().includes("fail") ? "bad" : ""}">${esc(d.lastBackupStatus || "—")}</td><td>${esc(fmtDt(d.lastSuccessTime))}</td><td>${esc(coveBytes(d))}</td><td>${esc(d.retentionPolicy || "—")}</td></tr>`,
-              )
-              .join("")
-          : `<tr><td colspan="5" class="muted">No devices on latest snapshot.</td></tr>`
-      }</tbody></table>`);
-    } else {
-      sections.push(`<h2 class="sec">Recovery posture</h2>${kvTable([
-        ["Devices", esc(String(rec?.deviceCount ?? devices.length))],
-        ["Recovery testing", esc(String(rec?.recoveryTestingCount ?? "—"))],
-        ["Standby image", esc(String(rec?.standbyImageCount ?? "—"))],
-        ["No plan", esc(String(rec?.noPlanCount ?? "—"))],
-        ["Test success / failed / unknown", `${esc(String(rec?.testSuccessCount ?? "—"))} / ${esc(String(rec?.testFailedCount ?? "—"))} / ${esc(String(rec?.testUnknownCount ?? "—"))}`],
-        ["Last recovery test", esc(fmtDt(rec?.lastRecoveryTestAt))],
-      ])}`);
-      sections.push(`<h2 class="sec">Devices in recovery plans</h2>
+  const esr = buildCoveEsr(opts.customer);
+  const title = kind === "recovery" ? "Cove Recovery Testing" : "Cove Executive Summary";
+  const sections = [coveEsrSections(esr)];
+  if (kind === "recovery" && esr.covered) {
+    const devices = opts.customer.cove?.devices ?? [];
+    sections.push(`<h2 class="sec">Devices in recovery plans</h2>
       <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Plan</th><th class="dark">Test status</th><th class="dark">Last test</th></tr></thead>
       <tbody>${
         devices.length
@@ -1961,9 +1923,8 @@ function covePack(
               .join("")
           : `<tr><td colspan="4" class="muted">No recovery rows.</td></tr>`
       }</tbody></table>`);
-    }
   }
-  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Cloud Backup · Cove snapshot");
+  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Cloud Backup · Cove Executive Summary");
 }
 
 export function buildEppServiceHtml(opts: {

@@ -125,9 +125,9 @@ const PACKS: {
   },
   {
     id: "cove-service",
-    title: "Cloud Backup Pack",
+    title: "Cove Executive Summary",
     when: "On demand",
-    blurb: "OK / failed / stale, last success, device sizes.",
+    blurb: "Safeguards, success rate, RPO, restore, assets, retention — ESR layout.",
     needsCustomer: true,
     service: "cove",
   },
@@ -468,7 +468,7 @@ function ReportsPage() {
     if (format === "rmm-availability") return "Server Availability · servers only for SLA";
     if (format === "rmm-patch") return "Patch Compliance · servers first";
     if (format === "rmm-capacity") return "Capacity & Performance · disk / CPU / memory / IOPS";
-    if (format === "cove-service") return "Cloud Backup Pack · latest Cove snapshot";
+    if (format === "cove-service") return "Cove Executive Summary · safeguards, RPO, restore, retention";
     if (format === "cove-recovery") return "Recovery Testing · plans and last test";
     if (format === "epp-service") return "Endpoint Security · endpoints only for cover";
     if (format === "epp-incidents") return "Incidents & Quarantine · latest collect";

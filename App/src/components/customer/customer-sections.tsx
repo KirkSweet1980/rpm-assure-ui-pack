@@ -59,6 +59,7 @@ import {
 } from "@/lib/data/sla-metrics";
 import { buildRmmServiceSla, buildCoveServiceSla, buildEppServiceSla } from "@/lib/data/service-sla";
 import { ServiceSlaTable } from "@/components/customer/service-sla-section";
+import { CoveEsrPanel } from "@/components/customer/cove-esr-panel";
 import { cn, formatSastDate, formatSastDateTime } from "@/lib/utils";
 import {
   FINSIGHT_COL,
@@ -4196,10 +4197,6 @@ function CoveRecentDaysPanel({
 }
 
 export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
-  const cove = data.cove;
-  const s = cove?.summary;
-  const rec = cove?.recovery ?? s?.recovery ?? null;
-  const code = data.customer.customerCode;
   const cover = effectiveCover(data);
   if (!cover.cove) {
     return (
@@ -4209,35 +4206,7 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
-  const ok = s?.okCount ?? 0;
-  const stale = s?.staleCount ?? 0;
-  const failed = s?.failedCount ?? 0;
-  return (
-    <ServiceVisuals
-      title="RPM Cloud Backup"
-      subtitle={data.customer.displayName}
-      kpis={[
-        { label: "Healthy", value: ok, tone: "green" },
-        { label: "Stale", value: stale, tone: stale > 0 ? "amber" : "green" },
-        { label: "Failed", value: failed, tone: failed > 0 ? "red" : "green" },
-      ]}
-      pie={[
-        { name: "Healthy", value: ok, fill: "#17c666" },
-        { name: "Stale", value: stale, fill: "#ffa21d" },
-        { name: "Failed", value: failed, fill: "#ea4d4d" },
-      ]}
-      bars={[
-        { name: "Recovery Tests", value: rec?.recoveryTestingCount ?? 0, fill: "#4f46e0" },
-        { name: "Test Pass", value: rec?.testSuccessCount ?? 0, fill: "#17c666" },
-        { name: "Test Fail", value: rec?.testFailedCount ?? 0, fill: "#ea4d4d" },
-      ]}
-      tiles={[
-        { label: "Backup Devices", href: `/customers/${code}/cove/devices`, n: s?.deviceCount ?? 0, hint: "Fleet" },
-        { label: "Recovery", href: `/customers/${code}/cove/recovery`, n: rec?.recoveryTestingCount ?? 0, hint: "Tests" },
-        { label: "Retention", href: `/customers/${code}/cove/retention`, n: "Open", hint: "Policy" },
-      ]}
-    />
-  );
+  return <CoveEsrPanel data={data} />;
 }
 
 export function CoveOverviewSection({ data }: { data: CustomerDetailPayload }) {
