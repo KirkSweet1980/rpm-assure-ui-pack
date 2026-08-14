@@ -53,6 +53,7 @@ import type {
 } from "./types";
 import { formatSastDate } from "@/lib/utils";
 import { finsightOobAttention } from "@/lib/brand/finsight";
+import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
 import { coveHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
 import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } from "./day-end";
 import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfEvidence } from "./cover";
@@ -4185,9 +4186,7 @@ ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
         let workstationOnline = 0;
         let workstationOffline = 0;
         for (const d of rmm.devices) {
-          const isServer =
-            d.deviceType === "Server" ||
-            (d.osName != null && /server/i.test(d.osName));
+          const isServer = classifyRmmDevice(d) === "server";
           const online = d.isOnline === true;
           const offline = d.isOnline === false || d.isOnline == null;
           if (isServer) {

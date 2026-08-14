@@ -410,6 +410,17 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
   const topRisks = openRisks.slice(0, 3);
 
   const cover = effectiveCover(data);
+  const lastCollect = [
+    customer.lastImportAt,
+    customer.pulsewayLastImportAt,
+    customer.coveLastImportAt,
+    customer.eppLastImportAt,
+    customer.cspLastImportAt,
+  ].reduce<string | null>((best, v) => {
+    if (!v) return best;
+    if (!best) return v;
+    return new Date(v).getTime() > new Date(best).getTime() ? v : best;
+  }, null);
 
   const serviceBars = [
     { name: "SYSPRO", on: cover.syspro, href: `${base}/syspro` },
@@ -445,7 +456,7 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
         <div className="min-w-0">
           <p className="text-lg font-bold tracking-tight text-fg">{customer.displayName}</p>
           <p className="text-[12px] text-muted">
-            Ecosystem overview · last collect {formatSastDateTime(customer.lastImportAt)}
+            Ecosystem overview · last collect {formatSastDateTime(lastCollect)}
           </p>
         </div>
         <div className="ml-auto grid grid-cols-3 gap-2">
@@ -621,6 +632,19 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
   const cover = effectiveCover(data);
   const base = `/customers/${c.customerCode}/rmm`;
   const s = rmm?.summary;
+  const devices = rmm?.devices ?? [];
+  const fromDevices = useMemo(() => {
+    let serverOnline = 0, serverOffline = 0, workstationOnline = 0, workstationOffline = 0;
+    for (const d of devices) {
+      const on = d.isOnline === true;
+      if (isRmmServer(d)) {
+        if (on) serverOnline += 1;
+        else serverOffline += 1;
+      } else if (on) workstationOnline += 1;
+      else workstationOffline += 1;
+    }
+    return { serverOnline, serverOffline, workstationOnline, workstationOffline };
+  }, [devices]);
   if (!cover.rmm) {
     return (
       <NoCoverPanel
@@ -629,8 +653,10 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
-  const online = s?.serverOnline ?? s?.onlineCount ?? 0;
-  const offline = s?.serverOffline ?? s?.offlineCount ?? 0;
+  const online = s?.serverOnline || fromDevices.serverOnline;
+  const offline = s?.serverOffline || fromDevices.serverOffline;
+  const wsOn = s?.workstationOnline || fromDevices.workstationOnline;
+  const wsOff = s?.workstationOffline || fromDevices.workstationOffline;
   return (
     <ServiceVisuals
       title="RPM Remote Management"
@@ -650,8 +676,8 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
         { name: "Patch Gaps", value: s?.patchMissing ?? 0, fill: "#5c6570" },
       ]}
       tiles={[
-        { label: "Servers", href: `${base}/devices`, n: (s?.serverOnline ?? 0) + (s?.serverOffline ?? 0), hint: "Fleet" },
-        { label: "Workstations", href: `${base}/workstations`, n: (s?.workstationOnline ?? 0) + (s?.workstationOffline ?? 0), hint: "Endpoints" },
+        { label: "Servers", href: `${base}/devices`, n: online + offline, hint: "Fleet" },
+        { label: "Workstations", href: `${base}/workstations`, n: wsOn + wsOff, hint: "Endpoints" },
         { label: "Patch Compliance", href: `${base}/patch`, n: s?.patchMissing ?? 0, hint: "Missing" },
         { label: "Alerts", href: `${base}/alerts`, n: s?.criticalAlerts ?? 0, hint: "Critical" },
       ]}

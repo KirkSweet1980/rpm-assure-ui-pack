@@ -78,5 +78,6 @@ export function isRmmWorkstation(d: {
   osName?: string | null;
   name?: string | null;
 }): boolean {
-  return classifyRmmDevice(d) === "workstation";
+  // Unclassified devices still belong on the workstation list so nothing disappears
+  return classifyRmmDevice(d) !== "server";
 }
