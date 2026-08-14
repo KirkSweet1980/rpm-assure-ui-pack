@@ -281,6 +281,25 @@ function InfrastructureStatusPage() {
           <h2 className="text-[16px] font-extrabold text-fg">Assure Platform Agent Status</h2>
           <p className="text-[12px] text-muted">{agents.length} customers</p>
         </div>
+        {(() => {
+          const remaining = agents.filter(
+            (a) => a.cover.syspro && (!a.hostName || a.healthStatus.toUpperCase() === "NOT_INSTALLED"),
+          );
+          if (!remaining.length) return null;
+          return (
+            <div className="mx-4 mb-3 rounded-md border border-border bg-surface-2 px-3 py-2 text-[12px] text-fg">
+              <p className="font-bold">
+                {remaining.length} SYSPRO tenant{remaining.length === 1 ? "" : "s"} still need the Edge agent
+              </p>
+              <p className="mt-1 text-muted">
+                {remaining.map((r) => r.displayName).join(" · ")}
+              </p>
+              <p className="mt-1 text-muted">
+                On each SQL host (admin): pull git then run Deploy-Syspro-Customer-Agent.ps1
+              </p>
+            </div>
+          );
+        })()}
         {agentMsg ? <p className="px-4 pb-2 text-[12px] text-muted">{agentMsg}</p> : null}
         <div className="overflow-x-auto">
           <table className="rpma-xls text-left">

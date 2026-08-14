@@ -1843,3 +1843,218 @@ function rmmDeviceTable(
   <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">CPU</th><th class="dark">Memory</th><th class="dark">Disk used</th><th class="dark">Volumes ≥85%</th><th class="dark">Peak IOPS</th></tr></thead>
   <tbody>${rows || `<tr><td colspan="6" class="muted">None</td></tr>`}</tbody></table>`;
 }
+
+function coveBytes(d: { usedBytes?: number | null; selectedBytes?: number | null }): string {
+  const n = d.usedBytes ?? d.selectedBytes;
+  if (n == null || !Number.isFinite(n)) return "—";
+  const gb = n / 1024 / 1024 / 1024;
+  return gb >= 1 ? `${Math.round(gb * 10) / 10} GB` : `${Math.round(n / 1024 / 1024)} MB`;
+}
+
+function pillarPackShell(
+  title: string,
+  name: string,
+  code: string,
+  dateLabel: string,
+  now: string,
+  sections: string[],
+  sub: string,
+): { subject: string; html: string; text: string } {
+  const body = `
+<div class="cover">
+  <div class="cover-arc"></div>
+  <div class="cover-dot"></div>
+  <h1>${esc(title)} — ${esc(dateLabel)}</h1>
+  <h2>${esc(name)} (${esc(code)})</h2>
+  <div class="brand-row">
+    <div class="brand">RPM <span>Assure</span></div>
+    <div class="muted" style="font-size:11pt">${esc(sub)}</div>
+  </div>
+</div>
+<div class="page">
+  <div class="teal-banner"><h1>${esc(name)}</h1><span class="when">${esc(dateLabel)}</span></div>
+  ${sections.join("\n")}
+</div>`;
+  return {
+    subject: `RPM Assure — ${title} — ${name} — ${dateLabel}`,
+    html: shell(`${title} — ${name} — ${dateLabel}`, body, now),
+    text: `${title} ${name}`,
+  };
+}
+
+export function buildCoveServiceHtml(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+}): { subject: string; html: string; text: string } {
+  return covePack(opts, "service");
+}
+
+export function buildCoveRecoveryHtml(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+}): { subject: string; html: string; text: string } {
+  return covePack(opts, "recovery");
+}
+
+function covePack(
+  opts: { customer: CustomerDetailPayload; portfolio: PortfolioPayload },
+  kind: "service" | "recovery",
+): { subject: string; html: string; text: string } {
+  const c = opts.customer.customer;
+  const now = formatSastDateTime(new Date().toISOString());
+  const dateLabel = formatSastDate(new Date().toISOString());
+  const cove = opts.customer.cove;
+  const cs = cove?.summary;
+  const rec = cove?.recovery || cs?.recovery;
+  const devices = cove?.devices ?? [];
+  const covered = Boolean(cove?.enabled || cs || devices.length);
+  const title = kind === "recovery" ? "Recovery Testing" : "Cloud Backup Pack";
+  const sections: string[] = [];
+  if (!covered) {
+    sections.push(`<p class="note"><strong class="warn">No cover</strong> — no Cove backup data for this customer.</p>`);
+  } else {
+    sections.push(`<p class="note">Cloud backup only. RMM / EPP / M365 stay on their own packs.</p>`);
+    if (kind === "service") {
+      sections.push(`<h2 class="sec">Backup summary</h2>${kvTable([
+        ["Devices", esc(String(cs?.deviceCount ?? devices.length))],
+        ["OK / failed / stale", `${esc(String(cs?.okCount ?? "—"))} / ${esc(String(cs?.failedCount ?? "—"))} / ${esc(String(cs?.staleCount ?? "—"))}`],
+        ["Last success (any)", esc(fmtDt(cs?.lastSuccessAny))],
+        ["Last import", esc(fmtDt(cs?.lastImportAt))],
+        ["Health", cs?.healthRag ? `<span class="${ragClass(cs.healthRag)}">${esc(cs.healthRag)}</span> — ${esc(cs.healthSummary || "")}` : "—"],
+      ])}`);
+      const bad = devices.filter((d) => {
+        const s = (d.lastBackupStatus || "").toLowerCase();
+        return s.includes("fail") || s.includes("error") || s.includes("stale");
+      });
+      const show = (bad.length ? bad : devices).slice(0, 40);
+      sections.push(`<h2 class="sec">${bad.length ? "Failed / stale devices" : "Devices on backup"}</h2>
+      <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Status</th><th class="dark">Last success</th><th class="dark">Size</th><th class="dark">Retention</th></tr></thead>
+      <tbody>${
+        show.length
+          ? show
+              .map(
+                (d) =>
+                  `<tr><td>${esc(d.deviceName || d.machineName || "—")}</td><td class="${(d.lastBackupStatus || "").toLowerCase().includes("fail") ? "bad" : ""}">${esc(d.lastBackupStatus || "—")}</td><td>${esc(fmtDt(d.lastSuccessTime))}</td><td>${esc(coveBytes(d))}</td><td>${esc(d.retentionPolicy || "—")}</td></tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="5" class="muted">No devices on latest snapshot.</td></tr>`
+      }</tbody></table>`);
+    } else {
+      sections.push(`<h2 class="sec">Recovery posture</h2>${kvTable([
+        ["Devices", esc(String(rec?.deviceCount ?? devices.length))],
+        ["Recovery testing", esc(String(rec?.recoveryTestingCount ?? "—"))],
+        ["Standby image", esc(String(rec?.standbyImageCount ?? "—"))],
+        ["No plan", esc(String(rec?.noPlanCount ?? "—"))],
+        ["Test success / failed / unknown", `${esc(String(rec?.testSuccessCount ?? "—"))} / ${esc(String(rec?.testFailedCount ?? "—"))} / ${esc(String(rec?.testUnknownCount ?? "—"))}`],
+        ["Last recovery test", esc(fmtDt(rec?.lastRecoveryTestAt))],
+      ])}`);
+      sections.push(`<h2 class="sec">Devices in recovery plans</h2>
+      <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Plan</th><th class="dark">Test status</th><th class="dark">Last test</th></tr></thead>
+      <tbody>${
+        devices.length
+          ? devices
+              .slice(0, 40)
+              .map(
+                (d) =>
+                  `<tr><td>${esc(d.deviceName || d.machineName || "—")}</td><td>${esc(d.recoveryPlanLabel || "—")}</td><td class="${(d.recoveryTestStatus || "").toLowerCase().includes("fail") ? "bad" : ""}">${esc(d.recoveryTestStatus || "—")}</td><td>${esc(fmtDt(d.lastRecoveryTestAt))}</td></tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="4" class="muted">No recovery rows.</td></tr>`
+      }</tbody></table>`);
+    }
+  }
+  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Cloud Backup · Cove snapshot");
+}
+
+export function buildEppServiceHtml(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+}): { subject: string; html: string; text: string } {
+  return eppPack(opts, "service");
+}
+
+export function buildEppIncidentsHtml(opts: {
+  customer: CustomerDetailPayload;
+  portfolio: PortfolioPayload;
+}): { subject: string; html: string; text: string } {
+  return eppPack(opts, "incidents");
+}
+
+function eppPack(
+  opts: { customer: CustomerDetailPayload; portfolio: PortfolioPayload },
+  kind: "service" | "incidents",
+): { subject: string; html: string; text: string } {
+  const c = opts.customer.customer;
+  const now = formatSastDateTime(new Date().toISOString());
+  const dateLabel = formatSastDate(new Date().toISOString());
+  const epp = opts.customer.epp;
+  const es = epp?.summary;
+  const devices = epp?.devices ?? [];
+  const covered = (es?.deviceCount ?? 0) > 0 || devices.length > 0;
+  const title = kind === "incidents" ? "Incidents & Quarantine" : "Endpoint Security Pack";
+  const sections: string[] = [];
+  if (!covered) {
+    sections.push(`<p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
+  } else {
+    sections.push(`<p class="note">Endpoint Security only. Cover requires at least one endpoint.</p>`);
+    if (kind === "service") {
+      sections.push(`<h2 class="sec">Endpoints</h2>${kvTable([
+        ["Endpoints", esc(String(es?.deviceCount ?? devices.length))],
+        ["Managed / unmanaged", `${esc(String(es?.managedCount ?? "—"))} / ${esc(String(es?.unmanagedCount ?? "—"))}`],
+        ["Servers / workstations", `${esc(String(es?.serverCount ?? "—"))} / ${esc(String(es?.workstationCount ?? "—"))}`],
+        ["License slots", epp?.license ? `${esc(String(epp.license.usedSlots ?? "—"))} / ${esc(String(epp.license.totalSlots ?? "—"))}` : "—"],
+        ["Subscription end", esc(fmtD(epp?.license?.endSubscription))],
+        ["Last import", esc(fmtDt(es?.lastImportAt))],
+      ])}`);
+      sections.push(`<h2 class="sec">Endpoint sample</h2>
+      <table class="ams"><thead><tr><th class="dark">Device</th><th class="dark">Managed</th><th class="dark">OS</th><th class="dark">Policy</th></tr></thead>
+      <tbody>${
+        devices.length
+          ? devices
+              .slice(0, 40)
+              .map(
+                (d) =>
+                  `<tr><td>${esc(d.deviceName || d.fqdn || d.endpointId)}</td><td>${d.isManaged === false ? "No" : d.isManaged ? "Yes" : "—"}</td><td>${esc(d.operatingSystem || "—")}</td><td>${esc(d.policyName || "—")}</td></tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="4" class="muted">No endpoint rows.</td></tr>`
+      }</tbody></table>`);
+    } else {
+      const inc = epp?.incidents ?? [];
+      const q = epp?.quarantine ?? [];
+      sections.push(`<h2 class="sec">Feed</h2>${kvTable([
+        ["Incidents", esc(String(epp?.feedStatus?.incidentsCount ?? inc.length))],
+        ["Quarantine", esc(String(epp?.feedStatus?.quarantineCount ?? q.length))],
+        ["Incidents feed", esc(epp?.feedStatus?.incidentsMessage || (epp?.feedStatus?.incidentsOk === false ? "Error" : "OK"))],
+        ["Quarantine feed", esc(epp?.feedStatus?.quarantineMessage || (epp?.feedStatus?.quarantineOk === false ? "Error" : "OK"))],
+      ])}`);
+      sections.push(`<h2 class="sec">Incidents</h2>
+      <table class="ams"><thead><tr><th class="dark">When</th><th class="dark">Device</th><th class="dark">Severity</th><th class="dark">Type</th><th class="dark">Summary</th></tr></thead>
+      <tbody>${
+        inc.length
+          ? inc
+              .slice(0, 30)
+              .map(
+                (r) =>
+                  `<tr><td>${esc(fmtDt(r.detectedAt))}</td><td>${esc(r.deviceName || "—")}</td><td>${esc(r.severity || "—")}</td><td>${esc(r.incidentType || "—")}</td><td>${esc(r.summary || "—")}</td></tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="5" class="muted">No incidents on latest collect.</td></tr>`
+      }</tbody></table>`);
+      sections.push(`<h2 class="sec">Quarantine</h2>
+      <table class="ams"><thead><tr><th class="dark">When</th><th class="dark">Device</th><th class="dark">Threat</th><th class="dark">Status</th></tr></thead>
+      <tbody>${
+        q.length
+          ? q
+              .slice(0, 30)
+              .map(
+                (r) =>
+                  `<tr><td>${esc(fmtDt(r.quarantinedAt))}</td><td>${esc(r.deviceName || "—")}</td><td>${esc(r.threatName || "—")}</td><td>${esc(r.status || "—")}</td></tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="4" class="muted">No quarantine items.</td></tr>`
+      }</tbody></table>`);
+    }
+  }
+  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Endpoint Security · Bitdefender snapshot");
+}

@@ -558,6 +558,18 @@ function ExcoInsightPage() {
         0,
       ),
       rmmServerOnlineTotal: boards.reduce((s, b) => s + (b.pulsewayServerOnline || 0), 0),
+      rmmServerAvailabilityPct: (() => {
+        const on = boards.reduce((s, b) => s + (b.pulsewayServerOnline || 0), 0);
+        const off = boards.reduce((s, b) => s + (b.pulsewayServerOffline || 0), 0);
+        const n = on + off;
+        return n ? Math.round((on / n) * 1000) / 10 : null;
+      })(),
+      rmmPatchCompliancePct: (() => {
+        const devices = boards.reduce((s, b) => s + (b.pulsewayPatchDevices || 0), 0);
+        const ok = boards.reduce((s, b) => s + (b.pulsewayPatchCompliant || 0), 0);
+        return devices ? Math.round((ok / devices) * 1000) / 10 : null;
+      })(),
+      rmmDiskHighTotal: boards.reduce((s, b) => s + (b.pulsewayDiskHighCount || 0), 0),
     };
   }, [excoRaw, rows, allRows]);
 
@@ -1185,6 +1197,24 @@ function ExcoInsightPage() {
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
                   <p className="text-[10px] font-bold uppercase text-muted">Servers Offline</p>
                   <p className={cn("font-mono text-[15px] font-bold", serversOffline > 0 ? "text-rag-red" : "text-fg")}>{serversOffline}</p>
+                </div>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Server Availability</p>
+                  <p className={cn("font-mono text-[15px] font-bold", (exco.rmmServerAvailabilityPct ?? 100) < 99 ? "text-rag-amber" : "text-rag-green")}>
+                    {exco.rmmServerAvailabilityPct == null ? "—" : `${exco.rmmServerAvailabilityPct}%`}
+                  </p>
+                </div>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Patch Compliance</p>
+                  <p className={cn("font-mono text-[15px] font-bold", (exco.rmmPatchCompliancePct ?? 100) < 90 ? "text-rag-amber" : "text-rag-green")}>
+                    {exco.rmmPatchCompliancePct == null ? "—" : `${exco.rmmPatchCompliancePct}%`}
+                  </p>
+                </div>
+                <div className="rounded-md bg-surface-2 px-2 py-1.5">
+                  <p className="text-[10px] font-bold uppercase text-muted">Disk At Risk</p>
+                  <p className={cn("font-mono text-[15px] font-bold", (exco.rmmDiskHighTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
+                    {exco.rmmDiskHighTotal ?? 0}
+                  </p>
                 </div>
                 <div className="rounded-md bg-surface-2 px-2 py-1.5">
                   <p className="text-[10px] font-bold uppercase text-muted">Collect Fresh</p>

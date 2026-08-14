@@ -19,6 +19,10 @@ import {
   buildRmmAvailabilityHtml,
   buildRmmPatchHtml,
   buildRmmCapacityHtml,
+  buildCoveServiceHtml,
+  buildCoveRecoveryHtml,
+  buildEppServiceHtml,
+  buildEppIncidentsHtml,
 } from "@/lib/mail/ams-report-html";
 import { resolveFieldIds } from "@/lib/data/report-fields";
 
@@ -35,6 +39,10 @@ export type ReportFormat =
   | "rmm-availability"
   | "rmm-patch"
   | "rmm-capacity"
+  | "cove-service"
+  | "cove-recovery"
+  | "epp-service"
+  | "epp-incidents"
   | "services-cover";
 
 export type ReportPack = {
@@ -152,7 +160,7 @@ export async function loadCustomerForReport(code: string): Promise<{
       if (live) {
         try {
           return {
-            customer: fillCustomerPanels(live),
+            customer: live,
             source: "live",
             warning: null,
           };
@@ -257,6 +265,18 @@ export function buildPack(
   if (format === "rmm-capacity") {
     return buildRmmCapacityHtml({ customer, portfolio });
   }
+  if (format === "cove-service") {
+    return buildCoveServiceHtml({ customer, portfolio });
+  }
+  if (format === "cove-recovery") {
+    return buildCoveRecoveryHtml({ customer, portfolio });
+  }
+  if (format === "epp-service") {
+    return buildEppServiceHtml({ customer, portfolio });
+  }
+  if (format === "epp-incidents") {
+    return buildEppIncidentsHtml({ customer, portfolio });
+  }
   if (format === "services-cover") {
     return buildCustomPackHtml({
       customer,
@@ -313,6 +333,10 @@ export async function buildReportPreview(opts: {
       raw === "rmm-availability" ||
       raw === "rmm-patch" ||
       raw === "rmm-capacity" ||
+      raw === "cove-service" ||
+      raw === "cove-recovery" ||
+      raw === "epp-service" ||
+      raw === "epp-incidents" ||
       raw === "services-cover"
         ? (raw as ReportFormat)
         : "ams-full";

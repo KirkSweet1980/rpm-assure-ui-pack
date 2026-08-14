@@ -638,7 +638,7 @@ async function loadCustomerForReport(code: string) {
       const live = await fetchLiveCustomerDetail(code);
       if (live) {
         try {
-          return { customer: fillCustomerPanels(live), source: "live" as const, warning: null as string | null };
+          return { customer: live, source: "live" as const, warning: null as string | null };
         } catch (e) {
           lastErr = e instanceof Error ? e.message : String(e);
           console.warn("[rpm-assure] fillCustomerPanels failed:", lastErr);
@@ -1511,23 +1511,25 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
   const sqlOk = Boolean(pool);
   const items: ConfigHealthItem[] = [];
 
+  const sqlHost = (dbg.server ?? "").split(",")[0] || "not set";
+  const sqlPort = dbg.port ?? (dbg.server?.includes(",") ? Number(dbg.server.split(",")[1]) : 14333);
   items.push({
     id: "sql",
-    label: "SQL Server",
+    label: "SQL Server - RPM Assure Platform Status",
     ok: sqlOk,
     lastAt: null,
     detail: sqlOk
-      ? `${dbg.server ?? "configured"}${dbg.port ? `,${dbg.port}` : ""} · ${dbg.database ?? "RPMAssure_App"}`
+      ? `IP: ${sqlHost} - Port ${sqlPort || 14333} - RPM Assure App`
       : getLastPoolError() ?? "Not connected — set credentials in SQL Server",
     href: "/settings/sql",
     source: "sql",
   });
 
   const rest: Array<[string, string, string]> = [
-    ["rmm", "Pulseway API", "/settings/integrations"],
-    ["cove", "Cove API", "/settings/integrations"],
-    ["epp", "Bitdefender API", "/settings/integrations"],
-    ["csp", "Microsoft Graph API", "/settings/integrations"],
+    ["rmm", "Pulseway API", "/settings/infrastructure"],
+    ["cove", "N-Able Cove Backup", "/settings/infrastructure"],
+    ["epp", "Bitdefender API", "/settings/infrastructure"],
+    ["csp", "Microsoft Graph API", "/settings/infrastructure"],
   ];
 
   if (!pool) {
@@ -1537,7 +1539,7 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
       ok: false,
       lastAt: null,
       detail: "SQL not connected",
-      href: "/settings/agents",
+      href: "/settings/infrastructure",
       source: "agent",
     });
     for (const [id, label, href] of rest) {
@@ -1562,7 +1564,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
       ok: on > 0,
       lastAt: row.t ? new Date(row.t).toISOString() : null,
       detail: tot === 0 ? "No agents registered" : `${on} online · ${tot} registered`,
-      href: "/settings/agents",
+      href: "/settings/infrastructure",
       source: "agent",
     });
   } catch {
@@ -1572,7 +1574,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
       ok: false,
       lastAt: null,
       detail: "Agent tables not installed",
-      href: "/settings/agents",
+      href: "/settings/infrastructure",
       source: "agent",
     });
   }

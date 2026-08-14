@@ -37,6 +37,10 @@ type ReportFormat =
   | "rmm-availability"
   | "rmm-patch"
   | "rmm-capacity"
+  | "cove-service"
+  | "cove-recovery"
+  | "epp-service"
+  | "epp-incidents"
   | "services-cover";
 
 const PACKS: {
@@ -45,7 +49,7 @@ const PACKS: {
   when: string;
   blurb: string;
   needsCustomer: boolean;
-  service: "ams" | "finsight" | "fleet" | "estate";
+  service: "ams" | "finsight" | "fleet" | "cove" | "epp" | "estate";
 }[] = [
   {
     id: "ams-monthly",
@@ -120,6 +124,38 @@ const PACKS: {
     service: "fleet",
   },
   {
+    id: "cove-service",
+    title: "Cloud Backup Pack",
+    when: "On demand",
+    blurb: "OK / failed / stale, last success, device sizes.",
+    needsCustomer: true,
+    service: "cove",
+  },
+  {
+    id: "cove-recovery",
+    title: "Recovery Testing",
+    when: "On demand",
+    blurb: "Plans, test success / fail, last recovery test.",
+    needsCustomer: true,
+    service: "cove",
+  },
+  {
+    id: "epp-service",
+    title: "Endpoint Security Pack",
+    when: "On demand",
+    blurb: "Managed endpoints, license slots, policy sample.",
+    needsCustomer: true,
+    service: "epp",
+  },
+  {
+    id: "epp-incidents",
+    title: "Incidents & Quarantine",
+    when: "On demand",
+    blurb: "Incidents and quarantine from the latest collect.",
+    needsCustomer: true,
+    service: "epp",
+  },
+  {
     id: "estate",
     title: "Eco-System Overview",
     when: "Anytime",
@@ -155,6 +191,10 @@ const PACK_ICON: Record<ReportFormat, typeof Shield> = {
   "rmm-availability": Gauge,
   "rmm-patch": Shield,
   "rmm-capacity": HardDrive,
+  "cove-service": HardDrive,
+  "cove-recovery": ShieldCheck,
+  "epp-service": Shield,
+  "epp-incidents": ShieldCheck,
   estate: Layers,
   "services-cover": ShieldCheck,
   "custom-pack": FileStack,
@@ -189,6 +229,24 @@ const REPORT_SERVICES: CorpService[] = [
       { label: "Server Availability", path: "/reports?format=rmm-availability" },
       { label: "Patch Compliance", path: "/reports?format=rmm-patch" },
       { label: "Capacity & Performance", path: "/reports?format=rmm-capacity" },
+    ],
+  },
+  {
+    id: "cove",
+    title: "Cloud Backup Reports",
+    overview: "/reports?format=cove-service",
+    modules: [
+      { label: "Cloud Backup Pack", path: "/reports?format=cove-service" },
+      { label: "Recovery Testing", path: "/reports?format=cove-recovery" },
+    ],
+  },
+  {
+    id: "epp",
+    title: "Endpoint Security Reports",
+    overview: "/reports?format=epp-service",
+    modules: [
+      { label: "Endpoint Security Pack", path: "/reports?format=epp-service" },
+      { label: "Incidents & Quarantine", path: "/reports?format=epp-incidents" },
     ],
   },
   {
@@ -410,6 +468,10 @@ function ReportsPage() {
     if (format === "rmm-availability") return "Server Availability · servers only for SLA";
     if (format === "rmm-patch") return "Patch Compliance · servers first";
     if (format === "rmm-capacity") return "Capacity & Performance · disk / CPU / memory / IOPS";
+    if (format === "cove-service") return "Cloud Backup Pack · latest Cove snapshot";
+    if (format === "cove-recovery") return "Recovery Testing · plans and last test";
+    if (format === "epp-service") return "Endpoint Security · endpoints only for cover";
+    if (format === "epp-incidents") return "Incidents & Quarantine · latest collect";
     if (format === "services-cover") return "Services on cover · multi-pillar snapshot";
     if (format === "custom-pack") return `Custom · ${selectedCount} field(s) selected`;
     return "On-demand pack";

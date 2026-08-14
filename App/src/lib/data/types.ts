@@ -46,6 +46,10 @@ export type PortfolioRow = {
   /** Workstation agents online / offline */
   pulsewayWorkstationOnline?: number;
   pulsewayWorkstationOffline?: number;
+  pulsewayPatchMissing?: number;
+  pulsewayPatchDevices?: number;
+  pulsewayPatchCompliant?: number;
+  pulsewayDiskHighCount?: number;
   bdInfectedCount?: number;
   eppDeviceCount?: number;
   eppManagedCount?: number;
@@ -748,6 +752,10 @@ export type ExcoCustomerBoard = {
   pulsewayServerOffline?: number;
   pulsewayWorkstationOnline?: number;
   pulsewayWorkstationOffline?: number;
+  pulsewayPatchMissing?: number;
+  pulsewayPatchDevices?: number;
+  pulsewayPatchCompliant?: number;
+  pulsewayDiskHighCount?: number;
 };
 
 
@@ -807,6 +815,9 @@ export type ExcoInsightPayload = {
   rmmServerOfflineTotal?: number;
   rmmWorkstationOnlineTotal?: number;
   rmmWorkstationOfflineTotal?: number;
+  rmmServerAvailabilityPct?: number | null;
+  rmmPatchCompliancePct?: number | null;
+  rmmDiskHighTotal?: number;
   boards: ExcoCustomerBoard[];
   /** P1 cover vs data consistency */
   pillarAudit?: PillarAuditSummary;

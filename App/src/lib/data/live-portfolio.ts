@@ -321,7 +321,7 @@ function recomputeRowHealth(row: PortfolioRow): void {
     coveDeviceCount: row.coveDeviceCount,
     coveMapped: (row.coveDeviceCount ?? 0) > 0 || row.pillarCove === true,
     eppDeviceCount: row.eppDeviceCount ?? 0,
-    eppMapped: row.pillarEpp === true,
+    eppMapped: (row.eppDeviceCount ?? 0) > 0,
     cspUserCount: row.cspUserCount ?? 0,
     cspLicenseCount: row.cspLicenseSkuCount ?? 0,
     cspMapped: row.pillarCsp === true,
@@ -586,6 +586,10 @@ function applyPulsewayToRow(
     serverOffline?: number;
     workstationOnline?: number;
     workstationOffline?: number;
+    patchMissing?: number;
+    patchDevices?: number;
+    patchCompliant?: number;
+    diskHighCount?: number;
   },
 ): void {
   row.pulsewayDeviceCount = pw.deviceCount;
@@ -600,6 +604,10 @@ function applyPulsewayToRow(
   if (pw.serverOffline != null) row.pulsewayServerOffline = pw.serverOffline;
   if (pw.workstationOnline != null) row.pulsewayWorkstationOnline = pw.workstationOnline;
   if (pw.workstationOffline != null) row.pulsewayWorkstationOffline = pw.workstationOffline;
+  if (pw.patchMissing != null) row.pulsewayPatchMissing = pw.patchMissing;
+  if (pw.patchDevices != null) row.pulsewayPatchDevices = pw.patchDevices;
+  if (pw.patchCompliant != null) row.pulsewayPatchCompliant = pw.patchCompliant;
+  if (pw.diskHighCount != null) row.pulsewayDiskHighCount = pw.diskHighCount;
   // Health recomputed in recomputeRowHealth after all enriches
 }
 
@@ -706,10 +714,80 @@ GROUP BY CustomerCode`);
       );
     }
 
+    const patchByCode = new Map<
+      string,
+      { patchMissing: number; patchDevices: number; patchCompliant: number; diskHighCount: number }
+    >();
+    try {
+      const patchRes = await pool.request().query(`
+;WITH latest AS (
+  SELECT CustomerCode, MAX(SnapshotDate) AS mx
+  FROM dbo.Pulseway_Devices WITH (NOLOCK)
+  WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+  GROUP BY CustomerCode
+)
+SELECT
+  p.CustomerCode,
+  SUM(ISNULL(p.PatchMissingCount, 0)) AS PatchMissing,
+  SUM(CASE WHEN p.PatchMissingCount IS NOT NULL THEN 1 ELSE 0 END) AS PatchDevices,
+  SUM(CASE WHEN p.PatchMissingCount = 0 THEN 1 ELSE 0 END) AS PatchCompliant
+FROM dbo.Pulseway_Devices AS p WITH (NOLOCK)
+INNER JOIN latest AS l ON l.CustomerCode = p.CustomerCode AND l.mx = p.SnapshotDate
+WHERE p.DeviceType = N'Server'
+   OR p.OsName LIKE N'%Windows Server%'
+   OR p.OsName LIKE N'%Server 201%'
+   OR p.OsName LIKE N'%Server 202%'
+GROUP BY p.CustomerCode`);
+      for (const r of patchRes.recordset ?? []) {
+        patchByCode.set(String(r.CustomerCode).toUpperCase(), {
+          patchMissing: Number(r.PatchMissing) || 0,
+          patchDevices: Number(r.PatchDevices) || 0,
+          patchCompliant: Number(r.PatchCompliant) || 0,
+          diskHighCount: 0,
+        });
+      }
+    } catch (e) {
+      console.warn(
+        "[rpm-assure] Pulseway server patch rollup skipped:",
+        e instanceof Error ? e.message : e,
+      );
+    }
+    try {
+      const diskRes = await pool.request().query(`
+;WITH latest AS (
+  SELECT CustomerCode, MAX(SnapshotDate) AS mx
+  FROM dbo.Pulseway_Disks WITH (NOLOCK)
+  WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+  GROUP BY CustomerCode
+)
+SELECT d.CustomerCode, COUNT(*) AS DiskHigh
+FROM dbo.Pulseway_Disks AS d WITH (NOLOCK)
+INNER JOIN latest AS l ON l.CustomerCode = d.CustomerCode AND l.mx = d.SnapshotDate
+WHERE ISNULL(d.UsedPct, 0) >= 85
+GROUP BY d.CustomerCode`);
+      for (const r of diskRes.recordset ?? []) {
+        const key = String(r.CustomerCode).toUpperCase();
+        const cur = patchByCode.get(key) ?? {
+          patchMissing: 0,
+          patchDevices: 0,
+          patchCompliant: 0,
+          diskHighCount: 0,
+        };
+        cur.diskHighCount = Number(r.DiskHigh) || 0;
+        patchByCode.set(key, cur);
+      }
+    } catch (e) {
+      console.warn(
+        "[rpm-assure] Pulseway disk-at-risk rollup skipped:",
+        e instanceof Error ? e.message : e,
+      );
+    }
+
     for (const row of rows) {
       const c = byCode.get(row.customerCode.toUpperCase());
       if (c) {
       const cls = classByCode.get(row.customerCode.toUpperCase());
+      const extra = patchByCode.get(row.customerCode.toUpperCase());
       applyPulsewayToRow(row, {
         deviceCount: Number(c.DeviceCount) || 0,
         onlineCount: Number(c.OnlineCount) || 0,
@@ -722,6 +800,10 @@ GROUP BY CustomerCode`);
         serverOffline: cls?.serverOffline,
         workstationOnline: cls?.workstationOnline,
         workstationOffline: cls?.workstationOffline,
+        patchMissing: extra?.patchMissing,
+        patchDevices: extra?.patchDevices,
+        patchCompliant: extra?.patchCompliant,
+        diskHighCount: extra?.diskHighCount,
       });
       }
     }
@@ -2402,7 +2484,7 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
       coveDeviceCount: row.coveDeviceCount,
       coveMapped: (row.coveDeviceCount ?? 0) > 0 || row.pillarCove === true,
       eppDeviceCount: row.eppDeviceCount ?? 0,
-      eppMapped: row.pillarEpp === true,
+      eppMapped: (row.eppDeviceCount ?? 0) > 0,
     });
     const healthScorePct = excoHealthScore({
       rag: row.healthRag,
@@ -2524,6 +2606,10 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
       pulsewayServerOffline: row.pulsewayServerOffline ?? 0,
       pulsewayWorkstationOnline: row.pulsewayWorkstationOnline ?? 0,
       pulsewayWorkstationOffline: row.pulsewayWorkstationOffline ?? 0,
+      pulsewayPatchMissing: row.pulsewayPatchMissing ?? 0,
+      pulsewayPatchDevices: row.pulsewayPatchDevices ?? 0,
+      pulsewayPatchCompliant: row.pulsewayPatchCompliant ?? 0,
+      pulsewayDiskHighCount: row.pulsewayDiskHighCount ?? 0,
     };
   });
 
@@ -2682,6 +2768,18 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
       (s, b) => s + (b.pulsewayWorkstationOffline || 0),
       0,
     ),
+    rmmServerAvailabilityPct: (() => {
+      const on = boards.reduce((s, b) => s + (b.pulsewayServerOnline || 0), 0);
+      const off = boards.reduce((s, b) => s + (b.pulsewayServerOffline || 0), 0);
+      const n = on + off;
+      return n ? Math.round((on / n) * 1000) / 10 : null;
+    })(),
+    rmmPatchCompliancePct: (() => {
+      const devices = boards.reduce((s, b) => s + (b.pulsewayPatchDevices || 0), 0);
+      const ok = boards.reduce((s, b) => s + (b.pulsewayPatchCompliant || 0), 0);
+      return devices ? Math.round((ok / devices) * 1000) / 10 : null;
+    })(),
+    rmmDiskHighTotal: boards.reduce((s, b) => s + (b.pulsewayDiskHighCount || 0), 0),
     boards,
   };
 
@@ -4815,7 +4913,7 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
       lastBackupStatus:
         r.LastBackupStatus != null ? String(r.LastBackupStatus) : null,
       lastSuccessTime: toIso(r.LastSuccessTime),
-      usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : null,
+      usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : r.SelectedBytes != null ? Number(r.SelectedBytes) : null,
       snapshotDate: toDateOnly(r.SnapshotDate),
       importedAt: toIso(r.ImportedAt),
       recoveryPlanType:
@@ -5119,7 +5217,7 @@ ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
         lastBackupStatus:
           r.LastBackupStatus != null ? String(r.LastBackupStatus) : null,
         lastSuccessTime: toIso(r.LastSuccessTime),
-        usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : null,
+        usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : r.SelectedBytes != null ? Number(r.SelectedBytes) : null,
         snapshotDate: toDateOnly(r.SnapshotDate),
         importedAt: toIso(r.ImportedAt),
         recoveryPlanType:
@@ -6007,7 +6105,7 @@ ORDER BY UserPrincipalName, DisplayName`);
       typeof epp !== "undefined" && epp
         ? epp.summary?.deviceCount ?? epp.devices?.length ?? customer.eppDeviceCount ?? 0
         : customer.eppDeviceCount ?? 0,
-    eppMapped: customer.pillarEpp === true,
+    eppMapped: (Number(customer.eppDeviceCount) || 0) > 0 || (Number(epp.summary?.deviceCount) || 0) > 0,
     cspUserCount: customer.cspUserCount ?? csp?.users?.length ?? 0,
     cspLicenseCount: customer.cspLicenseSkuCount ?? csp?.licenses?.length ?? 0,
     cspMapped: customer.pillarCsp === true || Boolean(csp?.tenant),

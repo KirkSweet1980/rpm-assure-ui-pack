@@ -90,8 +90,7 @@ export function inferCustomerCover(input: {
     (Number(input.coveDeviceCount) || 0) > 0 ||
     Boolean(input.coveMapped) ||
     hasText(input.covePartnerName);
-  const eppEvidence =
-    (Number(input.eppDeviceCount) || 0) > 0 || Boolean(input.eppMapped);
+  const eppEvidence = (Number(input.eppDeviceCount) || 0) > 0;
   const cspEvidence =
     (Number(input.cspUserCount) || 0) > 0 ||
     (Number(input.cspLicenseCount) || 0) > 0 ||
@@ -101,7 +100,7 @@ export function inferCustomerCover(input: {
     syspro: input.pillarSyspro === false ? false : sysproEvidence || input.pillarSyspro === true,
     rmm: resolveVendor(rmmEvidence, input.pillarPulseway),
     cove: resolveVendor(coveEvidence, input.pillarCove),
-    epp: resolveVendor(eppEvidence, input.pillarEpp),
+    epp: eppEvidence,
     csp: resolveVendor(cspEvidence, input.pillarCsp),
   };
 }
