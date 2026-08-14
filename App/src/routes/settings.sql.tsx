@@ -104,52 +104,17 @@ function SqlSettingsPage() {
 
   return (
     <div className="space-y-3">
-      <Card>
-        <CardHead>SQL Server configuration</CardHead>
-        <CardContent className="space-y-3">
-          <p className="text-xs leading-relaxed text-muted">
-            Primary connection feeds Global Overview and customer dashboards. Stored in{" "}
-            <span className="font-mono">data/rpma-settings.json</span>. On Save, settings are also
-            synced to <span className="font-mono">.env.local</span> so both stay aligned.
-          </p>
-          <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-fg">
-            <strong>Password tip:</strong> the password box is always empty when the page loads
-            (security). Type the full password, then <strong>Save</strong> or <strong>Test</strong>.
-            Leave blank on later saves only if a password is already stored.
-          </p>
-          {runtime ? (
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant={runtime.liveTest.ok ? "green" : "amber"}>
-                {runtime.liveTest.ok ? "Live OK" : "Live issue"}
-              </Badge>
-              <span className={runtime.liveTest.ok ? "text-muted" : "text-rag-red"}>
-                {runtime.liveTest.message}
-              </span>
-              <span className="text-subtle">· mode {runtime.dataMode}</span>
-              <span className="text-subtle">
-                · effective {runtime.debug.effectiveSource ?? runtime.debug.source}
-              </span>
-              {runtime.debug.server ? (
-                <span className="font-mono text-subtle">
-                  · {runtime.debug.user}@{runtime.debug.server}:{runtime.debug.port}/
-                  {runtime.debug.database}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-          {msg ? (
-            <p
-              className={`rounded-md px-3 py-2 text-xs ${
-                msg.startsWith("OK") || msg.startsWith("Saved")
-                  ? "bg-rag-green-bg text-rag-green"
-                  : "bg-rag-red-bg text-rag-red"
-              }`}
-            >
-              {msg}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+      {msg ? (
+        <p
+          className={`rounded-md px-3 py-2 text-xs ${
+            msg.startsWith("OK") || msg.startsWith("Saved")
+              ? "bg-rag-green-bg text-rag-green"
+              : "bg-rag-red-bg text-rag-red"
+          }`}
+        >
+          {msg}
+        </p>
+      ) : null}
 
       {rows.map((c, i) => (
         <Card key={c.id}>
