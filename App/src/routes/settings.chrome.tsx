@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Paintbrush } from "lucide-react";
+import { ConfigPageHead } from "@/components/settings/config-page";
 import {
   MENU_STYLES,
   MENU_STYLE_META,
@@ -165,15 +166,15 @@ function ChromeChooserPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted">
-        Four quiet styles (A–D) and twelve colour styles (E–P). Click a
-        card to apply it across top nav, tabs, and dropdowns.
-      </p>
-      <p className="text-sm font-semibold text-fg">
-        Active: {MENU_STYLE_META[current].name}
-      </p>
-      <div className="grid gap-3 md:grid-cols-2">
+    <div className="space-y-6">
+      <ConfigPageHead title="Menu Style" icon={Paintbrush} />
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="px-4 py-3">
+          <h2 className="text-[16px] font-extrabold text-fg">
+            Active: {MENU_STYLE_META[current].name}
+          </h2>
+        </div>
+        <div className="grid gap-3 px-4 pb-4 md:grid-cols-2">
         {MENU_STYLES.map((style) => {
           const meta = MENU_STYLE_META[style];
           const on = current === style;
@@ -205,7 +206,8 @@ function ChromeChooserPage() {
             </button>
           );
         })}
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Bell, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHead } from "@/components/ui/card";
+import { ConfigPageHead } from "@/components/settings/config-page";
 import {
   fetchSettingsBundle,
   runAlertEvaluation,
@@ -61,93 +61,95 @@ function AlertsSettingsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHead className="inline-flex items-center gap-2">
-          <Bell className="size-4 text-primary" />
-          Alert rules
-        </CardHead>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted">
-            Evaluate estate health and collect freshness in the app.{" "}
-            <strong className="text-fg">Outbound email is disabled</strong> — matches
-            show on this page only.
-          </p>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={alerts.enabled}
-              onChange={(e) =>
-                setAlerts((s) => ({ ...s, enabled: e.target.checked }))
-              }
-            />
-            Enable alert evaluation
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={alerts.alertOnRed}
-              onChange={(e) =>
-                setAlerts((s) => ({ ...s, alertOnRed: e.target.checked }))
-              }
-            />
-            Flag Red health
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-fg">
-              Job errors threshold (min)
-            </span>
-            <input
-              type="number"
-              className="w-full max-w-xs rounded-lg border border-border bg-bg px-3 py-2"
-              value={alerts.jobErrorMin}
-              onChange={(e) =>
-                setAlerts((s) => ({
-                  ...s,
-                  jobErrorMin: Number(e.target.value) || 0,
-                }))
-              }
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-fg">
-              Collect stale after (hours)
-            </span>
-            <input
-              type="number"
-              className="w-full max-w-xs rounded-lg border border-border bg-bg px-3 py-2"
-              value={alerts.collectStaleHours}
-              onChange={(e) =>
-                setAlerts((s) => ({
-                  ...s,
-                  collectStaleHours: Number(e.target.value) || 0,
-                }))
-              }
-            />
-          </label>
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button type="button" disabled={busy} onClick={() => void onSave()}>
-              <Save className="h-4 w-4" /> Save rules
+    <div className="space-y-6">
+      <ConfigPageHead
+        title="Alert Rules"
+        icon={Bell}
+        actions={
+          <>
+            <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => void onEvaluate()}>
+              Evaluate Now
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={busy}
-              onClick={() => void onEvaluate()}
-            >
-              Evaluate now
+            <Button type="button" size="sm" disabled={busy} onClick={() => void onSave()}>
+              <Save className="size-3.5" />
+              Save
             </Button>
-          </div>
-          {msg ? <p className="text-sm text-fg">{msg}</p> : null}
-          {matches.length > 0 ? (
-            <ul className="list-inside list-disc text-sm text-muted">
-              {matches.map((m) => (
-                <li key={m}>{m}</li>
-              ))}
-            </ul>
-          ) : null}
-        </CardContent>
-      </Card>
+          </>
+        }
+      />
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="px-4 py-3">
+          <h2 className="text-[16px] font-extrabold text-fg">In-App Rules</h2>
+          <p className="text-[12px] text-muted">Outbound email is disabled. Matches show on this page only.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="rpma-xls">
+            <thead>
+              <tr>
+                <th>Rule</th>
+                <th>Setting</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Enable Alert Evaluation</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={alerts.enabled}
+                    onChange={(e) => setAlerts((s) => ({ ...s, enabled: e.target.checked }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>Flag Red Health</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={alerts.alertOnRed}
+                    onChange={(e) => setAlerts((s) => ({ ...s, alertOnRed: e.target.checked }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>Job Errors Threshold (Min)</td>
+                <td>
+                  <input
+                    type="number"
+                    className="w-24 border-0 bg-transparent text-[12px] outline-none"
+                    value={alerts.jobErrorMin}
+                    onChange={(e) =>
+                      setAlerts((s) => ({ ...s, jobErrorMin: Number(e.target.value) || 0 }))
+                    }
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>Collect Stale After (Hours)</td>
+                <td>
+                  <input
+                    type="number"
+                    className="w-24 border-0 bg-transparent text-[12px] outline-none"
+                    value={alerts.collectStaleHours}
+                    onChange={(e) =>
+                      setAlerts((s) => ({ ...s, collectStaleHours: Number(e.target.value) || 0 }))
+                    }
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {msg ? <p className="px-4 py-3 text-[12px] text-muted">{msg}</p> : null}
+        {matches.length > 0 ? (
+          <ul className="list-inside list-disc px-4 pb-4 text-[12px] text-muted">
+            {matches.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
     </div>
   );
 }

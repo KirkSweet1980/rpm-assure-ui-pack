@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarClock, FileText } from "lucide-react";
-import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfigPageHead } from "@/components/settings/config-page";
 
 export const Route = createFileRoute("/settings/reports")({
   component: ReportSchedulesPage,
@@ -9,38 +9,58 @@ export const Route = createFileRoute("/settings/reports")({
 
 function ReportSchedulesPage() {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHead className="inline-flex items-center gap-2">
-          <CalendarClock className="size-4 text-primary" />
-          Reports
-        </CardHead>
-        <CardContent className="space-y-4 text-sm">
-          <p className="text-muted">
-            Packs are built from Live SQL + RPM Assure facts and viewed{" "}
-            <strong className="text-fg">in the browser / print</strong>. Outbound
-            email schedules are not enabled in this release.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm">
-              <Link to="/reports" search={{ format: undefined, customer: undefined }}>
-                <FileText className="size-4" />
-                Open Reports
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="secondary">
-              <Link to="/reports" search={{ format: "ams-monthly", customer: undefined }}>
-                Monthly pack UI
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="secondary">
-              <Link to="/reports" search={{ format: "ams-weekly", customer: undefined }}>
-                Weekly RPM Assure UI
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <ConfigPageHead title="Report Packs" icon={CalendarClock} />
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="rpma-xls">
+            <thead>
+              <tr>
+                <th>Pack</th>
+                <th>Delivery</th>
+                <th>Open</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Estate Report Packs</td>
+                <td>Browser / Print — email schedules off</td>
+                <td>
+                  <Button asChild size="sm" className="h-7 px-2.5 text-[11px]">
+                    <Link to="/reports" search={{ format: undefined, customer: undefined }}>
+                      <FileText className="size-3.5" />
+                      Open Reports
+                    </Link>
+                  </Button>
+                </td>
+              </tr>
+              <tr>
+                <td>Monthly Pack</td>
+                <td>On-screen preview</td>
+                <td>
+                  <Button asChild size="sm" variant="secondary" className="h-7 px-2.5 text-[11px]">
+                    <Link to="/reports" search={{ format: "ams-monthly", customer: undefined }}>
+                      Monthly
+                    </Link>
+                  </Button>
+                </td>
+              </tr>
+              <tr>
+                <td>Weekly RPM Assure</td>
+                <td>On-screen preview</td>
+                <td>
+                  <Button asChild size="sm" variant="secondary" className="h-7 px-2.5 text-[11px]">
+                    <Link to="/reports" search={{ format: "ams-weekly", customer: undefined }}>
+                      Weekly
+                    </Link>
+                  </Button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
