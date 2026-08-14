@@ -177,22 +177,22 @@ export type UiLabelsConfig = {
 
 export const DEFAULT_UI_LABELS: UiLabelsConfig = {
   productName: "RPM Assure",
-  servicesOnCover: "RPM Services on Cover",
-  ecosystem: "Customer Ecosystem",
-  ecosystemShort: "Ecosystem",
-  syspro: "SYSPRO Deployment",
+  servicesOnCover: "RPM Services",
+  ecosystem: "Customer Eco-System",
+  ecosystemShort: "Eco-System",
+  syspro: "SYSPRO EcoSystem",
   sysproShort: "SYSPRO",
-  rmm: "RPM Remote Management",
+  rmm: "RPM RMM",
   rmmShort: "RMM",
   cove: "RPM Cloud Backup",
   coveShort: "Backup",
-  epp: "RPM End Point Protection",
+  epp: "Endpoint Security",
   eppShort: "EPP",
-  csp: "Microsoft 365 Tenant",
+  csp: "Microsoft CSP",
   cspShort: "M365",
-  assurePack: "RPM Assure",
-  assurePackShort: "RPM Assure",
-  excoTitle: "Exco Insight",
+  assurePack: "Customer Assurance",
+  assurePackShort: "Assurance",
+  excoTitle: "Customer Eco-System",
   noCover: "No Cover",
   coverOn: "Covered",
 };
@@ -204,25 +204,25 @@ export const UI_LABEL_FIELDS: {
   help: string;
   group: string;
 }[] = [
-  { key: "productName", label: "Product name", help: "Browser chrome / about references", group: "Brand" },
-  { key: "excoTitle", label: "Exco page title", help: "Default estate board title (Dashboard can still override)", group: "Brand" },
-  { key: "servicesOnCover", label: "Services on cover heading", help: "Strip above customer modules", group: "Brand" },
-  { key: "noCover", label: "No cover text", help: "Yellow badge when pillar has no data", group: "Brand" },
-  { key: "coverOn", label: "Cover text", help: "When pillar is in scope", group: "Brand" },
-  { key: "ecosystem", label: "Customer ecosystem (full)", help: "First customer tab", group: "Customer modules" },
-  { key: "ecosystemShort", label: "Customer ecosystem (short)", help: "Narrow screens", group: "Customer modules" },
-  { key: "syspro", label: "SYSPRO (full)", help: "Pillar tab label", group: "Customer modules" },
-  { key: "sysproShort", label: "SYSPRO (short)", help: "Compact label", group: "Customer modules" },
-  { key: "rmm", label: "Remote management (full)", help: "RMM pillar", group: "Customer modules" },
-  { key: "rmmShort", label: "Remote management (short)", help: "Compact", group: "Customer modules" },
-  { key: "cove", label: "Cloud backup (full)", help: "Cove pillar", group: "Customer modules" },
-  { key: "coveShort", label: "Cloud backup (short)", help: "Compact", group: "Customer modules" },
-  { key: "epp", label: "Endpoint protection (full)", help: "EPP pillar", group: "Customer modules" },
-  { key: "eppShort", label: "Endpoint protection (short)", help: "Compact", group: "Customer modules" },
-  { key: "csp", label: "Microsoft 365 (full)", help: "CSP / M365 pillar", group: "Customer modules" },
-  { key: "cspShort", label: "Microsoft 365 (short)", help: "Compact", group: "Customer modules" },
-  { key: "assurePack", label: "Service pack (full)", help: "Incidents / SLA / risks pack (was AMS)", group: "Customer modules" },
-  { key: "assurePackShort", label: "Service pack (short)", help: "Compact tab label", group: "Customer modules" },
+  { key: "productName", label: "Product Name", help: "Shown in About and browser chrome.", group: "Brand" },
+  { key: "excoTitle", label: "Main Page Title", help: "Default heading on Customer Eco-System.", group: "Brand" },
+  { key: "servicesOnCover", label: "Services Heading", help: "Heading above customer service modules.", group: "Brand" },
+  { key: "noCover", label: "No Cover Text", help: "Status when a service has no mapped data.", group: "Brand" },
+  { key: "coverOn", label: "Cover Text", help: "Status when a service is in scope.", group: "Brand" },
+  { key: "ecosystem", label: "Customer Eco-System", help: "Customer landing page and first service.", group: "Customer Services" },
+  { key: "ecosystemShort", label: "Customer Eco-System (Short)", help: "Compact nav on narrow screens.", group: "Customer Services" },
+  { key: "syspro", label: "SYSPRO EcoSystem", help: "SYSPRO service name in the customer rail.", group: "Customer Services" },
+  { key: "sysproShort", label: "SYSPRO (Short)", help: "Compact service label.", group: "Customer Services" },
+  { key: "rmm", label: "RPM RMM", help: "Remote management service name.", group: "Customer Services" },
+  { key: "rmmShort", label: "RPM RMM (Short)", help: "Compact service label.", group: "Customer Services" },
+  { key: "cove", label: "RPM Cloud Backup", help: "Cloud backup service name.", group: "Customer Services" },
+  { key: "coveShort", label: "Cloud Backup (Short)", help: "Compact service label.", group: "Customer Services" },
+  { key: "epp", label: "Endpoint Security", help: "Endpoint protection service name.", group: "Customer Services" },
+  { key: "eppShort", label: "Endpoint Security (Short)", help: "Compact service label.", group: "Customer Services" },
+  { key: "csp", label: "Microsoft CSP", help: "Microsoft 365 / CSP service name.", group: "Customer Services" },
+  { key: "cspShort", label: "Microsoft CSP (Short)", help: "Compact service label.", group: "Customer Services" },
+  { key: "assurePack", label: "Customer Assurance", help: "Incidents, SLA, and risks pack.", group: "Customer Services" },
+  { key: "assurePackShort", label: "Customer Assurance (Short)", help: "Compact service label.", group: "Customer Services" },
 ];
 
 export type AppSettingsFile = {
@@ -327,13 +327,13 @@ export const DASHBOARD_PRESETS: Record<
   { label: string; help: string; patch: Partial<DashboardConfig> }
 > = {
   full: {
-    label: "Full operations",
-    help: "All KPI cards and panels (default).",
+    label: "Full Operations",
+    help: "All KPI tiles and estate panes.",
     patch: { ...DEFAULT_DASHBOARD },
   },
   exco: {
-    label: "ExCo board",
-    help: "Assurance, attention, RMM, portfolio table — fewer technical charts.",
+    label: "Executive Board",
+    help: "Assurance, attention, RMM, and portfolio. Fewer technical charts.",
     patch: {
       estateTitle: "Exco Insight",
       estateSubtitle: "Board view — health, attention, and RMM posture.",
@@ -359,8 +359,8 @@ export const DASHBOARD_PRESETS: Record<
     },
   },
   rmm: {
-    label: "RMM focus",
-    help: "Pulseway health front-and-centre with portfolio and attention.",
+    label: "RMM Focus",
+    help: "Pulseway health first, with portfolio and attention.",
     patch: {
       estateTitle: "Exco Insight",
       estateSubtitle: "RMM estate — devices, offline agents, critical alerts.",
@@ -385,8 +385,8 @@ export const DASHBOARD_PRESETS: Record<
     },
   },
   syspro: {
-    label: "SYSPRO / RPM Assure",
-    help: "Jobs, Out of Balance, licenses, backups — hide RMM panels.",
+    label: "SYSPRO / Assurance",
+    help: "Jobs, FinSight, licenses, and backups. Hides RMM panes.",
     patch: {
       estateTitle: "Exco Insight",
       estateSubtitle: "SYSPRO / RPM Assure — operators, jobs, licenses, and backups.",

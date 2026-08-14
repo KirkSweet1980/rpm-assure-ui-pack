@@ -9,29 +9,6 @@ export const Route = createFileRoute("/settings")({
   component: SettingsLayout,
 });
 
-const TITLES: Record<string, { title: string; subtitle: string }> = {
-  "/settings/infrastructure": { title: "Assure Infrastructure Status", subtitle: "Platform connections, collect APIs, and SQL-host agents." },
-  "/settings/sql": { title: "SQL Server", subtitle: "Connections and credentials for Live SQL and tools." },
-  "/settings/ssl": { title: "SSL / HTTPS", subtitle: "Let's Encrypt or upload your own certificate for the public hostname." },
-  "/settings/smtp": { title: "Email", subtitle: "Outbound email is disabled in this release." },
-  "/settings/integrations": { title: "Integrations", subtitle: "Live collect connections: SYSPRO, Remote Management, Cloud Backup, EPP, Microsoft 365 Tenant." },
-  "/settings/dashboard": { title: "Dashboard Layout", subtitle: "KPI cards and panels on Exco Insight." },
-  "/settings/chrome": { title: "Menu Style", subtitle: "Selected tab and nav chip style." },
-  "/settings/theme": { title: "Theme Tokens", subtitle: "Palette and CSS variables for light and dark." },
-  "/settings/labels": { title: "UI Labels", subtitle: "Rename modules and cover chips without a code deploy." },
-  "/settings/rag": { title: "RAG thresholds", subtitle: "Job error and FinSight rules for Red / Amber / Green — no code deploy." },
-  "/settings/alerts": { title: "Alert Rules", subtitle: "In-app rules for Red health, job errors, and stale collect." },
-  "/settings/collect": { title: "Collect inventory", subtitle: "Last import per customer / instance and schedule health." },
-  "/settings/agents": { title: "RPM Assure SQL Agent Status", subtitle: "SQL-host Windows service: heartbeat and SYSPRO collect." },
-  "/settings/reports": { title: "Report Packs", subtitle: "On-screen report packs (email schedules off)." },
-  "/settings/query": { title: "SQL Query", subtitle: "Read-only explorer against the configured database." },
-  "/settings/users": { title: "Users", subtitle: "Staff accounts, roles, scope, plus your profile and 2FA." },
-  "/settings/profile": { title: "My profile", subtitle: "Display name, password, and account details." },
-  "/settings/security": { title: "Security & 2FA", subtitle: "Authenticator app and backup codes for your account." },
-  "/settings/audit": { title: "Audit Log", subtitle: "Who created or disabled users and changed platform settings." },
-  "/settings/about": { title: "About", subtitle: "Product notes and roadmap." },
-};
-
 const CONFIG_SERVICES: CorpService[] = [
   {
     id: "assure-app",
@@ -84,13 +61,6 @@ function SettingsLayout() {
   if (!SETTINGS_MENU_ENABLED) {
     return <Navigate to="/" />;
   }
-  const meta =
-    TITLES[pathname] ??
-    Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] ?? {
-      title: "Configuration",
-      subtitle: "Platform configuration — SQL, SSL, and tools.",
-    };
-
   const svc =
     CONFIG_SERVICES.find((s) =>
       s.modules.some((m) => pathname === m.path || pathname.startsWith(`${m.path}/`)),

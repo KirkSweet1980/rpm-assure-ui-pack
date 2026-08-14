@@ -143,7 +143,7 @@ function DashboardSettingsPage() {
               className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-[12px] font-semibold text-fg"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              Exco Insight
+              Customer Eco-System
             </Link>
             <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={onReset}>
               <RotateCcw className="size-3.5" />
@@ -288,14 +288,14 @@ function DashboardSettingsPage() {
               </tr>
             </thead>
             <tbody>
-              <ToggleRow label="Customer Ecosystem" help="Count of customers" checked={dash.kpiCustomers} onChange={(v) => set("kpiCustomers", v)} />
-              <ToggleRow label="Customers Needing Attention" help="Attention reasons" checked={dash.kpiAttention} onChange={(v) => set("kpiAttention", v)} />
-              <ToggleRow label="Ecosystem Assurance" help="Average assurance score" checked={dash.kpiAssurance} onChange={(v) => set("kpiAssurance", v)} />
-              <ToggleRow label="Customer Data Refresh" help="Fresh vs total collects" checked={dash.kpiRefresh} onChange={(v) => set("kpiRefresh", v)} />
-              <ToggleRow label="Ecosystem Open Risks" help="Open risks on the board" checked={dash.kpiRisks} onChange={(v) => set("kpiRisks", v)} />
-              <ToggleRow label="Licenses Expiring" help="Count in the license window" checked={dash.kpiLicenses} onChange={(v) => set("kpiLicenses", v)} />
-              <ToggleRow label="RMM Devices" help="Pulseway rollup" checked={dash.kpiRmm} onChange={(v) => set("kpiRmm", v)} />
-              <ToggleRow label="SYSPRO Hotfixes" help="Hotfix charts" checked={dash.kpiHotfixes} onChange={(v) => set("kpiHotfixes", v)} />
+              <ToggleRow label="Customer Eco-System" help="Total customers on the board." checked={dash.kpiCustomers} onChange={(v) => set("kpiCustomers", v)} />
+              <ToggleRow label="Customers Needing Attention" help="Customers with open attention reasons." checked={dash.kpiAttention} onChange={(v) => set("kpiAttention", v)} />
+              <ToggleRow label="Eco-System Assurance" help="Average assurance score across customers." checked={dash.kpiAssurance} onChange={(v) => set("kpiAssurance", v)} />
+              <ToggleRow label="Customer Data Refresh" help="Fresh versus total collects." checked={dash.kpiRefresh} onChange={(v) => set("kpiRefresh", v)} />
+              <ToggleRow label="Open Risks" help="Open risks on the estate board." checked={dash.kpiRisks} onChange={(v) => set("kpiRisks", v)} />
+              <ToggleRow label="Licenses Expiring" help="Licenses inside the expiry window." checked={dash.kpiLicenses} onChange={(v) => set("kpiLicenses", v)} />
+              <ToggleRow label="RMM Devices" help="Pulseway device rollup." checked={dash.kpiRmm} onChange={(v) => set("kpiRmm", v)} />
+              <ToggleRow label="SYSPRO Hotfixes" help="Hotfix counts on SYSPRO cover." checked={dash.kpiHotfixes} onChange={(v) => set("kpiHotfixes", v)} />
             </tbody>
           </table>
         </div>
@@ -303,7 +303,7 @@ function DashboardSettingsPage() {
 
       <section className="rpma-panel overflow-hidden p-0">
         <div className="px-4 py-3">
-          <h2 className="text-[16px] font-extrabold text-fg">Estate Panels</h2>
+          <h2 className="text-[16px] font-extrabold text-fg">Estate Panes</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="rpma-xls">
@@ -315,16 +315,16 @@ function DashboardSettingsPage() {
               </tr>
             </thead>
             <tbody>
-              <ToggleRow label="Customer Portfolio Table" help="Searchable estate list" checked={dash.panelPortfolioTable} onChange={(v) => set("panelPortfolioTable", v)} />
-              <ToggleRow label="RMM Customer Health" help="Devices, offline, critical" checked={dash.panelRmmHealth} onChange={(v) => set("panelRmmHealth", v)} />
-              <ToggleRow label="Customer Data Refresh List" help="Fresh / stale per customer" checked={dash.panelDataRefresh} onChange={(v) => set("panelDataRefresh", v)} />
-              <ToggleRow label="Customers Needing Attention" help="Clickable attention reasons" checked={dash.panelAttention} onChange={(v) => set("panelAttention", v)} />
-              <ToggleRow label="Ecosystem Assurance Chart" help="Assurance % by customer" checked={dash.panelAssuranceChart} onChange={(v) => set("panelAssuranceChart", v)} />
-              <ToggleRow label="Health Score Chart" help="Health by customer" checked={dash.panelHealthChart} onChange={(v) => set("panelHealthChart", v)} />
-              <ToggleRow label="SLA Stats Table" help="Availability when present" checked={dash.panelSla} onChange={(v) => set("panelSla", v)} />
-              <ToggleRow label="Licenses Expiring Table" help="License window detail" checked={dash.panelLicenses} onChange={(v) => set("panelLicenses", v)} />
-              <ToggleRow label="Open Risks Table" help="Risks and issues" checked={dash.panelRisks} onChange={(v) => set("panelRisks", v)} />
-              <ToggleRow label="SQL Script Backup Status" help="SQL backup health" checked={dash.panelBackups} onChange={(v) => set("panelBackups", v)} />
+              <ToggleRow label="Customer Portfolio Table" help="Searchable list of all customers." checked={dash.panelPortfolioTable} onChange={(v) => set("panelPortfolioTable", v)} />
+              <ToggleRow label="RMM Customer Health" help="Devices, offline servers, and critical alerts." checked={dash.panelRmmHealth} onChange={(v) => set("panelRmmHealth", v)} />
+              <ToggleRow label="Customer Data Refresh List" help="Fresh or stale collect per customer." checked={dash.panelDataRefresh} onChange={(v) => set("panelDataRefresh", v)} />
+              <ToggleRow label="Customers Needing Attention" help="Click through to attention reasons." checked={dash.panelAttention} onChange={(v) => set("panelAttention", v)} />
+              <ToggleRow label="Eco-System Assurance Chart" help="Assurance percent by customer." checked={dash.panelAssuranceChart} onChange={(v) => set("panelAssuranceChart", v)} />
+              <ToggleRow label="Health Score Chart" help="Health score by customer." checked={dash.panelHealthChart} onChange={(v) => set("panelHealthChart", v)} />
+              <ToggleRow label="SLA Stats Table" help="Availability where SLA data exists." checked={dash.panelSla} onChange={(v) => set("panelSla", v)} />
+              <ToggleRow label="Licenses Expiring Table" help="License window detail." checked={dash.panelLicenses} onChange={(v) => set("panelLicenses", v)} />
+              <ToggleRow label="Open Risks Table" help="Open risks and issues." checked={dash.panelRisks} onChange={(v) => set("panelRisks", v)} />
+              <ToggleRow label="SQL Script Backup Status" help="SQL backup health." checked={dash.panelBackups} onChange={(v) => set("panelBackups", v)} />
             </tbody>
           </table>
         </div>
@@ -354,16 +354,16 @@ function DashboardSettingsPage() {
                       set("customerLanding", e.target.value as DashboardConfig["customerLanding"])
                     }
                   >
-                    <option value="exec">Customer Ecosystem</option>
+                    <option value="exec">Customer Eco-System</option>
                     <option value="syspro">SYSPRO Hub</option>
                     <option value="ams">Customer Assurance</option>
                   </select>
                 </td>
                 <td />
               </tr>
-              <ToggleRow label="Charts On Customer Ecosystem" help="Operator / signal charts" checked={dash.customerShowCharts} onChange={(v) => set("customerShowCharts", v)} />
-              <ToggleRow label="FinSight Out Of Balance Strip" help="DTR strip on customer exec" checked={dash.customerShowDtr} onChange={(v) => set("customerShowDtr", v)} />
-              <ToggleRow label="Priorities And Risks Lists" help="Lists on customer exec" checked={dash.customerShowLists} onChange={(v) => set("customerShowLists", v)} />
+              <ToggleRow label="Charts On Customer Eco-System" help="Operator and signal charts on the customer landing page." checked={dash.customerShowCharts} onChange={(v) => set("customerShowCharts", v)} />
+              <ToggleRow label="FinSight Out Of Balance Strip" help="DTR strip on the customer landing page." checked={dash.customerShowDtr} onChange={(v) => set("customerShowDtr", v)} />
+              <ToggleRow label="Priorities And Risks Lists" help="Priority and risk lists on the customer landing page." checked={dash.customerShowLists} onChange={(v) => set("customerShowLists", v)} />
             </tbody>
           </table>
         </div>
