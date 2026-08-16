@@ -17,7 +17,13 @@ if (-not (Test-Path $runnerSrc)) {
   $runnerSrc = "C:\RPM-Assure\deploy\ui-pack\Sql\ops\Run-All-Api-Collects-Scheduled.ps1"
 }
 $runner = Join-Path $ops "Run-All-Api-Collects-Scheduled.ps1"
-if (Test-Path $runnerSrc) { Copy-Item $runnerSrc $runner -Force }
+$srcFull = $null
+$dstFull = $null
+try { if (Test-Path $runnerSrc) { $srcFull = (Get-Item -LiteralPath $runnerSrc).FullName } } catch {}
+try { if (Test-Path $runner) { $dstFull = (Get-Item -LiteralPath $runner).FullName } } catch {}
+if ($srcFull -and $srcFull -ne $dstFull) {
+  Copy-Item -LiteralPath $runnerSrc -Destination $runner -Force
+}
 if (-not (Test-Path $runner)) { throw "Missing $runner" }
 
 $taskName = "RPMAssure-All-Api-Collect"
