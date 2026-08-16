@@ -192,10 +192,81 @@ if ($SyncApis) {
   }
 }
 
+$apiSched = Join-Path $Root 'Sql\ops\Install-All-Api-Collect-15min.ps1'
+$apiPack = Join-Path $Pack 'Sql\ops\Install-All-Api-Collect-15min.ps1'
+if (Test-Path -LiteralPath $apiPack) {
+  New-Item -ItemType Directory -Force -Path (Join-Path $Root 'Sql\ops') | Out-Null
+  Copy-Item -LiteralPath $apiPack -Destination $apiSched -Force
+  $runPack = Join-Path $Pack 'Sql\ops\Run-All-Api-Collects-Scheduled.ps1'
+  if (Test-Path -LiteralPath $runPack) {
+    Copy-Item -LiteralPath $runPack -Destination (Join-Path $Root 'Sql\ops\Run-All-Api-Collects-Scheduled.ps1') -Force
+  }
+  foreach ($rel in @(
+      'Sql\cove',
+      'Sql\rmm\pulseway',
+      'Sql\bitdefender',
+      'Sql\csp'
+    )) {
+    $from = Join-Path $Pack $rel
+    $to = Join-Path $Root $rel
+    if (Test-Path -LiteralPath $from) {
+      New-Item -ItemType Directory -Force -Path $to | Out-Null
+      robocopy $from $to /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /XF '*.Config.ps1' 'Cove.Config.ps1' 'Pulseway.Config.ps1' | Out-Null
+    }
+  }
+  W Cyan '--- API collect every 15 min (Pulseway + Cove + Bitdefender + CSP) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $apiSched
+}
+
+$repSched = Join-Path $Pack 'deploy\Install-Report-Schedules.ps1'
+if (Test-Path -LiteralPath $repSched) {
+  Copy-Item -LiteralPath $repSched -Destination (Join-Path $Root 'deploy\Install-Report-Schedules.ps1') -Force
+  $repRun = Join-Path $Pack 'deploy\Run-Report-Slot.ps1'
+  if (Test-Path -LiteralPath $repRun) {
+    Copy-Item -LiteralPath $repRun -Destination (Join-Path $Root 'deploy\Run-Report-Slot.ps1') -Force
+  }
+  W Cyan '--- Report pack schedules (daily / Friday / 1st) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'deploy\Install-Report-Schedules.ps1')
+}
+
+# HTTPS: copy restore scripts (never overwrite a live Caddyfile — Settings / own cert)
+foreach ($name in @(
+    'Ensure-Https-443.ps1',
+    'Start-Caddy-Https-443.ps1',
+    'Fix-Https-443.ps1',
+    'Diagnose-SSL.ps1',
+    'Start-RpmAssure-App.ps1'
+  )) {
+  $from = Join-Path $Pack ('deploy\' + $name)
+  if (-not (Test-Path -LiteralPath $from)) { $from = Join-Path $Pack $name }
+  if (Test-Path -LiteralPath $from) {
+    Copy-Item -LiteralPath $from -Destination (Join-Path $Root ('deploy\' + $name)) -Force
+  }
+}
+$cfFrom = Join-Path $Pack 'deploy\Caddyfile'
+$cfTo = Join-Path $Root 'deploy\Caddyfile'
+if ((Test-Path -LiteralPath $cfFrom) -and -not (Test-Path -LiteralPath $cfTo)) {
+  Copy-Item -LiteralPath $cfFrom -Destination $cfTo -Force
+}
+
+$ens = Join-Path $Root 'deploy\Ensure-Https-443.ps1'
+if (Test-Path -LiteralPath $ens) {
+  W Cyan '--- Ensure HTTPS :443 (Caddy) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ens
+} else {
+  $listen443 = netstat -ano | findstr 'LISTENING' | findstr ':443'
+  if ($listen443) {
+    W Green 'Port 443 LISTENING'
+  } else {
+    W Yellow 'Port 443 not LISTENING. Run C:\RPM-Assure\deploy\Start-Caddy-Https-443.ps1 as Administrator.'
+  }
+}
+
 Write-Host '========================================' -ForegroundColor Cyan
 Write-Host ' GIT UPDATE COMPLETE'
 Write-Host (" Pack   : " + $Pack)
 Write-Host (" Source : " + $srcRoot)
 Write-Host (" Backup : " + $bak)
 Write-Host ' Hard-refresh (Ctrl+F5).'
+Write-Host ' Public : https://assure.rpmresources.co.za'
 Write-Host '========================================' -ForegroundColor Cyan

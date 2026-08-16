@@ -229,10 +229,44 @@ if (Test-Path -LiteralPath $repSched) {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'deploy\Install-Report-Schedules.ps1')
 }
 
+# HTTPS: copy restore scripts (never overwrite a live Caddyfile — Settings / own cert)
+foreach ($name in @(
+    'Ensure-Https-443.ps1',
+    'Start-Caddy-Https-443.ps1',
+    'Fix-Https-443.ps1',
+    'Diagnose-SSL.ps1',
+    'Start-RpmAssure-App.ps1'
+  )) {
+  $from = Join-Path $Pack ('deploy\' + $name)
+  if (-not (Test-Path -LiteralPath $from)) { $from = Join-Path $Pack $name }
+  if (Test-Path -LiteralPath $from) {
+    Copy-Item -LiteralPath $from -Destination (Join-Path $Root ('deploy\' + $name)) -Force
+  }
+}
+$cfFrom = Join-Path $Pack 'deploy\Caddyfile'
+$cfTo = Join-Path $Root 'deploy\Caddyfile'
+if ((Test-Path -LiteralPath $cfFrom) -and -not (Test-Path -LiteralPath $cfTo)) {
+  Copy-Item -LiteralPath $cfFrom -Destination $cfTo -Force
+}
+
+$ens = Join-Path $Root 'deploy\Ensure-Https-443.ps1'
+if (Test-Path -LiteralPath $ens) {
+  W Cyan '--- Ensure HTTPS :443 (Caddy) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ens
+} else {
+  $listen443 = netstat -ano | findstr 'LISTENING' | findstr ':443'
+  if ($listen443) {
+    W Green 'Port 443 LISTENING'
+  } else {
+    W Yellow 'Port 443 not LISTENING. Run C:\RPM-Assure\deploy\Start-Caddy-Https-443.ps1 as Administrator.'
+  }
+}
+
 Write-Host '========================================' -ForegroundColor Cyan
 Write-Host ' GIT UPDATE COMPLETE'
 Write-Host (" Pack   : " + $Pack)
 Write-Host (" Source : " + $srcRoot)
 Write-Host (" Backup : " + $bak)
 Write-Host ' Hard-refresh (Ctrl+F5).'
+Write-Host ' Public : https://assure.rpmresources.co.za'
 Write-Host '========================================' -ForegroundColor Cyan

@@ -1,0 +1,52 @@
+# RPM Assure - HTTPS only (no HTTP site / no port-80 redirects)
+# Host: assure.rpmresources.co.za
+# Proxies to Node/Vite on 127.0.0.1:8081
+#
+# Prerequisites:
+#   - DNS A record: assure.rpmresources.co.za -> this server's public IP
+#   - Firewall: TCP 443 inbound (HTTPS)
+#   - App listening on 127.0.0.1:8081 (or 0.0.0.0:8081)
+# Let's Encrypt: TLS-ALPN-01 on :443 (HTTP-01 challenge disabled at issuer)
+
+{
+	# Valid values on this Caddy build: off | disable_redirects | disable_certs | ignore_loaded_certs
+	auto_https disable_redirects
+	# email ops@rpmresources.co.za
+}
+
+https://assure.rpmresources.co.za {
+	encode gzip zstd
+
+	# Prefer TLS-ALPN for cert obtain/renew (do not use HTTP-01 on port 80)
+	tls {
+		issuer acme {
+			disable_http_challenge
+		}
+	}
+
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	reverse_proxy 127.0.0.1:8081 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	log {
+		output file C:\RPM-Assure\deploy\logs\caddy-access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}
