@@ -92,5 +92,16 @@ if (Test-Path $restamp) {
   if ($LASTEXITCODE -eq 0) { W Green 'Cove/EPP restamp OK' } else { W Yellow 'Cove/EPP restamp warned — UI will still try a live restamp.' }
 }
 
+$rmmMap = 'C:\RPM-Assure\Sql\rmm\pulseway\461_Fix_Rmm_Device_Customer_Map.sql'
+if (-not (Test-Path -LiteralPath $rmmMap)) { $rmmMap = Join-Path (Split-Path $PSScriptRoot -Parent) 'rmm\pulseway\461_Fix_Rmm_Device_Customer_Map.sql' }
+if (Test-Path -LiteralPath $rmmMap) {
+  W Cyan '--- Remap Pulseway devices (hostname wins; SBS-PROD -> Simply Bright) ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $rmmMap @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'RMM device remap OK' } else { W Yellow 'RMM device remap warned.' }
+}
+
 Write-Host 'Agents, RequestSyncUtc, vendor maps, and pillar columns are in place.'
 Write-Host 'Hard-refresh Assure. Cloud Backup and EPP fill from stamped devices, not just the map lamp.'

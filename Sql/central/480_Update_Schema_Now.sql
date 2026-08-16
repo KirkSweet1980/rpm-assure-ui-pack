@@ -8,6 +8,7 @@ IF DB_ID(N'RPMAssure_App') IS NOT NULL
   USE RPMAssure_App;
 GO
 
+/* ---------- AmsConfig + pillar columns ---------- */
 IF OBJECT_ID(N'dbo.Dim_Customer_AmsConfig', N'U') IS NULL
 BEGIN
   CREATE TABLE dbo.Dim_Customer_AmsConfig (
@@ -44,6 +45,7 @@ IF COL_LENGTH(N'dbo.Dim_Customer_AmsConfig', N'UpdatedBy') IS NULL
 PRINT 'AmsConfig columns ready';
 GO
 
+/* ---------- Vendor maps ---------- */
 IF OBJECT_ID(N'dbo.Dim_Pulseway_OrgMap', N'U') IS NULL
 BEGIN
   CREATE TABLE dbo.Dim_Pulseway_OrgMap (
@@ -59,6 +61,20 @@ END
 IF COL_LENGTH(N'dbo.Dim_Pulseway_OrgMap', N'Active') IS NULL
   ALTER TABLE dbo.Dim_Pulseway_OrgMap ADD Active bit NOT NULL CONSTRAINT DF_480_PwMapA2 DEFAULT (1);
 PRINT 'Pulseway org map ready';
+GO
+
+IF OBJECT_ID(N'dbo.Dim_Pulseway_NameMap', N'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.Dim_Pulseway_NameMap (
+    NameLike     nvarchar(80)  NOT NULL,
+    CustomerCode nvarchar(50)  NOT NULL,
+    Priority     int           NOT NULL CONSTRAINT DF_480_PwNamePri DEFAULT (100),
+    Active       bit           NOT NULL CONSTRAINT DF_480_PwNameAct DEFAULT (1),
+    Notes        nvarchar(200) NULL,
+    CONSTRAINT PK_Dim_Pulseway_NameMap PRIMARY KEY (NameLike)
+  );
+  PRINT 'Dim_Pulseway_NameMap created';
+END
 GO
 
 IF OBJECT_ID(N'dbo.Dim_Cove_PartnerMap', N'U') IS NULL
@@ -126,6 +142,7 @@ END
 PRINT 'CSP tenant map ready';
 GO
 
+/* ---------- Fact table columns used by cover / UI ---------- */
 IF OBJECT_ID(N'dbo.Cove_DeviceStatistics', N'U') IS NOT NULL
 BEGIN
   IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'Product') IS NULL
@@ -149,6 +166,7 @@ IF OBJECT_ID(N'dbo.Csp_Posture', N'U') IS NOT NULL
   ALTER TABLE dbo.Csp_Posture ADD GlobalAdminNames nvarchar(2000) NULL;
 GO
 
+/* ---------- Agent tables + RequestSyncUtc ---------- */
 IF OBJECT_ID(N'dbo.Agent_Registry', N'U') IS NULL
 BEGIN
   CREATE TABLE dbo.Agent_Registry (
@@ -251,6 +269,7 @@ SELECT
 FROM dbo.Agent_Registry r;
 GO
 
+/* ---------- Drop junk maps from failed onboarding prompts ---------- */
 DELETE FROM dbo.Dim_Cove_PartnerMap
 WHERE PartnerName LIKE N'Invalid%' OR PartnerName LIKE N'%column name%'
    OR PartnerName LIKE N'System.Object%' OR LTRIM(RTRIM(ISNULL(PartnerName,N''))) = N'';
@@ -264,6 +283,26 @@ IF OBJECT_ID(N'dbo.Dim_Bitdefender_CompanyMap', N'U') IS NOT NULL
 PRINT 'Junk maps cleaned';
 GO
 
+/* HYDRA: SYSPRO deferred — no agent, No Cover. RMM / Cove / EPP unchanged. */
+IF EXISTS (SELECT 1 FROM dbo.Dim_Customer WHERE CustomerCode = N'HYDRA')
+BEGIN
+  UPDATE dbo.Dim_Customer
+  SET SqlInstanceName = NULL, UpdatedAt = SYSUTCDATETIME()
+  WHERE CustomerCode = N'HYDRA';
+
+  IF EXISTS (SELECT 1 FROM dbo.Dim_Customer_AmsConfig WHERE CustomerCode = N'HYDRA')
+    UPDATE dbo.Dim_Customer_AmsConfig
+    SET PillarSyspro = 0, UpdatedAt = SYSUTCDATETIME(), UpdatedBy = N'480_hydra_off'
+    WHERE CustomerCode = N'HYDRA';
+  ELSE
+    INSERT INTO dbo.Dim_Customer_AmsConfig (CustomerCode, AmsEnabled, PillarSyspro, UpdatedAt, UpdatedBy)
+    VALUES (N'HYDRA', 1, 0, SYSUTCDATETIME(), N'480_hydra_off');
+
+  PRINT 'HYDRA SYSPRO cover off';
+END
+GO
+
+/* ---------- Cover flags: map or live data = on ---------- */
 UPDATE a SET PillarPulseway = 1, UpdatedAt = SYSUTCDATETIME(), UpdatedBy = N'480_schema'
 FROM dbo.Dim_Customer_AmsConfig a
 WHERE ISNULL(a.PillarPulseway, 0) = 0
@@ -298,6 +337,7 @@ WHERE ISNULL(a.PillarCsp, 0) = 0
 PRINT 'Pillar flags stamped from maps';
 GO
 
+/* ---------- Grants ---------- */
 BEGIN TRY
   GRANT SELECT, INSERT, UPDATE ON dbo.Agent_Registry TO [rpmassure];
   GRANT SELECT, INSERT ON dbo.Agent_Heartbeat TO [rpmassure];
@@ -314,6 +354,7 @@ BEGIN TRY
 END TRY BEGIN CATCH PRINT 'Grant Rpm_collect: ' + ERROR_MESSAGE(); END CATCH
 GO
 
+/* ---------- Proof ---------- */
 SELECT
   OBJECT_ID(N'dbo.Agent_Registry') AS Agent_Registry,
   COL_LENGTH(N'dbo.Agent_Registry', N'RequestSyncUtc') AS RequestSyncUtc,

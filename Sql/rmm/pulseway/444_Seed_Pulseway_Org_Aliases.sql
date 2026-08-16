@@ -32,7 +32,10 @@ SET NOCOUNT ON;
     (N'SirFruit',                  N'SIRF'),
     (N'SIRF',                      N'SIRF'),
     (N'SIR FRUIT (PTY) LTD',       N'SIRF'),
-    (N'Sir Fruit (Pty) Ltd',       N'SIRF')
+    (N'Sir Fruit (Pty) Ltd',       N'SIRF'),
+    (N'Simply Bright',             N'SBS'),
+    (N'Simply Bright Consulting',  N'SBS'),
+    (N'SBS',                       N'SBS')
   ) v(OrganizationName, CustomerCode)
 ),
 Valid AS (

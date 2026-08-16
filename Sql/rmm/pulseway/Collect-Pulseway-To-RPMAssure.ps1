@@ -1662,6 +1662,22 @@ if ($notifs.Count -gt 0) {
 [void]$sb.AppendLine('SELECT COUNT(*) AS DevicesToday FROM dbo.Pulseway_Devices WHERE SnapshotDate = @Snap;')
 [void]$sb.AppendLine("UPDATE d SET d.CustomerCode = m.CustomerCode FROM dbo.Pulseway_Devices d INNER JOIN dbo.Dim_Pulseway_OrgMap m ON LTRIM(RTRIM(d.OrganizationName)) = LTRIM(RTRIM(m.OrganizationName)) AND ISNULL(m.Active,1)=1 WHERE d.SnapshotDate = @Snap AND (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode))=N'');")
 [void]$sb.AppendLine("UPDATE dbo.Pulseway_Devices SET CustomerCode = N'SIRF' WHERE SnapshotDate = @Snap AND (OrganizationName LIKE N'%Fruit%' OR OrganizationName LIKE N'%SIRF%' OR OrganizationName LIKE N'%Sir Fruit%' OR Name LIKE N'SIRZA%' OR Name LIKE N'%SirFruit%' OR Name LIKE N'%Sir Fruit%');")
+[void]$sb.AppendLine(@"
+IF OBJECT_ID(N'dbo.Dim_Pulseway_NameMap', N'U') IS NOT NULL
+BEGIN
+  ;WITH Hit AS (
+    SELECT d.SnapshotDate, d.DeviceId, m.CustomerCode,
+      ROW_NUMBER() OVER (PARTITION BY d.SnapshotDate, d.DeviceId ORDER BY m.Priority DESC, LEN(m.NameLike) DESC) AS rn
+    FROM dbo.Pulseway_Devices d
+    INNER JOIN dbo.Dim_Pulseway_NameMap m ON m.Active = 1 AND d.Name LIKE m.NameLike
+    WHERE d.SnapshotDate = @Snap
+  )
+  UPDATE d SET d.CustomerCode = h.CustomerCode
+  FROM dbo.Pulseway_Devices d
+  INNER JOIN Hit h ON h.SnapshotDate = d.SnapshotDate AND h.DeviceId = d.DeviceId AND h.rn = 1
+  WHERE ISNULL(d.CustomerCode, N'') <> h.CustomerCode;
+END
+"@)
 if ($sirfOrgIds.Count -gt 0) {
   $idList = (@($sirfOrgIds) | Where-Object { $_ -match '^\d+$' }) -join ','
   if ($idList) {
