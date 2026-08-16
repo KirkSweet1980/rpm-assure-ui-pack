@@ -832,11 +832,7 @@ FROM dbo.Pulseway_Devices WITH (NOLOCK)
 WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
   AND (
     CustomerCode = N'SIRF'
-    OR OrganizationName LIKE N'%Fruit%'
-    OR OrganizationName LIKE N'%SIRF%'
-    OR Name LIKE N'SIRZA%'
-    OR Name LIKE N'%SirFruit%'
-    OR Name LIKE N'%Sir Fruit%'
+    OR OrganizationName = N'Sir Fruit'
   )`);
         const f = fb.recordset?.[0];
         const n = Number(f?.DeviceCount) || 0;
@@ -1276,6 +1272,7 @@ SELECT TOP (25)
   Operator,
   Message,
   ErrorStatusCode,
+  ProgErrorCode,
   ProgRunDate
 FROM dbo.Syspro_JobLogging
 WHERE InstanceName = @instance
@@ -2174,10 +2171,7 @@ WHERE (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode)) = N'')
   AND (
     (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
     OR UPPER(LTRIM(RTRIM(ISNULL(d.Product,N'')))) = UPPER(LTRIM(RTRIM(m.PartnerName)))
-    OR (
-      LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
-      AND UPPER(ISNULL(d.Product,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
-    )
+    OR UPPER(LTRIM(RTRIM(ISNULL(d.PartnerName,N'')))) = UPPER(LTRIM(RTRIM(m.PartnerName)))
   )`);
   } catch (e) {
     console.warn("[rpm-assure] Cove restamp:", e instanceof Error ? e.message : e);
@@ -4350,16 +4344,6 @@ WHERE CustomerCode = @code`);
     WHERE CustomerCode = @code
       AND NULLIF(LTRIM(RTRIM(PulsewayOrgName)), N'') IS NOT NULL
   )
-  OR EXISTS (
-    SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
-    WHERE c.CustomerCode = @code
-      AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName, N'')))) >= 6
-      AND (
-        UPPER(LTRIM(RTRIM(OrganizationName))) = UPPER(LTRIM(RTRIM(c.DisplayName)))
-        OR UPPER(LTRIM(RTRIM(OrganizationName))) LIKE UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-        OR UPPER(LTRIM(RTRIM(c.DisplayName))) LIKE UPPER(LTRIM(RTRIM(OrganizationName))) + N'%'
-      )
-  )
 )`;
       const deviceSelects = [
         `SELECT TOP 200
@@ -5263,19 +5247,8 @@ WHERE (
         AND ISNULL(m.Active, 1) = 1
         AND (
           (NULLIF(LTRIM(RTRIM(m.PartnerName)), N'') IS NOT NULL
-            AND (
-              UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
-              OR (
-                LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
-                AND (
-                  UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
-                  OR (
-                    LEN(LTRIM(RTRIM(ISNULL(d.Product, N'')))) >= 6
-                    AND UPPER(LTRIM(RTRIM(m.PartnerName))) LIKE N'%' + UPPER(LTRIM(RTRIM(d.Product))) + N'%'
-                  )
-                )
-              )
-            ))
+            AND UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
+          )
           OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
         )
     )
@@ -5463,7 +5436,7 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
       lastBackupStatus:
         r.LastBackupStatus != null ? String(r.LastBackupStatus) : null,
       lastSuccessTime: toIso(r.LastSuccessTime),
-      usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : r.SelectedBytes != null ? Number(r.SelectedBytes) : null,
+      usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : null,
       snapshotDate: toDateOnly(r.SnapshotDate),
       importedAt: toIso(r.ImportedAt),
       recoveryPlanType:
@@ -5781,7 +5754,7 @@ ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
         lastBackupStatus:
           r.LastBackupStatus != null ? String(r.LastBackupStatus) : null,
         lastSuccessTime: toIso(r.LastSuccessTime),
-        usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : r.SelectedBytes != null ? Number(r.SelectedBytes) : null,
+        usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : null,
         snapshotDate: toDateOnly(r.SnapshotDate),
         importedAt: toIso(r.ImportedAt),
         recoveryPlanType:
@@ -5897,10 +5870,6 @@ WHERE (
         AND m.CompanyName NOT LIKE N'Invalid%'
         AND (
           UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
-          OR (
-            LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
-            AND UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
-          )
         )
     )
     OR EXISTS (
@@ -5944,10 +5913,6 @@ WHERE (
         AND m.CompanyName NOT LIKE N'Invalid%'
         AND (
           UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
-          OR (
-            LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
-            AND UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
-          )
         )
     )
     OR EXISTS (
@@ -6056,10 +6021,6 @@ WHERE (
         AND m.CompanyName NOT LIKE N'Invalid%'
         AND (
           UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
-          OR (
-            LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
-            AND UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
-          )
         )
     )
     OR EXISTS (

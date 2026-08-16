@@ -841,21 +841,6 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   );
   const withMissing = reporting.filter((d) => (d.patchMissing ?? 0) > 0);
 
-  const isServer = (t: string | null | undefined) => {
-    const x = (t || "").toLowerCase();
-    return x.includes("server") || x.includes("domain controller");
-  };
-  const isWorkstation = (t: string | null | undefined) => {
-    const x = (t || "").toLowerCase();
-    return (
-      x.includes("workstation") ||
-      x.includes("desktop") ||
-      x.includes("laptop") ||
-      x.includes("notebook") ||
-      x.includes("pc")
-    );
-  };
-
   type BucketKey = "clean" | "light" | "medium" | "heavy";
   const bucketOf = (n: number): BucketKey => {
     if (n <= 0) return "clean";
@@ -895,11 +880,12 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
     byBucket[bucket].devices += 1;
     byBucket[bucket].missing += miss;
 
-    const typeKey = isServer(d.deviceType)
-      ? "server"
-      : isWorkstation(d.deviceType)
-        ? "workstation"
-        : "other";
+    const typeKey =
+      classifyRmmDevice(d) === "server"
+        ? "server"
+        : classifyRmmDevice(d) === "workstation"
+          ? "workstation"
+          : "other";
     byType[typeKey].devices += 1;
     byType[typeKey].missing += miss;
     if (miss > 0) byType[typeKey].withMissing += 1;
@@ -2174,14 +2160,6 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
 }
 
 export function RmmMappingSection({ data }: { data: CustomerDetailPayload }) {
-  if (!effectiveCover(data).rmm) {
-    return (
-      <NoCoverPanel
-        service="RMM mapping"
-        hint="No cover — no RMM data for this customer."
-      />
-    );
-  }
   const rmm = data.rmm;
   const maps = rmm?.mapping ?? [];
   return (
@@ -5117,15 +5095,6 @@ export function CoveRetentionSection({ data }: { data: CustomerDetailPayload }) 
 }
 
 export function CoveMappingSection({ data }: { data: CustomerDetailPayload }) {
-  // Mapping always available to configure partners even before cover is true
-  if (!effectiveCover(data).cove) {
-    return (
-      <NoCoverPanel
-        service="RPM Cloud Backup mapping"
-        hint="No cover — no Cove / Cyber Backup data for this customer."
-      />
-    );
-  }
   const maps = data.cove?.mapping ?? [];
   const unmapped = data.cove?.unmapped ?? [];
   return (
