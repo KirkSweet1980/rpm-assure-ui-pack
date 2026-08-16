@@ -913,9 +913,14 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
     }
   }
 
-  const totalMissingSum =
-    s?.patchMissing ??
-    reporting.reduce((acc, d) => acc + (Number(d.patchMissing) || 0), 0);
+  const totalMissingSum = reporting.reduce(
+    (acc, d) => acc + (Number(d.patchMissing) || 0),
+    0,
+  );
+  const pendingSum = reporting.reduce(
+    (acc, d) => acc + (Number(d.patchPending) || 0),
+    0,
+  );
   const maxBucketDevices = Math.max(
     1,
     ...Object.values(byBucket).map((b) => b.devices),
@@ -956,8 +961,8 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
         />
         <StatCard
           label="Pending / reboot"
-          value={s?.patchPending ?? "—"}
-          hint="Only when agent reports pending"
+          value={pendingSum || "—"}
+          hint="Only when the server agent reports pending"
         />
         <StatCard
           label="Installed (named)"
