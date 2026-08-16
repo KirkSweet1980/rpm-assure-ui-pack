@@ -12,6 +12,7 @@ import { useSpaNavigate } from "@/components/nav/spa-link";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
 import { customerLiveStatus } from "@/lib/data/live-status";
+import { noCoverForDevicesLabel } from "@/lib/data/device-cover";
 import type { CustomerDetailPayload, HealthRag } from "@/lib/data/types";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
 import { useRouterState } from "@tanstack/react-router";
@@ -303,6 +304,7 @@ function CustomerLayout() {
   const tenantRag: HealthRag =
     live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
   const tenantHint = live.pillars.eco.hint || customer.healthSummary;
+  const noDeviceCover = noCoverForDevicesLabel(pathname, customer, data);
 
   return (
     <RequireAuth>
@@ -379,6 +381,9 @@ function CustomerLayout() {
           <div className="rpma-d3-detail min-w-0">
             <div className="rpma-pane-menubar" role="banner">
               <h2 className="rpma-pane-menubar-title">{pageTitle}</h2>
+              {noDeviceCover ? (
+                <span className="rpma-pane-nocover">{noDeviceCover}</span>
+              ) : null}
             </div>
             {missing ? (
               <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">

@@ -103,9 +103,12 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const critical =
     data.rmm?.summary?.criticalAlerts ?? data.customer?.pulsewayCriticalAlerts ?? 0;
 
+  const hasServers = servers.length > 0 || sn > 0;
+  const slaCover = cover && hasServers;
+
   const with30 = servers.filter((d) => d.offlineHours30d != null);
   let uptime: number | null = null;
-  let upLabel = "No servers";
+  let upLabel = "No Cover for Devices — servers not scored in SLA";
   if (with30.length) {
     const minutes = 30 * 24 * 60;
     const avgOff =
@@ -129,11 +132,11 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const covPct = servers.length ? clamp((reporting / servers.length) * 100) : null;
   const covLabel = servers.length
     ? `${reporting}/${servers.length} servers reporting`
-    : "No classified servers";
+    : "No Cover for Devices";
 
   const lines: ServiceSlaLine[] = [
-    line("rmm-uptime", "rmm", uptime, upLabel, uptime != null),
-    line("rmm-coverage", "rmm", covPct, covLabel, covPct != null),
+    line("rmm-uptime", "rmm", uptime, upLabel, slaCover && uptime != null),
+    line("rmm-coverage", "rmm", covPct, covLabel, slaCover && covPct != null),
     unmeasured("rmm-mttd", "rmm"),
     unmeasured("rmm-mttr-p1", "rmm"),
     unmeasured("rmm-mttr-p2", "rmm"),
@@ -142,8 +145,8 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   return {
     pillar: "rmm",
     title: INDUSTRY_MEASURES.rmm.label,
-    covered: cover,
-    overallPct: cover ? overallOf(lines) : null,
+    covered: slaCover,
+    overallPct: slaCover ? overallOf(lines) : null,
     headline: INDUSTRY_MEASURES.rmm.targetLabel,
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.rmm,
@@ -159,17 +162,18 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
   const failed = s?.failedCount ?? 0;
   const stale = s?.staleCount ?? 0;
   const n = s?.deviceCount ?? data.cove?.devices?.length ?? 0;
+  const slaCover = cover && n > 0;
   const denom = ok + failed;
-  const success = denom > 0 ? clamp((ok / denom) * 100) : n > 0 ? 70 : null;
+  const success = slaCover && denom > 0 ? clamp((ok / denom) * 100) : null;
   const successLabel =
     denom > 0
       ? `${ok}/${denom} jobs OK (${failed} failed)`
       : n > 0
         ? `${n} device(s) · job outcome unknown`
-        : "No backup jobs on collect";
+        : "No Cover for Devices — not scored in SLA";
 
   const rpoDenom = ok + stale;
-  const rpo = rpoDenom > 0 ? clamp((ok / rpoDenom) * 100) : n > 0 && stale === 0 ? 100 : null;
+  const rpo = slaCover && rpoDenom > 0 ? clamp((ok / rpoDenom) * 100) : slaCover && n > 0 && stale === 0 ? 100 : null;
   const rpoLabel =
     rpoDenom > 0
       ? `${ok}/${rpoDenom} within 24h RPO (${stale} stale)`
@@ -195,18 +199,18 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
   }
 
   const lines: ServiceSlaLine[] = [
-    line("cove-success", "cove", success, successLabel, success != null),
-    line("cove-rpo", "cove", rpo, rpoLabel, rpo != null),
-    line("cove-restore", "cove", restore, restoreLabel, restore != null),
-    line("cove-test-freq", "cove", freq, freqLabel, freq != null),
+    line("cove-success", "cove", success, successLabel, slaCover && success != null),
+    line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
+    line("cove-restore", "cove", restore, restoreLabel, slaCover && restore != null),
+    line("cove-test-freq", "cove", freq, freqLabel, slaCover && freq != null),
     unmeasured("cove-rto", "cove"),
   ];
 
   return {
     pillar: "cove",
     title: INDUSTRY_MEASURES.cove.label,
-    covered: cover,
-    overallPct: cover ? overallOf(lines) : null,
+    covered: slaCover,
+    overallPct: slaCover ? overallOf(lines) : null,
     headline: INDUSTRY_MEASURES.cove.targetLabel,
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.cove,
@@ -220,9 +224,10 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const managed = s?.managedCount ?? 0;
   const unmanaged = s?.unmanagedCount ?? 0;
   const n = s?.deviceCount ?? data.epp?.devices?.length ?? 0;
+  const slaCover = cover && n > 0;
   const den = managed + unmanaged || n;
-  const cov = den > 0 ? clamp((managed / den) * 100) : null;
-  const covLabel = den > 0 ? `${managed}/${den} endpoints managed` : "No endpoint rows";
+  const cov = slaCover && den > 0 ? clamp((managed / den) * 100) : null;
+  const covLabel = den > 0 ? `${managed}/${den} endpoints managed` : "No Cover for Devices — not scored in SLA";
 
   const incidents = data.epp?.incidents ?? [];
   const openCrit = incidents.filter((i) => {
@@ -231,22 +236,22 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     const open = st !== "closed" && st !== "resolved" && st !== "ignored";
     return open && (sev.includes("crit") || sev.includes("high"));
   }).length;
-  const openPct = openCrit === 0 ? 100 : clamp(100 - openCrit * 20);
-  const openLabel = `${openCrit} open critical / high incident(s)`;
+  const openPct = slaCover ? (openCrit === 0 ? 100 : clamp(100 - openCrit * 20)) : null;
+  const openLabel = slaCover ? `${openCrit} open critical / high incident(s)` : "No Cover for Devices";
 
   const lines: ServiceSlaLine[] = [
-    line("epp-coverage", "epp", cov, covLabel, cov != null),
+    line("epp-coverage", "epp", cov, covLabel, slaCover && cov != null),
     unmeasured("epp-update", "epp"),
     unmeasured("epp-mttd", "epp"),
     unmeasured("epp-respond", "epp"),
-    line("epp-open", "epp", openPct, openLabel, true),
+    line("epp-open", "epp", openPct, openLabel, slaCover && openPct != null),
   ];
 
   return {
     pillar: "epp",
     title: INDUSTRY_MEASURES.epp.label,
-    covered: cover,
-    overallPct: cover ? overallOf(lines) : null,
+    covered: slaCover,
+    overallPct: slaCover ? overallOf(lines) : null,
     headline: INDUSTRY_MEASURES.epp.targetLabel,
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.epp,
