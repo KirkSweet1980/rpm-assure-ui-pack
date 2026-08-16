@@ -2,6 +2,9 @@
 # Used by scheduled task RPMAssure-Csp-GraphCollect.
 $ErrorActionPreference = "Continue"
 $here = "C:\RPM-Assure\Sql\csp"
+if (-not (Test-Path -LiteralPath (Join-Path $here "Collect-Csp-Graph-To-RPMAssure.ps1"))) {
+  $here = $PSScriptRoot
+}
 $logDir = Join-Path $here "logs"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -33,7 +36,7 @@ $fail = 0
 foreach ($cfg in $configs) {
   L ("--- " + $cfg.Name + " ---")
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $collect `
-    -ConfigPath $cfg.FullName -WindowsAuth -SkipSchema *>> $log 2>&1
+    -ConfigPath $cfg.FullName -SkipSchema *>> $log 2>&1
   $code = $LASTEXITCODE
   L ("exit=" + $code + " config=" + $cfg.Name)
   if ($code -ne 0) { $fail++ }

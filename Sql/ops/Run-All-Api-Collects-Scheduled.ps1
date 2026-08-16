@@ -23,7 +23,7 @@ $legs = @(
   @{ Name = "Pulseway";    Label = "RMM";     Kind = "rmm";        Rel = "Sql\rmm\pulseway\Collect-Pulseway-To-RPMAssure.ps1"; Extra = @() },
   @{ Name = "Cove";        Label = "BACKUP";  Kind = "backup";     Rel = "Sql\cove\Collect-Cove-To-RPMAssure.ps1"; Extra = @() },
   @{ Name = "Bitdefender"; Label = "EPP";     Kind = "epp";        Rel = "Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1"; Extra = @() },
-  @{ Name = "CspGraph";    Label = "CSP";     Kind = "licensing";  Rel = "Sql\csp\Collect-Csp-Graph-To-RPMAssure.ps1"; Extra = @("-WindowsAuth", "-SkipSchema") }
+  @{ Name = "CspGraph";    Label = "CSP";     Kind = "licensing";  Rel = "Sql\csp\Run-Csp-Collect-All.ps1"; Extra = @() }
 )
 
 function W([string]$m) {
@@ -95,9 +95,19 @@ foreach ($l in $legs) {
       -RedirectStandardOutput $outF -RedirectStandardError $errF
     $code = [int]$p.ExitCode
     W ("DONE " + $l.Name + " exit=" + $code + " sec=" + [int]$sw.Elapsed.TotalSeconds)
+    $hint = ""
+    if ($code -ne 0) {
+      foreach ($f in @($errF, $outF)) {
+        if (-not (Test-Path $f)) { continue }
+        $tail = @(Get-Content $f -Tail 20 -EA SilentlyContinue | Where-Object { $_ -and $_.Trim() -ne "" })
+        $hit = $tail | Where-Object { $_ -match 'throw|error|fail|missing|login|denied|exception' } | Select-Object -Last 1
+        if (-not $hit) { $hit = $tail | Select-Object -Last 1 }
+        if ($hit) { $hint = ([string]$hit).Trim(); if ($hint.Length -gt 180) { $hint = $hint.Substring(0, 180) }; break }
+      }
+    }
     $state.legs[$i - 1].status = $(if ($code -eq 0) { "ok" } else { "error" })
     $state.legs[$i - 1].pct = 100
-    $state.legs[$i - 1].message = $(if ($code -eq 0) { "OK " + [int]$sw.Elapsed.TotalSeconds + "s" } else { "exit=" + $code })
+    $state.legs[$i - 1].message = $(if ($code -eq 0) { "OK " + [int]$sw.Elapsed.TotalSeconds + "s" } else { if ($hint) { $hint } else { "exit=" + $code } })
   } catch {
     W ("FAIL " + $l.Name + " " + $_.Exception.Message)
     $state.legs[$i - 1].status = "error"

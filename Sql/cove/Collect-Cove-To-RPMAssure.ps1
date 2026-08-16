@@ -14,9 +14,21 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
-if (-not $ConfigPath) { $ConfigPath = Join-Path $here 'Cove.Config.ps1' }
-if (-not (Test-Path -LiteralPath $ConfigPath)) { throw "Missing $ConfigPath" }
+if (-not $ConfigPath) {
+  foreach ($c in @(
+      (Join-Path $here 'Cove.Config.ps1'),
+      'C:\RPM-Assure\Sql\cove\Cove.Config.ps1',
+      'C:\RPM-Assure\deploy\ui-pack\Sql\cove\Cove.Config.ps1'
+    )) {
+    if (Test-Path -LiteralPath $c) { $ConfigPath = $c; break }
+  }
+}
+if (-not $ConfigPath -or -not (Test-Path -LiteralPath $ConfigPath)) {
+  throw 'Missing Cove.Config.ps1 — copy Cove.Config.example.ps1 to C:\RPM-Assure\Sql\cove\Cove.Config.ps1 and fill API user/password'
+}
 . $ConfigPath
+if ([string]::IsNullOrWhiteSpace($Username) -or $Username -like 'PASTE*') { throw 'Set $Username in Cove.Config.ps1' }
+if ([string]::IsNullOrWhiteSpace($Password) -or $Password -like 'PASTE*') { throw 'Set $Password in Cove.Config.ps1' }
 
 if ([string]::IsNullOrWhiteSpace($ApiUrl)) { $ApiUrl = 'https://api.backup.management/jsonapi' }
 $logDir = Join-Path $here 'logs'
@@ -73,9 +85,22 @@ function Invoke-SqlFile([string]$SqlText, [string]$Label) {
   $f = Join-Path $logDir ("{0}_{1:yyyyMMdd_HHmmss}.sql" -f $Label, (Get-Date))
   [System.IO.File]::WriteAllText($f, $SqlText, [System.Text.UTF8Encoding]::new($false))
   Write-Log ("SQL " + $Label + " -> " + $f)
-  $argList = @('-S', $SqlServer, '-d', $SqlDatabase, '-U', $SqlUser, '-P', $SqlPassword, '-C', '-b', '-i', $f)
-  & $sqlcmd @argList
-  if ($LASTEXITCODE -ne 0) { throw ("sqlcmd failed " + $LASTEXITCODE + " on " + $Label + " file=" + $f) }
+  $tries = @(
+    @{ Mode = 'sql'; Args = @('-S', $SqlServer, '-d', $SqlDatabase, '-U', $SqlUser, '-P', $SqlPassword, '-C', '-b', '-i', $f) }
+    @{ Mode = 'win'; Args = @('-S', $SqlServer, '-d', $SqlDatabase, '-E', '-C', '-b', '-i', $f) }
+  )
+  if ([string]::IsNullOrWhiteSpace($SqlUser) -or [string]::IsNullOrWhiteSpace($SqlPassword)) {
+    $tries = @($tries[1])
+  }
+  $last = ''
+  foreach ($t in $tries) {
+    Write-Log ("sqlcmd " + $t.Mode + " " + $Label)
+    & $sqlcmd @($t.Args)
+    if ($LASTEXITCODE -eq 0) { return }
+    $last = "sqlcmd " + $t.Mode + " failed " + $LASTEXITCODE + " on " + $Label
+    Write-Log $last
+  }
+  throw $last
 }
 
 function Get-Setting($row, $key) {
