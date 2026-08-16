@@ -95,21 +95,25 @@ export async function buildCustomerAgentZip(codeRaw: string): Promise<{
   };
   const wizardPath = findInstallerFile("Install-Customer-Pack-Wizard.ps1");
   const cmdPath = findInstallerFile("Start-Customer-Pack.cmd");
-  if (!wizardPath || !cmdPath) {
+  const ensurePath = findInstallerFile("Ensure-Collect-And-Central.ps1");
+  if (!wizardPath || !cmdPath || !ensurePath) {
     throw new Error("Installer templates missing on the App server. Run Update-AppServer.ps1.");
   }
   const wizard = fs.readFileSync(wizardPath);
   const cmd = fs.readFileSync(cmdPath);
+  const ensure = fs.readFileSync(ensurePath);
   const readme = Buffer.from(
     [
       `RPM Assure Edge Agent — ${pkg.displayName} (${pkg.customerCode})`,
       "",
       "1. Copy this folder to the customer SQL server.",
       "2. Right-click Start-Agent.cmd → Run as administrator.",
-      "3. Next → Test connection → set agent password → Finish.",
+      "3. Customer → how YOU connect to SQL today (Windows or existing SQL login).",
+      "4. Test existing login → Create rpmassure → set agent password → Finish.",
       "",
-      "Customer, SQL host, and central Assure login are already in Customer.Package.json.",
-      "The only password you type is the agent admin password (locks settings).",
+      "Customer identity is pre-filled. You enter the customer's existing SQL admin",
+      "(Windows or SQL login such as RPMAdmin). The wizard then creates rpmassure.",
+      "Last page: agent admin password (locks settings).",
       "",
     ].join("\r\n"),
     "utf8",
@@ -117,6 +121,7 @@ export async function buildCustomerAgentZip(codeRaw: string): Promise<{
   const bytes = zipStore([
     { name: "Start-Agent.cmd", data: cmd },
     { name: "Install-Customer-Pack-Wizard.ps1", data: wizard },
+    { name: "Ensure-Collect-And-Central.ps1", data: ensure },
     { name: "Customer.Package.json", data: Buffer.from(JSON.stringify(pkg, null, 2), "utf8") },
     { name: "README.txt", data: readme },
   ]);
