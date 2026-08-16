@@ -1,0 +1,428 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Cloud, Database, Mail, RefreshCw, Server, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SpaLink } from "@/components/nav/spa-link";
+import {
+  fetchConfigHealth,
+  fetchIntegrations,
+  requestAgentSync,
+  type ConfigHealthItem,
+} from "@/lib/settings/settings-api";
+import { fetchInfraAgents, type InfraAgentRow } from "@/lib/settings/infra-status";
+import type { LucideIcon } from "lucide-react";
+import { cn, formatSastDateTime } from "@/lib/utils";
+
+export const Route = createFileRoute("/settings/infrastructure")({
+  component: InfrastructureStatusPage,
+});
+
+function healthTitle(item: ConfigHealthItem) {
+  if (item.id === "cove") return "N-Able Cove Backup";
+  if (item.id === "sql") return "SQL Server";
+  return item.label;
+}
+
+function agentStatus(row: InfraAgentRow): { label: string; tone: "green" | "amber" | "red" | "muted" } {
+  if (!row.cover.syspro) return { label: "Not required", tone: "muted" };
+  const s = row.healthStatus.toUpperCase();
+  if (s === "ONLINE") return { label: "Online", tone: "green" };
+  if (s === "UPDATE" || s === "UPDATING" || s === "QUEUED" || s === "SYNCING") {
+    return { label: "Busy", tone: "amber" };
+  }
+  if (s === "NOT_INSTALLED" || s === "NEVER") return { label: "Not installed", tone: "muted" };
+  return { label: "Disconnected", tone: "red" };
+}
+
+function syncToneOf(
+  row: InfraAgentRow,
+  phase?: "idle" | "queued" | "running" | "done" | "error",
+): { label: string; tone: "green" | "amber" | "red" | "muted" } {
+  if (!row.cover.syspro) return { label: "N/A", tone: "muted" };
+  if (phase === "queued" || phase === "running") return { label: "Syncing", tone: "amber" };
+  if (phase === "error") return { label: "Error", tone: "red" };
+  if (phase === "done") return { label: "OK", tone: "green" };
+  const last = (row.lastStatus ?? "").toUpperCase();
+  const health = row.healthStatus.toUpperCase();
+  if (last === "QUEUED" || last === "SYNCING" || last === "UPDATE" || last === "UPDATING") {
+    return { label: "Syncing", tone: "amber" };
+  }
+  if (health === "ONLINE") return { label: "OK", tone: "green" };
+  if (health === "NOT_INSTALLED" || health === "NEVER") return { label: "N/A", tone: "muted" };
+  return { label: "Offline", tone: "red" };
+}
+
+const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string; icon: LucideIcon }> = [
+  { key: "syspro", label: "SYSPRO", icon: Database },
+  { key: "rmm", label: "RMM", icon: Server },
+  { key: "cove", label: "Backup", icon: Cloud },
+  { key: "epp", label: "EPP", icon: Shield },
+  { key: "csp", label: "CSP", icon: Mail },
+];
+
+const KIND_LABEL: Record<string, string> = {
+  erp: "SYSPRO",
+  rmm: "RMM",
+  epp: "EPP",
+  backup: "BACKUP",
+  licensing: "CSP",
+};
+
+function kindLabel(raw: string) {
+  return KIND_LABEL[raw.trim().toLowerCase()] ?? raw.trim().toUpperCase();
+}
+
+function kindToHealthId(raw: string) {
+  const k = raw.trim().toLowerCase();
+  if (k === "erp") return "syspro";
+  if (k === "rmm") return "rmm";
+  if (k === "epp") return "epp";
+  if (k === "backup") return "cove";
+  if (k === "licensing") return "csp";
+  return "";
+}
+
+function feedTone(iso: string | null): { tone: "green" | "amber" | "red"; result: string } {
+  if (!iso) return { tone: "red", result: "Never" };
+  const h = (Date.now() - new Date(iso).getTime()) / 3600000;
+  if (!Number.isFinite(h) || h < 0) return { tone: "red", result: "Never" };
+  if (h <= 24) return { tone: "green", result: "OK" };
+  if (h <= 72) return { tone: "amber", result: "Stale" };
+  return { tone: "red", result: "Stale" };
+}
+
+type ConnRow = {
+  connectionCode: string;
+  displayName: string;
+  sourceKind: string;
+  status: string;
+  lastSyncAt: string | null;
+};
+
+type SyncPhase = "idle" | "queued" | "running" | "done" | "error";
+
+function Lamp({ tone }: { tone: "green" | "amber" | "red" | "muted" }) {
+  return (
+    <span
+      className={cn(
+        "h-2 w-2 shrink-0 rounded-full",
+        tone === "green" && "bg-rag-green",
+        tone === "amber" && "bg-amber-400",
+        tone === "red" && "bg-rag-red",
+        tone === "muted" && "bg-muted",
+      )}
+    />
+  );
+}
+
+function InfrastructureStatusPage() {
+  const [items, setItems] = useState<ConfigHealthItem[]>([]);
+  const [conns, setConns] = useState<ConnRow[]>([]);
+  const [agents, setAgents] = useState<InfraAgentRow[]>([]);
+  const [agentMsg, setAgentMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [sync, setSync] = useState<Record<string, SyncPhase>>({});
+  const armed = useRef<Set<string>>(new Set());
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const [h, i, a] = await Promise.all([
+        fetchConfigHealth(),
+        fetchIntegrations(),
+        fetchInfraAgents(),
+      ]);
+      setItems(h.items ?? []);
+      setConns(i.rows ?? []);
+      setAgents(a.rows ?? []);
+      setAgentMsg(a.ok ? null : a.message);
+      setSync((prev) => {
+        const next = { ...prev };
+        for (const row of a.rows ?? []) {
+          if (!armed.current.has(row.customerCode)) continue;
+          const last = (row.lastStatus ?? "").toUpperCase();
+          if (last === "QUEUED") next[row.customerCode] = "queued";
+          else if (last === "SYNCING") next[row.customerCode] = "running";
+          else if (last === "OK" || last === "ONLINE") {
+            next[row.customerCode] = "done";
+            armed.current.delete(row.customerCode);
+          } else if (last === "JOB_FAIL") {
+            next[row.customerCode] = "error";
+            armed.current.delete(row.customerCode);
+          }
+        }
+        return next;
+      });
+    } catch (e) {
+      setAgentMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const polling = Object.values(sync).some((s) => s === "queued" || s === "running");
+  useEffect(() => {
+    if (!polling) return;
+    const id = window.setInterval(() => void load(), 2500);
+    return () => window.clearInterval(id);
+  }, [polling, load]);
+
+  async function syncOne(row: InfraAgentRow) {
+    if (!row.hostName) return;
+    armed.current.add(row.customerCode);
+    setSync((p) => ({ ...p, [row.customerCode]: "queued" }));
+    const r = await requestAgentSync({
+      data: { customerCode: row.customerCode, hostName: row.hostName },
+    });
+    if (!r.ok) {
+      armed.current.delete(row.customerCode);
+      setSync((p) => ({ ...p, [row.customerCode]: "error" }));
+      setAgentMsg(r.message);
+      return;
+    }
+    void load();
+  }
+
+  const connRows: ConnRow[] =
+    conns.length > 0
+      ? conns
+      : items
+          .filter((i) => i.id !== "sql")
+          .map((i) => ({
+            connectionCode: i.id,
+            displayName: healthTitle(i),
+            sourceKind: i.id === "syspro" ? "erp" : i.id === "cove" ? "backup" : i.id === "csp" ? "licensing" : i.id,
+            status: i.ok ? "Live" : "Down",
+            lastSyncAt: i.lastAt,
+          }));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Configuration</p>
+          <h1 className="mt-1 flex items-center gap-2 text-[18px] font-extrabold tracking-tight text-fg">
+            <Server className="h-5 w-5 text-muted" />
+            Assure Infrastructure Status
+          </h1>
+        </div>
+        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
+          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+          Recheck
+        </Button>
+      </div>
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="px-4 py-3">
+          <h2 className="text-[16px] font-extrabold text-fg">Assure API Feed Status</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="rpma-xls text-left">
+            <thead>
+              <tr>
+                <th>Connection</th>
+                <th>Kind</th>
+                <th>Status</th>
+                <th>Last Sync</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {connRows.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    No API feeds yet.
+                  </td>
+                </tr>
+              ) : (
+                connRows.map((r) => {
+                  const hid = kindToHealthId(r.sourceKind);
+                  const live = items.find((h) => h.id === hid);
+                  const lastAt = r.lastSyncAt || live?.lastAt || null;
+                  const { tone, result } = feedTone(lastAt);
+                  return (
+                    <tr key={r.connectionCode}>
+                      <td>{r.displayName}</td>
+                      <td>{kindLabel(r.sourceKind)}</td>
+                      <td>{r.status}</td>
+                      <td>
+                        {lastAt ? formatSastDateTime(lastAt) : "No collect yet"}
+                      </td>
+                      <td>
+                        <span className="inline-flex items-center gap-1.5 font-semibold">
+                          <Lamp tone={tone} />
+                          <span
+                            className={cn(
+                              tone === "green" && "text-rag-green",
+                              tone === "amber" && "text-amber-400",
+                              tone === "red" && "text-rag-red",
+                            )}
+                          >
+                            {result}
+                          </span>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="flex items-end justify-between gap-3 px-4 py-3">
+          <h2 className="text-[16px] font-extrabold text-fg">Assure Platform Agent Status</h2>
+          <p className="text-[12px] text-muted">{agents.length} customers</p>
+        </div>
+        {(() => {
+          const remaining = agents.filter(
+            (a) => a.cover.syspro && (!a.hostName || a.healthStatus.toUpperCase() === "NOT_INSTALLED"),
+          );
+          if (!remaining.length) return null;
+          return (
+            <div className="mx-4 mb-3 rounded-md border border-border bg-surface-2 px-3 py-2 text-[12px] text-fg">
+              <p className="font-bold">
+                {remaining.length} SYSPRO tenant{remaining.length === 1 ? "" : "s"} still need the Edge agent
+              </p>
+              <p className="mt-1 text-muted">
+                {remaining.map((r) => r.displayName).join(" · ")}
+              </p>
+              <p className="mt-1 font-mono text-[11px] text-muted">
+                On each remaining SQL host (admin PowerShell):
+              </p>
+              <pre className="mt-1 overflow-x-auto rounded bg-surface px-2 py-1.5 font-mono text-[11px] text-fg">
+{`$Pack='C:\\RPM-Assure\\deploy\\ui-pack'
+$Repo='https://github.com/KirkSweet1980/rpm-assure-ui-pack.git'
+$git=(Get-Command git -ErrorAction SilentlyContinue).Source
+if (-not $git) { throw 'Install Git for Windows first' }
+if (Test-Path "$Pack\\.git") { git -C $Pack fetch --all --prune; git -C $Pack reset --hard origin/main }
+if (-not (Test-Path "$Pack\\.git")) { git clone --depth 1 --branch main $Repo $Pack }
+powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-Syspro-Customer-Agent.ps1"`}
+              </pre>
+            </div>
+          );
+        })()}
+        {agentMsg ? <p className="px-4 pb-2 text-[12px] text-muted">{agentMsg}</p> : null}
+        <div className="overflow-x-auto">
+          <table className="rpma-xls text-left">
+            <thead>
+              <tr>
+                <th>Customer Name</th>
+                <th>Agent Version Installed</th>
+                <th>Agent Status</th>
+                <th className="text-center">Agent Sync</th>
+                <th>Service Cover</th>
+                <th className="text-right"> </th>
+              </tr>
+            </thead>
+            <tbody>
+              {agents.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    No customers listed.
+                  </td>
+                </tr>
+              ) : (
+                agents.map((row) => {
+                  const st = agentStatus(row);
+                  const sy = syncToneOf(row, sync[row.customerCode]);
+                  const on = COVER_CHIPS.filter((c) => row.cover[c.key]);
+                  const canSync =
+                    row.cover.syspro && Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
+                  return (
+                    <tr key={row.customerCode}>
+                      <td>
+                        <SpaLink
+                          href={`/customers/${encodeURIComponent(row.customerCode)}`}
+                          className="font-bold text-fg no-underline hover:underline"
+                        >
+                          {row.displayName}
+                        </SpaLink>
+                      </td>
+                      <td className="font-mono">
+                        {!row.cover.syspro
+                          ? "Not required"
+                          : row.agentVersion
+                            ? `v${row.agentVersion}`
+                            : "Not installed"}
+                      </td>
+                      <td>
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 font-semibold",
+                            st.tone === "green" && "text-rag-green",
+                            st.tone === "amber" && "text-amber-400",
+                            st.tone === "red" && "text-rag-red",
+                            st.tone === "muted" && "text-muted",
+                          )}
+                        >
+                          <Lamp tone={st.tone} />
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="text-center">
+                        <span
+                          className={cn(
+                            "inline-flex items-center justify-center gap-1.5 font-semibold",
+                            sy.tone === "green" && "text-rag-green",
+                            sy.tone === "amber" && "text-amber-400",
+                            sy.tone === "red" && "text-rag-red",
+                            sy.tone === "muted" && "text-muted",
+                          )}
+                        >
+                          <Lamp tone={sy.tone} />
+                          {sy.label}
+                        </span>
+                      </td>
+                      <td>
+                        {on.length === 0 ? (
+                          <span className="text-muted">No Cover</span>
+                        ) : (
+                          <span className="flex flex-wrap gap-1">
+                            {on.map((c) => {
+                              const Icon = c.icon;
+                              return (
+                              <span
+                                key={c.key}
+                                className="inline-flex items-center gap-1 rounded-md bg-rag-green/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rag-green"
+                              >
+                                <Icon className="h-3 w-3" />
+                                {c.label}
+                              </span>
+                              );
+                            })}
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-right">
+                        {row.cover.syspro ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-7 px-2.5 text-[11px]"
+                            disabled={!canSync}
+                            onClick={() => void syncOne(row)}
+                          >
+                            Sync
+                          </Button>
+                        ) : (
+                          <span className="text-[11px] text-muted">No SQL agent</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
