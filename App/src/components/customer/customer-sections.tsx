@@ -611,7 +611,7 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
     }
     return { serverOnline, serverOffline, workstationOnline, workstationOffline };
   }, [devices]);
-  if (!cover.rmm) {
+  if (!cover.rmm && !(rmm?.agentIops?.length || rmm?.windowsEvents?.length)) {
     return (
       <NoCoverPanel
         service="RPM Remote Management"
@@ -624,6 +624,7 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
   const wsOn = s?.workstationOnline || fromDevices.workstationOnline;
   const wsOff = s?.workstationOffline || fromDevices.workstationOffline;
   return (
+    <div className="space-y-4">
     <ServiceVisuals
       title="RPM Remote Management"
       subtitle={`${c.displayName}${rmm?.pulsewayOrgName ? ` · ${rmm.pulsewayOrgName}` : ""}`}
@@ -646,8 +647,12 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
         { label: "Workstations", href: `${base}/workstations`, n: wsOn + wsOff, hint: "Endpoints" },
         { label: "Patch Compliance", href: `${base}/patch`, n: s?.patchMissing ?? 0, hint: "Missing" },
         { label: "Alerts", href: `${base}/alerts`, n: s?.criticalAlerts ?? 0, hint: "Critical" },
+        { label: "Disk IOPS", href: `${base}/iops`, n: rmm?.agentIops?.length ?? 0, hint: "Volumes" },
+        { label: "Event Logs", href: `${base}/events`, n: rmm?.windowsEvents?.length ?? 0, hint: "Errors" },
       ]}
     />
+    <AgentHostTelemetry iops={rmm?.agentIops ?? []} events={rmm?.windowsEvents ?? []} />
+    </div>
   );
 }
 
@@ -1299,6 +1304,7 @@ function AgentHostTelemetry({
   events: NonNullable<CustomerDetailPayload["rmm"]>["windowsEvents"];
   focusHost?: string | null;
 }) {
+  const [open, setOpen] = useState<string | null>(null);
   const rows = iops ?? [];
   const evs = events ?? [];
   const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -1383,23 +1389,36 @@ function AgentHostTelemetry({
               </tr>
             </thead>
             <tbody>
-              {evShow.map((ev, i) => (
-                <tr key={`${ev.hostName}-${ev.timeCreatedUtc}-${ev.eventId}-${i}`}>
-                  <td className="font-mono">{ev.hostName || "—"}</td>
-                  <td>{formatSastDateTime(ev.timeCreatedUtc)}</td>
-                  <td>
-                    <Badge variant={ev.levelName.toLowerCase() === "critical" ? "red" : "amber"}>
-                      {ev.levelName}
-                    </Badge>
-                  </td>
-                  <td>{ev.logName}</td>
-                  <td className="font-mono">{ev.eventId}</td>
-                  <td>{ev.providerName || "—"}</td>
-                  <td className="max-w-[28rem] truncate" title={ev.message}>
-                    {ev.message || "—"}
-                  </td>
-                </tr>
-              ))}
+              {evShow.map((ev, i) => {
+                const key = `${ev.hostName}-${ev.timeCreatedUtc}-${ev.eventId}-${i}`;
+                const expanded = open === key;
+                return (
+                  <tr
+                    key={key}
+                    className="cursor-pointer align-top"
+                    onClick={() => setOpen(expanded ? null : key)}
+                  >
+                    <td className="font-mono">{ev.hostName || "—"}</td>
+                    <td>{formatSastDateTime(ev.timeCreatedUtc)}</td>
+                    <td>
+                      <Badge variant={ev.levelName.toLowerCase() === "critical" ? "red" : "amber"}>
+                        {ev.levelName}
+                      </Badge>
+                    </td>
+                    <td>{ev.logName}</td>
+                    <td className="font-mono">{ev.eventId}</td>
+                    <td>{ev.providerName || "—"}</td>
+                    <td className={cn("max-w-[36rem] text-[12px] leading-snug", expanded ? "whitespace-pre-wrap break-words" : "line-clamp-2")}>
+                      {ev.message || "—"}
+                      {ev.message && ev.message.length > 120 ? (
+                        <span className="ml-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                          {expanded ? "less" : "read"}
+                        </span>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -2124,7 +2143,7 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
                   <td>{ev.logName}</td>
                   <td className="font-mono">{ev.eventId}</td>
                   <td>{ev.providerName || "—"}</td>
-                  <td className="max-w-[28rem] truncate" title={ev.message}>
+                  <td className="max-w-[36rem] whitespace-pre-wrap break-words text-[12px] leading-snug">
                     {ev.message || "—"}
                   </td>
                 </tr>
@@ -2133,6 +2152,30 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
           </table>
         )}
       </section>
+    </div>
+  );
+}
+
+export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
+  return (
+    <div className="space-y-3">
+      <ChartCaption
+        title="Disk IOPS performance"
+        why="LogicalDisk counters from every Assure Edge agent for this customer. Pulseway does not publish IOPS — this is agent telemetry."
+      />
+      <AgentHostTelemetry iops={data.rmm?.agentIops ?? []} events={[]} />
+    </div>
+  );
+}
+
+export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
+  return (
+    <div className="space-y-3">
+      <ChartCaption
+        title="Windows event logs"
+        why="Critical and Error rows from Application and System logs on each host with an Assure agent. Click a row to read the full message."
+      />
+      <AgentHostTelemetry iops={[]} events={data.rmm?.windowsEvents ?? []} />
     </div>
   );
 }

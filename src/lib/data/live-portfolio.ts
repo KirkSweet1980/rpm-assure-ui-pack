@@ -4713,7 +4713,7 @@ INNER JOIN (
   SELECT CustomerCode, HostName, MAX(SnapshotUtc) AS mx
   FROM dbo.Agent_DiskIops WITH (NOLOCK)
   WHERE CustomerCode = @code
-    AND SnapshotUtc >= DATEADD(hour, -24, SYSUTCDATETIME())
+    AND SnapshotUtc >= DATEADD(day, -7, SYSUTCDATETIME())
   GROUP BY CustomerCode, HostName
 ) m ON m.CustomerCode = d.CustomerCode AND m.HostName = d.HostName AND m.mx = d.SnapshotUtc
 WHERE d.CustomerCode = @code`);
@@ -5136,7 +5136,8 @@ ORDER BY
       rmm.summary != null ||
       rmm.devices.length > 0 ||
       rmm.mapping.length > 0 ||
-      (rmm.windowsEvents?.length ?? 0) > 0;
+      (rmm.windowsEvents?.length ?? 0) > 0 ||
+      (rmm.agentIops?.length ?? 0) > 0;
     if (!rmm.enabled) {
       rmm.message =
         "RMM not mapped for this customer yet. Map Pulseway org → CustomerCode, enable PillarPulseway, or run 421 demo seed.";

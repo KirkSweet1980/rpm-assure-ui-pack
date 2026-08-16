@@ -12,7 +12,7 @@ import {
   type ConfigHealthItem,
   type ApiFeedSyncStatus,
 } from "@/lib/settings/settings-api";
-import { fetchInfraAgents, type InfraAgentRow } from "@/lib/settings/infra-status";
+import { fetchInfraAgents, fetchEstateTelemetry, type InfraAgentRow, type EstateIopsRow, type EstateEventRow } from "@/lib/settings/infra-status";
 import type { LucideIcon } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
@@ -122,6 +122,9 @@ function InfrastructureStatusPage() {
   const [items, setItems] = useState<ConfigHealthItem[]>([]);
   const [conns, setConns] = useState<ConnRow[]>([]);
   const [agents, setAgents] = useState<InfraAgentRow[]>([]);
+  const [estateIops, setEstateIops] = useState<EstateIopsRow[]>([]);
+  const [estateEvents, setEstateEvents] = useState<EstateEventRow[]>([]);
+  const [openEvent, setOpenEvent] = useState<string | null>(null);
   const [agentMsg, setAgentMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sync, setSync] = useState<Record<string, SyncPhase>>({});
@@ -133,15 +136,18 @@ function InfrastructureStatusPage() {
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const [h, i, a, f] = await Promise.all([
+      const [h, i, a, f, t] = await Promise.all([
         fetchConfigHealth(),
         fetchIntegrations(),
         fetchInfraAgents(),
         fetchApiFeedSyncStatus(),
+        fetchEstateTelemetry(),
       ]);
       setItems(h.items ?? []);
       setConns(i.rows ?? []);
       setAgents(a.rows ?? []);
+      setEstateIops(t.iops ?? []);
+      setEstateEvents(t.events ?? []);
       setAgentMsg(a.ok ? null : a.message);
       setFeed(f);
       setSync((prev) => {
@@ -560,6 +566,111 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
               )}
             </tbody>
           </table>
+      </section>
+
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">
+          Estate Disk IOPS
+          <span className="rpma-settings-count">{estateIops.length} volume{estateIops.length === 1 ? "" : "s"}</span>
+        </div>
+        {estateIops.length === 0 ? (
+          <p className="px-3 py-3 text-[12px] text-muted">
+            No IOPS yet. Recheck queues every Assure agent to sample LogicalDisk and push here.
+          </p>
+        ) : (
+          <table className="rpma-xls text-left">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Host</th>
+                <th>Drive</th>
+                <th>Media</th>
+                <th>Used</th>
+                <th>Read</th>
+                <th>Write</th>
+                <th>Total IOPS</th>
+                <th>Sampled</th>
+              </tr>
+            </thead>
+            <tbody>
+              {estateIops.map((r, i) => (
+                <tr key={`${r.customerCode}-${r.hostName}-${r.driveLetter}-${i}`}>
+                  <td>
+                    <SpaLink href={`/customers/${encodeURIComponent(r.customerCode)}/rmm/iops`} className="font-bold text-fg no-underline hover:underline">
+                      {r.displayName}
+                    </SpaLink>
+                  </td>
+                  <td className="font-mono">{r.hostName}</td>
+                  <td className="font-mono">{r.driveLetter}</td>
+                  <td>{r.mediaType || "—"}</td>
+                  <td>{r.usedPct != null ? `${r.usedPct.toFixed(1)}%` : "—"}</td>
+                  <td>{r.readIops != null ? Math.round(r.readIops).toLocaleString("en-ZA") : "—"}</td>
+                  <td>{r.writeIops != null ? Math.round(r.writeIops).toLocaleString("en-ZA") : "—"}</td>
+                  <td>{r.totalIops != null ? Math.round(r.totalIops).toLocaleString("en-ZA") : "—"}</td>
+                  <td>{formatSastDateTime(r.snapshotUtc)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">
+          Estate Windows Event Logs
+          <span className="rpma-settings-count">{estateEvents.length} last 7 days</span>
+        </div>
+        {estateEvents.length === 0 ? (
+          <p className="px-3 py-3 text-[12px] text-muted">
+            No Critical or Error events from Assure agents in the last 7 days.
+          </p>
+        ) : (
+          <table className="rpma-xls text-left">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Host</th>
+                <th>When</th>
+                <th>Level</th>
+                <th>Log</th>
+                <th>ID</th>
+                <th>Provider</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {estateEvents.map((ev, i) => {
+                const key = `${ev.customerCode}-${ev.hostName}-${ev.timeCreatedUtc}-${ev.eventId}-${i}`;
+                const expanded = openEvent === key;
+                return (
+                  <tr key={key} className="cursor-pointer align-top" onClick={() => setOpenEvent(expanded ? null : key)}>
+                    <td>
+                      <SpaLink href={`/customers/${encodeURIComponent(ev.customerCode)}/rmm/events`} className="font-bold text-fg no-underline hover:underline">
+                        {ev.displayName}
+                      </SpaLink>
+                    </td>
+                    <td className="font-mono">{ev.hostName}</td>
+                    <td>{formatSastDateTime(ev.timeCreatedUtc)}</td>
+                    <td className={cn("font-semibold", ev.levelName.toLowerCase() === "critical" ? "text-rag-red" : "text-amber-400")}>
+                      {ev.levelName}
+                    </td>
+                    <td>{ev.logName}</td>
+                    <td className="font-mono">{ev.eventId}</td>
+                    <td>{ev.providerName || "—"}</td>
+                    <td className={cn("max-w-[28rem] text-[12px] leading-snug", expanded ? "whitespace-pre-wrap break-words" : "line-clamp-2")}>
+                      {ev.message || "—"}
+                      {ev.message && ev.message.length > 80 ? (
+                        <span className="ml-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                          {expanded ? "less" : "read"}
+                        </span>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );
