@@ -1,10 +1,16 @@
 # =============================================================================
 # RPM Assure Edge Agent - Hydrasales (HYDRA) one-click install
-# Run as Administrator on HydraSRV (or the HYDRA SYSPRO SQL host).
+# Run as Administrator on HydraSRV (or any HYDRA host).
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Hydrasales-Agent.ps1
 #
 # Or double-click: Install-Hydrasales-Agent.cmd
+#
+# Behaviour (agent 2.5.7+):
+# - Heartbeat = online (cover never gates online)
+# - Detects SQL / SYSPRO / Pulseway / Bitdefender / Cove on this host
+# - Enables matching cover on central (never clears)
+# - No local SQL => no SYSPRO config required; install still succeeds
 # =============================================================================
 param(
   [string]$AdminPassword = '',          # Agent settings password (min 8). Prompted if blank.
@@ -33,7 +39,7 @@ if (-not $IsAdmin) {
   exit $LASTEXITCODE
 }
 
-# ---- Hydrasales identity (from Customer.Config.ps1 / onboard) ----
+# ---- Hydrasales identity ----
 $CustomerCode      = 'HYDRA'
 $DisplayName       = 'Hydrasales'
 $SqlHost           = 'HydraSRV'
@@ -60,7 +66,7 @@ if ([string]::IsNullOrWhiteSpace($AdminPassword) -or $AdminPassword.Length -lt 8
 
 Write-Host '========================================'
 Write-Host ' RPM Assure Edge Agent  |  HYDRA / Hydrasales'
-Write-Host ' Host: ' $env:COMPUTERNAME
+Write-Host (' Host: ' + $env:COMPUTERNAME)
 Write-Host '========================================'
 
 # Prefer already-pulled pack; otherwise clone/pull
@@ -68,28 +74,31 @@ $Pack = Join-Path $Root 'deploy\ui-pack'
 $engine = Join-Path $Pack 'Sql\agent\installer\Install-Assure-Agent.ps1'
 
 if (-not $SkipGit) {
-  $git = $null
-  $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
-  if (Get-Command git -EA SilentlyContinue) { $git = (Get-Command git).Source }
-  if (-not $git -and (Test-Path 'C:\Program Files\Git\cmd\git.exe')) { $git = 'C:\Program Files\Git\cmd\git.exe' }
-  if ($git) {
-    New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
-    if (Test-Path (Join-Path $Pack '.git')) {
-      Write-Host 'git pull ui-pack...'
-      & $git -C $Pack fetch --all --prune 2>$null
-      & $git -C $Pack reset --hard origin/main 2>$null
+  try {
+    $git = $null
+    $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+    if (Get-Command git -EA SilentlyContinue) { $git = (Get-Command git).Source }
+    if (-not $git -and (Test-Path 'C:\Program Files\Git\cmd\git.exe')) { $git = 'C:\Program Files\Git\cmd\git.exe' }
+    if ($git) {
+      New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
+      if (Test-Path (Join-Path $Pack '.git')) {
+        Write-Host 'git pull ui-pack...'
+        & $git -C $Pack fetch --all --prune 2>$null
+        & $git -C $Pack reset --hard origin/main 2>$null
+      } else {
+        if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force -EA SilentlyContinue }
+        Write-Host 'git clone ui-pack...'
+        & $git clone --depth 1 --branch main $RepoUrl $Pack
+      }
     } else {
-      if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force -EA SilentlyContinue }
-      Write-Host 'git clone ui-pack...'
-      & $git clone --depth 1 --branch main $RepoUrl $Pack
+      Write-Host 'Git not found - using files already under C:\RPM-Assure (if present)' -ForegroundColor Yellow
     }
-  } else {
-    Write-Host 'Git not found - using files already under C:\RPM-Assure (if present)' -ForegroundColor Yellow
+  } catch {
+    Write-Host ('WARN git step failed (continuing if pack exists): ' + $_.Exception.Message) -ForegroundColor Yellow
   }
 }
 
 if (-not (Test-Path -LiteralPath $engine)) {
-  # Fallback: run from this script's relative pack location
   $here = Split-Path -Parent $MyInvocation.MyCommand.Path
   $alt = Join-Path $here '..\..\agent\installer\Install-Assure-Agent.ps1'
   if (Test-Path $alt) { $engine = (Resolve-Path $alt).Path }
@@ -98,11 +107,12 @@ if (-not (Test-Path -LiteralPath $engine)) {
   throw @"
 Missing Install-Assure-Agent.ps1.
 Expected: $Pack\Sql\agent\installer\Install-Assure-Agent.ps1
-Run Bootstrap-Customer-Agent.ps1 or Deploy-Syspro-Customer-Agent.ps1 once on this host first,
-or copy the full ui-pack under C:\RPM-Assure\deploy\ui-pack.
+Run Bootstrap-Customer-Agent.ps1 or copy the full ui-pack under C:\RPM-Assure\deploy\ui-pack.
 "@
 }
 
+# Pass HYDRA defaults. Engine decides if local SQL/SYSPRO config is required
+# based on what is actually installed on this host.
 $argsList = @(
   '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $engine,
   '-CustomerCode', $CustomerCode,
@@ -125,13 +135,14 @@ if (-not $NoTray) { $argsList += '-InstallTray' }
 if (-not $NoStart) { $argsList += '-StartService' }
 if ($LockFiles) { $argsList += '-LockFiles' }
 
-Write-Host 'Launching silent install engine...'
+Write-Host 'Launching install engine (detects SQL/SYSPRO/Pulseway/Bitdefender/Cove)...'
 & powershell.exe @argsList
 $code = $LASTEXITCODE
 
 Write-Host ''
 Get-Service RPMAssure-Edge -EA SilentlyContinue | Format-Table Name, Status, StartType -AutoSize
-Write-Host 'Tray icon: RPM Assure (green = connected)'
-Write-Host 'Hard-refresh Assure Configuration on the app server after first heartbeat.'
+Write-Host 'Tray: RPM Assure (green = heartbeat connected)'
+Write-Host 'Hard-refresh Assure > Configuration after first heartbeat.'
+Write-Host 'Log: C:\RPM-Assure\Agent\logs\wizard-install.log'
 Write-Host '========================================'
 exit $code

@@ -1,47 +1,47 @@
 RPM Assure Edge Agent - Hydrasales (HYDRA)
 ==========================================
 
-One-click install for the SYSPRO SQL host (HydraSRV).
+On HydraSRV (or the target HYDRA host), as Administrator:
 
-QUICK START
------------
-1. Copy this whole HYDRA folder (or just the two Install-Hydrasales-Agent.* files)
-   to the SQL server, e.g. C:\Temp\HYDRA\
-2. Right-click Install-Hydrasales-Agent.cmd  ->  Run as administrator
-3. Enter an Agent admin password when prompted (min 8 chars).
-   This password protects later changes via Set-AgentSettings.ps1.
-4. Wait for "INSTALL COMPLETE" / service RPMAssure-Edge Running.
-5. On the Assure app server: hard-refresh Configuration and confirm heartbeat.
+  1. Ensure pack is available:
+       C:\RPM-Assure\deploy\ui-pack
+     (git clone/pull happens automatically if Git is installed)
 
-SILENT / SCRIPT
----------------
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Hydrasales-Agent.ps1 `
-  -AdminPassword "YourAgentPass8+" `
-  -LocalSqlPassword "@ssuR3me!" `
-  -CentralSqlPassword "@ssuR3me!"
+  2. Run:
+       Install-Hydrasales-Agent.cmd
+     or:
+       powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Hydrasales-Agent.ps1
 
-Optional switches:
-  -SkipGit     Use already-present C:\RPM-Assure\deploy\ui-pack (no git)
-  -NoTray      Do not install the system-tray RAG icon
-  -NoStart     Install service but leave it stopped
-  -LockFiles   ACL the Agent folder to SYSTEM + Administrators only
+  3. Enter an agent admin password when prompted (min 8 chars).
 
-PRE-REQUISITES
---------------
-- Windows Administrator on the HYDRA SQL host
-- Local SQL login "rpmassure" already exists (created by onboard)
-- Outbound TCP 14333 to 102.222.21.220 (central) OR use -Skip central checks later
-- Prefer: C:\RPM-Assure\deploy\ui-pack already present (from Bootstrap / Deploy-Syspro)
+What it does
+------------
+- Installs Windows service RPMAssure-Edge + optional tray icon
+- Heartbeat to central = online status (cover does NOT gate online)
+- Scans this host for:
+    SQL Server  -> required before SYSPRO can be true
+    SYSPRO      -> enables PillarSyspro
+    Pulseway    -> enables PillarPulseway (RMM)
+    Bitdefender -> enables PillarBitdefender (EPP)
+    Cove        -> enables PillarCove
+- If no SQL is present: SYSPRO is skipped, local SQL config is not required,
+  install still completes (heartbeat + host jobs)
+- Cover is only ENABLED from the agent, never cleared
 
-AFTER INSTALL
+Defaults (HYDRA)
+----------------
+  CustomerCode      = HYDRA
+  DisplayName       = Hydrasales
+  SqlHost/Instance  = HydraSRV
+  Local SQL user    = rpmassure
+  Central           = 102.222.21.220,14333 / RPMAssure_App / rpmassure
+
+Logs
+----
+  C:\RPM-Assure\Agent\logs\wizard-install.log
+  C:\RPM-Assure\Agent\logs\agent_*.log
+
+After install
 -------------
-Service name : RPMAssure-Edge
-Agent root   : C:\RPM-Assure\Agent
-Config       : C:\RPM-Assure\Sql\customers\HYDRA\Customer.Config.ps1
-Secrets      : C:\RPM-Assure\Agent\Agent.Secrets.bin  (DPAPI, this machine only)
-Tray         : green = OK / amber = job error / red = disconnected
-
-Change settings later:
-  powershell -File C:\RPM-Assure\Agent\Set-AgentSettings.ps1
-
-Version note: uses the same engine as the general wizard (Install-Assure-Agent.ps1).
+  Hard-refresh Assure Configuration > Edge Agents
+  Confirm green / ONLINE after first heartbeat (~5 min)

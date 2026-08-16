@@ -1,16 +1,13 @@
 @echo off
-setlocal
-net session >nul 2>&1
-if not %errorlevel%==0 (
-  powershell -NoProfile -Command "Start-Process '%~f0' -Verb RunAs"
-  exit /b
-)
+:: RPM Assure Edge Agent - Hydrasales (HYDRA) one-click
+:: Right-click > Run as administrator  (or double-click; script self-elevates)
 cd /d "%~dp0"
-echo.
-echo  RPM Assure Edge Agent - Hydrasales (HYDRA)
-echo  Running on: %COMPUTERNAME%
-echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Install-Hydrasales-Agent.ps1" %*
+if errorlevel 1 (
+  echo.
+  echo INSTALL FAILED - see C:\RPM-Assure\Agent\logs\wizard-install.log
+  pause
+  exit /b 1
+)
 echo.
 pause
-endlocal
