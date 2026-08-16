@@ -201,6 +201,19 @@ if (Test-Path -LiteralPath $apiPack) {
   if (Test-Path -LiteralPath $runPack) {
     Copy-Item -LiteralPath $runPack -Destination (Join-Path $Root 'Sql\ops\Run-All-Api-Collects-Scheduled.ps1') -Force
   }
+  foreach ($rel in @(
+      'Sql\cove',
+      'Sql\rmm\pulseway',
+      'Sql\bitdefender',
+      'Sql\csp'
+    )) {
+    $from = Join-Path $Pack $rel
+    $to = Join-Path $Root $rel
+    if (Test-Path -LiteralPath $from) {
+      New-Item -ItemType Directory -Force -Path $to | Out-Null
+      robocopy $from $to /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /XF '*.Config.ps1' 'Cove.Config.ps1' 'Pulseway.Config.ps1' | Out-Null
+    }
+  }
   W Cyan '--- API collect every 15 min (Pulseway + Cove + Bitdefender + CSP) ---'
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $apiSched
 }

@@ -1,6 +1,6 @@
 # Sequential API collect every 15 min (or on demand from the UI).
 # Pulseway + Cove + Bitdefender + Microsoft Graph. Soft-fail each leg.
-# Writes C:\RPM-Assure\Sql\ops\api-sync-status.json for the progress bar.
+# Writes C:\RPM-Assure\Sql\ops\api-sync-status.json for the progress bars.
 param([string]$Root = "C:\RPM-Assure")
 $ErrorActionPreference = "Continue"
 $ops = Join-Path $Root "Sql\ops"
@@ -9,12 +9,21 @@ New-Item -ItemType Directory -Force -Path $ops, $logDir | Out-Null
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $log = Join-Path $logDir ("sched_all_api_" + $stamp + ".log")
 $statusFile = Join-Path $ops "api-sync-status.json"
+$pack = Join-Path $Root "deploy\ui-pack"
+
+function Resolve-Collect([string]$rel) {
+  foreach ($base in @($Root, $pack)) {
+    $p = Join-Path $base $rel
+    if (Test-Path -LiteralPath $p) { return $p }
+  }
+  return (Join-Path $Root $rel)
+}
 
 $legs = @(
-  @{ Name = "Pulseway";    Label = "RMM";     Kind = "rmm";        Path = (Join-Path $Root "Sql\rmm\pulseway\Collect-Pulseway-To-RPMAssure.ps1"); Extra = @() },
-  @{ Name = "Cove";        Label = "BACKUP";  Kind = "backup";     Path = (Join-Path $Root "Sql\cove\Collect-Cove-To-RPMAssure.ps1"); Extra = @() },
-  @{ Name = "Bitdefender"; Label = "EPP";     Kind = "epp";        Path = (Join-Path $Root "Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1"); Extra = @() },
-  @{ Name = "CspGraph";    Label = "CSP";     Kind = "licensing";  Path = (Join-Path $Root "Sql\csp\Collect-Csp-Graph-To-RPMAssure.ps1"); Extra = @("-WindowsAuth", "-SkipSchema") }
+  @{ Name = "Pulseway";    Label = "RMM";     Kind = "rmm";        Rel = "Sql\rmm\pulseway\Collect-Pulseway-To-RPMAssure.ps1"; Extra = @() },
+  @{ Name = "Cove";        Label = "BACKUP";  Kind = "backup";     Rel = "Sql\cove\Collect-Cove-To-RPMAssure.ps1"; Extra = @() },
+  @{ Name = "Bitdefender"; Label = "EPP";     Kind = "epp";        Rel = "Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1"; Extra = @() },
+  @{ Name = "CspGraph";    Label = "CSP";     Kind = "licensing";  Rel = "Sql\csp\Collect-Csp-Graph-To-RPMAssure.ps1"; Extra = @("-WindowsAuth", "-SkipSchema") }
 )
 
 function W([string]$m) {
@@ -25,7 +34,10 @@ function W([string]$m) {
 
 function Write-Status($obj) {
   try {
-    ($obj | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $statusFile -Encoding UTF8
+    $json = $obj | ConvertTo-Json -Depth 8 -Compress
+    $tmp = $statusFile + ".tmp"
+    [System.IO.File]::WriteAllText($tmp, $json, [System.Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $tmp -Destination $statusFile -Force
   } catch {}
 }
 
@@ -52,18 +64,20 @@ W "=== All API collect start ==="
 $i = 0
 foreach ($l in $legs) {
   $i++
-  $base = [int]((($i - 1) / $legs.Count) * 100)
+  $path = Resolve-Collect $l.Rel
   $state.current = $l.Name
-  $state.pct = $base
+  $state.pct = [int]((($i - 1) / $legs.Count) * 100)
   $state.message = "Collecting " + $l.Label
   $state.legs[$i - 1].status = "running"
+  $state.legs[$i - 1].pct = 10
   $state.legs[$i - 1].startedUtc = (Get-Date).ToUniversalTime().ToString("o")
   $state.legs[$i - 1].message = "Running"
   Write-Status $state
 
-  if (-not (Test-Path -LiteralPath $l.Path)) {
-    W ("SKIP " + $l.Name + " missing " + $l.Path)
+  if (-not (Test-Path -LiteralPath $path)) {
+    W ("SKIP " + $l.Name + " missing " + $path)
     $state.legs[$i - 1].status = "skip"
+    $state.legs[$i - 1].pct = 100
     $state.legs[$i - 1].message = "Script missing"
     $state.legs[$i - 1].finishedUtc = (Get-Date).ToUniversalTime().ToString("o")
     $state.pct = [int](($i / $legs.Count) * 100)
@@ -71,21 +85,23 @@ foreach ($l in $legs) {
     continue
   }
 
-  W ("=== RUN " + $l.Name + " ===")
+  W ("=== RUN " + $l.Name + " " + $path + " ===")
   $sw = [Diagnostics.Stopwatch]::StartNew()
   $outF = Join-Path $logDir ("sched_" + $l.Name + "_" + $stamp + "_out.txt")
   $errF = Join-Path $logDir ("sched_" + $l.Name + "_" + $stamp + "_err.txt")
   try {
-    $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $l.Path) + $l.Extra
+    $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $path) + $l.Extra
     $p = Start-Process -FilePath "powershell.exe" -ArgumentList $args -Wait -PassThru -NoNewWindow `
       -RedirectStandardOutput $outF -RedirectStandardError $errF
     $code = [int]$p.ExitCode
     W ("DONE " + $l.Name + " exit=" + $code + " sec=" + [int]$sw.Elapsed.TotalSeconds)
     $state.legs[$i - 1].status = $(if ($code -eq 0) { "ok" } else { "error" })
-    $state.legs[$i - 1].message = "exit=" + $code + " " + [int]$sw.Elapsed.TotalSeconds + "s"
+    $state.legs[$i - 1].pct = 100
+    $state.legs[$i - 1].message = $(if ($code -eq 0) { "OK " + [int]$sw.Elapsed.TotalSeconds + "s" } else { "exit=" + $code })
   } catch {
     W ("FAIL " + $l.Name + " " + $_.Exception.Message)
     $state.legs[$i - 1].status = "error"
+    $state.legs[$i - 1].pct = 100
     $state.legs[$i - 1].message = $_.Exception.Message
   }
   $state.legs[$i - 1].finishedUtc = (Get-Date).ToUniversalTime().ToString("o")

@@ -315,7 +315,7 @@ body {
 }
 .rpma-d3-workspace.is-tool,
 .rpma-d3-workspace.is-dual {
-  --rail-services: 18.75rem;
+  --rail-services: 22.75rem;
   grid-template-columns: var(--rail-services) minmax(0, 1fr);
   grid-template-areas: "services detail";
 }
@@ -1423,7 +1423,43 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
 }
 
 .rpma-d3-workspace.is-tool > .rpma-pillar-rail {
-  overflow: hidden;
+  overflow: auto;
+  height: 100%;
+  min-height: 0;
+}
+.rpma-svc-static,
+.rpma-mod-static,
+.rpma-pillar-mods {
+  width: 100%;
+}
+.rpma-svc-row,
+.rpma-mod-row,
+.rpma-modbtn {
+  width: 100%;
+  box-sizing: border-box;
+}
+.rpma-svc-row {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.rpma-svc-row-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.rpma-mod-row {
+  min-height: 32px;
+  padding: 7px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: normal;
+}
+.rpma-modbtn {
+  min-height: 32px;
+  justify-content: flex-start;
 }
 .rpma-settings-body {
   padding: 0 2px 1rem;

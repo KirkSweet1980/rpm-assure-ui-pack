@@ -8,7 +8,7 @@ import {
   fetchIntegrations,
   requestAgentSync,
   fetchApiFeedSyncStatus,
-  startApiFeedSync,
+  recheckInfrastructure,
   type ConfigHealthItem,
   type ApiFeedSyncStatus,
 } from "@/lib/settings/settings-api";
@@ -179,13 +179,20 @@ function InfrastructureStatusPage() {
     return () => window.clearInterval(id);
   }, [polling, load]);
 
-  async function syncApis() {
+  async function recheck() {
     setFeedBusy(true);
     setFeedMsg(null);
+    setAgentMsg(null);
     try {
-      const r = await startApiFeedSync();
+      const r = await recheckInfrastructure();
       setFeedMsg(r.message);
-      if (r.status) setFeed(r.status);
+      if (r.api?.status) setFeed(r.api.status);
+      for (const row of agents) {
+        if (row.cover.syspro && row.hostName) {
+          armed.current.add(row.customerCode);
+          setSync((p) => ({ ...p, [row.customerCode]: "queued" }));
+        }
+      }
       void load();
     } catch (e) {
       setFeedMsg(e instanceof Error ? e.message : String(e));
@@ -228,8 +235,8 @@ function InfrastructureStatusPage() {
       <div className="rpma-settings-toolbar">
         <p className="rpma-settings-blurb">API feeds and SQL Edge agents for the estate.</p>
         <div className="rpma-settings-actions">
-          <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
-            <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+          <Button type="button" size="sm" variant="secondary" disabled={feedBusy} onClick={() => void recheck()}>
+            <RefreshCw className={cn("size-3.5", (feedBusy || feed?.running) && "animate-spin")} />
             Recheck
           </Button>
         </div>
@@ -244,30 +251,88 @@ function InfrastructureStatusPage() {
             size="sm"
             className="ml-auto h-7 px-2.5 text-[11px]"
             disabled={feedBusy || Boolean(feed?.running)}
-            onClick={() => void syncApis()}
+            onClick={() => void recheck()}
           >
             {feed?.running ? "Syncing…" : "Sync APIs"}
           </Button>
         </div>
         <div className="px-3 pb-3">
           <p className="mb-2 text-[11px] text-muted">
-            Pulseway, N-Able Cove Backup, Bitdefender and Microsoft Graph. Cloud backup collect stays on this cycle.
+            Pulseway, N-Able Cove Backup, Bitdefender and Microsoft Graph. Recheck runs every feed and queues every Assure SQL agent to sync / auto-update.
           </p>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all",
-                feed?.running ? "bg-amber-400" : (feed?.pct ?? 0) >= 100 ? "bg-rag-green" : "bg-accent",
-              )}
-              style={{ width: `${Math.min(100, Math.max(feed?.running ? Math.max(4, feed.pct) : (feed?.pct ?? 0), 0))}%` }}
-            />
-          </div>
-          <p className="mt-1 text-[11px] text-muted">
+          {(() => {
+            const defaultLegs = [
+              { name: "Pulseway", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "" },
+              { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "" },
+              { name: "Bitdefender", label: "EPP", kind: "epp", status: "queued", pct: 0, message: "" },
+              { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "" },
+            ];
+            const legs = (feed?.legs?.length ? feed.legs : defaultLegs).map((l) => ({
+              ...l,
+              pct:
+                l.status === "ok" || l.status === "error" || l.status === "skip"
+                  ? 100
+                  : l.status === "running"
+                    ? Math.max(12, l.pct || 35)
+                    : l.pct || 0,
+            }));
+            return (
+              <div className="space-y-2">
+                {legs.map((leg) => {
+                  const tone =
+                    leg.status === "running"
+                      ? "bg-amber-400"
+                      : leg.status === "ok"
+                        ? "bg-rag-green"
+                        : leg.status === "error"
+                          ? "bg-rag-red"
+                          : "bg-accent/70";
+                  return (
+                    <div key={leg.name}>
+                      <div className="mb-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wide">
+                        <span className="text-fg">
+                          {leg.label} · {leg.name}
+                        </span>
+                        <span
+                          className={cn(
+                            "normal-case tracking-normal",
+                            leg.status === "running" && "text-amber-400",
+                            leg.status === "ok" && "text-rag-green",
+                            leg.status === "error" && "text-rag-red",
+                            (leg.status === "queued" || !leg.status) && "text-muted",
+                          )}
+                        >
+                          {leg.status === "running"
+                            ? `Checking ${leg.pct || 0}%`
+                            : leg.status === "ok"
+                              ? `OK${leg.message ? ` · ${leg.message}` : ""}`
+                              : leg.status === "error"
+                                ? leg.message || "Error"
+                                : leg.status === "skip"
+                                  ? "Skip"
+                                  : "Idle"}
+                        </span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-500", tone)}
+                          style={{ width: `${Math.min(100, Math.max(leg.pct, 0))}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+          <p className="mt-2 text-[11px] text-muted">
             {feed?.running
               ? `${feed.pct}% · ${feed.current || "starting"} · ${feed.message}`
               : feed?.finishedUtc
                 ? `Last run ${formatSastDateTime(feed.finishedUtc)} · ${feed.message || "idle"}`
-                : feed?.message || "No on-demand run yet. Scheduled every 15 minutes."}
+                : feed?.message && feed.message !== "Could not read api-sync-status.json"
+                  ? feed.message
+                  : "No on-demand run yet. Scheduled every 15 minutes, or click Recheck."}
           </p>
           {feedMsg ? <p className="mt-1 text-[11px] font-semibold text-fg">{feedMsg}</p> : null}
         </div>

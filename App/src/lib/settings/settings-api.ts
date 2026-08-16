@@ -1618,8 +1618,10 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
     "SELECT MAX(LastImportAt) AS t FROM dbo.vw_Kpi_Pulseway_Summary WITH (NOLOCK)",
   ]);
   const coveAt = await probeIso(pool, [
-    "SELECT MAX(LastImportAt) AS t FROM dbo.vw_Kpi_Cove_Summary WITH (NOLOCK)",
     "SELECT MAX(ImportedAt) AS t FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)",
+    "SELECT MAX(LastImportAt) AS t FROM dbo.vw_Kpi_Cove_Summary WITH (NOLOCK)",
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Cove_BackupSessions WITH (NOLOCK)",
+    "SELECT MAX(LastSuccessTime) AS t FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)",
   ]);
   const eppAt = await probeIso(pool, [
     "SELECT MAX(ImportedAt) AS t FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)",
@@ -1647,7 +1649,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
   };
 });
 
-export const SHIPPED_AGENT_VERSION = "2.4.0";
+export const SHIPPED_AGENT_VERSION = "2.5.3";
 
 export type AgentStatusRow = {
   customerCode: string;
@@ -1859,6 +1861,48 @@ SELECT @@ROWCOUNT AS n;`);
     }
   });
 
+async function queueAllAgentsNow(): Promise<{ ok: true; queued: number; message: string } | { ok: false; message: string }> {
+  const pool = await getPool();
+  if (!pool) return { ok: false, message: "SQL not connected" };
+  try {
+    await ensureAgentSyncColumn(pool);
+    const hasSync = await agentHasSyncColumn(pool);
+    const setSync = hasSync ? "RequestSyncUtc = SYSUTCDATETIME()," : "";
+    const r = await pool.request().input("ver", sqlTypes.NVarChar(32), SHIPPED_AGENT_VERSION).query(`
+UPDATE dbo.Agent_Registry
+SET ${setSync}
+    LastStatus = CASE
+      WHEN ISNULL(AgentVersion, N'') <> @ver THEN N'UPDATE'
+      ELSE N'QUEUED'
+    END,
+    LastMessage = CASE
+      WHEN ISNULL(AgentVersion, N'') <> @ver THEN N'auto-update ' + @ver
+      ELSE N'recheck from Assure'
+    END
+WHERE NULLIF(LTRIM(RTRIM(HostName)), N'') IS NOT NULL;
+SELECT @@ROWCOUNT AS n;`);
+    const n = Number((r.recordset?.[0] as { n?: number } | undefined)?.n ?? 0);
+    return { ok: true, queued: n, message: `Queued ${n} Assure agent(s) to sync / update to v${SHIPPED_AGENT_VERSION}.` };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export const requestAllAgentSync = createServerFn({ method: "POST" }).handler(async () => {
+  return queueAllAgentsNow();
+});
+
+export const recheckInfrastructure = createServerFn({ method: "POST" }).handler(async () => {
+  const api = await startApiFeedSyncHandler();
+  const agents = await queueAllAgentsNow();
+  return {
+    ok: Boolean(api.ok && agents.ok),
+    message: [api.message, agents.ok ? agents.message : agents.message].filter(Boolean).join(" "),
+    api,
+    agents,
+  };
+});
+
 export const requestAgentUpdate = createServerFn({ method: "POST" })
   .validator((data: { customerCode?: string; hostName?: string; all?: boolean }) => data)
   .handler(async ({ data }) => {
@@ -2030,13 +2074,16 @@ function apiStatusPath() {
   return "C:\\RPM-Assure\\Sql\\ops\\api-sync-status.json";
 }
 
-async function readApiFeedStatusFile(): Promise<ApiFeedSyncStatus> {
-  const fs = await import("node:fs");
-  const p = apiStatusPath();
-  if (!fs.existsSync(p)) return emptyFeedStatus("No API collect has run yet.");
+function parseFeedJson(raw: string): ApiFeedSyncStatus | null {
+  const text = raw.replace(/^\uFEFF/, "").trim();
+  if (!text) return null;
   try {
-    const j = JSON.parse(fs.readFileSync(p, "utf8")) as Record<string, unknown>;
-    const legsRaw = Array.isArray(j.legs) ? j.legs : [];
+    const j = JSON.parse(text) as Record<string, unknown>;
+    const legsRaw = Array.isArray(j.legs)
+      ? j.legs
+      : j.legs && typeof j.legs === "object" && Array.isArray((j.legs as { value?: unknown }).value)
+        ? ((j.legs as { value: unknown[] }).value)
+        : [];
     const started = typeof j.startedUtc === "string" ? j.startedUtc : null;
     let running = Boolean(j.running);
     if (running && started) {
@@ -2052,8 +2099,8 @@ async function readApiFeedStatusFile(): Promise<ApiFeedSyncStatus> {
       startedUtc: started,
       finishedUtc: typeof j.finishedUtc === "string" ? j.finishedUtc : null,
       log: typeof j.log === "string" ? j.log : null,
-      legs: legsRaw.map((raw) => {
-        const r = raw as Record<string, unknown>;
+      legs: legsRaw.map((rawLeg) => {
+        const r = rawLeg as Record<string, unknown>;
         return {
           name: String(r.name ?? ""),
           label: String(r.label ?? r.name ?? ""),
@@ -2067,8 +2114,26 @@ async function readApiFeedStatusFile(): Promise<ApiFeedSyncStatus> {
       }),
     };
   } catch {
-    return emptyFeedStatus("Could not read api-sync-status.json");
+    return null;
   }
+}
+
+async function readApiFeedStatusFile(): Promise<ApiFeedSyncStatus> {
+  const fs = await import("node:fs");
+  const paths = [
+    apiStatusPath(),
+    "C:\\RPM-Assure\\deploy\\ui-pack\\Sql\\ops\\api-sync-status.json",
+  ];
+  for (const p of paths) {
+    if (!fs.existsSync(p)) continue;
+    try {
+      const parsed = parseFeedJson(fs.readFileSync(p, "utf8"));
+      if (parsed) return parsed;
+    } catch {
+      /* try next */
+    }
+  }
+  return emptyFeedStatus("No API collect has run yet.");
 }
 
 async function startApiFeedSyncHandler() {
@@ -2083,6 +2148,7 @@ async function startApiFeedSyncHandler() {
     "C:\\RPM-Assure\\Sql\\ops\\Run-All-Api-Collects-Scheduled.ps1",
     "C:\\RPM-Assure\\deploy\\ui-pack\\Sql\\ops\\Run-All-Api-Collects-Scheduled.ps1",
     path.join(process.cwd(), "..", "Sql", "ops", "Run-All-Api-Collects-Scheduled.ps1"),
+    path.join(process.cwd(), "Sql", "ops", "Run-All-Api-Collects-Scheduled.ps1"),
   ];
   const script = candidates.find((p) => fs.existsSync(p));
   if (!script) {
