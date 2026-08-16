@@ -1,5 +1,11 @@
 # RPM Assure Edge Agent - unattended install engine (called by the wizard).
 # ASCII only. Run as Administrator on the customer SYSPRO SQL host.
+#
+# Policy (2026-08):
+# - Online / heartbeat NEVER depends on which pillars are on cover.
+# - All collect scripts are always deployed to every agent.
+# - Cover only influences RoleTags (informational) and which jobs the agent
+#   chooses to schedule by default. Central can still trigger any script.
 param(
   [string]$ConfigFile = "",
   [string]$CustomerCode = "",
@@ -158,7 +164,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1
 W "Using local pack (no git during install)."
 
 function Get-InstallCover([string]$Code) {
-  $out = @{ syspro = $true; rmm = $false; cove = $false; epp = $false; csp = $false }
+  # Cover is informational only (RoleTags). It never gates file deployment or online status.
+  $out = @{ syspro = $false; rmm = $false; cove = $false; epp = $false; csp = $false }
   try {
     $n = $CentralDataSource
     if ($n -match ':(\d+)$' -and $n -notmatch '\\') { $n = $n -replace ':(\d+)$', ',$1' }
@@ -182,8 +189,7 @@ WHERE c.CustomerCode = N'$safe'
 "@
     $rd = $cmd.ExecuteReader()
     if ($rd.Read()) {
-      $s = [int]$rd.GetValue(0)
-      $out.syspro = $(if ($s -eq 0) { $false } elseif ($s -eq 1) { $true } else { [bool]$InstanceName })
+      $out.syspro = ([int]$rd.GetValue(0) -eq 1)
       $out.rmm = ([int]$rd.GetValue(1) -eq 1)
       $out.cove = ([int]$rd.GetValue(2) -eq 1)
       $out.epp = ([int]$rd.GetValue(3) -eq 1)
@@ -191,22 +197,20 @@ WHERE c.CustomerCode = N'$safe'
     }
     $rd.Close(); $cn.Close(); $cn.Dispose()
   } catch {
-    W ("Cover lookup failed (assume SYSPRO if instance set): " + $_.Exception.Message)
-    $out.syspro = [bool]$InstanceName
+    W ("Cover lookup failed (RoleTags only; scripts still deployed): " + $_.Exception.Message)
   }
   return $out
 }
 
 $cover = Get-InstallCover $CustomerCode
-$tags = @()
+$tags = @('agent')   # always present - online does not require any pillar
 if ($cover.syspro) { $tags += "syspro" }
 if ($cover.rmm) { $tags += "rmm" }
 if ($cover.cove) { $tags += "cove" }
 if ($cover.epp) { $tags += "epp" }
 if ($cover.csp) { $tags += "csp" }
-if (-not $tags.Count) { $tags = @("agent") }
 $RoleTags = ($tags -join ",")
-W ("Cover syspro=$($cover.syspro) rmm=$($cover.rmm) cove=$($cover.cove) epp=$($cover.epp) csp=$($cover.csp) roles=$RoleTags")
+W ("Cover (info only) syspro=$($cover.syspro) rmm=$($cover.rmm) cove=$($cover.cove) epp=$($cover.epp) csp=$($cover.csp) roles=$RoleTags")
 
 $from = Join-Path $pack "Sql\agent"
 $agentRoot = Join-Path $Root "Agent"
@@ -226,20 +230,17 @@ W "Copying agent files..."
 robocopy $from $agentRoot /E /XO /R:1 /W:1 /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 W "Copying sql agent files..."
 robocopy $from (Join-Path $sqlRoot "agent") /E /XO /R:1 /W:1 /XF Update-Agent-From-Central.ps1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+
+# ALWAYS deploy every collect script pack so central can enable any service later.
+# Cover never gates file presence.
 $baseSrc = Join-Path $pack "Sql\base\syspro-direct"
-if ($cover.syspro -and (Test-Path $baseSrc)) {
-  W "SYSPRO on cover - copying collect scripts..."
+if (Test-Path $baseSrc) {
+  W "Deploying ALL collect scripts (syspro-direct) - cover does not gate files."
   robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 } else {
-  W "No SYSPRO cover - not deploying SYSPRO collect scripts."
-  $skipDir = Join-Path $sqlRoot "base\syspro-direct"
-  if (Test-Path $skipDir) {
-    Get-ChildItem $skipDir -Filter "*.ps1" -EA SilentlyContinue | ForEach-Object {
-      W ("Leaving existing " + $_.Name + " unused (no cover)")
-    }
-  }
+  W "WARN pack has no Sql\base\syspro-direct - agent still installs; scripts can arrive via later pack update."
 }
-W "Copies done."
+W "Copies done (all scripts available to agent)."
 
 $custCfg = Join-Path $custDir "Customer.Config.ps1"
 $custBody = @"
@@ -262,6 +263,7 @@ W "Wrote $custCfg"
 $cfgPath = Join-Path $agentRoot "Agent.Config.ps1"
 $cfgBody = @"
 # Non-secret agent settings. Passwords live in Agent.Secrets.bin (DPAPI).
+# RoleTags are informational; online status is heartbeat-only.
 `$CustomerCode = '$CustomerCode'
 `$DisplayName = '$($DisplayName.Replace("'", "''"))'
 `$InstanceName = '$($InstanceName.Replace("'", "''"))'
@@ -317,6 +319,7 @@ W (" Customer : " + $DisplayName + " (" + $CustomerCode + ")")
 W (" Host     : " + $env:COMPUTERNAME)
 W (" Instance : " + $InstanceName)
 W (" Service  : " + $(if ($svc) { $svc.Status } else { "not installed" }))
+W (" Online   : heartbeat only (cover does not affect online status)")
+W (" Scripts  : all collect scripts deployed for central to enable later")
 W (" Settings : password-protected (Set-AgentSettings.ps1)")
-W (" Files    : SYSTEM + Administrators only")
 W "========================================"
