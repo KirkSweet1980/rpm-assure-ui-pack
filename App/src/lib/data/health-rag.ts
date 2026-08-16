@@ -187,8 +187,8 @@ export function coveHealthFor(input: {
 export function ragToScorePct(rag: HealthRag | null | undefined): number | null {
   if (!rag) return null;
   if (rag === "Green") return 98;
-  if (rag === "Amber") return 88;
-  return 72;
+  if (rag === "Amber") return 72;
+  return 48;
 }
 
 /** Availability estimate from RAG (covered legs only — call after finalize). */
@@ -201,5 +201,5 @@ export function ragToAvailabilityPct(rag: HealthRag | null | undefined): number 
 
 /** Health score chip 0–100 from estate RAG. */
 export function healthScorePctFromRag(rag: HealthRag): number {
-  return rag === "Green" ? 88 : rag === "Amber" ? 58 : 28;
+  return rag === "Green" ? 88 : rag === "Amber" ? 68 : 42;
 }

@@ -254,7 +254,7 @@ export function fillCustomerPanels(raw: CustomerDetailPayload): CustomerDetailPa
     }
     if (risks.length === 0) {
       risks.push({
-        title: "Estate operating within agreed parameters",
+        title: "Assure Eco-System operating within agreed parameters",
         rag: "Green",
         status: "Accepted",
         ownerName: "ExCo",
@@ -622,7 +622,7 @@ export function fillCustomerPanels(raw: CustomerDetailPayload): CustomerDetailPa
         ? Math.round((c.activeUserCount / c.operatorCount) * 100)
         : null,
     dtrOutOfBalance: dtrCount,
-    scorePct: c.healthRag === "Green" ? 90 : c.healthRag === "Amber" ? 68 : 42,
+    scorePct: c.healthRag === "Green" ? 88 : c.healthRag === "Amber" ? 68 : 42,
     summary: c.healthSummary,
   };
 

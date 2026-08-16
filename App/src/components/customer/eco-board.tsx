@@ -18,6 +18,7 @@ import { RagBadge } from "@/components/portfolio/rag-badge";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { coverFromDetail, isPillarCovered } from "@/lib/data/cover";
+import { assuranceTone } from "@/lib/data/rag-score";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
 import { finsightModuleName } from "@/lib/brand/finsight";
 import { CHART } from "@/lib/brand-colors";
@@ -88,7 +89,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const major = openIncidents.filter((i) => i.isMajor);
   const score =
     data.operationalAssurance?.scorePct ??
-    (customer.healthRag === "Green" ? 90 : customer.healthRag === "Amber" ? 65 : 40);
+    (customer.healthRag === "Green" ? 88 : customer.healthRag === "Amber" ? 68 : 42);
 
   const lastCollect = [
     customer.lastImportAt,
@@ -213,7 +214,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <StatCard
               label="Assurance"
               value={`${score}%`}
-              tone={score >= 80 ? "green" : score >= 55 ? "amber" : "red"}
+              tone={assuranceTone(score, customer.healthRag)}
             />
             <StatCard
               label="Services on cover"

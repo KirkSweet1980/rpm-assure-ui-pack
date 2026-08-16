@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { NoCover, NoCoverPanel } from "@/components/ui/no-cover";
 import { HelpTip, MetricLabel } from "@/components/ui/help-tip";
 import { classifyRmmDevice, isRmmServer, isRmmWorkstation } from "@/lib/data/rmm-device-class";
+import { assuranceTone } from "@/lib/data/rag-score";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { CHART } from "@/lib/brand-colors";
 import { formatProgramLabel } from "@/lib/data/syspro-programs";
@@ -330,7 +331,7 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
   const major = incidents.filter((i) => i.isMajor && (i.status || "").toLowerCase() !== "closed");
 
   const oa = operationalAssurance;
-  const score = oa?.scorePct ?? (customer.healthRag === "Green" ? 90 : customer.healthRag === "Amber" ? 65 : 40);
+  const score = oa?.scorePct ?? (customer.healthRag === "Green" ? 88 : customer.healthRag === "Amber" ? 68 : 42);
 
   const activeOps = customer.activeUserCount;
   const totalOps = Math.max(customer.operatorCount, operators.length, 1);
@@ -425,7 +426,7 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
           </p>
         </div>
         <div className="ml-auto grid grid-cols-3 gap-2">
-          <StatCard label="Assurance" value={`${score}%`} tone={score >= 80 ? "green" : score >= 55 ? "amber" : "red"} />
+          <StatCard label="Assurance" value={`${score}%`} tone={assuranceTone(score, customer.healthRag)} />
           <StatCard label="Services on cover" value={`${coverCount}/5`} tone={coverCount >= 4 ? "green" : coverCount >= 2 ? "amber" : "red"} />
           <StatCard
             label="Open risks"
@@ -1961,7 +1962,7 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
   const openInc = incidents.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const major = openInc.filter((i) => i.isMajor);
   const oa = data.operationalAssurance;
-  const score = oa?.scorePct ?? (c.healthRag === "Green" ? 90 : c.healthRag === "Amber" ? 65 : 40);
+  const score = oa?.scorePct ?? (c.healthRag === "Green" ? 88 : c.healthRag === "Amber" ? 68 : 42);
   const slaPack = buildExcoPillarSla(slaInputFromDetail(effectiveCover(data), data));
   const riskPie = [
     { name: "Open risks", value: openRisks.length, fill: "#ffa21d" },
@@ -1990,7 +1991,7 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
           <p className="text-[12px] text-muted">{c.displayName} · last collect {formatSastDateTime(c.lastImportAt)}</p>
         </div>
         <div className="ml-auto grid grid-cols-3 gap-2">
-          <StatCard label="Assurance" value={`${score}%`} tone={score >= 80 ? "green" : score >= 55 ? "amber" : "red"} />
+          <StatCard label="Assurance" value={`${score}%`} tone={assuranceTone(score, c.healthRag)} />
           <StatCard label="Open risks" value={openRisks.length} tone={openRisks.length === 0 ? "green" : "amber"} />
           <StatCard label="Open incidents" value={openInc.length} tone={openInc.length === 0 ? "green" : "red"} />
         </div>
@@ -3004,7 +3005,7 @@ export function HealthSection({ data }: { data: CustomerDetailPayload }) {
                 : "green"
           }
         />
-        <StatCard label="Assurance" value={`${score}%`} />
+        <StatCard label="Assurance" value={`${score}%`} tone={assuranceTone(score, customer.healthRag)} />
         <StatCard label="Job errors" value={customer.sysproJobErrorCount} />
         <StatCard
           label="FinSight out-of-balance lines"

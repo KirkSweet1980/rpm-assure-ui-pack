@@ -372,6 +372,19 @@ export function customerLiveStatus(
   return { pillars, modules };
 }
 
+/** Worst covered service/module RAG — same function the rails use. */
+export function worstLiveRag(
+  code: string,
+  row: PortfolioRow | null | undefined,
+  cover: CustomerCover | null | undefined,
+  extra?: Partial<CustomerDetailPayload> | null,
+): HealthRag {
+  const r = customerLiveStatus(code, row, cover, extra).pillars.eco.rag;
+  if (r === "Red") return "Red";
+  if (r === "Amber") return "Amber";
+  return "Green";
+}
+
 export function issueHrefForDrill(code: string, drill: string | null): string {
   const base = `/customers/${encodeURIComponent(code)}`;
   if (drill === "finsight") return `${base}/syspro/dtr`;

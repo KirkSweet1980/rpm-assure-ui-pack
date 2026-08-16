@@ -56,6 +56,8 @@ import { finsightOobAttention } from "@/lib/brand/finsight";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
 import { rmmDeviceBelongsToCustomer } from "@/lib/data/rmm-device-owner";
 import { coveHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
+import { floorScoreToRag } from "./rag-score";
+import { worstLiveRag } from "./live-status";
 import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } from "./day-end";
 import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfEvidence } from "./cover";
 import { buildExcoPillarSla, hasSlaCover } from "./exco-sla-stats";
@@ -429,7 +431,7 @@ function recomputeRowHealth(row: PortfolioRow): void {
     rmm,
     cove,
   });
-  row.healthRag = fin.rag;
+  row.healthRag = worstLiveRag(row.customerCode, row, cover2);
   row.healthSummary = fin.summary;
 }
 
@@ -1788,11 +1790,7 @@ function buildOperationalAssurance(args: {
     coveScore = Math.max(0, Math.min(100, coveScore));
   }
 
-  // Estate RAG only already reflects covered legs; light blend
-  let estateAdj = 0;
-  if (healthRag === "Red") estateAdj = -10;
-  else if (healthRag === "Amber") estateAdj = -5;
-
+  // Estate RAG already baked into per-leg scores — do not double-penalise
   const base = averageCoveredScores(cover, {
     syspro: sysScore,
     rmm: rmmScore,
@@ -1800,8 +1798,9 @@ function buildOperationalAssurance(args: {
   });
   let score =
     base != null
-      ? Math.max(0, Math.min(100, Math.round(base + estateAdj)))
+      ? Math.max(0, Math.min(100, Math.round(base)))
       : healthScorePctFromRag(healthRag);
+  score = floorScoreToRag(score, healthRag);
 
   const bits: string[] = [];
   if (!anyCover(cover)) {
@@ -2012,7 +2011,7 @@ export function excoHealthScore(input: {
   }
   if (useCove && (input.coveFailedCount ?? 0) > 0) score -= 12;
 
-  return Math.max(0, Math.min(100, Math.round(score)));
+  return floorScoreToRag(score, input.rag);
 }
 
 function buildAttentionReasons(b: {
@@ -6936,6 +6935,20 @@ ORDER BY UserPrincipalName, DisplayName`);
 
   // ---- Cover-aware scores: only covered legs affect assurance / derived SLA ----
   try {
+    customer.healthRag = worstLiveRag(customer.customerCode, customer, cover, {
+      customer,
+      cover,
+      rmm,
+      cove,
+      epp,
+      incidents,
+      risks,
+      issues,
+      dayEnd,
+      jobErrors,
+      dtrLevel1,
+      amsSlaSummary,
+    });
     operationalAssurance = buildOperationalAssurance({
       lastImportAt: customer.lastImportAt,
       jobErrorCount: customer.sysproJobErrorCount,
