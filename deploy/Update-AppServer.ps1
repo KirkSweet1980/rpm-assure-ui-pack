@@ -6,7 +6,8 @@
 param(
   [string]$RepoUrl = 'https://github.com/KirkSweet1980/rpm-assure-ui-pack.git',
   [string]$Root = 'C:\RPM-Assure',
-  [switch]$SyncApis
+  [switch]$SyncApis,
+  [switch]$ScriptsOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -104,14 +105,43 @@ if (-not $got) {
   Rename-Item -LiteralPath $tmp -NewName (Split-Path $Pack -Leaf)
 }
 
-$srcRoot = Resolve-AppSrc $Pack
-W Green ("Source " + $srcRoot)
-if (-not (Test-Path -LiteralPath $App)) { throw "Missing $App" }
-
 $self = Join-Path $Pack 'Update-AppServer.ps1'
 if (Test-Path -LiteralPath $self) {
   Copy-Item -LiteralPath $self -Destination (Join-Path $Root 'deploy\Update-AppServer.ps1') -Force
 }
+
+$agentSrc = Join-Path $Pack 'Sql\agent'
+if (Test-Path -LiteralPath $agentSrc) {
+  $agentDest = Join-Path $Root 'Sql\agent'
+  New-Item -ItemType Directory -Force -Path $agentDest | Out-Null
+  W Cyan '--- Copy Sql\agent from git ---'
+  robocopy $agentSrc $agentDest /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+}
+
+foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway', 'Sql\cove')) {
+  $from = Join-Path $Pack $rel
+  if (Test-Path -LiteralPath $from) {
+    $to = Join-Path $Root $rel
+    New-Item -ItemType Directory -Force -Path $to | Out-Null
+    W Cyan ("--- Copy " + $rel + " from git ---")
+    robocopy $from $to /E /NFL /NDL /NJH /NJS /nc /ns /np /XF Pulseway.Config.ps1 Csp.Config.ps1 Csp.Config.*.ps1 | Out-Null
+  }
+}
+
+if ($ScriptsOnly) {
+  W Green 'Scripts-only update (no C:\\RPM-Assure\\App on this host).'
+  $iops = Join-Path $Root 'Sql\rmm\pulseway\Test-DiskIops.ps1'
+  if (Test-Path -LiteralPath $iops) { W Green ("Ready " + $iops) }
+  Write-Host '========================================' -ForegroundColor Cyan
+  Write-Host ' GIT SCRIPTS UPDATED'
+  Write-Host (" Pack : " + $Pack)
+  Write-Host '========================================' -ForegroundColor Cyan
+  return
+}
+
+$srcRoot = Resolve-AppSrc $Pack
+W Green ("Source " + $srcRoot)
+if (-not (Test-Path -LiteralPath $App)) { throw "Missing $App — this is the website host updater. On an Agent/SQL host use: -ScriptsOnly" }
 
 $svcObj = Get-Service -Name $SvcName -ErrorAction SilentlyContinue
 if ($svcObj -and $svcObj.Status -ne 'Stopped') {
