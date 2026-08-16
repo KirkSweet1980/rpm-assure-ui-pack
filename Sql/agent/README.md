@@ -15,9 +15,10 @@ On install the agent scans this host and **enables** matching cover on central:
 
 | Product found | Cover pillar |
 |---|---|
-| Pulseway (PC Monitor service / folder / registry) | RMM → `PillarPulseway = 1` |
-| Bitdefender / GravityZone / Endpoint Security | EPP → `PillarBitdefender = 1` |
-| Cove Data Protection / Backup Manager | Cove → `PillarCove = 1` |
+| **SYSPRO** (service / `C:\SYSPRO*` / registry / `Syspro%` databases) | `PillarSyspro = 1` |
+| **Pulseway** (PC Monitor service / folder / registry) | RMM → `PillarPulseway = 1` |
+| **Bitdefender** / GravityZone / Endpoint Security | EPP → `PillarBitdefender = 1` |
+| **Cove** Data Protection / Backup Manager | `PillarCove = 1` |
 
 Rules:
 - Only **enables** (sets 1). Never clears a pillar from the agent.

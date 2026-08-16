@@ -4,8 +4,8 @@
 # Policy (2026-08):
 # - Online / heartbeat NEVER depends on which pillars are on cover.
 # - All collect scripts are always deployed to every agent.
-# - At install: detect Pulseway / Bitdefender / Cove on this host and ENABLE
-#   matching cover pillars on central (never clears cover).
+# - At install: detect SYSPRO / Pulseway / Bitdefender / Cove on this host and
+#   ENABLE matching cover pillars on central (never clears cover).
 # - Cover influences RoleTags + default job schedule only.
 param(
   [string]$ConfigFile = "",
@@ -143,15 +143,16 @@ WHERE c.CustomerCode = N'$safe'
 $cover = Get-InstallCover $CustomerCode
 W ("Central cover: syspro=$($cover.syspro) rmm=$($cover.rmm) cove=$($cover.cove) epp=$($cover.epp) csp=$($cover.csp)")
 
-# ---- Local product detection (Pulseway / Bitdefender / Cove) ----
+# ---- Local product detection (SYSPRO / Pulseway / Bitdefender / Cove) ----
 $detectPs1 = Join-Path $pack 'Sql\agent\Detect-Local-Services.ps1'
 if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Sql\agent\Detect-Local-Services.ps1' }
 if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Agent\Detect-Local-Services.ps1' }
-$local = @{ Pulseway = $false; Bitdefender = $false; Cove = $false; Details = @() }
+$local = @{ Syspro = $false; Pulseway = $false; Bitdefender = $false; Cove = $false; Details = @() }
 if (Test-Path $detectPs1) {
   . $detectPs1
   $local = Get-RpmaLocalServices
   W "Local product scan:"
+  W ("  SYSPRO       : " + $local.Syspro)
   W ("  Pulseway     : " + $local.Pulseway)
   W ("  Bitdefender  : " + $local.Bitdefender)
   W ("  Cove         : " + $local.Cove)
@@ -162,26 +163,27 @@ if (Test-Path $detectPs1) {
 }
 
 # Enable cover on central for anything found locally (never clears)
-if ($local.Pulseway -or $local.Bitdefender -or $local.Cove) {
+if ($local.Syspro -or $local.Pulseway -or $local.Bitdefender -or $local.Cove) {
   $enablePs1 = Join-Path $pack 'Sql\agent\Enable-Cover-From-Local.ps1'
   if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Sql\agent\Enable-Cover-From-Local.ps1' }
   if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Agent\Enable-Cover-From-Local.ps1' }
   if (Test-Path $enablePs1) {
     W 'Enabling cover on central from local products...'
-    $en = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $enablePs1 `
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $enablePs1 `
       -CustomerCode $CustomerCode `
       -CentralDataSource $CentralDataSource `
       -CentralDatabase $CentralDatabase `
       -CentralSqlUser $CentralSqlUser `
       -CentralSqlPassword $CentralSqlPassword `
+      -Syspro:([bool]$local.Syspro) `
       -Pulseway:([bool]$local.Pulseway) `
       -Bitdefender:([bool]$local.Bitdefender) `
       -Cove:([bool]$local.Cove) `
-      -AgentRoot (Join-Path $Root 'Agent')
+      -AgentRoot (Join-Path $Root 'Agent') | Out-Null
   } else {
     W 'WARN Enable-Cover-From-Local.ps1 missing'
   }
-  # Refresh cover flags after enable
+  if ($local.Syspro) { $cover.syspro = $true }
   if ($local.Pulseway) { $cover.rmm = $true }
   if ($local.Cove) { $cover.cove = $true }
   if ($local.Bitdefender) { $cover.epp = $true }
@@ -302,7 +304,7 @@ W (" Host     : " + $env:COMPUTERNAME)
 W (" Instance : " + $InstanceName)
 W (" Service  : " + $(if ($svc) { $svc.Status } else { "not installed" }))
 W (" Roles    : " + $RoleTags)
-W (" Local    : Pulseway=$($local.Pulseway) Bitdefender=$($local.Bitdefender) Cove=$($local.Cove)")
+W (" Local    : SYSPRO=$($local.Syspro) Pulseway=$($local.Pulseway) Bitdefender=$($local.Bitdefender) Cove=$($local.Cove)")
 W (" Online   : heartbeat only")
 W (" Cover    : local products enable pillars on central (never clear)")
 W "========================================"
