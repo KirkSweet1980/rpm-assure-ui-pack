@@ -32,6 +32,17 @@ $Fail = [Drawing.Color]::FromArgb(180, 50, 40)
 $script:Page = 0
 $script:AccessOk = $false
 $script:AssureOk = $false
+$script:CollectPwd = "@ssuR3me!"
+$script:ExtraPwds = New-Object System.Collections.Generic.List[string]
+[void]$script:ExtraPwds.Add("@ssuR3me!")
+$cfgGuess = Get-ChildItem "C:\RPM-Assure\Sql\customers" -Filter "Customer.Config.ps1" -Recurse -EA SilentlyContinue | Select-Object -First 1
+if ($cfgGuess) {
+  try {
+    . $cfgGuess.FullName
+    if ($LocalSqlPassword) { [void]$script:ExtraPwds.Add([string]$LocalSqlPassword) }
+    if ($CentralSqlPassword) { [void]$script:ExtraPwds.Add([string]$CentralSqlPassword) }
+  } catch {}
+}
 $Pages = @("Customer", "SQL access", "Assure login", "Password")
 
 function New-Lbl([string]$text, [int]$x, [int]$y, [int]$w = 520, [int]$h = 22, $font = $null, $c = $null) {
@@ -128,16 +139,18 @@ $txtExistUser = New-Box 24 180; $txtExistUser.Enabled = $false
 $txtExistPwd = New-Box 24 240 -Password; $txtExistPwd.Enabled = $false
 $rbSql.add_CheckedChanged({ $txtExistUser.Enabled = $rbSql.Checked; $txtExistPwd.Enabled = $rbSql.Checked })
 
-$lblExist = New-Lbl "Not tested" 24 150 560 40
-$lblAssure = New-Lbl "Assure login rpmassure not created yet" 24 190 560 50
-$lblCentral = New-Lbl "Central not tested" 24 240 560 40
+$lblExist = New-Lbl "Not tested" 24 188 560 28
+$lblAssure = New-Lbl "Assure login rpmassure not tested" 24 216 560 44
+$lblCentral = New-Lbl "Central not tested" 24 260 560 28
+$txtCollectPwd = New-Box 24 312 -Password
+$txtCollectPwd.Text = "@ssuR3me!"
 $btnTestExist = New-Btn "Test existing login" 24 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
 $btnTestExist.Location = New-Object Drawing.Point 24, 90
 $btnTestExist.Size = New-Object Drawing.Size 160, 36
 $btnTestAssure = New-Btn "Test rpmassure" 194 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
 $btnTestAssure.Location = New-Object Drawing.Point 194, 90
 $btnTestAssure.Size = New-Object Drawing.Size 150, 36
-$btnMake = New-Btn "Create rpmassure" 354 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
+$btnMake = New-Btn "Reset rpmassure" 354 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
 $btnMake.Location = New-Object Drawing.Point 354, 90
 $btnMake.Size = New-Object Drawing.Size 150, 36
 $btnMake.Enabled = $false
@@ -214,13 +227,25 @@ function Show-Page {
     }
     2 {
       $content.Controls.Add((New-Lbl "Create Assure collect login" 24 24 560 30 (New-Object Drawing.Font("Segoe UI Semibold", 16))))
-      $content.Controls.Add((New-Lbl "1) Test YOUR admin.  2) Test rpmassure (already on AHI / most hosts).  3) Create only if needed." 24 56 560 28 $null $Muted))
+      $content.Controls.Add((New-Lbl "If Test rpmassure fails, Test YOUR admin then Reset rpmassure (sets the standard password)." 24 56 560 28 $null $Muted))
       $content.Controls.Add($btnTestExist)
       $content.Controls.Add($btnTestAssure)
       $content.Controls.Add($btnMake)
       $content.Controls.Add($lblExist)
       $content.Controls.Add($lblAssure)
       $content.Controls.Add($lblCentral)
+      $content.Controls.Add((New-Lbl "rpmassure password to try (default is the standard Assure password)" 24 292 540 18 $null $Muted))
+      $content.Controls.Add($txtCollectPwd)
+      # Auto-try Windows admin so Reset is available without extra clicks
+      if (-not $script:AccessOk) {
+        $w = Test-Ado $txtHost.Text "master" "windows" "" ""
+        if ($w -notlike "FAIL:*") {
+          $lblExist.Text = "Windows admin OK as " + $w + "  (Reset is enabled)"
+          $lblExist.ForeColor = $Teal
+          $script:AccessOk = $true
+          $btnMake.Enabled = $true
+        }
+      }
     }
     3 {
       $content.Controls.Add((New-Lbl "Agent password" 24 24 560 30 (New-Object Drawing.Font("Segoe UI Semibold", 18))))
@@ -260,15 +285,36 @@ $btnTestExist.add_Click({
 
 $btnTestAssure.add_Click({
   try {
-    $who = Test-Ado $txtHost.Text "master" "sql" "rpmassure" "@ssuR3me!"
+    $tried = New-Object System.Collections.Generic.List[string]
+    $typed = [string]$txtCollectPwd.Text
+    if ($typed) { [void]$tried.Add($typed) }
+    foreach ($p in $script:ExtraPwds) { if ($p -and -not $tried.Contains($p)) { [void]$tried.Add($p) } }
+    $who = $null
+    $used = $null
+    foreach ($p in $tried) {
+      $r = Test-Ado $txtHost.Text "master" "sql" "rpmassure" $p
+      if ($r -notlike "FAIL:*") { $who = $r; $used = $p; break }
+      $who = $r
+    }
     if ($who -like "FAIL:*") {
-      $lblAssure.Text = "rpmassure not usable yet. " + $who.Substring(5)
+      $lblAssure.Text = "Login failed for rpmassure. Account is there but the password is not the one we tried. Click Reset rpmassure (Windows admin is enough) to set the standard Assure password."
       $lblAssure.ForeColor = $Fail
       $script:AssureOk = $false
+      if (-not $script:AccessOk) {
+        $w = Test-Ado $txtHost.Text "master" "windows" "" ""
+        if ($w -notlike "FAIL:*") {
+          $lblExist.Text = "Windows admin OK as " + $w
+          $lblExist.ForeColor = $Teal
+          $script:AccessOk = $true
+          $btnMake.Enabled = $true
+        }
+      }
     } else {
-      $lblAssure.Text = "rpmassure already works as " + $who
+      $script:CollectPwd = $used
+      $txtCollectPwd.Text = $used
+      $lblAssure.Text = "rpmassure works as " + $who
       $lblAssure.ForeColor = $Teal
-      $cen = Test-Ado "102.222.21.220,14333" "RPMAssure_App" "sql" "rpmassure" "@ssuR3me!"
+      $cen = Test-Ado "102.222.21.220,14333" "RPMAssure_App" "sql" "rpmassure" $used
       if ($cen -like "FAIL:*") {
         $lblCentral.Text = "Local rpmassure OK. Central failed: " + $cen.Substring(5)
         $lblCentral.ForeColor = $Fail
@@ -314,7 +360,7 @@ $btnMake.add_Click({
     AdminUser        = $txtExistUser.Text
     AdminPassword    = $txtExistPwd.Text
     CollectUser      = "rpmassure"
-    CollectPassword  = "@ssuR3me!"
+    CollectPassword  = $(if ($txtCollectPwd.Text) { $txtCollectPwd.Text } else { "@ssuR3me!" })
     CustomerCode     = $txtCode.Text.Trim().ToUpperInvariant()
     DisplayName      = $txtName.Text.Trim()
     InstanceName     = $txtHost.Text.Trim()
@@ -333,6 +379,7 @@ $btnMake.add_Click({
   if ($text -match "COLLECT_LOGIN_WORKS|COLLECT_ALREADY_OK") {
     $lblAssure.Text = "Assure login rpmassure ready."
     $lblAssure.ForeColor = $Teal
+    $script:CollectPwd = $(if ($txtCollectPwd.Text) { $txtCollectPwd.Text } else { "@ssuR3me!" })
   } else {
     $tail = if ($text) { $text.Substring([Math]::Max(0, $text.Length - 280)) } else { "no output" }
     $lblAssure.Text = "Could not create rpmassure. " + $tail
@@ -372,11 +419,11 @@ function Run-Install {
     InstanceName       = $txtHost.Text.Trim()
     LocalAuth          = "Sql"
     LocalSqlUser       = "rpmassure"
-    LocalSqlPassword   = "@ssuR3me!"
+    LocalSqlPassword   = $(if ($script:CollectPwd) { $script:CollectPwd } else { "@ssuR3me!" })
     CentralDataSource  = "102.222.21.220,14333"
     CentralDatabase    = "RPMAssure_App"
     CentralSqlUser     = "rpmassure"
-    CentralSqlPassword = "@ssuR3me!"
+    CentralSqlPassword = $(if ($script:CollectPwd) { $script:CollectPwd } else { "@ssuR3me!" })
     AdminPassword      = $txtAdmin1.Text
     CollectIntervalMin = 30
     JobsIntervalMin    = 1440
