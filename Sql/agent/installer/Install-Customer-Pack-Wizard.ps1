@@ -238,45 +238,56 @@ function Show-Page {
 }
 
 $btnTestExist.add_Click({
-  $mode = $(if ($rbSql.Checked) { "sql" } else { "windows" })
-  $who = Test-Ado $txtHost.Text "master" $mode $txtExistUser.Text $txtExistPwd.Text
-  if ($who -like "FAIL:*") {
-    $lblExist.Text = "Existing login failed. " + $who.Substring(5)
+  try {
+    $mode = $(if ($rbSql.Checked) { "sql" } else { "windows" })
+    $who = Test-Ado $txtHost.Text "master" $mode $txtExistUser.Text $txtExistPwd.Text
+    if ($who -like "FAIL:*") {
+      $lblExist.Text = "Existing login failed. " + $who.Substring(5)
+      $lblExist.ForeColor = $Fail
+      $script:AccessOk = $false
+      $btnMake.Enabled = $false
+    } else {
+      $lblExist.Text = "Existing login OK as " + $who
+      $lblExist.ForeColor = $Teal
+      $script:AccessOk = $true
+      $btnMake.Enabled = $true
+    }
+  } catch {
+    $lblExist.Text = "Test error: " + $_.Exception.Message
     $lblExist.ForeColor = $Fail
-    $script:AccessOk = $false
-    $btnMake.Enabled = $false
-  } else {
-    $lblExist.Text = "Existing login OK as " + $who
-    $lblExist.ForeColor = $Teal
-    $script:AccessOk = $true
-    $btnMake.Enabled = $true
   }
 })
 
 $btnTestAssure.add_Click({
-  $who = Test-Ado $txtHost.Text "master" "sql" "rpmassure" "@ssuR3me!"
-  if ($who -like "FAIL:*") {
-    $lblAssure.Text = "rpmassure not usable yet. " + $who.Substring(5) + "  Use your existing admin then Create rpmassure."
-    $lblAssure.ForeColor = $Fail
-    $script:AssureOk = $false
-  } else {
-    $lblAssure.Text = "rpmassure already works as " + $who
-    $lblAssure.ForeColor = $Teal
-    $cen = Test-Ado "102.222.21.220,14333" "RPMAssure_App" "sql" "rpmassure" "@ssuR3me!"
-    if ($cen -like "FAIL:*") {
-      $lblCentral.Text = "Local rpmassure OK. Central failed: " + $cen.Substring(5)
-      $lblCentral.ForeColor = $Fail
+  try {
+    $who = Test-Ado $txtHost.Text "master" "sql" "rpmassure" "@ssuR3me!"
+    if ($who -like "FAIL:*") {
+      $lblAssure.Text = "rpmassure not usable yet. " + $who.Substring(5)
+      $lblAssure.ForeColor = $Fail
       $script:AssureOk = $false
     } else {
-      $lblCentral.Text = "Central Assure OK as " + $cen
-      $lblCentral.ForeColor = $Teal
-      $script:AssureOk = $true
-      $btnNext.Enabled = $true
+      $lblAssure.Text = "rpmassure already works as " + $who
+      $lblAssure.ForeColor = $Teal
+      $cen = Test-Ado "102.222.21.220,14333" "RPMAssure_App" "sql" "rpmassure" "@ssuR3me!"
+      if ($cen -like "FAIL:*") {
+        $lblCentral.Text = "Local rpmassure OK. Central failed: " + $cen.Substring(5)
+        $lblCentral.ForeColor = $Fail
+        $script:AssureOk = $false
+      } else {
+        $lblCentral.Text = "Central Assure OK as " + $cen
+        $lblCentral.ForeColor = $Teal
+        $script:AssureOk = $true
+        $btnNext.Enabled = $true
+      }
     }
+  } catch {
+    $lblAssure.Text = "Test error: " + $_.Exception.Message
+    $lblAssure.ForeColor = $Fail
   }
 })
 
 $btnMake.add_Click({
+  try {
   if (-not $script:AccessOk) {
     $lblAssure.Text = "Test existing login first (Windows or RPMAdmin), then Create."
     $lblAssure.ForeColor = $Fail
@@ -340,6 +351,10 @@ $btnMake.add_Click({
     $lblCentral.ForeColor = $Fail
     $script:AssureOk = $false
     $btnNext.Enabled = $false
+  }
+  } catch {
+    $lblAssure.Text = "Create error: " + $_.Exception.Message
+    $lblAssure.ForeColor = $Fail
   }
 })
 

@@ -1,73 +1,80 @@
-# Shared ADO.NET connect. Avoids sqlcmd ODBC and @password splat bugs.
-# Returns @{ Ok; Who; Error; ServerUsed }
+# Shared ADO.NET connect. Never use SqlConnectionStringBuilder indexer with
+# PowerShell bools (they wrap as PSObject and crash ConvertToString).
+function New-RpmaCs {
+  param(
+    [string]$Server,
+    [string]$Database = "master",
+    [string]$Mode = "sql",
+    [string]$User = "",
+    [string]$Password = "",
+    [string]$Encrypt = "False",
+    [int]$TimeoutSec = 8
+  )
+  $h = [string]$Server
+  $db = [string]$(if ($Database) { $Database } else { "master" })
+  $enc = [string]$Encrypt
+  $u = [string]$User
+  $p = ([string]$Password) -replace '"', '""'
+  $cs = "Data Source=$h;Initial Catalog=$db;Connect Timeout=$TimeoutSec;Encrypt=$enc;TrustServerCertificate=True;"
+  if ($Mode -eq "windows") { $cs += "Integrated Security=True;" }
+  else { $cs += "User ID=$u;Password=`"$p`";" }
+  return $cs
+}
+
 function Test-RpmaSql {
   param(
     [string]$Server,
     [string]$Database = "master",
-    [ValidateSet("windows", "sql")][string]$Mode = "sql",
+    [string]$Mode = "sql",
     [string]$User = "",
     [string]$Password = "",
     [int]$TimeoutSec = 8
   )
-  $hosts = @()
-  if ($Server) { $hosts += $Server.Trim() }
-  $hosts += @(".", "localhost", "(local)", $env:COMPUTERNAME)
-  $hosts = @($hosts | Where-Object { $_ } | Select-Object -Unique)
+  $hosts = New-Object System.Collections.Generic.List[string]
+  if ($Server) { [void]$hosts.Add(([string]$Server).Trim()) }
+  foreach ($x in @(".", "localhost", "(local)", [string]$env:COMPUTERNAME)) {
+    if ($x -and -not $hosts.Contains($x)) { [void]$hosts.Add($x) }
+  }
   $last = "no attempt"
   foreach ($h in $hosts) {
-    foreach ($enc in @($false, $true)) {
-      $csb = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
-      $csb["Data Source"] = $h
-      $csb["Initial Catalog"] = $(if ($Database) { $Database } else { "master" })
-      $csb["Connect Timeout"] = $TimeoutSec
-      $csb["Encrypt"] = $enc
-      $csb["TrustServerCertificate"] = $true
-      if ($Mode -eq "windows") { $csb["Integrated Security"] = $true }
-      else { $csb["User ID"] = $User; $csb["Password"] = $Password }
-      $cn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
+    foreach ($enc in @("False", "True")) {
+      $cs = New-RpmaCs -Server $h -Database $Database -Mode $Mode -User $User -Password $Password -Encrypt $enc -TimeoutSec $TimeoutSec
+      $cn = New-Object System.Data.SqlClient.SqlConnection $cs
       try {
         $cn.Open()
         $cmd = $cn.CreateCommand()
         $cmd.CommandText = "SELECT SUSER_SNAME()"
         $who = [string]$cmd.ExecuteScalar()
         $cn.Close()
-        return @{ Ok = $true; Who = $who; Error = ""; ServerUsed = $h }
+        $cn.Dispose()
+        return @{ Ok = $true; Who = $who; Error = ""; ServerUsed = [string]$h }
       } catch {
-        $last = $_.Exception.Message
+        $last = [string]$_.Exception.Message
         try { $cn.Dispose() } catch {}
       }
     }
   }
-  return @{ Ok = $false; Who = ""; Error = $last; ServerUsed = $Server }
+  return @{ Ok = $false; Who = ""; Error = $last; ServerUsed = [string]$Server }
 }
 
 function Invoke-RpmaSql {
   param(
     [string]$Server,
     [string]$Database = "master",
-    [ValidateSet("windows", "sql")][string]$Mode = "sql",
+    [string]$Mode = "sql",
     [string]$User = "",
     [string]$Password = "",
     [string]$Query,
     [int]$TimeoutSec = 60
   )
   $t = Test-RpmaSql -Server $Server -Database $Database -Mode $Mode -User $User -Password $Password -TimeoutSec 8
-  if (-not $t.Ok) { return @{ Ok = $false; Text = $t.Error } }
-  $csb = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
-  $csb["Data Source"] = $t.ServerUsed
-  $csb["Initial Catalog"] = $(if ($Database) { $Database } else { "master" })
-  $csb["Connect Timeout"] = 15
-  $csb["Encrypt"] = $false
-  $csb["TrustServerCertificate"] = $true
-  if ($Mode -eq "windows") { $csb["Integrated Security"] = $true }
-  else { $csb["User ID"] = $User; $csb["Password"] = $Password }
-  $cn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
-  try {
-    $cn.Open()
-    # retry encrypt true if needed
-  } catch {
-    $csb["Encrypt"] = $true
-    $cn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
+  if (-not $t.Ok) { return @{ Ok = $false; Text = [string]$t.Error } }
+  $cs = New-RpmaCs -Server ([string]$t.ServerUsed) -Database $Database -Mode $Mode -User $User -Password $Password -Encrypt "False" -TimeoutSec 15
+  $cn = New-Object System.Data.SqlClient.SqlConnection $cs
+  try { $cn.Open() } catch {
+    try { $cn.Dispose() } catch {}
+    $cs = New-RpmaCs -Server ([string]$t.ServerUsed) -Database $Database -Mode $Mode -User $User -Password $Password -Encrypt "True" -TimeoutSec 15
+    $cn = New-Object System.Data.SqlClient.SqlConnection $cs
     $cn.Open()
   }
   try {
@@ -79,29 +86,32 @@ function Invoke-RpmaSql {
     try {
       $rdr = $cmd.ExecuteReader()
       do {
-        $names = @()
-        for ($i = 0; $i -lt $rdr.FieldCount; $i++) { $names += $rdr.GetName($i) }
+        $names = New-Object System.Collections.Generic.List[string]
+        for ($i = 0; $i -lt $rdr.FieldCount; $i++) { [void]$names.Add([string]$rdr.GetName($i)) }
         if ($names.Count) { [void]$sb.AppendLine(($names -join "|")) }
         while ($rdr.Read()) {
-          $vals = @()
+          $vals = New-Object System.Collections.Generic.List[string]
           for ($i = 0; $i -lt $rdr.FieldCount; $i++) {
-            if ($rdr.IsDBNull($i)) { $vals += "" } else { $vals += [string]$rdr.GetValue($i) }
+            if ($rdr.IsDBNull($i)) { [void]$vals.Add("") } else { [void]$vals.Add([string]$rdr.GetValue($i)) }
           }
           [void]$sb.AppendLine(($vals -join "|"))
         }
       } while ($rdr.NextResult())
     } catch {
-      # non-query batch (PRINT / CREATE)
       if ($rdr) { try { $rdr.Close() } catch {} }
-      $cmd.CommandText = $Query
-      [void]$cmd.ExecuteNonQuery()
+      $cmd2 = $cn.CreateCommand()
+      $cmd2.CommandTimeout = $TimeoutSec
+      $cmd2.CommandText = $Query
+      [void]$cmd2.ExecuteNonQuery()
       [void]$sb.AppendLine("OK")
     } finally {
       if ($rdr) { try { $rdr.Close() } catch {} }
     }
     $cn.Close()
-    return @{ Ok = $true; Text = $sb.ToString(); ServerUsed = $t.ServerUsed }
+    return @{ Ok = $true; Text = $sb.ToString(); ServerUsed = [string]$t.ServerUsed }
   } catch {
-    return @{ Ok = $false; Text = $_.Exception.Message }
+    return @{ Ok = $false; Text = [string]$_.Exception.Message }
+  } finally {
+    try { $cn.Dispose() } catch {}
   }
 }
