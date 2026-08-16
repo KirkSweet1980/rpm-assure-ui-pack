@@ -11,6 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EcoCustomizeButton, EcoCustomizePanel } from "@/components/customer/eco-customize";
 import { SpaLink } from "@/components/nav/spa-link";
 import { ChartTooltip, CHART_TOOLTIP_CURSOR } from "@/components/portfolio/chart-tooltip";
@@ -192,7 +194,15 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     <div className="rpma-eco-visuals space-y-3">
       <div className="rpma-eco-menubar">
         <h2 className="rpma-eco-menubar-title">Customer EcoSystem</h2>
-        <EcoCustomizeButton open={customizeOpen} onClick={() => setCustomizeOpen((v) => !v)} />
+        <div className="ml-auto flex items-center gap-2">
+          <Button asChild size="sm" variant="secondary" className="h-8 gap-1.5 text-[12px] font-semibold">
+            <a href={`/api/agent-pack/${encodeURIComponent(customer.customerCode)}`} download>
+              <Download className="size-3.5" />
+              Assure Agent
+            </a>
+          </Button>
+          <EcoCustomizeButton open={customizeOpen} onClick={() => setCustomizeOpen((v) => !v)} />
+        </div>
       </div>
       {customizeOpen ? (
         <EcoCustomizePanel
