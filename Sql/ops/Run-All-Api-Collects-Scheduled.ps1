@@ -97,7 +97,18 @@ foreach ($l in $legs) {
     $code = [int]$p.ExitCode
     W ("DONE " + $l.Name + " exit=" + $code + " sec=" + [int]$sw.Elapsed.TotalSeconds)
     $hint = ""
-    if ($code -ne 0) {
+    if ($code -eq 2) {
+      foreach ($f in @($errF, $outF)) {
+        if (-not (Test-Path $f)) { continue }
+        $tail = @(Get-Content $f -Tail 12 -EA SilentlyContinue | Where-Object { $_ -and $_.Trim() -ne "" })
+        $hit = $tail | Where-Object { $_ -match 'skip|not configured|missing .*Config' } | Select-Object -Last 1
+        if (-not $hit) { $hit = $tail | Select-Object -Last 1 }
+        if ($hit) { $hint = ([string]$hit).Trim(); if ($hint.Length -gt 180) { $hint = $hint.Substring(0, 180) }; break }
+      }
+      $state.legs[$i - 1].status = "skip"
+      $state.legs[$i - 1].pct = 100
+      $state.legs[$i - 1].message = $(if ($hint) { $hint } else { "Not configured (skipped)" })
+    } elseif ($code -ne 0) {
       foreach ($f in @($errF, $outF)) {
         if (-not (Test-Path $f)) { continue }
         $tail = @(Get-Content $f -Tail 20 -EA SilentlyContinue | Where-Object { $_ -and $_.Trim() -ne "" })
@@ -105,10 +116,14 @@ foreach ($l in $legs) {
         if (-not $hit) { $hit = $tail | Select-Object -Last 1 }
         if ($hit) { $hint = ([string]$hit).Trim(); if ($hint.Length -gt 180) { $hint = $hint.Substring(0, 180) }; break }
       }
+      $state.legs[$i - 1].status = "error"
+      $state.legs[$i - 1].pct = 100
+      $state.legs[$i - 1].message = $(if ($hint) { $hint } else { "exit=" + $code })
+    } else {
+      $state.legs[$i - 1].status = "ok"
+      $state.legs[$i - 1].pct = 100
+      $state.legs[$i - 1].message = "OK " + [int]$sw.Elapsed.TotalSeconds + "s"
     }
-    $state.legs[$i - 1].status = $(if ($code -eq 0) { "ok" } else { "error" })
-    $state.legs[$i - 1].pct = 100
-    $state.legs[$i - 1].message = $(if ($code -eq 0) { "OK " + [int]$sw.Elapsed.TotalSeconds + "s" } else { if ($hint) { $hint } else { "exit=" + $code } })
   } catch {
     W ("FAIL " + $l.Name + " " + $_.Exception.Message)
     $state.legs[$i - 1].status = "error"
@@ -121,6 +136,55 @@ foreach ($l in $legs) {
   if (Test-Path $outF) {
     Get-Content $outF -Tail 8 -EA SilentlyContinue | ForEach-Object { W ("  | " + $_) }
   }
+}
+
+# After API collect: restamp blank Cove / EPP CustomerCodes from maps.
+# Devices with a blank code never show Cover even when the contract is on.
+$restampRel = @(
+  "Sql\central\440_Restamp_Cove_Epp_CustomerCodes.sql",
+  "sql\central\440_Restamp_Cove_Epp_CustomerCodes.sql"
+)
+$restamp = $null
+foreach ($rel in $restampRel) {
+  $p = Resolve-Collect $rel
+  if (Test-Path -LiteralPath $p) { $restamp = $p; break }
+}
+if ($restamp) {
+  W ("=== RESTAMP " + $restamp + " ===")
+  $sqlcmd = $null
+  $cmd = Get-Command sqlcmd -ErrorAction SilentlyContinue
+  if ($cmd) { $sqlcmd = $cmd.Source }
+  if (-not $sqlcmd) {
+    foreach ($p in @(
+      'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE',
+      'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\180\Tools\Binn\SQLCMD.EXE',
+      'D:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
+    )) {
+      if (Test-Path -LiteralPath $p) { $sqlcmd = $p; break }
+    }
+  }
+  if ($sqlcmd) {
+    $sqlServer = "102.222.21.220,14333"
+    $outR = Join-Path $logDir ("sched_restamp_" + $stamp + "_out.txt")
+    $errR = Join-Path $logDir ("sched_restamp_" + $stamp + "_err.txt")
+    try {
+      $p = Start-Process -FilePath $sqlcmd -ArgumentList @(
+        "-S", $sqlServer, "-d", "RPMAssure_App",
+        "-U", "Rpm_collect", "-P", "RpmCollect#AHIC2026",
+        "-C", "-b", "-i", $restamp
+      ) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $outR -RedirectStandardError $errR
+      W ("RESTAMP exit=" + [int]$p.ExitCode)
+      if (Test-Path $outR) {
+        Get-Content $outR -Tail 8 -EA SilentlyContinue | ForEach-Object { W ("  | " + $_) }
+      }
+    } catch {
+      W ("RESTAMP fail " + $_.Exception.Message)
+    }
+  } else {
+    W "RESTAMP skip — sqlcmd not found"
+  }
+} else {
+  W "RESTAMP skip — 440_Restamp_Cove_Epp_CustomerCodes.sql not found"
 }
 
 $state.running = $false

@@ -18,13 +18,16 @@ if (-not $ConfigPath) {
   foreach ($c in @(
       (Join-Path $here 'Cove.Config.ps1'),
       'C:\RPM-Assure\Sql\cove\Cove.Config.ps1',
-      'C:\RPM-Assure\deploy\ui-pack\Sql\cove\Cove.Config.ps1'
+      'C:\RPM-Assure\deploy\ui-pack\Sql\cove\Cove.Config.ps1',
+      'C:\RPM-Assure\deploy\ui-pack\sql\cove\Cove.Config.ps1',
+      'C:\RPM-Assure\config\Cove.Config.ps1'
     )) {
     if (Test-Path -LiteralPath $c) { $ConfigPath = $c; break }
   }
 }
 if (-not $ConfigPath -or -not (Test-Path -LiteralPath $ConfigPath)) {
-  throw 'Missing Cove.Config.ps1 — copy Cove.Config.example.ps1 to C:\RPM-Assure\Sql\cove\Cove.Config.ps1 and fill API user/password'
+  Write-Host 'SKIP Cove — missing Cove.Config.ps1 (copy Cove.Config.example.ps1 to C:\RPM-Assure\Sql\cove\Cove.Config.ps1)'
+  exit 2
 }
 . $ConfigPath
 if ([string]::IsNullOrWhiteSpace($Username) -or $Username -like 'PASTE*') { throw 'Set $Username in Cove.Config.ps1' }

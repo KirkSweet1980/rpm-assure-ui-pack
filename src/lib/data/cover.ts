@@ -308,7 +308,12 @@ export function coveredLegCount(c: CustomerCover): number {
 
 export function averageCoveredScores(
   cover: CustomerCover,
-  scores: { syspro?: number | null; rmm?: number | null; cove?: number | null },
+  scores: {
+    syspro?: number | null;
+    rmm?: number | null;
+    cove?: number | null;
+    epp?: number | null;
+  },
 ): number | null {
   const parts: number[] = [];
   if (cover.syspro && scores.syspro != null && Number.isFinite(scores.syspro)) {
@@ -319,6 +324,9 @@ export function averageCoveredScores(
   }
   if (cover.cove && scores.cove != null && Number.isFinite(scores.cove)) {
     parts.push(Number(scores.cove));
+  }
+  if (cover.epp && scores.epp != null && Number.isFinite(scores.epp)) {
+    parts.push(Number(scores.epp));
   }
   if (parts.length === 0) return null;
   return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;

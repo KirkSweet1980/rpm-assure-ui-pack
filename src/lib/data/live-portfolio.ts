@@ -55,7 +55,7 @@ import { formatSastDate } from "@/lib/utils";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
 import { rmmDeviceBelongsToCustomer } from "@/lib/data/rmm-device-owner";
-import { coveHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
+import { coveHealthFor, eppHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
 import { floorScoreToRag } from "./rag-score";
 import { worstLiveRag } from "./live-status";
 import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } from "./day-end";
@@ -402,7 +402,6 @@ function recomputeRowHealth(row: PortfolioRow): void {
         })()
       : null;
 
-
   const cove =
     cover2.cove
       ? (row.coveDeviceCount ?? 0) > 0
@@ -415,6 +414,19 @@ function recomputeRowHealth(row: PortfolioRow): void {
             rag: "Amber" as const,
             summary: "Cyber Backup covered — no device snapshot yet.",
           }
+      : null;
+
+  const eppManaged = row.eppManagedCount;
+  const eppAll = row.eppDeviceCount ?? 0;
+  const eppUnmanaged =
+    eppManaged != null && eppManaged > 0 ? Math.max(0, eppAll - eppManaged) : 0;
+  const epp =
+    cover2.epp
+      ? eppHealthFor({
+          deviceCount: eppAll,
+          unmanagedCount: eppUnmanaged,
+          infectedCount: row.bdInfectedCount ?? 0,
+        })
       : null;
 
   if (rmm) {
@@ -430,6 +442,7 @@ function recomputeRowHealth(row: PortfolioRow): void {
     syspro: sys,
     rmm,
     cove,
+    epp,
   });
   row.healthRag = worstLiveRag(row.customerCode, row, cover2);
   row.healthSummary = fin.summary;
@@ -459,6 +472,10 @@ const HEALTH_INPUT_KEYS = [
   "coveFailedDeviceCount",
   "coveStaleDeviceCount",
   "coveOkDeviceCount",
+  "eppDeviceCount",
+  "eppManagedCount",
+  "bdInfectedCount",
+  "eppLastImportAt",
 ] as const;
 
 /** Copy estate health inputs from a portfolio row (same numbers the left rail uses). */
@@ -1717,11 +1734,15 @@ function buildOperationalAssurance(args: {
   pulsewayServerOffline?: number;
   coveFailedDeviceCount?: number;
   coveDeviceCount?: number;
+  eppDeviceCount?: number;
+  eppManagedCount?: number;
+  eppInfectedCount?: number;
 }): OperationalAssurance {
   const cover = args.cover ?? { syspro: true, rmm: false, cove: false };
   const useSys = cover.syspro;
   const useRmm = cover.rmm;
   const useCove = cover.cove;
+  const useEpp = Boolean(cover.epp);
 
   const jobErrorCount = useSys ? args.jobErrorCount : 0;
   const operatorCount = useSys ? args.operatorCount : 0;
@@ -1781,10 +1802,31 @@ function buildOperationalAssurance(args: {
   if (useCove) {
     const n = args.coveDeviceCount ?? 0;
     const failed = args.coveFailedDeviceCount ?? 0;
-    coveScore = 100;
-    if (n <= 0) coveScore = 70;
-    else if (failed > 0) coveScore -= Math.min(50, failed * 15);
-    coveScore = Math.max(0, Math.min(100, coveScore));
+    if (n <= 0) {
+      coveScore = null;
+    } else {
+      coveScore = 100;
+      if (failed > 0) coveScore -= Math.min(50, failed * 15);
+      coveScore = Math.max(0, Math.min(100, coveScore));
+    }
+  }
+
+  let eppScore: number | null = null;
+  if (useEpp) {
+    const n = args.eppDeviceCount ?? 0;
+    const managed = args.eppManagedCount;
+    const infected = args.eppInfectedCount ?? 0;
+    if (n <= 0) {
+      eppScore = null;
+    } else {
+      eppScore = 100;
+      if (infected > 0) eppScore -= Math.min(40, infected * 15);
+      if (managed != null && n > 0) {
+        const unmanaged = Math.max(0, n - managed);
+        if (unmanaged > 0) eppScore -= Math.min(20, unmanaged * 4);
+      }
+      eppScore = Math.max(0, Math.min(100, eppScore));
+    }
   }
 
   // Estate RAG already baked into per-leg scores — do not double-penalise
@@ -1792,6 +1834,7 @@ function buildOperationalAssurance(args: {
     syspro: sysScore,
     rmm: rmmScore,
     cove: coveScore,
+    epp: eppScore,
   });
   let score =
     base != null
@@ -1801,7 +1844,7 @@ function buildOperationalAssurance(args: {
 
   const bits: string[] = [];
   if (!anyCover(cover)) {
-    bits.push("No cover — no SYSPRO, RMM, or Cyber Backup in scope.");
+    bits.push("No cover — no SYSPRO, RMM, Backup, or RPM EPP in scope.");
   } else {
     if (useSys) {
       bits.push(collectFresh ? "SYSPRO collect fresh (<24h)." : "SYSPRO collect stale or missing.");
@@ -1827,11 +1870,18 @@ function buildOperationalAssurance(args: {
     }
 
     if (useCove) {
-      bits.push(
-        `Cyber Backup: ${args.coveDeviceCount ?? 0} device(s), ${args.coveFailedDeviceCount ?? 0} failed.`,
-      );
+      const n = args.coveDeviceCount ?? 0;
+      if (n <= 0) bits.push("Cyber Backup: no devices (not scored).");
+      else bits.push(`Cyber Backup: ${n} device(s), ${args.coveFailedDeviceCount ?? 0} failed.`);
     } else {
       bits.push("Cyber Backup: No cover (not scored).");
+    }
+    if (useEpp) {
+      const n = args.eppDeviceCount ?? 0;
+      if (n <= 0) bits.push("RPM EPP: no endpoints (not scored).");
+      else bits.push(`RPM EPP: ${n} endpoint(s), ${args.eppInfectedCount ?? 0} infected.`);
+    } else {
+      bits.push("RPM EPP: No cover (not scored).");
     }
     bits.push(healthSummary || `Estate health ${healthRag}.`);
   }
@@ -6947,7 +6997,28 @@ ORDER BY UserPrincipalName, DisplayName`);
         : cover.cove
           ? { rag: "Amber" as const, summary: "Cyber Backup covered — no snapshot yet." }
           : null;
-    const fin = finalizeEstateHealth({ cover, syspro: sys, rmm: rmmH, cove: coveH });
+    const eppN =
+      Number(epp?.summary?.deviceCount) ||
+      epp?.devices?.length ||
+      customer.eppDeviceCount ||
+      0;
+    const eppUnmanaged =
+      epp?.summary?.unmanagedCount ??
+      epp?.devices?.filter((d) => d.isManaged === false).length ??
+      0;
+    const eppInfected =
+      epp?.devices?.filter((d) => d.infected).length ||
+      customer.bdInfectedCount ||
+      0;
+    const eppH =
+      cover.epp
+        ? eppHealthFor({
+            deviceCount: eppN,
+            unmanagedCount: eppUnmanaged,
+            infectedCount: eppInfected,
+          })
+        : null;
+    const fin = finalizeEstateHealth({ cover, syspro: sys, rmm: rmmH, cove: coveH, epp: eppH });
     customer.healthRag = fin.rag;
     customer.healthSummary = fin.summary;
   }
@@ -6978,8 +7049,7 @@ ORDER BY UserPrincipalName, DisplayName`);
     if (
       (epp?.devices?.length ?? 0) > 0 ||
       (epp?.summary?.deviceCount ?? 0) > 0 ||
-      (customer.eppDeviceCount ?? 0) > 0 ||
-      customer.pillarEpp === true
+      (customer.eppDeviceCount ?? 0) > 0
     ) {
       cover = { ...cover, epp: true };
       epp.enabled = true;
@@ -7092,6 +7162,11 @@ ORDER BY UserPrincipalName, DisplayName`);
       pulsewayServerOffline: rmm.summary?.serverOffline ?? 0,
       coveDeviceCount: cove.summary?.deviceCount ?? cove.devices?.length ?? 0,
       coveFailedDeviceCount: cove.summary?.failedCount ?? 0,
+      eppDeviceCount:
+        epp.summary?.deviceCount ?? epp.devices?.length ?? customer.eppDeviceCount ?? 0,
+      eppManagedCount: epp.summary?.managedCount ?? customer.eppManagedCount ?? 0,
+      eppInfectedCount:
+        epp.devices?.filter((d) => d.infected).length || customer.bdInfectedCount || 0,
     });
 
     // Never invent ticket clocks or a 99.5% availability target from health RAG.

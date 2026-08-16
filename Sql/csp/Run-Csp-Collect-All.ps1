@@ -1,10 +1,17 @@
 # Run Graph collect for every Csp.Config*.ps1 (except *example*).
 # Used by scheduled task RPMAssure-Csp-GraphCollect and the 15-min API runner.
+# Exit 0 = at least one tenant collected, or nothing to do (skip).
+# Exit 1 = configs found but every tenant failed.
+# Exit 2 = no config anywhere (runner treats as skip, not Recheck red).
 $ErrorActionPreference = "Continue"
 $roots = @(
   "C:\RPM-Assure\Sql\csp",
   $PSScriptRoot,
-  "C:\RPM-Assure\deploy\ui-pack\Sql\csp"
+  "C:\RPM-Assure\deploy\ui-pack\Sql\csp",
+  "C:\RPM-Assure\deploy\ui-pack\sql\csp",
+  "C:\RPM-Assure\Sql\customers",
+  "C:\RPM-Assure\config",
+  "C:\RPM-Assure\Sql"
 ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
 
 $here = $roots | Where-Object { Test-Path -LiteralPath (Join-Path $_ "Collect-Csp-Graph-To-RPMAssure.ps1") } | Select-Object -First 1
@@ -23,7 +30,13 @@ function L([string]$m) {
 L "=== Scheduled CSP Graph collect ALL tenants ==="
 $collect = Join-Path $here "Collect-Csp-Graph-To-RPMAssure.ps1"
 if (-not (Test-Path -LiteralPath $collect)) {
-  L "MISSING Collect-Csp-Graph-To-RPMAssure.ps1"
+  foreach ($dir in $roots) {
+    $try = Join-Path $dir "Collect-Csp-Graph-To-RPMAssure.ps1"
+    if (Test-Path -LiteralPath $try) { $collect = $try; break }
+  }
+}
+if (-not (Test-Path -LiteralPath $collect)) {
+  L "MISSING Collect-Csp-Graph-To-RPMAssure.ps1 — skip (not configured)"
   exit 2
 }
 
@@ -31,11 +44,13 @@ $configs = @()
 foreach ($dir in $roots) {
   $configs += @(Get-ChildItem -LiteralPath $dir -Filter "Csp.Config*.ps1" -File -EA SilentlyContinue |
     Where-Object { $_.Name -notmatch 'example' })
+  $configs += @(Get-ChildItem -LiteralPath $dir -Filter "Csp.Config*.ps1" -File -Recurse -Depth 3 -EA SilentlyContinue |
+    Where-Object { $_.Name -notmatch 'example' })
 }
 $configs = @($configs | Sort-Object FullName -Unique)
 
 if ($configs.Count -eq 0) {
-  L "No Csp.Config*.ps1 found in: $($roots -join '; ')"
+  L "No Csp.Config*.ps1 found in: $($roots -join '; ') — skip (Graph not configured)"
   exit 2
 }
 

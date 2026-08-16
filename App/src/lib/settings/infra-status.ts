@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getPool, getLastPoolError } from "@/lib/data/sql-pool";
+import { inferCustomerCover } from "@/lib/data/cover";
 
 export type InfraAgentRow = {
   customerCode: string;
@@ -20,6 +21,28 @@ export type InfraAgentRow = {
 
 function bitOn(v: unknown): boolean {
   return v === true || v === 1 || v === "1" || v === "true";
+}
+
+async function countMap(
+  pool: NonNullable<Awaited<ReturnType<typeof getPool>>>,
+  queries: string[],
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  for (const q of queries) {
+    try {
+      const r = await pool.request().query(q);
+      for (const row of r.recordset ?? []) {
+        const rec = row as Record<string, unknown>;
+        const code = String(rec.CustomerCode ?? "").trim().toUpperCase();
+        const n = Number(rec.DeviceCount);
+        if (code && Number.isFinite(n) && n > 0) out.set(code, n);
+      }
+      if (out.size > 0) return out;
+    } catch {
+      /* view / table may be missing on older warehouses */
+    }
+  }
+  return out;
 }
 
 export const fetchInfraAgents = createServerFn({ method: "GET" }).handler(async () => {
@@ -63,12 +86,101 @@ OUTER APPLY (
 ) r
 WHERE ISNULL(c.Active, 1) = 1
 ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
+    const rmmBy = await countMap(pool, [
+      `SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, ISNULL(DeviceCount, 0) AS DeviceCount
+       FROM dbo.vw_Kpi_Rmm_OrgSummary_Latest WITH (NOLOCK)
+       WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''`,
+      `;WITH latest AS (
+         SELECT CustomerCode, MAX(SnapshotDate) AS mx
+         FROM dbo.Pulseway_Devices WITH (NOLOCK)
+         WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+         GROUP BY CustomerCode
+       )
+       SELECT UPPER(LTRIM(RTRIM(p.CustomerCode))) AS CustomerCode, COUNT(*) AS DeviceCount
+       FROM dbo.Pulseway_Devices AS p WITH (NOLOCK)
+       INNER JOIN latest AS l ON l.CustomerCode = p.CustomerCode AND l.mx = p.SnapshotDate
+       GROUP BY UPPER(LTRIM(RTRIM(p.CustomerCode)))`,
+    ]);
+    const coveBy = await countMap(pool, [
+      `SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, SUM(ISNULL(DeviceCount, 0)) AS DeviceCount
+       FROM dbo.vw_Kpi_Cove_Summary WITH (NOLOCK)
+       WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+       GROUP BY UPPER(LTRIM(RTRIM(CustomerCode)))`,
+      `;WITH latest AS (
+         SELECT CustomerCode, MAX(SnapshotDate) AS mx
+         FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)
+         WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+         GROUP BY CustomerCode
+       )
+       SELECT UPPER(LTRIM(RTRIM(d.CustomerCode))) AS CustomerCode, COUNT(*) AS DeviceCount
+       FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
+       INNER JOIN latest AS l ON l.CustomerCode = d.CustomerCode AND l.mx = d.SnapshotDate
+       GROUP BY UPPER(LTRIM(RTRIM(d.CustomerCode)))`,
+    ]);
+    const eppBy = await countMap(pool, [
+      `SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, ISNULL(DeviceCount, 0) AS DeviceCount
+       FROM dbo.vw_Kpi_Epp_Summary WITH (NOLOCK)
+       WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''`,
+      `;WITH latest AS (
+         SELECT CustomerCode, MAX(SnapshotDate) AS mx
+         FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
+         WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+         GROUP BY CustomerCode
+       )
+       SELECT UPPER(LTRIM(RTRIM(e.CustomerCode))) AS CustomerCode, COUNT(*) AS DeviceCount
+       FROM dbo.Bitdefender_Endpoints AS e WITH (NOLOCK)
+       INNER JOIN latest AS l ON l.CustomerCode = e.CustomerCode AND l.mx = e.SnapshotDate
+       GROUP BY UPPER(LTRIM(RTRIM(e.CustomerCode)))`,
+    ]);
+    const cspUsersBy = await countMap(pool, [
+      `SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, ISNULL(UserCount, 0) AS DeviceCount
+       FROM dbo.vw_Kpi_Csp_Summary WITH (NOLOCK)
+       WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''`,
+      `;WITH latest AS (
+         SELECT CustomerCode, MAX(SnapshotDate) AS mx
+         FROM dbo.Csp_Users WITH (NOLOCK)
+         WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+         GROUP BY CustomerCode
+       )
+       SELECT UPPER(LTRIM(RTRIM(u.CustomerCode))) AS CustomerCode, COUNT(*) AS DeviceCount
+       FROM dbo.Csp_Users AS u WITH (NOLOCK)
+       INNER JOIN latest AS l ON l.CustomerCode = u.CustomerCode AND l.mx = u.SnapshotDate
+       GROUP BY UPPER(LTRIM(RTRIM(u.CustomerCode)))`,
+    ]);
+    const cspLicBy = await countMap(pool, [
+      `SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, ISNULL(SkuCount, 0) AS DeviceCount
+       FROM dbo.vw_Kpi_Csp_Summary WITH (NOLOCK)
+       WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''`,
+      `;WITH latest AS (
+         SELECT CustomerCode, MAX(SnapshotDate) AS mx
+         FROM dbo.Csp_Licenses WITH (NOLOCK)
+         WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+         GROUP BY CustomerCode
+       )
+       SELECT UPPER(LTRIM(RTRIM(l.CustomerCode))) AS CustomerCode, COUNT(*) AS DeviceCount
+       FROM dbo.Csp_Licenses AS l WITH (NOLOCK)
+       INNER JOIN latest AS l2 ON l2.CustomerCode = l.CustomerCode AND l2.mx = l.SnapshotDate
+       GROUP BY UPPER(LTRIM(RTRIM(l.CustomerCode)))`,
+    ]);
     const rows: InfraAgentRow[] = (r.recordset ?? []).map((row: Record<string, unknown>) => {
-      const sysproFlag = row.PillarSyspro;
-      const syspro =
-        sysproFlag === false || sysproFlag === 0 || sysproFlag === "0"
-          ? false
-          : bitOn(sysproFlag) || Boolean(row.SqlInstanceName && String(row.SqlInstanceName).trim());
+      const code = String(row.CustomerCode ?? "").trim().toUpperCase();
+      const cover = inferCustomerCover({
+        pillarSyspro: bitOn(row.PillarSyspro)
+          ? true
+          : row.PillarSyspro === false || row.PillarSyspro === 0 || row.PillarSyspro === "0"
+            ? false
+            : null,
+        pillarPulseway: bitOn(row.PillarPulseway) ? true : null,
+        pillarCove: bitOn(row.PillarCove) ? true : null,
+        pillarEpp: bitOn(row.PillarBitdefender) ? true : null,
+        pillarCsp: bitOn(row.PillarCsp) ? true : null,
+        sqlInstanceName: row.SqlInstanceName != null ? String(row.SqlInstanceName) : null,
+        pulsewayDeviceCount: rmmBy.get(code) ?? 0,
+        coveDeviceCount: coveBy.get(code) ?? 0,
+        eppDeviceCount: eppBy.get(code) ?? 0,
+        cspUserCount: cspUsersBy.get(code) ?? 0,
+        cspLicenseCount: cspLicBy.get(code) ?? 0,
+      });
       return {
         customerCode: String(row.CustomerCode ?? ""),
         displayName: String(row.DisplayName ?? row.CustomerCode ?? ""),
@@ -80,11 +192,11 @@ ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
           ? new Date(row.LastHeartbeatUtc as string).toISOString()
           : null,
         cover: {
-          syspro,
-          rmm: bitOn(row.PillarPulseway),
-          cove: bitOn(row.PillarCove),
-          epp: bitOn(row.PillarBitdefender),
-          csp: bitOn(row.PillarCsp),
+          syspro: cover.syspro,
+          rmm: cover.rmm,
+          cove: cover.cove,
+          epp: Boolean(cover.epp),
+          csp: Boolean(cover.csp),
         },
       };
     });

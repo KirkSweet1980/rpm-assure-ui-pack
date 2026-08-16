@@ -1405,30 +1405,13 @@ export function buildCustomPackHtml(opts: {
   }
 
   if (fieldOn(selected, "cover_strip")) {
-    const cov = (c as { cover?: Record<string, boolean> }).cover;
-    const cover = {
-      syspro: Boolean(c.pillarSyspro ?? cov?.syspro),
-      rmm: Boolean(c.pillarPulseway ?? cov?.rmm),
-      cove: Boolean(c.pillarCove ?? cov?.cove),
-      epp: Boolean(c.pillarEpp ?? cov?.epp),
-      csp: Boolean(c.pillarCsp ?? cov?.csp),
-    };
-    // Prefer effective flags if present on row
-    const row = c as {
-      pillarSyspro?: boolean | number | null;
-      pillarPulseway?: boolean | number | null;
-      pillarCove?: boolean | number | null;
-      pillarBitdefender?: boolean | number | null;
-      pillarCsp?: boolean | number | null;
-    };
-    const yn = (v: boolean) =>
-      v ? `<span class="ok">Cover</span>` : `<span class="warn">No cover</span>`;
+    const cover = coverFromDetail(detail);
     sections.push(`<h2 class="sec">Module cover</h2>${kvTable([
-      ["SYSPRO Deployment", yn(Boolean(row.pillarSyspro) || cover.syspro || Boolean(detail.dtrLevel1?.length))],
-      ["RPM Remote Management", yn(Boolean(row.pillarPulseway) || cover.rmm || Boolean(detail.rmm?.enabled))],
-      ["RPM Cloud Backup", yn(Boolean(row.pillarCove) || cover.cove || Boolean(detail.cove?.enabled))],
-      ["RPM EPP", yn(Boolean(row.pillarBitdefender) || cover.epp || Boolean(detail.epp?.enabled))],
-      ["Microsoft 365 Tenant", yn(Boolean(row.pillarCsp) || cover.csp || Boolean(detail.csp?.enabled))],
+      ["SYSPRO Deployment", ynCover(isPillarCovered(cover, "syspro"))],
+      ["RPM Remote Management", ynCover(isPillarCovered(cover, "rmm"))],
+      ["RPM Cloud Backup", ynCover(isPillarCovered(cover, "cove"))],
+      ["RPM EPP", ynCover(isPillarCovered(cover, "epp"))],
+      ["Microsoft 365 Tenant", ynCover(isPillarCovered(cover, "csp"))],
     ])}`);
   }
 
