@@ -165,14 +165,22 @@ $sqlRoot = Join-Path $Root "Sql"
 $custDir = Join-Path $sqlRoot ("customers\" + $CustomerCode)
 New-Item -ItemType Directory -Force -Path $agentRoot, (Join-Path $agentRoot "logs"), (Join-Path $agentRoot "tools"), (Join-Path $agentRoot "tray"), $custDir, (Join-Path $sqlRoot "base\syspro-direct") | Out-Null
 
+W "Stopping old Edge service so files are not locked..."
+$oldE = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+Stop-Service RPMAssure-Edge -Force -EA SilentlyContinue
+Get-Process nssm -EA SilentlyContinue | Stop-Process -Force -EA SilentlyContinue
+Start-Sleep -Seconds 1
+$ErrorActionPreference = $oldE
+
 W "Copying agent files..."
-robocopy $from $agentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+robocopy $from $agentRoot /E /XO /R:1 /W:1 /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 W "Copying sql agent files..."
-robocopy $from (Join-Path $sqlRoot "agent") /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+robocopy $from (Join-Path $sqlRoot "agent") /E /XO /R:1 /W:1 /XF Update-Agent-From-Central.ps1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 $baseSrc = Join-Path $pack "Sql\base\syspro-direct"
 if (Test-Path $baseSrc) {
   W "Copying SYSPRO collect scripts..."
-  robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
 W "Copies done."
 

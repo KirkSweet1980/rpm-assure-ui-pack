@@ -1,8 +1,6 @@
-# Kill hung wizard/install, install the Edge service WITHOUT git or first collect.
-# Administrator PowerShell on the customer SQL host:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Finish-Agent-Now.ps1
-$ErrorActionPreference = "Stop"
-Write-Host "Stopping hung installer / wizard / old agent..."
+# Kill hung wizard/install, stop service, copy without lock-wait, install service.
+$ErrorActionPreference = "Continue"
+Write-Host "Stopping hung installer / old agent..."
 Get-Process powershell, powershell_ise -EA SilentlyContinue | ForEach-Object {
   if ($_.Id -eq $PID) { return }
   try {
@@ -12,30 +10,27 @@ Get-Process powershell, powershell_ise -EA SilentlyContinue | ForEach-Object {
     }
   } catch {}
 }
+Stop-Service RPMAssure-Edge -Force -EA SilentlyContinue
 Get-Process nssm -EA SilentlyContinue | Stop-Process -Force -EA SilentlyContinue
+Start-Sleep 1
 
 $Pack = "C:\RPM-Assure\deploy\ui-pack"
 $from = Join-Path $Pack "Sql\agent"
 if (-not (Test-Path (Join-Path $from "RpmAssure-Agent.ps1"))) {
-  throw "Missing $from\RpmAssure-Agent.ps1 - git pull the pack first (do that in a NEW window, then re-run this)."
+  throw "Missing $from\RpmAssure-Agent.ps1"
 }
 
 $agent = "C:\RPM-Assure\Agent"
 $sql = "C:\RPM-Assure\Sql"
 New-Item -ItemType Directory -Force -Path $agent, "$agent\logs", "$agent\tools", "$agent\tray", "$sql\base\syspro-direct" | Out-Null
-robocopy $from $agent /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+Write-Host "Copying (1 retry, skip locked updater)..."
+robocopy $from $agent /E /XO /R:1 /W:1 /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 if (Test-Path "$Pack\Sql\base\syspro-direct") {
-  robocopy "$Pack\Sql\base\syspro-direct" "$sql\base\syspro-direct" /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  robocopy "$Pack\Sql\base\syspro-direct" "$sql\base\syspro-direct" /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
 
 $install = Join-Path $agent "Install-Agent-Service.ps1"
-if (-not (Test-Path $install)) { throw "Missing $install" }
-Write-Host "Installing Windows service (no first collect)..."
+Write-Host "Installing Windows service..."
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $install -AgentRoot $agent -SqlRoot $sql
-$svc = Get-Service RPMAssure-Edge -EA SilentlyContinue
-Write-Host ""
-Write-Host "========================================"
-Write-Host (" Service : " + $(if ($svc) { "$($svc.Status) $($svc.StartType)" } else { "MISSING" }))
-Write-Host " Tray    : look next to the clock after logon"
-Write-Host " Collect : runs on the service schedule (not now)"
-Write-Host "========================================"
+Get-Service RPMAssure-Edge -EA SilentlyContinue | Format-Table Name, Status, StartType -AutoSize
+Write-Host "Done. Finish is not needed - service install ran here."

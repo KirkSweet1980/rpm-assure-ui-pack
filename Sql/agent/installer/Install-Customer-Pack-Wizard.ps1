@@ -588,7 +588,7 @@ function Finish-InstallUi([string]$msg, [int]$code) {
 
 function Tick-Install {
   if (-not $script:InstallBusy) { return }
-  $files = @($script:InstallLog, $script:InstallErr, "C:\RPM-Assure\Agent\logs\wizard-install.log")
+  $files = @("C:\RPM-Assure\Agent\logs\wizard-install.log")
   foreach ($f in $files) {
     if (-not $f -or -not (Test-Path -LiteralPath $f)) { continue }
     $lines = @(Get-Content -LiteralPath $f -EA SilentlyContinue)
