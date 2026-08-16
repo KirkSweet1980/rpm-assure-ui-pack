@@ -125,9 +125,9 @@ function Test-RpmaCentral {
   [void]$tryHosts.Add("tcp:" + $h)
   $last = ""
   foreach ($cand in $tryHosts) {
-    $master = Test-RpmaSql -Server $cand -Database "master" -Mode sql -User $u -Password $p -TimeoutSec 20 -StrictHost
+    $master = Test-RpmaSql -Server $cand -Database "master" -Mode sql -User $u -Password $p -TimeoutSec 8 -StrictHost
     if ($master.Ok) {
-      $app = Test-RpmaSql -Server $cand -Database $db -Mode sql -User $u -Password $p -TimeoutSec 20 -StrictHost
+      $app = Test-RpmaSql -Server $cand -Database $db -Mode sql -User $u -Password $p -TimeoutSec 8 -StrictHost
       if ($app.Ok) { return @{ Ok = $true; Who = $app.Who; Error = ""; ServerUsed = $cand } }
       return @{ Ok = $false; Who = $master.Who; Error = ("Login works on central master but cannot open " + $db + ". " + $app.Error); ServerUsed = $cand }
     }

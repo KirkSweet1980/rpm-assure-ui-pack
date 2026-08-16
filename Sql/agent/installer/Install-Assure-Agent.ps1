@@ -20,6 +20,7 @@ param(
   [switch]$StartService,
   [switch]$RunOnce,
   [switch]$LockFiles,
+  [switch]$SkipGit,
   [string]$RepoUrl = "https://github.com/KirkSweet1980/rpm-assure-ui-pack.git",
   [string]$Root = "C:\RPM-Assure"
 )
@@ -46,6 +47,7 @@ if ($ConfigFile -and (Test-Path -LiteralPath $ConfigFile)) {
   if ($j.PSObject.Properties.Name -contains "StartService") { $StartService = [bool]$j.StartService }
   if ($j.PSObject.Properties.Name -contains "RunOnce") { $RunOnce = [bool]$j.RunOnce }
   if ($j.PSObject.Properties.Name -contains "LockFiles") { $LockFiles = [bool]$j.LockFiles }
+  if ($j.PSObject.Properties.Name -contains "SkipGit") { $SkipGit = [bool]$j.SkipGit }
 }
 
 $ErrorActionPreference = "Stop"
@@ -65,7 +67,6 @@ if ([string]::IsNullOrWhiteSpace($CentralSqlPassword)) { throw "Central SQL pass
 if (-not $ConfigFile) {
   if (-not $PSBoundParameters.ContainsKey("InstallTray")) { $InstallTray = $true }
   if (-not $PSBoundParameters.ContainsKey("StartService")) { $StartService = $true }
-  if (-not $PSBoundParameters.ContainsKey("LockFiles")) { $LockFiles = $true }
 }
 
 function W([string]$m) {
@@ -150,15 +151,11 @@ W "========================================"
 W " RPM Assure Edge Agent  |  $CustomerCode"
 W "========================================"
 
-$git = Ensure-Git
-W ("git = " + $git)
-$pack = [string](Ensure-Pack $git)
-if ($pack -notmatch '^[A-Za-z]:\\') {
-  $pack = "C:\RPM-Assure\deploy\ui-pack"
-}
+$pack = "C:\RPM-Assure\deploy\ui-pack"
 if (-not (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"))) {
-  throw "Pack missing Sql\agent after git. pack=$pack"
+  throw "Pack missing $pack\Sql\agent. Update the pack on this host first."
 }
+W "Using local pack (no git during install)."
 $from = Join-Path $pack "Sql\agent"
 $agentRoot = Join-Path $Root "Agent"
 $sqlRoot = Join-Path $Root "Sql"

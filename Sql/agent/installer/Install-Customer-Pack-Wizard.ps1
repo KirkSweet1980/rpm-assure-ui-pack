@@ -112,7 +112,13 @@ if ($cfgGuess) {
       $script:CentralPwd = [string]$CentralSqlPassword
     }
     if ($CentralSqlUser) { $script:CentralUser = [string]$CentralSqlUser }
-    if ($CentralDataSource) { $script:CentralHost = [string]$CentralDataSource }
+    if ($CentralDataSource) {
+      if (Get-Command Normalize-RpmaHost -EA SilentlyContinue) {
+        $script:CentralHost = [string](Normalize-RpmaHost $CentralDataSource).Tcp
+      } else {
+        $script:CentralHost = ([string]$CentralDataSource) -replace ',', ':'
+      }
+    }
   } catch {}
 }
 $Pages = @("Customer", "SQL access", "Assure login", "Password")
@@ -138,7 +144,7 @@ function New-Box([int]$x, [int]$y, [int]$w = 360, [switch]$Password) {
 }
 
 $form = New-Object Windows.Forms.Form
-$form.Text = "RPM Assure Agent 2.6"
+$form.Text = "RPM Assure Agent 2.7"
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
@@ -644,6 +650,7 @@ function Start-InstallJob {
     StartService       = $true
     RunOnce            = $false
     LockFiles          = $false
+    SkipGit            = $true
   }
   ($obj | ConvertTo-Json) | Set-Content -LiteralPath $cfg -Encoding UTF8
   $engine = "C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Install-Assure-Agent.ps1"

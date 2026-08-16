@@ -1,13 +1,12 @@
-# Kill hung wizard, pull git, launch v2.4 from the pack (not a stale copy).
-# Administrator PowerShell:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Launch-Fresh-Wizard.ps1
-$ErrorActionPreference = "Stop"
+# Pull pack with cmd (git stderr is not a PowerShell error), then launch wizard 2.7.
+$ErrorActionPreference = "Continue"
 $git = "C:\Program Files\Git\cmd\git.exe"
 $Pack = "C:\RPM-Assure\deploy\ui-pack"
 $Repo = "https://github.com/KirkSweet1980/rpm-assure-ui-pack.git"
 
 Write-Host "Stopping hung wizard windows..."
 Get-Process powershell, powershell_ise -EA SilentlyContinue | ForEach-Object {
+  if ($_.Id -eq $PID) { return }
   try {
     $cl = (Get-CimInstance Win32_Process -Filter ("ProcessId=" + $_.Id) -EA SilentlyContinue).CommandLine
     if ($cl -and ($cl -match "Install-Customer-Pack-Wizard|Install-Assure-Agent-Wizard")) {
@@ -19,16 +18,16 @@ Get-Process powershell, powershell_ise -EA SilentlyContinue | ForEach-Object {
 New-Item -ItemType Directory -Force -Path (Split-Path $Pack) | Out-Null
 if (Test-Path "$Pack\.git\index.lock") { Remove-Item "$Pack\.git\index.lock" -Force -EA SilentlyContinue }
 if (Test-Path "$Pack\.git") {
-  & $git -C $Pack fetch --all --prune
-  & $git -C $Pack reset --hard origin/main
+  cmd /c "`"$git`" -C `"$Pack`" fetch --all --prune"
+  cmd /c "`"$git`" -C `"$Pack`" reset --hard origin/main"
 } else {
   if (Test-Path $Pack) { cmd /c ("rmdir /s /q `"" + $Pack + "`"") | Out-Null }
-  & $git clone --depth 1 --branch main $Repo $Pack
+  cmd /c "`"$git`" clone --depth 1 --branch main $Repo `"$Pack`""
 }
 
 $wiz = Join-Path $Pack "Sql\agent\installer\Install-Customer-Pack-Wizard.ps1"
 if (-not (Test-Path $wiz)) { throw "Wizard missing after git pull: $wiz" }
-$head = & $git -C $Pack log -1 --oneline
+$head = cmd /c "`"$git`" -C `"$Pack`" log -1 --oneline"
 Write-Host ("HEAD " + $head)
 
 $code = ""
@@ -57,7 +56,7 @@ if (-not $code -and $cfgs.Count -eq 1) {
   if (-not $code) { $code = [string]$cfgs[0].Directory.Name }
 }
 Write-Host ("Customer " + $(if ($code) { $code } else { "(type in wizard)" }) + " host=" + $hostn)
-Write-Host "Launching wizard 2.4 from git pack..."
+Write-Host "Launching wizard 2.7..."
 $arg = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $wiz)
 if ($code) { $arg += @("-CustomerCode", $code) }
 if ($name) { $arg += @("-DisplayName", $name) }
