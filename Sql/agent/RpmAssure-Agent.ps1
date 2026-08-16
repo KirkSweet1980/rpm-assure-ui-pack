@@ -189,19 +189,30 @@ WHERE c.CustomerCode = $(Sql-Lit $Code);
 
 function Ensure-RpmaAgentScript([string]$Name) {
   $dest = Join-Path $AgentRoot $Name
-  if (Test-Path -LiteralPath $dest) { return $dest }
   $cands = @(
     (Join-Path $SqlRoot ("agent\" + $Name)),
     "C:\RPM-Assure\deploy\ui-pack\Sql\agent\$Name"
   )
+  $src = $null
   foreach ($c in $cands) {
-    if (-not (Test-Path -LiteralPath $c)) { continue }
-    New-Item -ItemType Directory -Force -Path $AgentRoot | Out-Null
-    Get-Content -LiteralPath $c -Raw | Set-Content -LiteralPath $dest -Encoding ASCII
-    W ("pushed missing $Name to agent")
-    return $dest
+    if (Test-Path -LiteralPath $c) { $src = $c; break }
   }
-  return $null
+  if (-not $src) {
+    if (Test-Path -LiteralPath $dest) { return $dest }
+    return $null
+  }
+  $need = $true
+  if (Test-Path -LiteralPath $dest) {
+    $srcTime = (Get-Item -LiteralPath $src).LastWriteTimeUtc
+    $dstTime = (Get-Item -LiteralPath $dest).LastWriteTimeUtc
+    $need = $srcTime -gt $dstTime.AddSeconds(2)
+  }
+  if ($need) {
+    New-Item -ItemType Directory -Force -Path $AgentRoot | Out-Null
+    Get-Content -LiteralPath $src -Raw | Set-Content -LiteralPath $dest -Encoding ASCII
+    W ("pushed $Name to agent")
+  }
+  return $dest
 }
 
 function Test-RpmaServiceOnCover($flag, [string]$service, [string]$instanceName) {
