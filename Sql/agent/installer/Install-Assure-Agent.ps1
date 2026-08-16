@@ -93,24 +93,41 @@ function Ensure-Git {
   return $git
 }
 
-function Ensure-Pack([string]$git) {
-  $pack = Join-Path $Root "deploy\ui-pack"
-  New-Item -ItemType Directory -Force -Path (Join-Path $Root "deploy") | Out-Null
-  if (Test-Path (Join-Path $pack ".git")) {
-    & $git -C $pack fetch --all --prune
-    if (Test-Path (Join-Path $pack ".git\index.lock")) { Remove-Item (Join-Path $pack ".git\index.lock") -Force -EA SilentlyContinue }
-    & $git -C $pack reset --hard origin/main
-    if ($LASTEXITCODE -ne 0) {
-      Remove-Item $pack -Recurse -Force
-      & $git clone --depth 1 --branch main $RepoUrl $pack
-    }
-  } else {
-    if (Test-Path $pack) { Remove-Item $pack -Recurse -Force }
-    & $git clone --depth 1 --branch main $RepoUrl $pack
+function Invoke-GitQuiet {
+  param([Parameter(Mandatory)][string]$GitExe, [Parameter(Mandatory)][string[]]$GitArgs)
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  $out = & $GitExe @GitArgs 2>&1
+  $code = $LASTEXITCODE
+  $ErrorActionPreference = $prev
+  foreach ($line in @($out)) {
+    $s = [string]$line
+    if ($s.Trim()) { Write-Host $s }
   }
-  $from = Join-Path $pack "Sql\agent"
-  if (-not (Test-Path (Join-Path $from "RpmAssure-Agent.ps1"))) { throw "Pack missing Sql\agent after git." }
-  return $pack
+  return $code
+}
+
+function Ensure-Pack([string]$git) {
+  $pack = "C:\RPM-Assure\deploy\ui-pack"
+  New-Item -ItemType Directory -Force -Path "C:\RPM-Assure\deploy" | Out-Null
+  $lock = Join-Path $pack ".git\index.lock"
+  if (Test-Path -LiteralPath $lock) { Remove-Item -LiteralPath $lock -Force -EA SilentlyContinue }
+  $ok = $false
+  if (Test-Path -LiteralPath (Join-Path $pack ".git")) {
+    [void](Invoke-GitQuiet -GitExe $git -GitArgs @("-C", $pack, "fetch", "--all", "--prune"))
+    $rc = Invoke-GitQuiet -GitExe $git -GitArgs @("-C", $pack, "reset", "--hard", "origin/main")
+    if ($rc -eq 0 -and (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"))) { $ok = $true }
+  }
+  if (-not $ok) {
+    if (Test-Path -LiteralPath $pack) {
+      cmd /c ("rmdir /s /q `"" + $pack + "`"") | Out-Null
+    }
+    $rc = Invoke-GitQuiet -GitExe $git -GitArgs @("clone", "--depth", "1", "--branch", "main", $RepoUrl, $pack)
+    if ($rc -ne 0 -or -not (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"))) {
+      throw "git clone failed for ui-pack"
+    }
+  }
+  return [string]$pack
 }
 
 W "========================================"
@@ -119,7 +136,13 @@ W "========================================"
 
 $git = Ensure-Git
 W ("git = " + $git)
-$pack = Ensure-Pack $git
+$pack = [string](Ensure-Pack $git)
+if ($pack -notmatch '^[A-Za-z]:\\') {
+  $pack = "C:\RPM-Assure\deploy\ui-pack"
+}
+if (-not (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"))) {
+  throw "Pack missing Sql\agent after git. pack=$pack"
+}
 $from = Join-Path $pack "Sql\agent"
 $agentRoot = Join-Path $Root "Agent"
 $sqlRoot = Join-Path $Root "Sql"

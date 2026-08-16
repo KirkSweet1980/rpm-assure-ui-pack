@@ -562,10 +562,10 @@ function Run-Install {
     $pack = "C:\RPM-Assure\deploy\ui-pack"
     New-Item -ItemType Directory -Force -Path C:\RPM-Assure\deploy | Out-Null
     if (Test-Path "$pack\.git") {
-      & $git -C $pack fetch --all --prune
-      & $git -C $pack reset --hard origin/main
+      $null = & $git -C $pack fetch --all --prune 2>&1
+      $null = & $git -C $pack reset --hard origin/main 2>&1
     } else {
-      & $git clone --depth 1 --branch main https://github.com/KirkSweet1980/rpm-assure-ui-pack.git $pack
+      $null = & $git clone --depth 1 --branch main https://github.com/KirkSweet1980/rpm-assure-ui-pack.git $pack 2>&1
     }
   }
   if (-not (Test-Path $engine)) { Log "ERROR engine missing"; return }
