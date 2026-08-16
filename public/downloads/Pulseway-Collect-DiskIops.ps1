@@ -1,19 +1,32 @@
-# Pulseway Automation — no Assure Edge agent required.
-# Pulseway → Automation → Scripts → New (PowerShell). Inputs:
-#   AssureUrl      = https://assure.rpmresources.co.za/api/iops
-#   AssureSecret   = RPM_ASSURE_IOPS_SECRET from the website host
-#   CustomerCode   = optional (RSR / AHIC / RSS). Leave empty for auto-map.
-#   OrganizationName = optional Pulseway org name (helps mapping)
-# Scope: Windows servers. Do not require C:\RPM-Assure.
-#
-# ASCII only. Windows PowerShell 5.1.
+# Pulseway Automation — no Assure Edge agent. Paste THIS BODY into the script.
+# Pulseway user-defined INPUT (name exactly):
+#   AssureSecret  = RPM_ASSURE_IOPS_SECRET from the website host .env.local
+# Optional: CustomerCode, OrganizationName
+# URL is hardcoded. Do not use a file path. Scope: Windows servers.
 
 $ErrorActionPreference = 'Continue'
+function Pick-In {
+  param([string[]]$Names)
+  foreach ($n in $Names) {
+    if (Get-Variable -Name $n -ErrorAction SilentlyContinue) {
+      $v = [string](Get-Variable -Name $n -ValueOnly -ErrorAction SilentlyContinue)
+      if ($v -and $v.Trim() -ne '' -and $v -notmatch '^%%' -and $v -notmatch '^\{\{') { return $v.Trim() }
+    }
+  }
+  return $null
+}
+
+$AssureUrl = Pick-In @('AssureUrl','IopsUrl','Url')
 if (-not $AssureUrl) { $AssureUrl = 'https://assure.rpmresources.co.za/api/iops' }
-if (-not $AssureSecret) { $AssureSecret = $env:RPM_ASSURE_IOPS_SECRET }
-if (-not $AssureSecret) { $AssureSecret = $env:PULSEWAY_WEBHOOK_SECRET }
+$AssureSecret = Pick-In @('AssureSecret','Secret','IopsSecret','RPM_ASSURE_IOPS_SECRET','PULSEWAY_WEBHOOK_SECRET')
+if (-not $AssureSecret) { $AssureSecret = [string]$env:RPM_ASSURE_IOPS_SECRET }
+if (-not $AssureSecret) { $AssureSecret = [string]$env:PULSEWAY_WEBHOOK_SECRET }
+$CustomerCode = Pick-In @('CustomerCode','Customer','Code')
+$OrganizationName = Pick-In @('OrganizationName','Organization','Org')
 $SampleSec = 6
-if ($SampleSec -lt 4) { $SampleSec = 4 }
+$secFlag = 'MISSING'
+if ($AssureSecret) { $secFlag = 'set' }
+Write-Host ("IOPS start host=" + $env:COMPUTERNAME + " url=" + $AssureUrl + " secret=" + $secFlag + " customer=" + $CustomerCode)
 
 function Drive-Key([string]$inst) {
   if (-not $inst) { return $null }
@@ -106,21 +119,24 @@ $volumes = @()
 foreach ($k in @($by.Keys | Sort-Object)) {
   $b = $by[$k]
   $t = $b.total
-  if ($null -eq $t -and ($null -ne $b.read -or $null -ne $b.write)) {
-    $t = [math]::Round(($(if ($null -ne $b.read) { $b.read } else { 0 }) + $(if ($null -ne $b.write) { $b.write } else { 0 })), 2)
+  if ($null -eq $t) {
+    $rd = 0; $wr = 0
+    if ($null -ne $b.read) { $rd = $b.read }
+    if ($null -ne $b.write) { $wr = $b.write }
+    if ($null -ne $b.read -or $null -ne $b.write) { $t = [math]::Round(($rd + $wr), 2) }
   }
   $volumes += @{
-    driveLetter   = $b.letter
-    totalGb       = $b.totGb
-    freeGb        = $b.freeGb
-    usedPct       = $b.used
-    mediaType     = $b.media
-    readIops      = $b.read
-    writeIops     = $b.write
-    totalIops     = $t
-    queueLen      = $b.queue
-    readLatencyMs = $b.latR
-    writeLatencyMs= $b.latW
+    driveLetter    = $b.letter
+    totalGb        = $b.totGb
+    freeGb         = $b.freeGb
+    usedPct        = $b.used
+    mediaType      = $b.media
+    readIops       = $b.read
+    writeIops      = $b.write
+    totalIops      = $t
+    queueLen       = $b.queue
+    readLatencyMs  = $b.latR
+    writeLatencyMs = $b.latW
   }
 }
 
@@ -129,7 +145,7 @@ if ($volumes.Count -eq 0) {
   exit 1
 }
 if (-not $AssureSecret) {
-  Write-Host 'FAIL AssureSecret input is empty — set it on the Pulseway script'
+  Write-Host 'FAIL user-defined input AssureSecret is empty. Script → Variables → Input → Name=AssureSecret (exact) → paste website secret.'
   exit 1
 }
 
@@ -144,9 +160,7 @@ if ($OrganizationName) { $bodyObj.organizationName = [string]$OrganizationName }
 $body = $bodyObj | ConvertTo-Json -Depth 6 -Compress
 
 try {
-  $resp = Invoke-WebRequest -Uri $AssureUrl -Method POST -UseBasicParsing -TimeoutSec 45 `
-    -Headers @{ 'X-Assure-Secret' = $AssureSecret; 'Content-Type' = 'application/json' } `
-    -Body $body
+  $resp = Invoke-WebRequest -Uri $AssureUrl -Method POST -UseBasicParsing -TimeoutSec 45 -Headers @{ 'X-Assure-Secret' = $AssureSecret; 'Content-Type' = 'application/json' } -Body $body
   Write-Host ("OK " + $resp.StatusCode + " " + $resp.Content)
   exit 0
 } catch {
