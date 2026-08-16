@@ -1,6 +1,11 @@
 # Customer Edge Agent wizard.
 # Same questions as onboard: existing SQL access first, then create rpmassure,
 # test Assure + central, set agent password, Finish.
+param(
+  [string]$CustomerCode = "",
+  [string]$DisplayName = "",
+  [string]$SqlHost = ""
+)
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -9,8 +14,41 @@ Add-Type -AssemblyName System.Drawing
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
   [Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $IsAdmin) {
-  Start-Process powershell.exe -Verb RunAs -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $MyInvocation.MyCommand.Path)
+  $pass = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $MyInvocation.MyCommand.Path)
+  if ($CustomerCode) { $pass += @("-CustomerCode", $CustomerCode) }
+  if ($DisplayName) { $pass += @("-DisplayName", $DisplayName) }
+  if ($SqlHost) { $pass += @("-SqlHost", $SqlHost) }
+  Start-Process powershell.exe -Verb RunAs -ArgumentList $pass
   exit
+}
+
+function Read-CfgIdentity([string]$path) {
+  $o = @{ Code = ""; Name = ""; Host = "" }
+  if (-not (Test-Path -LiteralPath $path)) { return $o }
+  $t = [string](Get-Content -LiteralPath $path -Raw -EA SilentlyContinue)
+  if ($t -match '(?m)^\s*\$CustomerCode\s*=\s*[''"]([^''"]+)') { $o.Code = [string]$Matches[1] }
+  if ($t -match '(?m)^\s*\$DisplayName\s*=\s*[''"]([^''"]+)') { $o.Name = [string]$Matches[1] }
+  if ($t -match '(?m)^\s*\$InstanceName\s*=\s*[''"]([^''"]+)') { $o.Host = [string]$Matches[1] }
+  if (-not $o.Host -and $t -match '(?m)^\s*\$SqlInstanceName\s*=\s*[''"]([^''"]+)') { $o.Host = [string]$Matches[1] }
+  return $o
+}
+
+function Pick-LocalCustomer {
+  $hn = [string]$env:COMPUTERNAME
+  $hits = @(Get-ChildItem "C:\RPM-Assure\Sql\customers" -Filter "Customer.Config.ps1" -Recurse -EA SilentlyContinue)
+  if (-not $hits.Count) { return $null }
+  $parsed = @()
+  foreach ($f in $hits) {
+    $id = Read-CfgIdentity $f.FullName
+    if (-not $id.Code) { $id.Code = [string]$f.Directory.Name }
+    $parsed += ,@{ File = $f.FullName; Code = $id.Code; Name = $id.Name; Host = $id.Host }
+  }
+  $best = $parsed | Where-Object { $_.Host -and ($_.Host -eq $hn -or $hn -like ("*" + $_.Host + "*") -or $_.Host -like ("*" + $hn + "*")) } | Select-Object -First 1
+  if (-not $best) {
+    $best = $parsed | Where-Object { $_.Code -and $hn -like ("*" + $_.Code + "*") } | Select-Object -First 1
+  }
+  if (-not $best -and $parsed.Count -eq 1) { $best = $parsed[0] }
+  return $best
 }
 
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -20,6 +58,26 @@ if (Test-Path $pkgPath) { $pkg = Get-Content -LiteralPath $pkgPath -Raw | Conver
 $connectPs1 = Join-Path $Here "Sql-Connect.ps1"
 if (-not (Test-Path $connectPs1)) { $connectPs1 = "C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Sql-Connect.ps1" }
 if (Test-Path $connectPs1) { . $connectPs1 }
+
+$picked = Pick-LocalCustomer
+$script:FillCode = ""
+$script:FillName = ""
+$script:FillHost = [string]$env:COMPUTERNAME
+if ($CustomerCode) { $script:FillCode = $CustomerCode.Trim().ToUpperInvariant() }
+if ($DisplayName) { $script:FillName = $DisplayName.Trim() }
+if ($SqlHost) { $script:FillHost = $SqlHost.Trim() }
+if (-not $script:FillCode -and $pkg) {
+  $script:FillCode = [string]$(if ($pkg.customerCode) { $pkg.customerCode } else { $pkg.CustomerCode })
+  if (-not $script:FillName) { $script:FillName = [string]$(if ($pkg.displayName) { $pkg.displayName } else { $pkg.DisplayName }) }
+  $ph = [string]$(if ($pkg.sqlHost) { $pkg.sqlHost } elseif ($pkg.SqlHost) { $pkg.SqlHost } elseif ($pkg.instanceName) { $pkg.instanceName } else { "" })
+  if ($ph) { $script:FillHost = $ph }
+}
+if (-not $script:FillCode -and $picked) {
+  $script:FillCode = [string]$picked.Code
+  if (-not $script:FillName) { $script:FillName = [string]$picked.Name }
+  if ($picked.Host) { $script:FillHost = [string]$picked.Host }
+}
+if ($script:FillCode) { $script:FillCode = $script:FillCode.Trim().ToUpperInvariant() }
 
 $Teal = [Drawing.Color]::FromArgb(31, 157, 138)
 $Navy = [Drawing.Color]::FromArgb(13, 27, 36)
@@ -40,7 +98,11 @@ $script:CentralPwd = "@ssuR3me!"
 $script:CentralHost = "102.222.21.220,14333"
 $script:ExtraPwds = New-Object System.Collections.Generic.List[string]
 [void]$script:ExtraPwds.Add("@ssuR3me!")
-$cfgGuess = Get-ChildItem "C:\RPM-Assure\Sql\customers" -Filter "Customer.Config.ps1" -Recurse -EA SilentlyContinue | Select-Object -First 1
+$cfgGuess = $null
+if ($picked -and $picked.File) { $cfgGuess = Get-Item -LiteralPath $picked.File -EA SilentlyContinue }
+if (-not $cfgGuess) {
+  $cfgGuess = Get-ChildItem "C:\RPM-Assure\Sql\customers" -Filter "Customer.Config.ps1" -Recurse -EA SilentlyContinue | Select-Object -First 1
+}
 if ($cfgGuess) {
   try {
     . $cfgGuess.FullName
@@ -131,10 +193,10 @@ $btnNext = New-Btn "Next" 350 $Teal ([Drawing.Color]::White)
 $btnCancel = New-Btn "Cancel" 480 ([Drawing.Color]::FromArgb(232, 238, 240)) $Ink
 $footer.Controls.AddRange(@($btnBack, $btnNext, $btnCancel))
 
-$txtCode = New-Box 24 90; if ($pkg) { $txtCode.Text = [string]$pkg.customerCode }
-$txtName = New-Box 24 150; if ($pkg) { $txtName.Text = [string]$pkg.displayName }
+$txtCode = New-Box 24 90; $txtCode.Text = [string]$script:FillCode
+$txtName = New-Box 24 150; $txtName.Text = [string]$script:FillName
 $txtHost = New-Box 24 210
-if ($pkg -and $pkg.sqlHost) { $txtHost.Text = [string]$pkg.sqlHost } else { $txtHost.Text = $env:COMPUTERNAME }
+$txtHost.Text = $(if ($script:FillHost) { [string]$script:FillHost } else { [string]$env:COMPUTERNAME })
 
 $rbWin = New-Object Windows.Forms.RadioButton
 $rbWin.Text = "Windows authentication (this Windows user)"
