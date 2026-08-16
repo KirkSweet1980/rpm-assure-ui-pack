@@ -4,8 +4,9 @@
 # Policy (2026-08):
 # - Online / heartbeat NEVER depends on which pillars are on cover.
 # - All collect scripts are always deployed to every agent.
-# - Cover only influences RoleTags (informational) and which jobs the agent
-#   chooses to schedule by default. Central can still trigger any script.
+# - At install: detect Pulseway / Bitdefender / Cove on this host and ENABLE
+#   matching cover pillars on central (never clears cover).
+# - Cover influences RoleTags + default job schedule only.
 param(
   [string]$ConfigFile = "",
   [string]$CustomerCode = "",
@@ -86,67 +87,6 @@ function W([string]$m) {
   } catch {}
 }
 
-function Find-Git {
-  $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
-  $g = Get-Command git -EA SilentlyContinue
-  if ($g) { return $g.Source }
-  foreach ($p in @("C:\Program Files\Git\cmd\git.exe", "C:\Program Files (x86)\Git\cmd\git.exe")) {
-    if (Test-Path $p) { return $p }
-  }
-  return $null
-}
-
-function Ensure-Git {
-  $git = Find-Git
-  if ($git) { return $git }
-  W "Installing Git for Windows..."
-  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  $tmp = Join-Path $env:TEMP "Git-64-bit.exe"
-  Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe" -OutFile $tmp
-  Start-Process -FilePath $tmp -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-" -Wait
-  $git = Find-Git
-  if (-not $git) { throw "Git installed. Open a NEW Administrator window and run the wizard again." }
-  return $git
-}
-
-function Invoke-GitQuiet {
-  param([Parameter(Mandatory)][string]$GitExe, [Parameter(Mandatory)][string[]]$GitArgs)
-  $env:GIT_TERMINAL_PROMPT = "0"
-  $env:GCM_INTERACTIVE = "Never"
-  $prev = $ErrorActionPreference
-  $ErrorActionPreference = "Continue"
-  $out = & $GitExe @GitArgs 2>&1
-  $code = $LASTEXITCODE
-  $ErrorActionPreference = $prev
-  foreach ($line in @($out)) {
-    $s = [string]$line
-    if ($s.Trim()) { Write-Host $s }
-  }
-  return $code
-}
-
-function Ensure-Pack([string]$git) {
-  $pack = "C:\RPM-Assure\deploy\ui-pack"
-  New-Item -ItemType Directory -Force -Path "C:\RPM-Assure\deploy" | Out-Null
-  $agentPs1 = Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"
-  if (Test-Path -LiteralPath $agentPs1) {
-    Write-Host "Pack already present - skip git (avoids hang)."
-    return [string]$pack
-  }
-  $lock = Join-Path $pack ".git\index.lock"
-  if (Test-Path -LiteralPath $lock) { Remove-Item -LiteralPath $lock -Force -EA SilentlyContinue }
-  $ok = $false
-  if (Test-Path -LiteralPath (Join-Path $pack ".git")) {
-    [void](Invoke-GitQuiet -GitExe $git -GitArgs @("-C", $pack, "fetch", "--all", "--prune"))
-    $rc = Invoke-GitQuiet -GitExe $git -GitArgs @("-C", $pack, "reset", "--hard", "origin/main")
-    if ($rc -eq 0 -and (Test-Path -LiteralPath $agentPs1)) { $ok = $true }
-  }
-  if (-not $ok) {
-    throw "ui-pack missing Sql\agent. Run git reset on the app/SQL host first, then Finish again. Do not wait on this window."
-  }
-  return [string]$pack
-}
-
 try {
   $pf0 = "C:\RPM-Assure\Agent\logs\wizard-install.log"
   New-Item -ItemType Directory -Force -Path (Split-Path $pf0) | Out-Null
@@ -164,7 +104,6 @@ if (-not (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1
 W "Using local pack (no git during install)."
 
 function Get-InstallCover([string]$Code) {
-  # Cover is informational only (RoleTags). It never gates file deployment or online status.
   $out = @{ syspro = $false; rmm = $false; cove = $false; epp = $false; csp = $false }
   try {
     $n = $CentralDataSource
@@ -181,8 +120,7 @@ SELECT
   ISNULL(CAST(a.PillarPulseway AS int), -1) AS R,
   ISNULL(CAST(a.PillarCove AS int), -1) AS C,
   ISNULL(CAST(a.PillarBitdefender AS int), -1) AS E,
-  ISNULL(CAST(a.PillarCsp AS int), -1) AS M,
-  ISNULL(c.SqlInstanceName, N'') AS Inst
+  ISNULL(CAST(a.PillarCsp AS int), -1) AS M
 FROM dbo.Dim_Customer c WITH (NOLOCK)
 LEFT JOIN dbo.Dim_Customer_AmsConfig a WITH (NOLOCK) ON a.CustomerCode = c.CustomerCode
 WHERE c.CustomerCode = N'$safe'
@@ -197,20 +135,66 @@ WHERE c.CustomerCode = N'$safe'
     }
     $rd.Close(); $cn.Close(); $cn.Dispose()
   } catch {
-    W ("Cover lookup failed (RoleTags only; scripts still deployed): " + $_.Exception.Message)
+    W ("Cover lookup failed (continuing): " + $_.Exception.Message)
   }
   return $out
 }
 
 $cover = Get-InstallCover $CustomerCode
-$tags = @('agent')   # always present - online does not require any pillar
-if ($cover.syspro) { $tags += "syspro" }
-if ($cover.rmm) { $tags += "rmm" }
-if ($cover.cove) { $tags += "cove" }
-if ($cover.epp) { $tags += "epp" }
-if ($cover.csp) { $tags += "csp" }
-$RoleTags = ($tags -join ",")
-W ("Cover (info only) syspro=$($cover.syspro) rmm=$($cover.rmm) cove=$($cover.cove) epp=$($cover.epp) csp=$($cover.csp) roles=$RoleTags")
+W ("Central cover: syspro=$($cover.syspro) rmm=$($cover.rmm) cove=$($cover.cove) epp=$($cover.epp) csp=$($cover.csp)")
+
+# ---- Local product detection (Pulseway / Bitdefender / Cove) ----
+$detectPs1 = Join-Path $pack 'Sql\agent\Detect-Local-Services.ps1'
+if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Sql\agent\Detect-Local-Services.ps1' }
+if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Agent\Detect-Local-Services.ps1' }
+$local = @{ Pulseway = $false; Bitdefender = $false; Cove = $false; Details = @() }
+if (Test-Path $detectPs1) {
+  . $detectPs1
+  $local = Get-RpmaLocalServices
+  W "Local product scan:"
+  W ("  Pulseway     : " + $local.Pulseway)
+  W ("  Bitdefender  : " + $local.Bitdefender)
+  W ("  Cove         : " + $local.Cove)
+  foreach ($d in $local.Details) { W ("    - " + $d) }
+  if (-not $local.Details.Count) { W '    (none detected on this host)' }
+} else {
+  W 'WARN Detect-Local-Services.ps1 missing - skipping product scan'
+}
+
+# Enable cover on central for anything found locally (never clears)
+if ($local.Pulseway -or $local.Bitdefender -or $local.Cove) {
+  $enablePs1 = Join-Path $pack 'Sql\agent\Enable-Cover-From-Local.ps1'
+  if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Sql\agent\Enable-Cover-From-Local.ps1' }
+  if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Agent\Enable-Cover-From-Local.ps1' }
+  if (Test-Path $enablePs1) {
+    W 'Enabling cover on central from local products...'
+    $en = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $enablePs1 `
+      -CustomerCode $CustomerCode `
+      -CentralDataSource $CentralDataSource `
+      -CentralDatabase $CentralDatabase `
+      -CentralSqlUser $CentralSqlUser `
+      -CentralSqlPassword $CentralSqlPassword `
+      -Pulseway:([bool]$local.Pulseway) `
+      -Bitdefender:([bool]$local.Bitdefender) `
+      -Cove:([bool]$local.Cove) `
+      -AgentRoot (Join-Path $Root 'Agent')
+  } else {
+    W 'WARN Enable-Cover-From-Local.ps1 missing'
+  }
+  # Refresh cover flags after enable
+  if ($local.Pulseway) { $cover.rmm = $true }
+  if ($local.Cove) { $cover.cove = $true }
+  if ($local.Bitdefender) { $cover.epp = $true }
+}
+
+$tags = @('agent')
+if ($cover.syspro) { $tags += 'syspro' }
+if ($cover.rmm) { $tags += 'rmm' }
+if ($cover.cove) { $tags += 'cove' }
+if ($cover.epp) { $tags += 'epp' }
+if ($cover.csp) { $tags += 'csp' }
+$RoleTags = ($tags -join ',')
+W ("RoleTags: $RoleTags")
 
 $from = Join-Path $pack "Sql\agent"
 $agentRoot = Join-Path $Root "Agent"
@@ -231,16 +215,14 @@ robocopy $from $agentRoot /E /XO /R:1 /W:1 /XF Agent.Secrets.bin Agent.Config.ps
 W "Copying sql agent files..."
 robocopy $from (Join-Path $sqlRoot "agent") /E /XO /R:1 /W:1 /XF Update-Agent-From-Central.ps1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 
-# ALWAYS deploy every collect script pack so central can enable any service later.
-# Cover never gates file presence.
 $baseSrc = Join-Path $pack "Sql\base\syspro-direct"
 if (Test-Path $baseSrc) {
-  W "Deploying ALL collect scripts (syspro-direct) - cover does not gate files."
+  W "Deploying ALL collect scripts (syspro-direct)."
   robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 } else {
-  W "WARN pack has no Sql\base\syspro-direct - agent still installs; scripts can arrive via later pack update."
+  W "WARN pack has no Sql\base\syspro-direct"
 }
-W "Copies done (all scripts available to agent)."
+W "Copies done."
 
 $custCfg = Join-Path $custDir "Customer.Config.ps1"
 $custBody = @"
@@ -263,7 +245,7 @@ W "Wrote $custCfg"
 $cfgPath = Join-Path $agentRoot "Agent.Config.ps1"
 $cfgBody = @"
 # Non-secret agent settings. Passwords live in Agent.Secrets.bin (DPAPI).
-# RoleTags are informational; online status is heartbeat-only.
+# RoleTags informational; online = heartbeat only.
 `$CustomerCode = '$CustomerCode'
 `$DisplayName = '$($DisplayName.Replace("'", "''"))'
 `$InstanceName = '$($InstanceName.Replace("'", "''"))'
@@ -291,7 +273,7 @@ $set.centralDataSource = $CentralDataSource
 $set.centralDatabase = $CentralDatabase
 $set.centralSqlUser = $CentralSqlUser
 Save-RpmaAgentSettings $set
-W "Secrets saved (folder not locked during install)."
+W "Secrets saved."
 
 $install = Join-Path $agentRoot "Install-Agent-Service.ps1"
 if (-not (Test-Path $install)) { throw "Missing $install" }
@@ -319,7 +301,8 @@ W (" Customer : " + $DisplayName + " (" + $CustomerCode + ")")
 W (" Host     : " + $env:COMPUTERNAME)
 W (" Instance : " + $InstanceName)
 W (" Service  : " + $(if ($svc) { $svc.Status } else { "not installed" }))
-W (" Online   : heartbeat only (cover does not affect online status)")
-W (" Scripts  : all collect scripts deployed for central to enable later")
-W (" Settings : password-protected (Set-AgentSettings.ps1)")
+W (" Roles    : " + $RoleTags)
+W (" Local    : Pulseway=$($local.Pulseway) Bitdefender=$($local.Bitdefender) Cove=$($local.Cove)")
+W (" Online   : heartbeat only")
+W (" Cover    : local products enable pillars on central (never clear)")
 W "========================================"
