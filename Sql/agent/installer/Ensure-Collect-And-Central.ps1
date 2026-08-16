@@ -1,85 +1,106 @@
-# Called by the customer wizard. Uses the operator's EXISTING SQL access
-# to create local rpmassure (read SYSPRO) and prove write-back to central.
+# Create/verify local rpmassure using operator's existing SQL access.
+# Passwords MUST come from -ConfigFile (never CLI) so @ssuR3me! is not splatted.
 # ASCII only.
 param(
-  [Parameter(Mandatory = $true)][string]$LocalServer,
+  [string]$ConfigFile = "",
+  [string]$LocalServer = "",
   [ValidateSet("windows", "sql")][string]$AdminMode = "windows",
   [string]$AdminUser = "",
   [string]$AdminPassword = "",
   [string]$CollectUser = "rpmassure",
-  [string]$CollectPassword = "@ssuR3me!",
+  [string]$CollectPassword = "",
   [string]$CustomerCode = "",
   [string]$DisplayName = "",
   [string]$InstanceName = "",
   [string]$CentralHost = "102.222.21.220,14333",
   [string]$CentralDatabase = "RPMAssure_App",
   [string]$CentralUser = "rpmassure",
-  [string]$CentralPassword = "@ssuR3me!",
+  [string]$CentralPassword = "",
   [switch]$SkipLinkedServer
 )
 
 $ErrorActionPreference = "Stop"
+$Here = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $Here "Sql-Connect.ps1")
 
-function Find-Sqlcmd {
-  $cmd = Get-Command sqlcmd.exe -EA SilentlyContinue
-  if ($cmd) { return $cmd.Source }
-  foreach ($c in @(
-      "C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE",
-      "C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\180\Tools\Binn\SQLCMD.EXE",
-      "C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\130\Tools\Binn\SQLCMD.EXE"
-    )) {
-    if (Test-Path $c) { return $c }
-  }
-  throw "sqlcmd.exe not found."
+if ($ConfigFile -and (Test-Path -LiteralPath $ConfigFile)) {
+  $j = Get-Content -LiteralPath $ConfigFile -Raw | ConvertFrom-Json
+  if ($j.LocalServer) { $LocalServer = [string]$j.LocalServer }
+  if ($j.AdminMode) { $AdminMode = [string]$j.AdminMode }
+  if ($j.AdminUser) { $AdminUser = [string]$j.AdminUser }
+  if ($j.AdminPassword) { $AdminPassword = [string]$j.AdminPassword }
+  if ($j.CollectUser) { $CollectUser = [string]$j.CollectUser }
+  if ($j.CollectPassword) { $CollectPassword = [string]$j.CollectPassword }
+  if ($j.CustomerCode) { $CustomerCode = [string]$j.CustomerCode }
+  if ($j.DisplayName) { $DisplayName = [string]$j.DisplayName }
+  if ($j.InstanceName) { $InstanceName = [string]$j.InstanceName }
+  if ($j.CentralHost) { $CentralHost = [string]$j.CentralHost }
+  if ($j.CentralDatabase) { $CentralDatabase = [string]$j.CentralDatabase }
+  if ($j.CentralUser) { $CentralUser = [string]$j.CentralUser }
+  if ($j.CentralPassword) { $CentralPassword = [string]$j.CentralPassword }
 }
+
+if (-not $CollectPassword) { $CollectPassword = "@ssuR3me!" }
+if (-not $CentralPassword) { $CentralPassword = $CollectPassword }
+if (-not $LocalServer) { $LocalServer = $env:COMPUTERNAME }
 
 function Escape-Sql([string]$s) {
   if ($null -eq $s) { return "" }
   return ($s -replace "'", "''")
 }
 
-function Invoke-Sql([string]$Sqlcmd, [string]$Server, [string]$AuthMode, [string]$User, [string]$Password, [string]$Query, [string]$Database = "master", [int]$TimeoutSec = 90) {
-  $tmp = Join-Path $env:TEMP ("rpma_ens_" + [guid]::NewGuid().ToString("N").Substring(0, 8) + ".sql")
-  $out = Join-Path $env:TEMP ("rpma_ens_" + [guid]::NewGuid().ToString("N").Substring(0, 8) + ".out")
-  $err = Join-Path $env:TEMP ("rpma_ens_" + [guid]::NewGuid().ToString("N").Substring(0, 8) + ".err")
-  [IO.File]::WriteAllText($tmp, $Query, (New-Object System.Text.UTF8Encoding $false))
-  $args = @("-S", $Server, "-d", $Database, "-C", "-b", "-I", "-t", [string]$TimeoutSec, "-W", "-s", "|", "-i", $tmp)
-  if ($AuthMode -eq "windows") { $args = @("-E") + $args }
-  else { $args = @("-U", $User, "-P", $Password) + $args }
-  $p = Start-Process -FilePath $Sqlcmd -ArgumentList $args -Wait -PassThru -NoNewWindow -RedirectStandardOutput $out -RedirectStandardError $err
-  $stdout = ""; $stderr = ""
-  if (Test-Path $out) { $stdout = Get-Content $out -Raw -EA SilentlyContinue }
-  if (Test-Path $err) { $stderr = Get-Content $err -Raw -EA SilentlyContinue }
-  Remove-Item $tmp, $out, $err -Force -EA SilentlyContinue
-  return [pscustomobject]@{ ExitCode = $p.ExitCode; StdOut = $stdout; StdErr = $stderr; Ok = ($p.ExitCode -eq 0) }
-}
+Write-Host ("local=" + $LocalServer + " adminMode=" + $AdminMode)
 
-function Build-CreateLoginSql([string]$loginName, [string]$password, [string[]]$dbs) {
-  $escL = Escape-Sql $loginName
-  $escP = Escape-Sql $password
+# 1) If rpmassure already works, do not touch the password
+$already = Test-RpmaSql -Server $LocalServer -Mode sql -User $CollectUser -Password $CollectPassword
+if ($already.Ok) {
+  Write-Host ("COLLECT_ALREADY_OK who=" + $already.Who + " server=" + $already.ServerUsed)
+} else {
+  Write-Host ("collect not yet usable: " + $already.Error)
+  $admin = Test-RpmaSql -Server $LocalServer -Mode $AdminMode -User $AdminUser -Password $AdminPassword
+  if (-not $admin.Ok) { throw ("Existing SQL login failed: " + $admin.Error) }
+  Write-Host ("EXISTING_LOGIN_OK who=" + $admin.Who + " server=" + $admin.ServerUsed)
+
+  $scan = Invoke-RpmaSql -Server $admin.ServerUsed -Mode $AdminMode -User $AdminUser -Password $AdminPassword -Query @"
+SET NOCOUNT ON;
+SELECT name FROM sys.databases
+WHERE state_desc = N'ONLINE'
+  AND name NOT IN (N'master', N'model', N'msdb', N'tempdb');
+"@
+  $dbs = @()
+  foreach ($line in ($scan.Text -split "`r?`n")) {
+    $n = $line.Trim()
+    if (-not $n -or $n -eq "name" -or $n -eq "OK") { continue }
+    $dbs += $n
+  }
+  if ($dbs.Count -eq 0) { $dbs = @("master") }
+  Write-Host ("DBS=" + ($dbs -join ","))
+
+  $escL = Escape-Sql $CollectUser
+  $escP = Escape-Sql $CollectPassword
   $ins = ($dbs | ForEach-Object { "  (N'" + (Escape-Sql $_) + "')" }) -join ",`r`n"
-  if (-not $ins) { $ins = "  (N'master')" }
-  return @"
+  $create = @"
 SET NOCOUNT ON;
 DECLARE @LoginName sysname = N'$escL';
-DECLARE @Password  nvarchar(128) = N'$escP';
+DECLARE @Password nvarchar(128) = N'$escP';
 IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = @LoginName)
 BEGIN
   DECLARE @sql nvarchar(max) = N'CREATE LOGIN ' + QUOTENAME(@LoginName) +
     N' WITH PASSWORD = ' + QUOTENAME(@Password, '''') +
-    N', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF;';
+    N', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;';
   EXEC sys.sp_executesql @sql;
   PRINT CONCAT(N'Login created: ', @LoginName);
 END
 ELSE
 BEGIN
   DECLARE @sql2 nvarchar(max) = N'ALTER LOGIN ' + QUOTENAME(@LoginName) +
-    N' WITH PASSWORD = ' + QUOTENAME(@Password, '''') + N';';
+    N' WITH PASSWORD = ' + QUOTENAME(@Password, '''') + N' UNLOCK, CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;';
   EXEC sys.sp_executesql @sql2;
-  PRINT CONCAT(N'Login password updated: ', @LoginName);
+  ALTER LOGIN [$escL] ENABLE;
+  PRINT CONCAT(N'Login updated and unlocked: ', @LoginName);
 END
-BEGIN TRY GRANT VIEW SERVER STATE TO [$escL]; PRINT N'Granted VIEW SERVER STATE'; END TRY BEGIN CATCH PRINT ERROR_MESSAGE(); END CATCH
-BEGIN TRY GRANT VIEW ANY DEFINITION TO [$escL]; PRINT N'Granted VIEW ANY DEFINITION'; END TRY BEGIN CATCH PRINT ERROR_MESSAGE(); END CATCH
+BEGIN TRY GRANT VIEW SERVER STATE TO [$escL]; END TRY BEGIN CATCH END CATCH
+BEGIN TRY GRANT VIEW ANY DEFINITION TO [$escL]; END TRY BEGIN CATCH END CATCH
 DECLARE @Dbs TABLE (DbName sysname);
 INSERT @Dbs (DbName) VALUES
 $ins;
@@ -94,79 +115,32 @@ BEGIN
 USE ' + QUOTENAME(@db) + N';
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N''$escL'')
   CREATE USER ' + QUOTENAME(@LoginName) + N' FOR LOGIN ' + QUOTENAME(@LoginName) + N';
-ALTER ROLE db_datareader ADD MEMBER ' + QUOTENAME(@LoginName) + N';
+IF IS_ROLEMEMBER(N''db_datareader'', N''$escL'') <> 1
+  ALTER ROLE db_datareader ADD MEMBER ' + QUOTENAME(@LoginName) + N';
 ';
-    BEGIN TRY EXEC sys.sp_executesql @g; PRINT CONCAT(N'Granted db_datareader on ', @db); END TRY
+    BEGIN TRY EXEC sys.sp_executesql @g; PRINT CONCAT(N'reader ', @db); END TRY
     BEGIN CATCH PRINT CONCAT(N'Grant FAIL ', @db, N': ', ERROR_MESSAGE()); END CATCH
   END
   FETCH NEXT FROM c INTO @db;
 END
 CLOSE c; DEALLOCATE c;
-BEGIN TRY
-  EXEC(N'
-USE msdb;
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N''$escL'')
-  CREATE USER [$escL] FOR LOGIN [$escL];
-GRANT SELECT ON dbo.backupset TO [$escL];
-GRANT SELECT ON dbo.sysjobs TO [$escL];
-GRANT SELECT ON dbo.sysjobhistory TO [$escL];
-');
-  PRINT N'msdb grants done';
-END TRY BEGIN CATCH PRINT CONCAT(N'msdb grants: ', ERROR_MESSAGE()); END CATCH
 PRINT N'Local collect login ready.';
 "@
+  $r1 = Invoke-RpmaSql -Server $admin.ServerUsed -Mode $AdminMode -User $AdminUser -Password $AdminPassword -Query $create -TimeoutSec 120
+  Write-Host $r1.Text
+  if (-not $r1.Ok) { throw ("Failed creating collect login: " + $r1.Text) }
+
+  $prove = Test-RpmaSql -Server $admin.ServerUsed -Mode sql -User $CollectUser -Password $CollectPassword
+  if (-not $prove.Ok) { throw ("rpmassure still cannot log in: " + $prove.Error) }
+  Write-Host ("COLLECT_LOGIN_WORKS who=" + $prove.Who)
 }
 
-$sqlcmd = Find-Sqlcmd
-Write-Host ("sqlcmd=" + $sqlcmd)
-Write-Host ("local=" + $LocalServer + " adminMode=" + $AdminMode)
-
-$probe = Invoke-Sql $sqlcmd $LocalServer $AdminMode $AdminUser $AdminPassword "SET NOCOUNT ON; SELECT @@SERVERNAME AS ServerName, SUSER_SNAME() AS LoginName, IS_SRVROLEMEMBER('sysadmin') AS IsSysadmin;"
-Write-Host $probe.StdOut
-if ($probe.StdErr) { Write-Host $probe.StdErr }
-if (-not $probe.Ok) { throw "Existing SQL login failed. Check Windows vs SQL auth and password." }
-Write-Host "EXISTING_LOGIN_OK"
-
-$scan = Invoke-Sql $sqlcmd $LocalServer $AdminMode $AdminUser $AdminPassword @"
-SET NOCOUNT ON;
-SELECT name FROM sys.databases
-WHERE state_desc = N'ONLINE'
-  AND name NOT IN (N'master', N'model', N'msdb', N'tempdb')
-  AND (
-    name LIKE N'Syspro%' OR name LIKE N'%SysCompany%' OR name LIKE N'%Company%'
-    OR name LIKE N'SIR[_]%' OR name LIKE N'AHI%' OR name LIKE N'RSR%'
-    OR name IN (N'Sysprodb', N'Sysprodb1', N'SYSPRODeployment', N'SysproReportingService')
-  )
-ORDER BY name;
-"@
-$dbs = @()
-foreach ($line in ($scan.StdOut -split "`r?`n")) {
-  $n = $line.Trim()
-  if (-not $n) { continue }
-  if ($n -eq "name" -or $n -match "^-+$" -or $n -match "rows affected") { continue }
-  $dbs += $n
-}
-$dbs = @($dbs | Select-Object -Unique)
-if ($dbs.Count -eq 0) { $dbs = @("master") }
-Write-Host ("DBS=" + ($dbs -join ","))
-
-$create = Build-CreateLoginSql $CollectUser $CollectPassword $dbs
-$r1 = Invoke-Sql $sqlcmd $LocalServer $AdminMode $AdminUser $AdminPassword $create -TimeoutSec 120
-Write-Host $r1.StdOut
-if ($r1.StdErr) { Write-Host $r1.StdErr }
-if ($r1.StdOut -notmatch "Local collect login ready") { throw "Failed creating collect login rpmassure." }
+Write-Host "COLLECT_LOGIN_WORKS"
 Write-Host "COLLECT_LOGIN_READY"
 
-$prove = Invoke-Sql $sqlcmd $LocalServer "sql" $CollectUser $CollectPassword "SET NOCOUNT ON; SELECT SUSER_SNAME() AS Who, DB_NAME() AS Db;"
-Write-Host $prove.StdOut
-if (-not $prove.Ok) { throw "rpmassure created but cannot log in locally. Enable SQL authentication on this instance." }
-Write-Host "COLLECT_LOGIN_WORKS"
-
-$cen = Invoke-Sql $sqlcmd $CentralHost "sql" $CentralUser $CentralPassword "SET NOCOUNT ON; SELECT DB_NAME() AS Db, SUSER_SNAME() AS Who;" $CentralDatabase 20
-Write-Host $cen.StdOut
-if ($cen.StdErr) { Write-Host $cen.StdErr }
-if (-not $cen.Ok) { throw "Central Assure login failed for rpmassure. Check network to $CentralHost" }
-Write-Host "CENTRAL_OK"
+$cen = Test-RpmaSql -Server $CentralHost -Database $CentralDatabase -Mode sql -User $CentralUser -Password $CentralPassword -TimeoutSec 15
+if (-not $cen.Ok) { throw ("Central Assure login failed: " + $cen.Error) }
+Write-Host ("CENTRAL_OK who=" + $cen.Who)
 
 if ($CustomerCode -and $DisplayName) {
   if (-not $InstanceName) { $InstanceName = $LocalServer }
@@ -181,41 +155,11 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Dim_Customer WHERE CustomerCode = @CustomerCode
 ELSE
   UPDATE dbo.Dim_Customer SET DisplayName=@DisplayName, Active=1, SqlInstanceName=@SqlInstanceName, UpdatedAt=SYSUTCDATETIME()
   WHERE CustomerCode=@CustomerCode;
-PRINT CONCAT(N'Registered ', @CustomerCode);
+SELECT CustomerCode, DisplayName, SqlInstanceName FROM dbo.Dim_Customer WHERE CustomerCode=@CustomerCode;
 "@
-  $rr = Invoke-Sql $sqlcmd $CentralHost "sql" $CentralUser $CentralPassword $reg $CentralDatabase 30
-  Write-Host $rr.StdOut
+  $rr = Invoke-RpmaSql -Server $CentralHost -Database $CentralDatabase -Mode sql -User $CentralUser -Password $CentralPassword -Query $reg
+  Write-Host $rr.Text
   if ($rr.Ok) { Write-Host "CUSTOMER_REGISTERED" }
-}
-
-if (-not $SkipLinkedServer) {
-  $ls = @"
-SET NOCOUNT ON;
-DECLARE @LsName sysname = N'RPM_CENTRAL';
-DECLARE @Ds nvarchar(128) = N'$(Escape-Sql $CentralHost)';
-DECLARE @Usr sysname = N'$(Escape-Sql $CentralUser)';
-DECLARE @Pwd nvarchar(128) = N'$(Escape-Sql $CentralPassword)';
-IF EXISTS (SELECT 1 FROM sys.servers WHERE name = @LsName)
-  EXEC sp_dropserver @server = @LsName, @droplogins = 'droplogins';
-DECLARE @ok bit = 0;
-BEGIN TRY
-  EXEC sp_addlinkedserver @server=@LsName, @srvproduct=N'', @provider=N'MSOLEDBSQL', @datasrc=@Ds;
-  SET @ok = 1;
-END TRY BEGIN CATCH PRINT ERROR_MESSAGE(); END CATCH
-IF @ok = 0
-BEGIN TRY
-  EXEC sp_addlinkedserver @server=@LsName, @srvproduct=N'', @provider=N'SQLNCLI11', @datasrc=@Ds;
-  SET @ok = 1;
-END TRY BEGIN CATCH PRINT ERROR_MESSAGE(); END CATCH
-IF @ok = 1
-BEGIN
-  EXEC sp_addlinkedsrvlogin @rmtsrvname=@LsName, @useself=N'False', @locallogin=NULL, @rmtuser=@Usr, @rmtpassword=@Pwd;
-  EXEC sp_serveroption @server=@LsName, @optname=N'rpc out', @optvalue=N'true';
-  PRINT N'Linked server created';
-END
-"@
-  $rls = Invoke-Sql $sqlcmd $LocalServer $AdminMode $AdminUser $AdminPassword $ls 60
-  Write-Host $rls.StdOut
 }
 
 Write-Host "ENSURE_DONE"

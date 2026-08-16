@@ -96,12 +96,14 @@ export async function buildCustomerAgentZip(codeRaw: string): Promise<{
   const wizardPath = findInstallerFile("Install-Customer-Pack-Wizard.ps1");
   const cmdPath = findInstallerFile("Start-Customer-Pack.cmd");
   const ensurePath = findInstallerFile("Ensure-Collect-And-Central.ps1");
-  if (!wizardPath || !cmdPath || !ensurePath) {
+  const sqlPath = findInstallerFile("Sql-Connect.ps1");
+  if (!wizardPath || !cmdPath || !ensurePath || !sqlPath) {
     throw new Error("Installer templates missing on the App server. Run Update-AppServer.ps1.");
   }
   const wizard = fs.readFileSync(wizardPath);
   const cmd = fs.readFileSync(cmdPath);
   const ensure = fs.readFileSync(ensurePath);
+  const sqlc = fs.readFileSync(sqlPath);
   const readme = Buffer.from(
     [
       `RPM Assure Edge Agent — ${pkg.displayName} (${pkg.customerCode})`,
@@ -122,6 +124,7 @@ export async function buildCustomerAgentZip(codeRaw: string): Promise<{
     { name: "Start-Agent.cmd", data: cmd },
     { name: "Install-Customer-Pack-Wizard.ps1", data: wizard },
     { name: "Ensure-Collect-And-Central.ps1", data: ensure },
+    { name: "Sql-Connect.ps1", data: sqlc },
     { name: "Customer.Package.json", data: Buffer.from(JSON.stringify(pkg, null, 2), "utf8") },
     { name: "README.txt", data: readme },
   ]);

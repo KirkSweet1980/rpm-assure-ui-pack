@@ -118,6 +118,8 @@ Copy-Item $wiz (Join-Path $stage "Install-Customer-Pack-Wizard.ps1") -Force
 Copy-Item $cmd (Join-Path $stage "Start-Agent.cmd") -Force
 $ens = Join-Path $Pack "Sql\agent\installer\Ensure-Collect-And-Central.ps1"
 if (Test-Path $ens) { Copy-Item $ens (Join-Path $stage "Ensure-Collect-And-Central.ps1") -Force }
+$sqlc = Join-Path $Pack "Sql\agent\installer\Sql-Connect.ps1"
+if (Test-Path $sqlc) { Copy-Item $sqlc (Join-Path $stage "Sql-Connect.ps1") -Force }
 
 $code = ""
 $name = ""

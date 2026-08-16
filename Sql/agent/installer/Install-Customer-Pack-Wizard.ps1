@@ -17,6 +17,9 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $pkgPath = Join-Path $Here "Customer.Package.json"
 $pkg = $null
 if (Test-Path $pkgPath) { $pkg = Get-Content -LiteralPath $pkgPath -Raw | ConvertFrom-Json }
+$connectPs1 = Join-Path $Here "Sql-Connect.ps1"
+if (-not (Test-Path $connectPs1)) { $connectPs1 = "C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Sql-Connect.ps1" }
+if (Test-Path $connectPs1) { . $connectPs1 }
 
 $Teal = [Drawing.Color]::FromArgb(31, 157, 138)
 $Navy = [Drawing.Color]::FromArgb(13, 27, 36)
@@ -130,10 +133,13 @@ $lblAssure = New-Lbl "Assure login rpmassure not created yet" 24 190 560 50
 $lblCentral = New-Lbl "Central not tested" 24 240 560 40
 $btnTestExist = New-Btn "Test existing login" 24 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
 $btnTestExist.Location = New-Object Drawing.Point 24, 90
-$btnTestExist.Size = New-Object Drawing.Size 180, 36
-$btnMake = New-Btn "Create rpmassure" 220 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
-$btnMake.Location = New-Object Drawing.Point 220, 90
-$btnMake.Size = New-Object Drawing.Size 180, 36
+$btnTestExist.Size = New-Object Drawing.Size 160, 36
+$btnTestAssure = New-Btn "Test rpmassure" 194 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
+$btnTestAssure.Location = New-Object Drawing.Point 194, 90
+$btnTestAssure.Size = New-Object Drawing.Size 150, 36
+$btnMake = New-Btn "Create rpmassure" 354 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
+$btnMake.Location = New-Object Drawing.Point 354, 90
+$btnMake.Size = New-Object Drawing.Size 150, 36
 $btnMake.Enabled = $false
 
 $txtAdmin1 = New-Box 24 110 -Password
@@ -149,16 +155,22 @@ $txtLog.ForeColor = [Drawing.Color]::FromArgb(200, 230, 220)
 $txtLog.BorderStyle = "None"
 
 function Test-Ado([string]$server, [string]$db, [string]$mode, [string]$user, [string]$pass) {
+  if (Get-Command Test-RpmaSql -EA SilentlyContinue) {
+    $r = Test-RpmaSql -Server $server -Database $db -Mode $mode -User $user -Password $pass
+    if ($r.Ok) { return $r.Who }
+    return ("FAIL:" + $r.Error)
+  }
   $csb = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
   $csb["Data Source"] = $server
   $csb["Initial Catalog"] = $(if ($db) { $db } else { "master" })
-  $csb["Encrypt"] = $true
+  $csb["Encrypt"] = $false
   $csb["TrustServerCertificate"] = $true
   $csb["Connect Timeout"] = 12
   if ($mode -eq "windows") { $csb["Integrated Security"] = $true }
   else { $csb["User ID"] = $user; $csb["Password"] = $pass }
   $cn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
-  try { $cn.Open(); $who = $null
+  try {
+    $cn.Open()
     $cmd = $cn.CreateCommand(); $cmd.CommandText = "SELECT SUSER_SNAME()"; $who = [string]$cmd.ExecuteScalar()
     $cn.Close(); return $who
   } catch { return ("FAIL:" + $_.Exception.Message) }
@@ -202,8 +214,9 @@ function Show-Page {
     }
     2 {
       $content.Controls.Add((New-Lbl "Create Assure collect login" 24 24 560 30 (New-Object Drawing.Font("Segoe UI Semibold", 16))))
-      $content.Controls.Add((New-Lbl "1) Test YOUR login.  2) Create rpmassure (read SYSPRO, write central).  3) Next." 24 56 560 28 $null $Muted))
+      $content.Controls.Add((New-Lbl "1) Test YOUR admin.  2) Test rpmassure (already on AHI / most hosts).  3) Create only if needed." 24 56 560 28 $null $Muted))
       $content.Controls.Add($btnTestExist)
+      $content.Controls.Add($btnTestAssure)
       $content.Controls.Add($btnMake)
       $content.Controls.Add($lblExist)
       $content.Controls.Add($lblAssure)
@@ -240,9 +253,36 @@ $btnTestExist.add_Click({
   }
 })
 
+$btnTestAssure.add_Click({
+  $who = Test-Ado $txtHost.Text "master" "sql" "rpmassure" "@ssuR3me!"
+  if ($who -like "FAIL:*") {
+    $lblAssure.Text = "rpmassure not usable yet. " + $who.Substring(5) + "  Use your existing admin then Create rpmassure."
+    $lblAssure.ForeColor = $Fail
+    $script:AssureOk = $false
+  } else {
+    $lblAssure.Text = "rpmassure already works as " + $who
+    $lblAssure.ForeColor = $Teal
+    $cen = Test-Ado "102.222.21.220,14333" "RPMAssure_App" "sql" "rpmassure" "@ssuR3me!"
+    if ($cen -like "FAIL:*") {
+      $lblCentral.Text = "Local rpmassure OK. Central failed: " + $cen.Substring(5)
+      $lblCentral.ForeColor = $Fail
+      $script:AssureOk = $false
+    } else {
+      $lblCentral.Text = "Central Assure OK as " + $cen
+      $lblCentral.ForeColor = $Teal
+      $script:AssureOk = $true
+      $btnNext.Enabled = $true
+    }
+  }
+})
+
 $btnMake.add_Click({
-  if (-not $script:AccessOk) { return }
-  $lblAssure.Text = "Creating rpmassure..."
+  if (-not $script:AccessOk) {
+    $lblAssure.Text = "Test existing login first (Windows or RPMAdmin), then Create."
+    $lblAssure.ForeColor = $Fail
+    return
+  }
+  $lblAssure.Text = "Creating / verifying rpmassure..."
   $lblAssure.ForeColor = $Muted
   [Windows.Forms.Application]::DoEvents()
   $ensure = $null
@@ -256,29 +296,31 @@ $btnMake.add_Click({
     return
   }
   $mode = $(if ($rbSql.Checked) { "sql" } else { "windows" })
-  $arg = @(
-    "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ensure,
-    "-LocalServer", $txtHost.Text,
-    "-AdminMode", $mode,
-    "-CollectUser", "rpmassure",
-    "-CollectPassword", "@ssuR3me!",
-    "-CustomerCode", $txtCode.Text.Trim().ToUpperInvariant(),
-    "-DisplayName", $txtName.Text.Trim(),
-    "-InstanceName", $txtHost.Text.Trim(),
-    "-CentralHost", "102.222.21.220,14333",
-    "-CentralDatabase", "RPMAssure_App",
-    "-CentralUser", "rpmassure",
-    "-CentralPassword", "@ssuR3me!"
-  )
-  if ($rbSql.Checked) {
-    $arg += @("-AdminUser", $txtExistUser.Text, "-AdminPassword", $txtExistPwd.Text)
+  $cfg = Join-Path $env:TEMP ("rpma-ensure-" + [guid]::NewGuid().ToString("N") + ".json")
+  $obj = [ordered]@{
+    LocalServer      = $txtHost.Text.Trim()
+    AdminMode        = $mode
+    AdminUser        = $txtExistUser.Text
+    AdminPassword    = $txtExistPwd.Text
+    CollectUser      = "rpmassure"
+    CollectPassword  = "@ssuR3me!"
+    CustomerCode     = $txtCode.Text.Trim().ToUpperInvariant()
+    DisplayName      = $txtName.Text.Trim()
+    InstanceName     = $txtHost.Text.Trim()
+    CentralHost      = "102.222.21.220,14333"
+    CentralDatabase  = "RPMAssure_App"
+    CentralUser      = "rpmassure"
+    CentralPassword  = "@ssuR3me!"
   }
+  ($obj | ConvertTo-Json) | Set-Content -LiteralPath $cfg -Encoding UTF8
   $tmpOut = Join-Path $env:TEMP "rpma-ensure-out.txt"
+  $arg = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ensure, "-ConfigFile", $cfg)
   $p = Start-Process -FilePath "powershell.exe" -ArgumentList $arg -Wait -PassThru -NoNewWindow -RedirectStandardOutput $tmpOut -RedirectStandardError ($tmpOut + ".err")
   $text = ""
   if (Test-Path $tmpOut) { $text = Get-Content $tmpOut -Raw -EA SilentlyContinue }
-  if ($text -match "COLLECT_LOGIN_WORKS") {
-    $lblAssure.Text = "Assure login rpmassure ready (read SYSPRO, write central)."
+  Remove-Item -LiteralPath $cfg -Force -EA SilentlyContinue
+  if ($text -match "COLLECT_LOGIN_WORKS|COLLECT_ALREADY_OK") {
+    $lblAssure.Text = "Assure login rpmassure ready."
     $lblAssure.ForeColor = $Teal
   } else {
     $tail = if ($text) { $text.Substring([Math]::Max(0, $text.Length - 280)) } else { "no output" }
@@ -294,7 +336,7 @@ $btnMake.add_Click({
     $script:AssureOk = $true
     $btnNext.Enabled = $true
   } else {
-    $lblCentral.Text = "rpmassure local OK, central write-back failed. Check firewall to 102.222.21.220,14333"
+    $lblCentral.Text = "rpmassure local OK, central write-back failed."
     $lblCentral.ForeColor = $Fail
     $script:AssureOk = $false
     $btnNext.Enabled = $false
