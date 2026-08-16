@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, Clock, Database } from "lucide-react";
+import { Clock, Database } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 import { HelpTip } from "@/components/ui/help-tip";
 
@@ -87,10 +87,9 @@ export function HeadsUpDisplay({
   const sqlWhen = formatSastDateTime(generatedAt);
 
   return (
-    <section className="rpma-hud" aria-label="Heads-up display">
+    <section className="rpma-hud" aria-label="Heads Up Display">
       <div className="rpma-hud-head">
-        <Activity className="h-3.5 w-3.5" aria-hidden />
-        <h2>Heads-up Display</h2>
+        <h2>Heads Up Display</h2>
       </div>
       <div className="rpma-hud-grid">
         <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />

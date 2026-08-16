@@ -601,25 +601,43 @@ html.dark .rpma-pane-head-row {
   background: color-mix(in srgb, var(--color-nav) 45%, #10151c);
 }
 .rpma-hud {
+  position: sticky;
+  top: var(--pc-header-height);
+  z-index: 28;
+  margin: 0 0 0.85rem;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: 0 10px 24px color-mix(in srgb, #000 14%, transparent);
   overflow: hidden;
 }
 .rpma-hud-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  font-size: 10px;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px 8px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--color-muted);
-  background: color-mix(in srgb, var(--color-nav) 8%, var(--color-surface));
+  text-align: center;
+  color: var(--color-fg);
+  background: color-mix(in srgb, var(--color-nav) 10%, var(--color-surface));
   border-bottom: 1px solid var(--color-border);
 }
-.rpma-hud-head h2 { margin: 0; font-size: inherit; font-weight: inherit; letter-spacing: inherit; color: inherit; }
+.rpma-hud-head h2 {
+  margin: 0;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: center;
+  color: inherit;
+}
 .rpma-hud-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -628,29 +646,31 @@ html.dark .rpma-pane-head-row {
 .rpma-hud-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 12px;
   min-width: 0;
-  padding: 10px 14px;
+  padding: 14px 16px;
   border-right: 1px solid var(--color-border);
 }
 .rpma-hud-cell:last-child { border-right: 0; }
-.rpma-hud-ico { width: 15px; height: 15px; flex: 0 0 auto; color: var(--color-brand-teal); }
+.rpma-hud-cell > div { min-width: 0; text-align: center; }
+.rpma-hud-ico { width: 20px; height: 20px; flex: 0 0 auto; color: var(--color-brand-teal); }
 .rpma-hud-k {
   margin: 0;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-subtle);
 }
 .rpma-hud-v {
-  margin: 1px 0 0;
+  margin: 3px 0 0;
   font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 750;
   letter-spacing: -0.02em;
   color: var(--color-fg);
   white-space: nowrap;
