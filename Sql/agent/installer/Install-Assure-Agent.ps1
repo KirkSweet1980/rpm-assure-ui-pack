@@ -221,6 +221,7 @@ $lib = Join-Path $agentRoot "Lib-SecureConfig.ps1"
 $script:RpmaAgentRoot = $agentRoot
 W "Saving encrypted settings..."
 Initialize-RpmaSecureStore -AdminPassword $AdminPassword -CentralSqlPassword $CentralSqlPassword -LocalSqlPassword $LocalSqlPassword -CentralDataSource $CentralDataSource -CentralDatabase $CentralDatabase -CentralSqlUser $CentralSqlUser
+W "Encrypted settings saved."
 $set = Get-RpmaAgentSettings
 $set.collectIntervalMin = [int]$CollectIntervalMin
 $set.jobsIntervalMin = [int]$JobsIntervalMin

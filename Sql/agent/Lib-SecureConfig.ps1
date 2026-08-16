@@ -17,21 +17,11 @@ function Protect-RpmaFolder {
   if (-not (Test-Path $Path)) { return }
   $old = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
-  # Drop inherited ACLs so Users / Everyone cannot read secrets or change binaries.
-  & icacls $Path /inheritance:r | Out-Null
-  & icacls $Path /grant:r "NT AUTHORITY\SYSTEM:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" | Out-Null
-  $secrets = Join-Path $Path 'Agent.Secrets.bin'
-  if (Test-Path $secrets) {
-    & attrib +H +S $secrets | Out-Null
-    & icacls $secrets /inheritance:r | Out-Null
-    & icacls $secrets /grant:r "NT AUTHORITY\SYSTEM:F" "BUILTIN\Administrators:F" | Out-Null
-  }
-  foreach ($name in @('Agent.Config.ps1', 'Agent.Settings.json')) {
+  foreach ($name in @('Agent.Secrets.bin', 'Agent.Settings.json', 'Agent.Config.ps1')) {
     $p = Join-Path $Path $name
-    if (Test-Path $p) {
-      & icacls $p /inheritance:r | Out-Null
-      & icacls $p /grant:r "NT AUTHORITY\SYSTEM:F" "BUILTIN\Administrators:F" | Out-Null
-    }
+    if (-not (Test-Path $p)) { continue }
+    cmd /c "icacls `"$p`" /inheritance:r /grant:r `"NT AUTHORITY\SYSTEM:F`" `"BUILTIN\Administrators:F`" >nul 2>&1"
+    if ($name -eq 'Agent.Secrets.bin') { cmd /c "attrib +H `"$p`" >nul 2>&1" }
   }
   $ErrorActionPreference = $old
 }
