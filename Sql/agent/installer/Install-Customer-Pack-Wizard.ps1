@@ -138,10 +138,13 @@ function New-Box([int]$x, [int]$y, [int]$w = 360, [switch]$Password) {
 }
 
 $form = New-Object Windows.Forms.Form
-$form.Text = "RPM Assure Agent 2.4"
+$form.Text = "RPM Assure Agent 2.5"
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
+$form.MinimizeBox = $true
+$form.ControlBox = $true
+$form.CancelButton = $null
 $form.ClientSize = New-Object Drawing.Size 820, 600
 $form.BackColor = $Paper
 
@@ -290,12 +293,17 @@ function Show-Page {
     else { $stepLabels[$i].ForeColor = [Drawing.Color]::FromArgb(130, 150, 156); $stepLabels[$i].BackColor = [Drawing.Color]::Transparent }
   }
   $btnBack.Enabled = ($script:Page -gt 0 -and $script:Page -lt 4)
+  $btnCancel.Enabled = $true
   $btnNext.Enabled = $true
   if ($script:Page -eq 0) { $btnNext.Text = "Next" }
   elseif ($script:Page -eq 1) { $btnNext.Text = "Next" }
   elseif ($script:Page -eq 2) { $btnNext.Text = "Next"; $btnNext.Enabled = $script:AssureOk }
-  elseif ($script:Page -eq 3) { $btnNext.Text = "Finish" }
-  else { $btnNext.Text = "Close" }
+  elseif ($script:Page -eq 3) { $btnNext.Text = "Install" }
+  else {
+    $btnNext.Text = "Finish"
+    $btnNext.Enabled = [bool]$script:InstallDone
+    $btnCancel.Text = $(if ($script:InstallBusy) { "Cancel" } else { "Close" })
+  }
 
   switch ($script:Page) {
     0 {
@@ -350,6 +358,9 @@ function Show-Page {
     }
     4 {
       $content.Controls.Add((New-Lbl "Install" 24 24 400 30 (New-Object Drawing.Font("Segoe UI Semibold", 18))))
+      $content.Controls.Add((New-Lbl "Cancel and the window X stay available. Finish unlocks when the script ends." 24 52 560 20 $null $Muted))
+      $txtLog.Location = New-Object Drawing.Point 24, 78
+      $txtLog.Size = New-Object Drawing.Size 560, 350
       $content.Controls.Add($txtLog)
     }
   }
@@ -527,12 +538,80 @@ $btnMake.add_Click({
   }
 })
 
-function Run-Install {
-  $script:Page = 4
-  Show-Page
+$script:InstallProc = $null
+$script:InstallLog = ""
+$script:InstallErr = ""
+$script:InstallCfg = ""
+$script:InstallSeen = 0
+$script:InstallBusy = $false
+$script:InstallDone = $false
+
+function Log-Install([string]$m) {
+  if (-not $m) { return }
+  $txtLog.AppendText($m + [Environment]::NewLine)
+  $txtLog.SelectionStart = $txtLog.Text.Length
+  $txtLog.ScrollToCaret()
+}
+
+function Stop-InstallChild {
+  if ($script:InstallProc -and -not $script:InstallProc.HasExited) {
+    try { Stop-Process -Id $script:InstallProc.Id -Force -EA SilentlyContinue } catch {}
+  }
+  $script:InstallBusy = $false
+}
+
+function Finish-InstallUi([string]$msg, [int]$code) {
+  $script:InstallBusy = $false
+  $script:InstallDone = $true
+  if ($script:InstallCfg -and (Test-Path -LiteralPath $script:InstallCfg)) {
+    Remove-Item -LiteralPath $script:InstallCfg -Force -EA SilentlyContinue
+  }
+  if ($msg) { Log-Install $msg }
+  if ($code -eq 0) { Log-Install "INSTALL COMPLETE  collect login = rpmassure" }
+  else { Log-Install ("FAILED exit " + $code) }
+  $btnNext.Text = "Finish"
+  $btnNext.Enabled = $true
+  $btnCancel.Text = "Close"
+  $btnCancel.Enabled = $true
+}
+
+function Tick-Install {
+  if (-not $script:InstallBusy) { return }
+  if ($script:InstallLog -and (Test-Path -LiteralPath $script:InstallLog)) {
+    $lines = @(Get-Content -LiteralPath $script:InstallLog -EA SilentlyContinue)
+    while ($script:InstallSeen -lt $lines.Count) {
+      Log-Install $lines[$script:InstallSeen]
+      $script:InstallSeen++
+    }
+  }
+  $alive = $false
+  try { if ($script:InstallProc -and -not $script:InstallProc.HasExited) { $alive = $true } } catch {}
+  if ($alive) { return }
+  if ($script:InstallErr -and (Test-Path -LiteralPath $script:InstallErr)) {
+    $el = Get-Content -LiteralPath $script:InstallErr -Raw -EA SilentlyContinue
+    if ($el) { Log-Install $el }
+  }
+  $code = 1
+  try { $code = [int]$script:InstallProc.ExitCode } catch {}
+  Finish-InstallUi "" $code
+}
+
+$tm = New-Object Windows.Forms.Timer
+$tm.Interval = 400
+$tm.add_Tick({ Tick-Install })
+$tm.Start()
+
+function Start-InstallJob {
   $txtLog.Text = ""
-  function Log([string]$m) { $txtLog.AppendText($m + [Environment]::NewLine); [Windows.Forms.Application]::DoEvents() }
-  Log ("Installing agent for " + $txtCode.Text + " using rpmassure...")
+  $script:InstallBusy = $true
+  $script:InstallDone = $false
+  $script:InstallSeen = 0
+  $btnNext.Enabled = $false
+  $btnBack.Enabled = $false
+  $btnCancel.Enabled = $true
+  $btnCancel.Text = "Cancel"
+  Log-Install ("Installing agent for " + $txtCode.Text + " using rpmassure...")
+  Log-Install "Cancel / window X stay clickable. Finish unlocks when done."
   $cfg = Join-Path $env:TEMP ("rpma-pack-" + [guid]::NewGuid().ToString("N") + ".json")
   $obj = [ordered]@{
     CustomerCode       = $txtCode.Text.Trim().ToUpperInvariant()
@@ -557,57 +636,45 @@ function Run-Install {
   ($obj | ConvertTo-Json) | Set-Content -LiteralPath $cfg -Encoding UTF8
   $engine = "C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Install-Assure-Agent.ps1"
   if (-not (Test-Path $engine)) {
-    Log "Pulling pack from Git..."
-    $git = "C:\Program Files\Git\cmd\git.exe"
-    $pack = "C:\RPM-Assure\deploy\ui-pack"
-    New-Item -ItemType Directory -Force -Path C:\RPM-Assure\deploy | Out-Null
-    if (Test-Path "$pack\.git") {
-      $null = & $git -C $pack fetch --all --prune 2>&1
-      $null = & $git -C $pack reset --hard origin/main 2>&1
-    } else {
-      $null = & $git clone --depth 1 --branch main https://github.com/KirkSweet1980/rpm-assure-ui-pack.git $pack 2>&1
-    }
+    Log-Install "ERROR engine missing. Run Finish-Agent-Now.ps1"
+    Finish-InstallUi "engine missing" 1
+    return
   }
-  if (-not (Test-Path $engine)) { Log "ERROR engine missing"; return }
   $log = Join-Path $env:TEMP ("rpma-install-" + [guid]::NewGuid().ToString("N") + ".log")
   $errlog = $log + ".err"
-  $p = Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile","-ExecutionPolicy","Bypass","-File",$engine,"-ConfigFile",$cfg) -RedirectStandardOutput $log -RedirectStandardError $errlog -PassThru -WindowStyle Hidden
-  $deadline = (Get-Date).AddMinutes(3)
-  $seen = 0
-  while (-not $p.HasExited) {
-    if (Test-Path -LiteralPath $log) {
-      $lines = @(Get-Content -LiteralPath $log -EA SilentlyContinue)
-      while ($seen -lt $lines.Count) { Log $lines[$seen]; $seen++ }
-    }
-    [Windows.Forms.Application]::DoEvents()
-    Start-Sleep -Milliseconds 250
-    if ((Get-Date) -gt $deadline) {
-      try { Stop-Process -Id $p.Id -Force } catch {}
-      Log "TIMEOUT - installer hung. Close this window. Run Finish-Agent-Now.ps1"
-      return
-    }
-  }
-  Start-Sleep -Milliseconds 200
-  if (Test-Path -LiteralPath $log) {
-    $lines = @(Get-Content -LiteralPath $log -EA SilentlyContinue)
-    while ($seen -lt $lines.Count) { Log $lines[$seen]; $seen++ }
-  }
-  if (Test-Path -LiteralPath $errlog) {
-    $el = Get-Content -LiteralPath $errlog -Raw -EA SilentlyContinue
-    if ($el) { Log $el }
-  }
-  Remove-Item -LiteralPath $cfg -Force -EA SilentlyContinue
-  if ($p.ExitCode -eq 0) { Log ""; Log "INSTALL COMPLETE  collect login = rpmassure" } else { Log ("FAILED exit " + $p.ExitCode) }
+  $script:InstallCfg = $cfg
+  $script:InstallLog = $log
+  $script:InstallErr = $errlog
+  $script:InstallProc = Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile","-ExecutionPolicy","Bypass","-File",$engine,"-ConfigFile",$cfg) -RedirectStandardOutput $log -RedirectStandardError $errlog -PassThru -WindowStyle Hidden
 }
 
-$btnCancel.add_Click({ $form.Close() })
-$btnBack.add_Click({ if ($script:Page -gt 0 -and $script:Page -lt 4) { $script:Page--; Show-Page } })
+$form.add_FormClosing({
+  param($s, $e)
+  if ($script:InstallBusy) {
+    Stop-InstallChild
+  }
+})
+
+$btnCancel.add_Click({
+  if ($script:InstallBusy) {
+    Stop-InstallChild
+    Finish-InstallUi "Cancelled by user." 1
+    return
+  }
+  $form.Close()
+})
+$btnBack.add_Click({ if ($script:Page -gt 0 -and $script:Page -lt 4 -and -not $script:InstallBusy) { $script:Page--; Show-Page } })
 $btnNext.add_Click({
-  if ($script:Page -eq 4) { $form.Close(); return }
+  if ($script:Page -eq 4) {
+    if ($script:InstallDone) { $form.Close() }
+    return
+  }
   if ($script:Page -eq 3) {
     if ($txtAdmin1.Text.Length -lt 8) { [Windows.Forms.MessageBox]::Show("Agent password must be at least 8 characters.", "RPM Assure") | Out-Null; return }
     if ($txtAdmin1.Text -ne $txtAdmin2.Text) { [Windows.Forms.MessageBox]::Show("Passwords do not match.", "RPM Assure") | Out-Null; return }
-    Run-Install
+    $script:Page = 4
+    Show-Page
+    Start-InstallJob
     return
   }
   if ($script:Page -eq 2 -and -not $script:AssureOk) { return }
@@ -617,3 +684,6 @@ $btnNext.add_Click({
 
 Show-Page
 [void]$form.ShowDialog()
+$tm.Stop()
+$tm.Dispose()
+if ($script:InstallBusy) { Stop-InstallChild }
