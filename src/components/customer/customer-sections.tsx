@@ -766,7 +766,7 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
 
           <ChartCaption
             title="Customer Patches - Not Deployed"
-            why="Outstanding updates from Pulseway Updates (Critical + Important + Unspecified). Installed totals are not provided by the Pulseway API. SYSPRO hotfixes remain under SYSPRO → Hotfix Information."
+            why="Outstanding updates from Pulseway Updates (Critical + Important + Unspecified). SYSPRO hotfixes remain under SYSPRO → Hotfix Information."
           />
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
@@ -1586,24 +1586,13 @@ export function RmmDevicesSection({
                       {mode === "servers" && d.diskIopsMax != null ? (
                         <span className="font-mono text-[10px] text-subtle">
                           IOPS {Math.round(d.diskIopsMax).toLocaleString("en-ZA")}
-                          {" · "}
-                          Off 7d{" "}
-                          {d.offlineHours7d != null
-                            ? formatOfflineHours(d.offlineHours7d)
-                            : "—"}
                           {d.isOnline === false && d.offlineHoursCurrent != null
-                            ? ` · now ${formatOfflineHours(d.offlineHoursCurrent)}`
+                            ? ` · offline ${formatOfflineHours(d.offlineHoursCurrent)}`
                             : ""}
                         </span>
-                      ) : mode === "servers" ? (
+                      ) : mode === "servers" && d.isOnline === false && d.offlineHoursCurrent != null ? (
                         <span className="font-mono text-[10px] text-subtle">
-                          Off 7d{" "}
-                          {d.offlineHours7d != null
-                            ? formatOfflineHours(d.offlineHours7d)
-                            : "—"}
-                          {d.isOnline === false && d.offlineHoursCurrent != null
-                            ? ` · now ${formatOfflineHours(d.offlineHoursCurrent)}`
-                            : ""}
+                          Offline {formatOfflineHours(d.offlineHoursCurrent)}
                         </span>
                       ) : null}
                     </button>
@@ -1685,17 +1674,6 @@ export function RmmDevicesSection({
                     hint="Critical + Important + Unspecified from Pulseway"
                   />
                   <StatCard
-                    label="Patch status"
-                    value={
-                      selected.patchMissing != null
-                        ? (selected.patchMissing ?? 0) === 0
-                          ? "Up to date"
-                          : "Backlog"
-                        : "Not reported"
-                    }
-                    hint="Installed totals are not provided by the Pulseway API"
-                  />
-                  <StatCard
                     label="Disk used"
                     value={
                       selected.diskUsedGb != null
@@ -1749,18 +1727,6 @@ export function RmmDevicesSection({
                       (selected.offlineHoursCurrent ?? 0) >= 4
                         ? "amber"
                         : "default"
-                    }
-                  />
-                  <StatCard
-                    label="Offline 7d total"
-                    value={formatOfflineHours(selected.offlineHours7d)}
-                    hint={
-                      selected.offlineHours30d != null
-                        ? `30d est. ${formatOfflineHours(selected.offlineHours30d)} · from availability % or daily samples`
-                        : "From Online% or daily offline samples"
-                    }
-                    tone={
-                      (selected.offlineHours7d ?? 0) >= 12 ? "amber" : "default"
                     }
                   />
                   <StatCard
