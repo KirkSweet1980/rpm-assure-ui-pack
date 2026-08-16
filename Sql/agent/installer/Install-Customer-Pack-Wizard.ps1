@@ -434,7 +434,7 @@ $btnMake.add_Click({
     $lblCentral.ForeColor = $Teal
     $script:CentralOk = $true
   } else {
-    $lblCentral.Text = "Local OK. Central not confirmed — edit user/password/host and click Test central."
+    $lblCentral.Text = "Local OK. Central not confirmed - edit user/password/host and click Test central."
     $lblCentral.ForeColor = $Fail
     $script:CentralOk = $false
   }
