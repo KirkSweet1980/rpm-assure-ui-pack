@@ -24,32 +24,31 @@ function healthTitle(item: ConfigHealthItem) {
 }
 
 function agentStatus(row: InfraAgentRow): { label: string; tone: "green" | "amber" | "red" | "muted" } {
+  if (!row.cover.syspro) return { label: "Not required", tone: "muted" };
   const s = row.healthStatus.toUpperCase();
   if (s === "ONLINE") return { label: "Online", tone: "green" };
   if (s === "UPDATE" || s === "UPDATING" || s === "QUEUED" || s === "SYNCING") {
     return { label: "Busy", tone: "amber" };
   }
-  if (s === "NOT_INSTALLED") return { label: "Not installed", tone: "muted" };
+  if (s === "NOT_INSTALLED" || s === "NEVER") return { label: "Not installed", tone: "muted" };
   return { label: "Disconnected", tone: "red" };
 }
 
 function syncToneOf(
   row: InfraAgentRow,
   phase?: "idle" | "queued" | "running" | "done" | "error",
-): { label: string; tone: "green" | "amber" | "red" } {
+): { label: string; tone: "green" | "amber" | "red" | "muted" } {
+  if (!row.cover.syspro) return { label: "N/A", tone: "muted" };
   if (phase === "queued" || phase === "running") return { label: "Syncing", tone: "amber" };
-  if (phase === "error") return { label: "Error", tone: "amber" };
+  if (phase === "error") return { label: "Error", tone: "red" };
   if (phase === "done") return { label: "OK", tone: "green" };
   const last = (row.lastStatus ?? "").toUpperCase();
   const health = row.healthStatus.toUpperCase();
   if (last === "QUEUED" || last === "SYNCING" || last === "UPDATE" || last === "UPDATING") {
     return { label: "Syncing", tone: "amber" };
   }
-  if (last === "JOB_FAIL") return { label: "Error", tone: "amber" };
-  if (health === "ONLINE" && (last === "OK" || last === "ONLINE" || last === "")) {
-    return { label: "OK", tone: "green" };
-  }
   if (health === "ONLINE") return { label: "OK", tone: "green" };
+  if (health === "NOT_INSTALLED" || health === "NEVER") return { label: "N/A", tone: "muted" };
   return { label: "Offline", tone: "red" };
 }
 
@@ -202,26 +201,19 @@ function InfrastructureStatusPage() {
           }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Configuration</p>
-          <h1 className="mt-1 flex items-center gap-2 text-[18px] font-extrabold tracking-tight text-fg">
-            <Server className="h-5 w-5 text-muted" />
-            Assure Infrastructure Status
-          </h1>
+    <div className="rpma-settings-stack">
+      <div className="rpma-settings-toolbar">
+        <p className="rpma-settings-blurb">API feeds and SQL Edge agents for the estate.</p>
+        <div className="rpma-settings-actions">
+          <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
+            <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+            Recheck
+          </Button>
         </div>
-        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
-          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
-          Recheck
-        </Button>
       </div>
 
-      <section className="rpma-panel overflow-hidden p-0">
-        <div className="px-4 py-3">
-          <h2 className="text-[16px] font-extrabold text-fg">Assure API Feed Status</h2>
-        </div>
-        <div className="overflow-x-auto">
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">Assure API Feed Status</div>
           <table className="rpma-xls text-left">
             <thead>
               <tr>
@@ -273,13 +265,12 @@ function InfrastructureStatusPage() {
               )}
             </tbody>
           </table>
-        </div>
       </section>
 
-      <section className="rpma-panel overflow-hidden p-0">
-        <div className="flex items-end justify-between gap-3 px-4 py-3">
-          <h2 className="text-[16px] font-extrabold text-fg">Assure Platform Agent Status</h2>
-          <p className="text-[12px] text-muted">{agents.length} customers</p>
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">
+          Assure Platform Agent Status
+          <span className="rpma-settings-count">{agents.length}</span>
         </div>
         {(() => {
           const remaining = agents.filter(
@@ -309,9 +300,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
             </div>
           );
         })()}
-        {agentMsg ? <p className="px-4 pb-2 text-[12px] text-muted">{agentMsg}</p> : null}
-        <div className="overflow-x-auto">
-          <table className="rpma-xls text-left">
+        {agentMsg ? <p className="px-3 pb-2 text-[11px] text-muted">{agentMsg}</p> : null}
+        <table className="rpma-xls text-left">
             <thead>
               <tr>
                 <th>Customer Name</th>
@@ -334,7 +324,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                   const st = agentStatus(row);
                   const sy = syncToneOf(row, sync[row.customerCode]);
                   const on = COVER_CHIPS.filter((c) => row.cover[c.key]);
-                  const canSync = Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
+                  const canSync =
+                    row.cover.syspro && Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
                   return (
                     <tr key={row.customerCode}>
                       <td>
@@ -346,7 +337,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                         </SpaLink>
                       </td>
                       <td className="font-mono">
-                        {row.agentVersion ? `v${row.agentVersion}` : "Not installed"}
+                        {!row.cover.syspro
+                          ? "Not required"
+                          : row.agentVersion
+                            ? `v${row.agentVersion}`
+                            : "Not installed"}
                       </td>
                       <td>
                         <span
@@ -369,6 +364,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                             sy.tone === "green" && "text-rag-green",
                             sy.tone === "amber" && "text-amber-400",
                             sy.tone === "red" && "text-rag-red",
+                            sy.tone === "muted" && "text-muted",
                           )}
                         >
                           <Lamp tone={sy.tone} />
@@ -396,15 +392,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                         )}
                       </td>
                       <td className="text-right">
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="h-7 px-2.5 text-[11px]"
-                          disabled={!canSync}
-                          onClick={() => void syncOne(row)}
-                        >
-                          Sync
-                        </Button>
+                        {row.cover.syspro ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-7 px-2.5 text-[11px]"
+                            disabled={!canSync}
+                            onClick={() => void syncOne(row)}
+                          >
+                            Sync
+                          </Button>
+                        ) : (
+                          <span className="text-[11px] text-muted">No SQL agent</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -412,7 +412,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
               )}
             </tbody>
           </table>
-        </div>
       </section>
     </div>
   );

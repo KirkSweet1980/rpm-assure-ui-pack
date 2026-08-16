@@ -65,11 +65,10 @@ WHERE ISNULL(c.Active, 1) = 1
 ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
     const rows: InfraAgentRow[] = (r.recordset ?? []).map((row: Record<string, unknown>) => {
       const sysproFlag = row.PillarSyspro;
-      const agentOn = Boolean(row.HostName && String(row.HostName).trim());
       const syspro =
         sysproFlag === false || sysproFlag === 0 || sysproFlag === "0"
           ? false
-          : agentOn && (bitOn(sysproFlag) || Boolean(row.SqlInstanceName && String(row.SqlInstanceName).trim()));
+          : bitOn(sysproFlag) || Boolean(row.SqlInstanceName && String(row.SqlInstanceName).trim());
       return {
         customerCode: String(row.CustomerCode ?? ""),
         displayName: String(row.DisplayName ?? row.CustomerCode ?? ""),
@@ -120,11 +119,10 @@ WHERE ISNULL(c.Active, 1) = 1
 ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
       const rows: InfraAgentRow[] = (r2.recordset ?? []).map((row: Record<string, unknown>) => {
         const sysproFlag = row.PillarSyspro;
-        const agentOn = Boolean(row.HostName && String(row.HostName).trim());
         const syspro =
           sysproFlag === false || sysproFlag === 0 || sysproFlag === "0"
             ? false
-            : agentOn && (bitOn(sysproFlag) || Boolean(row.SqlInstanceName && String(row.SqlInstanceName).trim()));
+            : bitOn(sysproFlag) || Boolean(row.SqlInstanceName && String(row.SqlInstanceName).trim());
         return {
           customerCode: String(row.CustomerCode ?? ""),
           displayName: String(row.DisplayName ?? row.CustomerCode ?? ""),

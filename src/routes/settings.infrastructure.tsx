@@ -201,26 +201,19 @@ function InfrastructureStatusPage() {
           }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Configuration</p>
-          <h1 className="mt-1 flex items-center gap-2 text-[18px] font-extrabold tracking-tight text-fg">
-            <Server className="h-5 w-5 text-muted" />
-            Assure Infrastructure Status
-          </h1>
+    <div className="rpma-settings-stack">
+      <div className="rpma-settings-toolbar">
+        <p className="rpma-settings-blurb">API feeds and SQL Edge agents for the estate.</p>
+        <div className="rpma-settings-actions">
+          <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
+            <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+            Recheck
+          </Button>
         </div>
-        <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void load()}>
-          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
-          Recheck
-        </Button>
       </div>
 
-      <section className="rpma-panel overflow-hidden p-0">
-        <div className="px-4 py-3">
-          <h2 className="text-[16px] font-extrabold text-fg">Assure API Feed Status</h2>
-        </div>
-        <div className="overflow-x-auto">
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">Assure API Feed Status</div>
           <table className="rpma-xls text-left">
             <thead>
               <tr>
@@ -272,13 +265,12 @@ function InfrastructureStatusPage() {
               )}
             </tbody>
           </table>
-        </div>
       </section>
 
-      <section className="rpma-panel overflow-hidden p-0">
-        <div className="flex items-end justify-between gap-3 px-4 py-3">
-          <h2 className="text-[16px] font-extrabold text-fg">Assure Platform Agent Status</h2>
-          <p className="text-[12px] text-muted">{agents.length} customers</p>
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">
+          Assure Platform Agent Status
+          <span className="rpma-settings-count">{agents.length}</span>
         </div>
         {(() => {
           const remaining = agents.filter(
@@ -308,9 +300,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
             </div>
           );
         })()}
-        {agentMsg ? <p className="px-4 pb-2 text-[12px] text-muted">{agentMsg}</p> : null}
-        <div className="overflow-x-auto">
-          <table className="rpma-xls text-left">
+        {agentMsg ? <p className="px-3 pb-2 text-[11px] text-muted">{agentMsg}</p> : null}
+        <table className="rpma-xls text-left">
             <thead>
               <tr>
                 <th>Customer Name</th>
@@ -421,7 +412,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
               )}
             </tbody>
           </table>
-        </div>
       </section>
     </div>
   );
