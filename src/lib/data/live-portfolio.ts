@@ -4727,9 +4727,16 @@ WHERE d.CustomerCode = @code`);
               ReadIops?: number | null;
               WriteIops?: number | null;
               TotalIops?: number | null;
+              QueueLen?: number | null;
               SnapshotUtc?: Date | string | null;
             }>;
-            rmm.agentIops = iopsRows.map((row) => ({
+            rmm.agentIops = iopsRows.map((row) => {
+              const mediaRaw = row.MediaType ? String(row.MediaType) : "";
+              const media =
+                !mediaRaw || /unspecified|unknown|fixed hard disk/i.test(mediaRaw)
+                  ? null
+                  : mediaRaw;
+              return {
               hostName: String(row.HostName ?? ""),
               driveLetter: String(row.DriveLetter ?? ""),
               usedPct:
@@ -4756,9 +4763,16 @@ WHERE d.CustomerCode = @code`);
                 row.FreeGb != null && Number.isFinite(Number(row.FreeGb))
                   ? Number(row.FreeGb)
                   : null,
-              mediaType: row.MediaType ? String(row.MediaType) : null,
+              mediaType: media,
+              queueLen:
+                row.QueueLen != null && Number.isFinite(Number(row.QueueLen))
+                  ? Number(row.QueueLen)
+                  : null,
+              readLatencyMs: null,
+              writeLatencyMs: null,
               snapshotUtc: toIso(row.SnapshotUtc ?? null),
-            }));
+            };
+            });
             if (iopsRows.length) {
               const byHost = new Map<string, typeof iopsRows>();
               for (const row of iopsRows) {

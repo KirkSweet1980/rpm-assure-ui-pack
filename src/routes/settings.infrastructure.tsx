@@ -585,15 +585,34 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                 <th>Host</th>
                 <th>Drive</th>
                 <th>Media</th>
+                <th>Size</th>
                 <th>Used</th>
                 <th>Read</th>
                 <th>Write</th>
                 <th>Total IOPS</th>
+                <th>Queue</th>
                 <th>Sampled</th>
               </tr>
             </thead>
             <tbody>
-              {estateIops.map((r, i) => (
+              {estateIops.map((r, i) => {
+                const used = r.usedPct;
+                const usedCls =
+                  used != null && used >= 90
+                    ? "font-bold text-rag-red"
+                    : used != null && used >= 80
+                      ? "font-bold text-amber-400"
+                      : "";
+                const fmtI = (n: number | null | undefined) => {
+                  if (n == null) return "—";
+                  if (n < 0.5) return "idle";
+                  return n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString("en-ZA");
+                };
+                const size =
+                  r.totalGb != null
+                    ? `${r.freeGb != null ? `${r.freeGb.toFixed(0)} free / ` : ""}${r.totalGb.toFixed(0)} GB`
+                    : "—";
+                return (
                 <tr key={`${r.customerCode}-${r.hostName}-${r.driveLetter}-${i}`}>
                   <td>
                     <SpaLink href={`/customers/${encodeURIComponent(r.customerCode)}/rmm/iops`} className="font-bold text-fg no-underline hover:underline">
@@ -603,13 +622,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                   <td className="font-mono">{r.hostName}</td>
                   <td className="font-mono">{r.driveLetter}</td>
                   <td>{r.mediaType || "—"}</td>
-                  <td>{r.usedPct != null ? `${r.usedPct.toFixed(1)}%` : "—"}</td>
-                  <td>{r.readIops != null ? Math.round(r.readIops).toLocaleString("en-ZA") : "—"}</td>
-                  <td>{r.writeIops != null ? Math.round(r.writeIops).toLocaleString("en-ZA") : "—"}</td>
-                  <td>{r.totalIops != null ? Math.round(r.totalIops).toLocaleString("en-ZA") : "—"}</td>
+                  <td>{size}</td>
+                  <td className={usedCls}>{used != null ? `${used.toFixed(1)}%` : "—"}</td>
+                  <td>{fmtI(r.readIops)}</td>
+                  <td>{fmtI(r.writeIops)}</td>
+                  <td>{fmtI(r.totalIops)}</td>
+                  <td>{r.queueLen != null ? r.queueLen.toFixed(1) : "—"}</td>
                   <td>{formatSastDateTime(r.snapshotUtc)}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}

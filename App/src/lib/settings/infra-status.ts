@@ -107,6 +107,9 @@ export type EstateIopsRow = {
   readIops: number | null;
   writeIops: number | null;
   totalIops: number | null;
+  totalGb: number | null;
+  freeGb: number | null;
+  queueLen: number | null;
   mediaType: string | null;
   snapshotUtc: string | null;
 };
@@ -139,7 +142,8 @@ export const fetchEstateTelemetry = createServerFn({ method: "GET" }).handler(as
     const r = await pool.request().query(`
 SELECT d.CustomerCode,
        ISNULL(c.DisplayName, d.CustomerCode) AS DisplayName,
-       d.HostName, d.DriveLetter, d.UsedPct, d.ReadIops, d.WriteIops, d.TotalIops, d.MediaType, d.SnapshotUtc
+       d.HostName, d.DriveLetter, d.UsedPct, d.ReadIops, d.WriteIops, d.TotalIops, d.MediaType, d.SnapshotUtc,
+       d.TotalGb, d.FreeGb, d.QueueLen
 FROM dbo.Agent_DiskIops d WITH (NOLOCK)
 LEFT JOIN dbo.Dim_Customer c WITH (NOLOCK) ON c.CustomerCode = d.CustomerCode
 INNER JOIN (
@@ -160,7 +164,12 @@ ORDER BY DisplayName, d.HostName, d.DriveLetter`);
         readIops: rec.ReadIops != null ? Number(rec.ReadIops) : null,
         writeIops: rec.WriteIops != null ? Number(rec.WriteIops) : null,
         totalIops: rec.TotalIops != null ? Number(rec.TotalIops) : null,
-        mediaType: rec.MediaType != null ? String(rec.MediaType) : null,
+        mediaType: rec.MediaType && !/unspecified|unknown|fixed hard disk/i.test(String(rec.MediaType))
+          ? String(rec.MediaType)
+          : null,
+        totalGb: rec.TotalGb != null ? Number(rec.TotalGb) : null,
+        freeGb: rec.FreeGb != null ? Number(rec.FreeGb) : null,
+        queueLen: rec.QueueLen != null ? Number(rec.QueueLen) : null,
         snapshotUtc: rec.SnapshotUtc ? new Date(rec.SnapshotUtc as string).toISOString() : null,
       });
     }

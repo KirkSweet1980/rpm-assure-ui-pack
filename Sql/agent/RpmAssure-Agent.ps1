@@ -1,11 +1,5 @@
 # RPM Assure Edge Agent - single cycle (heartbeat + due jobs + push status)
 # Called by scheduled task every 5 minutes. Pure ASCII.
-#
-# Policy (2026-08):
-# - ONLINE status and heartbeat NEVER depend on which services are on cover.
-# - Heartbeat always runs and is the sole source of online/offline.
-# - Cover only influences which collect jobs are scheduled by default.
-# - All collect scripts stay available on disk so central can enable any service later.
 param(
   [string]$AgentRoot = "C:\RPM-Assure\Agent",
   [string]$ConfigPath = "",
@@ -29,8 +23,7 @@ $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
 if (-not $CentralSqlUser) { throw "CentralSqlUser missing" }
-if (-not $RoleTags) { $RoleTags = "agent" }
-if ($RoleTags -notmatch '(?i)\bagent\b') { $RoleTags = ("agent," + $RoleTags).Trim(',') }
+if (-not $RoleTags) { $RoleTags = "syspro" }
 if (-not $SqlRoot) { $SqlRoot = "C:\RPM-Assure\Sql" }
 if (-not $LogDir) { $LogDir = Join-Path $AgentRoot "logs" }
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -154,7 +147,6 @@ function Invoke-CentralSql {
 }
 
 function Get-RpmaServiceCover([string]$Code) {
-  # Cover is schedule guidance only - never used for online/offline.
   $cover = [ordered]@{
     syspro = $null
     rmm    = $null
@@ -213,7 +205,6 @@ function Ensure-RpmaAgentScript([string]$Name) {
 }
 
 function Test-RpmaServiceOnCover($flag, [string]$service, [string]$instanceName) {
-  # Schedule filter only. null = unknown -> allow common host jobs; for syspro require instance or explicit on.
   if ($flag -eq $false) { return $false }
   if ($flag -eq $true) { return $true }
   if ($service -eq 'syspro' -and $instanceName) { return $true }
@@ -287,7 +278,6 @@ $detail = @{
   sqlRoot = $SqlRoot
 } | ConvertTo-Json -Compress
 
-# HEARTBEAT = sole source of ONLINE. Cover has zero effect here.
 $hbFailed = $false
 foreach ($hc in $hostCustomers) {
   $cc = $hc.Code
@@ -324,34 +314,7 @@ VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Li
     W "Heartbeat pushed $cc@$HostName"
   }
 }
-if (-not $hostCustomers.Count) {
-  # Still try a host-only heartbeat so the agent shows online even before customer config exists
-  $cc = if ($CustomerCode) { $CustomerCode } else { $HostName }
-  $hbSql = @"
-SET NOCOUNT ON;
-MERGE dbo.Agent_Registry AS t
-USING (SELECT $(Sql-Lit $cc) AS CustomerCode, $(Sql-Lit $HostName) AS HostName) s
-ON t.CustomerCode = s.CustomerCode AND t.HostName = s.HostName
-WHEN MATCHED THEN UPDATE SET
-  LastHeartbeatUtc = SYSUTCDATETIME(),
-  AgentVersion = $(Sql-Lit $AgentVersion),
-  RoleTags = $(Sql-Lit $RoleTags),
-  InstallPath = $(Sql-Lit $AgentRoot),
-  LastStatus = CASE WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING') THEN t.LastStatus ELSE N'ONLINE' END,
-  LastMessage = CASE WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING') THEN t.LastMessage ELSE N'heartbeat ok' END
-WHEN NOT MATCHED THEN INSERT (CustomerCode, HostName, InstanceName, AgentVersion, RoleTags, InstallPath, LastHeartbeatUtc, LastStatus, LastMessage)
-  VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Lit $RoleTags), $(Sql-Lit $AgentRoot), SYSUTCDATETIME(), N'ONLINE', N'registered');
-INSERT INTO dbo.Agent_Heartbeat (CustomerCode, HostName, AgentVersion, OsCaption, MemFreeMb, DiskFreeGb, DetailJson)
-VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Lit $os), $(if ($null -eq $mem) { 'NULL' } else { $mem }), $(if ($null -eq $disk) { 'NULL' } else { $disk }), $(Sql-Lit $detail));
-"@
-  $r = Invoke-CentralSql -SqlText $hbSql
-  if ($r.ExitCode -ne 0) {
-    W ("WARN host heartbeat: " + $r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))
-    $hbFailed = $true
-  } else {
-    W "Heartbeat pushed host-only $cc@$HostName"
-  }
-}
+if (-not $hostCustomers.Count) { $hbFailed = $true }
 Write-RpmaStatusFile -Online (-not $hbFailed) -Message $(if ($hbFailed) { 'heartbeat failed' } else { 'heartbeat ok' })
 
 # Auto-update: SQL queue (UPDATE) and/or newer VERSION in local git pack
@@ -406,12 +369,6 @@ WHERE HostName = $(Sql-Lit $HostName);
     $applied = $false
     if (Test-Path (Join-Path $from "RpmAssure-Agent.ps1")) {
       robocopy $from $AgentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-      # Always refresh collect scripts on update so every agent has the full set
-      $baseSrc = Join-Path $pack "Sql\base\syspro-direct"
-      if (Test-Path $baseSrc) {
-        New-Item -ItemType Directory -Force -Path (Join-Path $SqlRoot "base\syspro-direct") | Out-Null
-        robocopy $baseSrc (Join-Path $SqlRoot "base\syspro-direct") /E /XO /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-      }
       $applied = $true
     }
     if (-not $applied) {
@@ -488,9 +445,7 @@ if ($HeartbeatOnly) {
   exit 0
 }
 
-# --- Job catalog ---
-# Cover only decides which service jobs to *schedule*. Scripts themselves are always on disk.
-# Host-level jobs (iops, eventlog, link) always run.
+# --- Job catalog: every Customer.Config.ps1 on this SQL host ---
 $jobs = @()
 if ($AgentJobs -and $AgentJobs.Count -gt 0) {
   $jobs = $AgentJobs
@@ -501,7 +456,7 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
   foreach ($hc in $hostCustomers) {
     if (Test-Path $hc.Path) { $configs += Get-Item $hc.Path }
   }
-  if ($configs.Count -eq 0) { W "WARN no host-matched Customer.Config.ps1 - host jobs still run" }
+  if ($configs.Count -eq 0) { W "WARN no host-matched Customer.Config.ps1" }
   foreach ($cfg in $configs) {
     $code = $cfg.Directory.Name
     $cover = Get-RpmaServiceCover $code
@@ -512,14 +467,15 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
     $coveOn = Test-RpmaServiceOnCover $cover.cove 'cove' ''
     $eppOn = Test-RpmaServiceOnCover $cover.epp 'epp' ''
     $cspOn = Test-RpmaServiceOnCover $cover.csp 'csp' ''
-    $tags = @('agent')
+    $tags = @()
     if ($sysOn) { $tags += 'syspro' }
     if ($rmmOn) { $tags += 'rmm' }
     if ($coveOn) { $tags += 'cove' }
     if ($eppOn) { $tags += 'epp' }
     if ($cspOn) { $tags += 'csp' }
+    if (-not $tags.Count) { $tags = @('agent') }
     $RoleTags = ($tags -join ',')
-    W ("schedule $code cover(syspro=$sysOn rmm=$rmmOn cove=$coveOn epp=$eppOn csp=$cspOn) roles=$RoleTags")
+    W ("cover $code syspro=$sysOn rmm=$rmmOn cove=$coveOn epp=$eppOn csp=$cspOn")
 
     $check = 2
     $sysproLight = 30
@@ -532,9 +488,9 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
     }
     if ($check -lt 1) { $check = 2 }
 
-    # SYSPRO jobs: scheduled only when cover says so (or instance present).
-    # Scripts remain on disk regardless so central can force later.
-    if ($sysOn) {
+    if (-not $sysOn) {
+      W ("SKIP SYSPRO scripts for $code - no SYSPRO cover")
+    } else {
       if (Test-Path $sysproRunner) {
         $jobs += @{
           Name = "syspro-core-$code"
@@ -560,11 +516,8 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
           Args = @("-ConfigPath", $cfg.FullName)
         }
       }
-    } else {
-      W ("schedule: SYSPRO jobs not due for $code (no cover) - scripts still present for central")
     }
 
-    # Host jobs always scheduled (independent of cover)
     $iopsRunner = Ensure-RpmaAgentScript "Collect-Host-Iops.ps1"
     if ($iopsRunner) {
       $jobs += @{
@@ -591,10 +544,10 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       W "WARN Collect-Windows-EventLog.ps1 missing"
     }
 
-    if (-not $rmmOn) { W ("schedule: RMM jobs not due for $code (no cover)") }
-    if (-not $coveOn) { W ("schedule: Cove jobs not due for $code (no cover)") }
-    if (-not $eppOn) { W ("schedule: EPP jobs not due for $code (no cover)") }
-    if (-not $cspOn) { W ("schedule: CSP jobs not due for $code (no cover)") }
+    if (-not $rmmOn) { W ("SKIP RMM scripts for $code - no RMM cover") }
+    if (-not $coveOn) { W ("SKIP Cove scripts for $code - no Cove cover") }
+    if (-not $eppOn) { W ("SKIP EPP scripts for $code - no EPP cover") }
+    if (-not $cspOn) { W ("SKIP CSP scripts for $code - no CSP cover") }
 
     $linkRunner = Join-Path $AgentRoot "Probe-Assure-Link.ps1"
     if (-not (Test-Path $linkRunner)) { $linkRunner = Join-Path $SqlRoot "agent\Probe-Assure-Link.ps1" }
@@ -626,7 +579,7 @@ if (-not ($jobs | Where-Object { $_.Name -like 'host-iops-*' })) {
 }
 if (-not ($jobs | Where-Object { $_.Name -like 'win-eventlog-*' })) {
   $evtRunner = Ensure-RpmaAgentScript "Collect-Windows-EventLog.ps1"
-  if ($evtRunner -and (Test-Path $evtRunner)) {
+  if (Test-Path $evtRunner) {
     $jobs += @{
       Name = "win-eventlog-$CustomerCode"
       Customer = $CustomerCode
@@ -662,16 +615,15 @@ function Report-JobRun {
   if ($msg.Length -gt 1900) { $msg = $msg.Substring(0, 1900) }
   $tail = $LogTail
   if ($tail -and $tail.Length -gt 8000) { $tail = $tail.Substring($tail.Length - 8000) }
-  # Job result updates LastJob / LastMessage only - does NOT clear ONLINE from heartbeat
   $sql = @"
 SET NOCOUNT ON;
 INSERT INTO dbo.Agent_JobRun (CustomerCode, HostName, JobName, StartedUtc, FinishedUtc, ExitCode, Success, DurationSec, Message, LogTail)
 VALUES ($(Sql-Lit $Code), $(Sql-Lit $HostName), $(Sql-Lit $Name), $(Sql-Lit $Started.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss")), $(Sql-Lit $Finished.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss")), $ExitCode, $ok, $dur, $(Sql-Lit $msg), $(Sql-Lit $tail));
 UPDATE dbo.Agent_Registry
 SET LastJobUtc = SYSUTCDATETIME(),
+    LastStatus = $(Sql-Lit $(if ($ok -eq 1) { 'OK' } else { 'JOB_FAIL' })),
     LastMessage = $(Sql-Lit ($Name + " exit=" + $ExitCode))
-WHERE CustomerCode = $(Sql-Lit $Code) AND HostName = $(Sql-Lit $HostName)
-  AND LastStatus NOT IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING');
+WHERE CustomerCode = $(Sql-Lit $Code) AND HostName = $(Sql-Lit $HostName);
 "@
   $rr = Invoke-CentralSql -SqlText $sql
   if ($rr.ExitCode -ne 0) { W "WARN job report: $($rr.Text.Substring(0, [Math]::Min(300, $rr.Text.Length)))" }
@@ -718,7 +670,7 @@ if ($forceCodes.Count) {
   $clr = @"
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
-SET LastStatus = N'ONLINE',
+SET LastStatus = N'OK',
     LastMessage = N'sync complete'
 WHERE HostName = $(Sql-Lit $HostName)
   AND (LastStatus IN (N'QUEUED', N'SYNCING') OR LastMessage LIKE N'sync requested%' OR LastMessage = N'collect running');
@@ -728,6 +680,5 @@ WHERE HostName = $(Sql-Lit $HostName)
 }
 
 W "=== Agent cycle done log=$log ==="
-# status.json online is ALWAYS heartbeat-based, never cover or job result
 Write-RpmaStatusFile -Online (-not $hbFailed) -Message $(if ($script:RpmaJobFailed) { 'job error' } elseif ($hbFailed) { 'disconnected' } else { 'cycle done' }) -HadError ([bool]$script:RpmaJobFailed)
 exit 0

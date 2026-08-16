@@ -592,6 +592,9 @@ export type RmmAgentIopsRow = {
   totalGb: number | null;
   freeGb: number | null;
   mediaType: string | null;
+  queueLen: number | null;
+  readLatencyMs: number | null;
+  writeLatencyMs: number | null;
   snapshotUtc: string | null;
 };
 
