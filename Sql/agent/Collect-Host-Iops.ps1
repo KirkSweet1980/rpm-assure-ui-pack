@@ -225,8 +225,8 @@ function Ingest-WmiRaw($map, [string]$className) {
 
 W "enabling disk performance counters (diskperf -Y)"
 try {
-  $dp = Start-Process -FilePath "diskperf.exe" -ArgumentList "-Y" -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
-  W ("diskperf exit=" + $dp.ExitCode)
+  & diskperf.exe -Y | Out-Null
+  W "diskperf ok"
 } catch {
   W ("WARN diskperf: " + $_.Exception.Message)
 }

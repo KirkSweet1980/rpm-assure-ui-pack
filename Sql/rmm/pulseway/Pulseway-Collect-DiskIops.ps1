@@ -43,7 +43,7 @@ function SetN($o, [string]$n, $v) {
   } catch {}
 }
 
-try { Start-Process -FilePath 'diskperf.exe' -ArgumentList '-Y' -Wait -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null } catch {}
+try { & diskperf.exe -Y | Out-Null } catch {}
 
 $paths = @(
   '\LogicalDisk(*)\Disk Reads/sec',

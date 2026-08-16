@@ -48,11 +48,7 @@ function SetN($o, [string]$n, $v) {
 }
 
 Write-Host 'enabling diskperf -Y'
-try {
-  Start-Process -FilePath 'diskperf.exe' -ArgumentList '-Y' -Wait -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
-} catch {
-  Write-Host ('WARN diskperf ' + $_.Exception.Message)
-}
+try { & diskperf.exe -Y | Out-Null } catch { Write-Host ('WARN diskperf ' + $_.Exception.Message) }
 
 $paths = @(
   '\LogicalDisk(*)\Disk Reads/sec',
