@@ -9,6 +9,24 @@ Windows service on each customer SYSPRO SQL host. One charter for every tenant.
 - Cover only influences which jobs the agent *schedules by default*.
 - Central can later enable or deploy any script for any agent.
 
+## Local product detection (install)
+
+On install the agent scans this host and **enables** matching cover on central:
+
+| Product found | Cover pillar |
+|---|---|
+| Pulseway (PC Monitor service / folder / registry) | RMM → `PillarPulseway = 1` |
+| Bitdefender / GravityZone / Endpoint Security | EPP → `PillarBitdefender = 1` |
+| Cove Data Protection / Backup Manager | Cove → `PillarCove = 1` |
+
+Rules:
+- Only **enables** (sets 1). Never clears a pillar from the agent.
+- Scripts: `Detect-Local-Services.ps1`, `Enable-Cover-From-Local.ps1`
+- Manual test on a host:
+  ```powershell
+  powershell -File C:\RPM-Assure\Agent\Detect-Local-Services.ps1
+  ```
+
 ## Responsibilities
 
 | Job | Script | Interval |
@@ -35,13 +53,11 @@ Windows service on each customer SYSPRO SQL host. One charter for every tenant.
 
 ## Install
 
-Use the Windows wizard (same pack for every customer):
-
 ```cmd
 C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Start-Agent-Wizard.cmd
 ```
 
-Or Hydrasales one-click:
+Hydrasales one-click:
 
 ```cmd
 C:\RPM-Assure\deploy\ui-pack\Sql\customers\HYDRA\Install-Hydrasales-Agent.cmd
