@@ -242,6 +242,16 @@ $chkSkip.Size = New-Object Drawing.Size 560, 36
 $chkSkip.Font = New-Object Drawing.Font("Segoe UI", 8.5)
 $chkSkip.ForeColor = $Ink
 $chkSkip.add_CheckedChanged({ Set-NextGate })
+$chkNoSql = New-Object Windows.Forms.CheckBox
+$chkNoSql.Text = "No local SQL / no SYSPRO. Agent will only heartbeat, IOPS and event logs."
+$chkNoSql.Location = New-Object Drawing.Point 24, 438
+$chkNoSql.Size = New-Object Drawing.Size 560, 28
+$chkNoSql.Font = New-Object Drawing.Font("Segoe UI", 8.5)
+$chkNoSql.ForeColor = $Ink
+$chkNoSql.add_CheckedChanged({
+  if ($chkNoSql.Checked) { $script:LocalOk = $true }
+  Set-NextGate
+})
 $btnTestExist = New-Btn "Test sa / admin" 24 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
 $btnTestExist.Location = New-Object Drawing.Point 24, 88
 $btnTestExist.Size = New-Object Drawing.Size 130, 34
@@ -292,7 +302,9 @@ function Test-Ado([string]$server, [string]$db, [string]$mode, [string]$user, [s
 function Set-NextGate {
   $skip = $false
   if ($chkSkip -and $chkSkip.Checked) { $skip = $true }
-  $script:AssureOk = ($script:LocalOk -and ($script:CentralOk -or $skip))
+  $noSql = $false
+  if ($chkNoSql -and $chkNoSql.Checked) { $noSql = $true; $script:LocalOk = $true }
+  $script:AssureOk = (($script:LocalOk -or $noSql) -and ($script:CentralOk -or $skip))
   if ($script:Page -eq 2) { $btnNext.Enabled = $script:AssureOk }
 }
 
@@ -355,6 +367,7 @@ function Show-Page {
       $content.Controls.Add((New-Lbl "Central host:port  (example 102.222.21.220:14333)" 24 350 500 16 $null $Muted))
       $content.Controls.Add($txtCentralHost)
       $content.Controls.Add($chkSkip)
+      $content.Controls.Add($chkNoSql)
       Set-NextGate
     }
     3 {

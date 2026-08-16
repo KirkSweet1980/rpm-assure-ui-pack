@@ -1,0 +1,11 @@
+# Able Tracers - RMM / Cove / EPP host agent. No SYSPRO cover.
+$CustomerCode = 'ABLE'
+$DisplayName = 'Able Tracers'
+$InstanceName = ''
+$SqlInstanceName = ''
+$LocalSqlUser = 'rpmassure'
+$LocalSqlPassword = '@ssuR3me!'
+$CentralDataSource = '102.222.21.220,14333'
+$CentralDatabase = 'RPMAssure_App'
+$CentralSqlUser = 'rpmassure'
+$CentralSqlPassword = '@ssuR3me!'
