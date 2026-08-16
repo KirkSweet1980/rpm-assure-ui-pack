@@ -4233,6 +4233,7 @@ ORDER BY
     devices: [],
     alerts: [],
     windowsEvents: [],
+    agentIops: [],
     mapping: [],
     message: null,
   };
@@ -4712,7 +4713,7 @@ INNER JOIN (
   SELECT CustomerCode, HostName, MAX(SnapshotUtc) AS mx
   FROM dbo.Agent_DiskIops WITH (NOLOCK)
   WHERE CustomerCode = @code
-    AND SnapshotUtc >= DATEADD(hour, -6, SYSUTCDATETIME())
+    AND SnapshotUtc >= DATEADD(hour, -24, SYSUTCDATETIME())
   GROUP BY CustomerCode, HostName
 ) m ON m.CustomerCode = d.CustomerCode AND m.HostName = d.HostName AND m.mx = d.SnapshotUtc
 WHERE d.CustomerCode = @code`);
@@ -4726,7 +4727,38 @@ WHERE d.CustomerCode = @code`);
               ReadIops?: number | null;
               WriteIops?: number | null;
               TotalIops?: number | null;
+              SnapshotUtc?: Date | string | null;
             }>;
+            rmm.agentIops = iopsRows.map((row) => ({
+              hostName: String(row.HostName ?? ""),
+              driveLetter: String(row.DriveLetter ?? ""),
+              usedPct:
+                row.UsedPct != null && Number.isFinite(Number(row.UsedPct))
+                  ? Number(row.UsedPct)
+                  : null,
+              readIops:
+                row.ReadIops != null && Number.isFinite(Number(row.ReadIops))
+                  ? Number(row.ReadIops)
+                  : null,
+              writeIops:
+                row.WriteIops != null && Number.isFinite(Number(row.WriteIops))
+                  ? Number(row.WriteIops)
+                  : null,
+              totalIops:
+                row.TotalIops != null && Number.isFinite(Number(row.TotalIops))
+                  ? Number(row.TotalIops)
+                  : null,
+              totalGb:
+                row.TotalGb != null && Number.isFinite(Number(row.TotalGb))
+                  ? Number(row.TotalGb)
+                  : null,
+              freeGb:
+                row.FreeGb != null && Number.isFinite(Number(row.FreeGb))
+                  ? Number(row.FreeGb)
+                  : null,
+              mediaType: row.MediaType ? String(row.MediaType) : null,
+              snapshotUtc: toIso(row.SnapshotUtc ?? null),
+            }));
             if (iopsRows.length) {
               const byHost = new Map<string, typeof iopsRows>();
               for (const row of iopsRows) {

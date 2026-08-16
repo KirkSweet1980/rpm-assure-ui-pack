@@ -570,6 +570,19 @@ export type RmmWindowsEventRow = {
   message: string;
 };
 
+export type RmmAgentIopsRow = {
+  hostName: string;
+  driveLetter: string;
+  usedPct: number | null;
+  readIops: number | null;
+  writeIops: number | null;
+  totalIops: number | null;
+  totalGb: number | null;
+  freeGb: number | null;
+  mediaType: string | null;
+  snapshotUtc: string | null;
+};
+
 export type RmmOrgMapRow = {
   organizationName: string;
   organizationId: number | null;
@@ -689,6 +702,7 @@ export type RmmPayload = {
   devices: RmmDeviceRow[];
   alerts: RmmAlertRow[];
   windowsEvents?: RmmWindowsEventRow[];
+  agentIops?: RmmAgentIopsRow[];
   mapping: RmmOrgMapRow[];
   message: string | null;
 };

@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.5.1"
+$AgentVersion = "2.5.2"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -185,6 +185,23 @@ WHERE c.CustomerCode = $(Sql-Lit $Code);
     }
   }
   return $cover
+}
+
+function Ensure-RpmaAgentScript([string]$Name) {
+  $dest = Join-Path $AgentRoot $Name
+  if (Test-Path -LiteralPath $dest) { return $dest }
+  $cands = @(
+    (Join-Path $SqlRoot ("agent\" + $Name)),
+    "C:\RPM-Assure\deploy\ui-pack\Sql\agent\$Name"
+  )
+  foreach ($c in $cands) {
+    if (-not (Test-Path -LiteralPath $c)) { continue }
+    New-Item -ItemType Directory -Force -Path $AgentRoot | Out-Null
+    Get-Content -LiteralPath $c -Raw | Set-Content -LiteralPath $dest -Encoding ASCII
+    W ("pushed missing $Name to agent")
+    return $dest
+  }
+  return $null
 }
 
 function Test-RpmaServiceOnCover($flag, [string]$service, [string]$instanceName) {
@@ -496,22 +513,23 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
           Args = @("-ConfigPath", $cfg.FullName)
         }
       }
-      $iopsRunner = Join-Path $AgentRoot "Collect-Host-Iops.ps1"
-      if (-not (Test-Path $iopsRunner)) { $iopsRunner = Join-Path $SqlRoot "agent\Collect-Host-Iops.ps1" }
-      if (Test-Path $iopsRunner) {
-        $jobs += @{
-          Name = "host-iops-$code"
-          Customer = $code
-          IntervalMin = $light
-          Script = $iopsRunner
-          Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
-        }
-      }
     }
 
-    $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
-    if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
-    if (Test-Path $evtRunner) {
+    $iopsRunner = Ensure-RpmaAgentScript "Collect-Host-Iops.ps1"
+    if ($iopsRunner) {
+      $jobs += @{
+        Name = "host-iops-$code"
+        Customer = $code
+        IntervalMin = $light
+        Script = $iopsRunner
+        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
+      }
+    } else {
+      W "WARN Collect-Host-Iops.ps1 missing - cannot sample disk IOPS"
+    }
+
+    $evtRunner = Ensure-RpmaAgentScript "Collect-Windows-EventLog.ps1"
+    if ($evtRunner) {
       $jobs += @{
         Name = "win-eventlog-$code"
         Customer = $code
@@ -543,9 +561,21 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
   W ("jobs queued: " + $jobs.Count + " from " + $configs.Count + " config(s)")
 }
 
+if (-not ($jobs | Where-Object { $_.Name -like 'host-iops-*' })) {
+  $iopsRunner = Ensure-RpmaAgentScript "Collect-Host-Iops.ps1"
+  if ($iopsRunner) {
+    $jobs += @{
+      Name = "host-iops-$CustomerCode"
+      Customer = $CustomerCode
+      IntervalMin = 30
+      Script = $iopsRunner
+      Args = @("-AgentRoot", $AgentRoot)
+    }
+    W "queued host-iops for $CustomerCode (no customer config match)"
+  }
+}
 if (-not ($jobs | Where-Object { $_.Name -like 'win-eventlog-*' })) {
-  $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
-  if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
+  $evtRunner = Ensure-RpmaAgentScript "Collect-Windows-EventLog.ps1"
   if (Test-Path $evtRunner) {
     $jobs += @{
       Name = "win-eventlog-$CustomerCode"

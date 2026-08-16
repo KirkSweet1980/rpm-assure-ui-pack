@@ -1230,6 +1230,124 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   );
 }
 
+function AgentHostTelemetry({
+  iops,
+  events,
+  focusHost,
+}: {
+  iops: NonNullable<CustomerDetailPayload["rmm"]>["agentIops"];
+  events: NonNullable<CustomerDetailPayload["rmm"]>["windowsEvents"];
+  focusHost?: string | null;
+}) {
+  const rows = iops ?? [];
+  const evs = events ?? [];
+  const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const focus = focusHost ? norm(focusHost) : "";
+  const iopsView = focus
+    ? rows.filter((r) => {
+        const h = norm(r.hostName);
+        return h === focus || h.startsWith(focus) || focus.startsWith(h);
+      })
+    : rows;
+  const evView = focus
+    ? evs.filter((r) => {
+        const h = norm(r.hostName);
+        return h === focus || h.startsWith(focus) || focus.startsWith(h);
+      })
+    : evs;
+  const iopsShow = iopsView.length ? iopsView : rows;
+  const evShow = evView.length ? evView : evs;
+
+  return (
+    <div className="space-y-3">
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">
+          Agent Disk IOPS
+          <span className="rpma-settings-count">{iopsShow.length} volume{iopsShow.length === 1 ? "" : "s"}</span>
+        </div>
+        {iopsShow.length === 0 ? (
+          <p className="px-3 py-3 text-[12px] text-muted">
+            No IOPS from Assure agents yet. Agents sample LogicalDisk counters each cycle and push to central.
+          </p>
+        ) : (
+          <table className="rpma-xls text-left">
+            <thead>
+              <tr>
+                <th>Host</th>
+                <th>Drive</th>
+                <th>Media</th>
+                <th>Used</th>
+                <th>Read</th>
+                <th>Write</th>
+                <th>Total IOPS</th>
+                <th>Sampled</th>
+              </tr>
+            </thead>
+            <tbody>
+              {iopsShow.map((r, i) => (
+                <tr key={`${r.hostName}-${r.driveLetter}-${i}`}>
+                  <td className="font-mono">{r.hostName || "—"}</td>
+                  <td className="font-mono">{r.driveLetter || "—"}</td>
+                  <td>{r.mediaType || "—"}</td>
+                  <td>{r.usedPct != null ? `${r.usedPct.toFixed(1)}%` : "—"}</td>
+                  <td>{r.readIops != null ? Math.round(r.readIops).toLocaleString("en-ZA") : "—"}</td>
+                  <td>{r.writeIops != null ? Math.round(r.writeIops).toLocaleString("en-ZA") : "—"}</td>
+                  <td>{r.totalIops != null ? Math.round(r.totalIops).toLocaleString("en-ZA") : "—"}</td>
+                  <td>{formatSastDateTime(r.snapshotUtc)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+      <section className="rpma-panel p-0">
+        <div className="rpma-settings-panel-head">
+          Server Event Log
+          <span className="rpma-settings-count">{evShow.length} last 24h</span>
+        </div>
+        {evShow.length === 0 ? (
+          <p className="px-3 py-3 text-[12px] text-muted">
+            No Critical or Error events from Assure agent hosts in the last 24 hours.
+          </p>
+        ) : (
+          <table className="rpma-xls text-left">
+            <thead>
+              <tr>
+                <th>Host</th>
+                <th>When</th>
+                <th>Level</th>
+                <th>Log</th>
+                <th>ID</th>
+                <th>Provider</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {evShow.map((ev, i) => (
+                <tr key={`${ev.hostName}-${ev.timeCreatedUtc}-${ev.eventId}-${i}`}>
+                  <td className="font-mono">{ev.hostName || "—"}</td>
+                  <td>{formatSastDateTime(ev.timeCreatedUtc)}</td>
+                  <td>
+                    <Badge variant={ev.levelName.toLowerCase() === "critical" ? "red" : "amber"}>
+                      {ev.levelName}
+                    </Badge>
+                  </td>
+                  <td>{ev.logName}</td>
+                  <td className="font-mono">{ev.eventId}</td>
+                  <td>{ev.providerName || "—"}</td>
+                  <td className="max-w-[28rem] truncate" title={ev.message}>
+                    {ev.message || "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export function RmmDevicesSection({
   data,
   mode = "servers",
@@ -1273,7 +1391,11 @@ export function RmmDevicesSection({
     [devices, selectedId],
   );
 
-  if (!effectiveCover(data).rmm) {
+  const agentIops = data.rmm?.agentIops ?? [];
+  const windowsEvents = data.rmm?.windowsEvents ?? [];
+  const hasAgentTel = agentIops.length > 0 || windowsEvents.length > 0;
+
+  if (!effectiveCover(data).rmm && !hasAgentTel) {
     return (
       <NoCoverPanel
         service={`RPM Remote Management · ${title}`}
@@ -1285,13 +1407,16 @@ export function RmmDevicesSection({
   if (devices.length === 0) {
     const mapped = (data.rmm?.mapping ?? []).map((m) => m.organizationName).filter(Boolean);
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <h2 className="text-[15px] font-bold text-fg">{title}</h2>
         <p className="text-sm text-muted">
           {allDevices.length === 0
-            ? `Pulseway collect has 0 devices for this customer. Mapped org: ${mapped.join(", ") || data.rmm?.pulsewayOrgName || "Sir Fruit"}. Either the org is not in the live API yet, or agents have not reported.`
+            ? `Pulseway collect has 0 devices for this customer. Mapped org: ${mapped.join(", ") || data.rmm?.pulsewayOrgName || "—"}.`
             : `${allDevices.length} device(s) on collect, 0 classified as ${title.toLowerCase()}.`}
         </p>
+        {mode === "servers" ? (
+          <AgentHostTelemetry iops={agentIops} events={windowsEvents} />
+        ) : null}
       </div>
     );
   }
@@ -1544,7 +1669,7 @@ export function RmmDevicesSection({
                         ? Math.round(selected.diskIopsMax).toLocaleString("en-ZA")
                         : "Not reported"
                     }
-                    hint="From the Assure Edge Agent on this SYSPRO/SQL host. Pulseway API does not send IOPS."
+                    hint="From the Assure Edge Agent on this host. Pulseway API does not send IOPS."
                   />
                   <StatTile
                     label="CPU usage"
@@ -1690,6 +1815,13 @@ export function RmmDevicesSection({
           </div>
         </div>
       )}
+      {mode === "servers" ? (
+        <AgentHostTelemetry
+          iops={agentIops}
+          events={windowsEvents}
+          focusHost={selected?.name || selected?.deviceId}
+        />
+      ) : null}
     </div>
   );
 }
