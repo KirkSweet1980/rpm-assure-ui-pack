@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 export function EcoCustomizeButton({ onClick, open }: { onClick: () => void; open: boolean }) {
   return (
     <button type="button" className={cn("rpma-viewbar-btn", open && "is-on")} onClick={onClick}>
-      <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+      <SlidersHorizontal className="h-4 w-4" aria-hidden />
       Customize
     </button>
   );

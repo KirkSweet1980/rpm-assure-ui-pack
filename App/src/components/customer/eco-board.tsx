@@ -25,7 +25,6 @@ import { finsightModuleName } from "@/lib/brand/finsight";
 import { CHART } from "@/lib/brand-colors";
 import {
   DEFAULT_ECO_WIDGET_LAYOUT,
-  ECO_WIDGETS,
   ecoWidgetMeta,
   readEcoWidgetLayout,
   type EcoWidgetId,
@@ -191,10 +190,8 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <div className="rpma-eco-visuals space-y-3">
-      <div className="rpma-viewbar">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-muted">
-          Customer EcoSystem · {ECO_WIDGETS.length} widgets
-        </span>
+      <div className="rpma-eco-menubar">
+        <h2 className="rpma-eco-menubar-title">Customer EcoSystem</h2>
         <EcoCustomizeButton open={customizeOpen} onClick={() => setCustomizeOpen((v) => !v)} />
       </div>
       {customizeOpen ? (
