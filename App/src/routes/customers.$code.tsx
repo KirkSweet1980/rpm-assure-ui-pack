@@ -306,8 +306,62 @@ function CustomerLayout() {
 
   return (
     <RequireAuth>
-      <AppShell title={customer.displayName} subtitle={pageTitle}>
-        {/* D3 master–detail: left customer rail · right inspector */}
+      <AppShell>
+        <div className="rpma-context-bar" role="navigation" aria-label="Customer path">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[12px]"
+            onClick={() => {
+              const bits = customerPathParts(pathname, customer.customerCode);
+              if (bits.isDeepModule) {
+                go(bits.overviewHref);
+                return;
+              }
+              if (bits.pillar) {
+                go(bits.base);
+                return;
+              }
+              go("/");
+            }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back
+          </Button>
+          <CustomerPathTrail
+            code={customer.customerCode}
+            pathname={pathname}
+          />
+          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
+            <Link to="/">Exco</Link>
+          </Button>
+          <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
+            {customer.displayName}
+          </h2>
+          <span className="hidden text-[11px] text-muted sm:inline">{pageTitle}</span>
+          <RagBadge rag={tenantRag} title={tenantHint} />
+          <Badge
+            variant={
+              data.dataMode === "demo" || missing ? "amber" : "green"
+            }
+          >
+            {missing
+              ? "Unresolved"
+              : data.dataMode === "demo"
+                ? "Demo data"
+                : "Live SQL"}
+          </Badge>
+          {customer.lastImportAt ? (
+            <span className="ml-auto text-[11px] text-muted">
+              Last collect{" "}
+              {new Date(customer.lastImportAt).toLocaleString("en-ZA", {
+                hour12: false,
+              })}
+            </span>
+          ) : null}
+        </div>
+
         <div className="rpma-d3-workspace">
           <SyncRailHealth
             code={customer.customerCode}
@@ -323,61 +377,6 @@ function CustomerLayout() {
           />
 
           <div className="rpma-d3-detail min-w-0">
-            <div className="rpma-modnav">
-            <div className="rpma-d3-detail-head mb-2 flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-[12px]"
-                onClick={() => {
-                  const bits = customerPathParts(pathname, customer.customerCode);
-                  if (bits.isDeepModule) {
-                    go(bits.overviewHref);
-                    return;
-                  }
-                  if (bits.pillar) {
-                    go(bits.base);
-                    return;
-                  }
-                  go("/");
-                }}
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Back
-              </Button>
-              <CustomerPathTrail
-                code={customer.customerCode}
-                pathname={pathname}
-              />
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
-                <Link to="/">Exco</Link>
-              </Button>
-              <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
-                {customer.displayName}
-              </h2>
-              <RagBadge rag={tenantRag} title={tenantHint} />
-              <Badge
-                variant={
-                  data.dataMode === "demo" || missing ? "amber" : "green"
-                }
-              >
-                {missing
-                  ? "Unresolved"
-                  : data.dataMode === "demo"
-                    ? "Demo data"
-                    : "Live SQL"}
-              </Badge>
-              {customer.lastImportAt ? (
-                <span className="text-[11px] text-muted">
-                  Last collect{" "}
-                  {new Date(customer.lastImportAt).toLocaleString("en-ZA", {
-                    hour12: false,
-                  })}
-                </span>
-              ) : null}
-            </div>
-
             {missing ? (
               <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
                 <p className="font-semibold">Customer code not resolved</p>
@@ -390,7 +389,6 @@ function CustomerLayout() {
                 </p>
               </div>
             ) : null}
-            </div>
             <div className="rpma-saas-customer-body rpma-d3-detail-body min-w-0">
               <Outlet />
             </div>

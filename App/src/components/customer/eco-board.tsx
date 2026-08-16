@@ -18,7 +18,8 @@ import { RagBadge } from "@/components/portfolio/rag-badge";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { coverFromDetail, isPillarCovered } from "@/lib/data/cover";
-import { assuranceTone } from "@/lib/data/rag-score";
+import { customerLiveStatus } from "@/lib/data/live-status";
+import { assuranceTone, floorScoreToRag } from "@/lib/data/rag-score";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
 import { finsightModuleName } from "@/lib/brand/finsight";
 import { CHART } from "@/lib/brand-colors";
@@ -75,6 +76,12 @@ function Pane({
 export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const { customer, risks, issues, incidents, dtrLevel1, license, dayEnd, jobErrors, extraSummary, sysproHotfixes, operators } = data;
   const cover = coverFromDetail(data);
+  const live = customerLiveStatus(customer.customerCode, customer, cover, data);
+  const tenantRag = live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
+  const rawScore =
+    data.operationalAssurance?.scorePct ??
+    (tenantRag === "Green" ? 88 : tenantRag === "Amber" ? 68 : 42);
+  const score = floorScoreToRag(rawScore, tenantRag);
   const base = `/customers/${customer.customerCode}`;
   const [layout, setLayout] = useState<EcoWidgetLayout>(DEFAULT_ECO_WIDGET_LAYOUT);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -87,9 +94,6 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const openIssues = issues.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const openIncidents = incidents.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const major = openIncidents.filter((i) => i.isMajor);
-  const score =
-    data.operationalAssurance?.scorePct ??
-    (customer.healthRag === "Green" ? 88 : customer.healthRag === "Amber" ? 68 : 42);
 
   const lastCollect = [
     customer.lastImportAt,
@@ -203,7 +207,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
       <div className="rpma-eco-board">
         <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3" {...wgt("hero")}>
-          <RagBadge rag={customer.healthRag} title={customer.healthSummary} />
+          <RagBadge rag={tenantRag} title={live.pillars.eco.hint || customer.healthSummary} />
           <div className="min-w-0">
             <p className="text-lg font-bold tracking-tight text-fg">{customer.displayName}</p>
             <p className="text-[12px] text-muted">
@@ -214,7 +218,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <StatCard
               label="Assurance"
               value={`${score}%`}
-              tone={assuranceTone(score, customer.healthRag)}
+              tone={assuranceTone(score, tenantRag)}
             />
             <StatCard
               label="Services on cover"
