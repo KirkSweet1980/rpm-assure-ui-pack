@@ -4,10 +4,11 @@
 # Policy: only ENABLE cover when found. Never clear cover from the agent (central evidence owns off).
 #
 # Returns hashtable:
-#   Pulseway   = $true|$false
+#   Syspro      = $true|$false
+#   Pulseway    = $true|$false
 #   Bitdefender = $true|$false
-#   Cove       = $true|$false
-#   Details    = string[] of what matched
+#   Cove        = $true|$false
+#   Details     = string[] of what matched
 
 function Test-RpmaPath([string]$Path) {
   if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
@@ -19,7 +20,6 @@ function Test-RpmaService([string[]]$Names) {
     $s = Get-Service -Name $n -EA SilentlyContinue
     if ($s) { return $true }
   }
-  # wildcard-safe scan of a few known prefixes
   $all = Get-Service -EA SilentlyContinue
   foreach ($n in $Names) {
     if ($n -match '[\*\?]') {
@@ -37,13 +37,91 @@ function Test-RpmaReg([string[]]$Paths) {
   return $false
 }
 
+function Test-RpmaSysproDatabases {
+  # Strong signal on the customer SQL host: Syspro* databases exist
+  try {
+    $cs = 'Data Source=.;Initial Catalog=master;Integrated Security=True;Connect Timeout=4;Encrypt=False;TrustServerCertificate=True;'
+    $cn = New-Object System.Data.SqlClient.SqlConnection $cs
+    $cn.Open()
+    $cmd = $cn.CreateCommand()
+    $cmd.CommandTimeout = 8
+    $cmd.CommandText = @"
+SELECT TOP 1 name
+FROM sys.databases WITH (NOLOCK)
+WHERE name LIKE N'Syspro%'
+   OR name LIKE N'SYSPRO%'
+ORDER BY name;
+"@
+    $name = [string]$cmd.ExecuteScalar()
+    $cn.Close(); $cn.Dispose()
+    if ($name) { return $name }
+  } catch {}
+  # Fallback: named instances common on SYSPRO hosts
+  try {
+    $inst = $env:COMPUTERNAME
+    $cs = "Data Source=$inst;Initial Catalog=master;Integrated Security=True;Connect Timeout=4;Encrypt=False;TrustServerCertificate=True;"
+    $cn = New-Object System.Data.SqlClient.SqlConnection $cs
+    $cn.Open()
+    $cmd = $cn.CreateCommand()
+    $cmd.CommandTimeout = 8
+    $cmd.CommandText = "SELECT TOP 1 name FROM sys.databases WITH (NOLOCK) WHERE name LIKE N'Syspro%' OR name LIKE N'SYSPRO%' ORDER BY name;"
+    $name = [string]$cmd.ExecuteScalar()
+    $cn.Close(); $cn.Dispose()
+    if ($name) { return $name }
+  } catch {}
+  return $null
+}
+
 function Get-RpmaLocalServices {
   $details = New-Object System.Collections.Generic.List[string]
   $out = [ordered]@{
+    Syspro       = $false
     Pulseway     = $false
     Bitdefender  = $false
     Cove         = $false
     Details      = @()
+  }
+
+  # ---- SYSPRO ERP ----
+  $sySvc = @(
+    'SYSPRO*', 'Syspro*', 'SYSPROServer', 'SYSPRO Service',
+    'SYSPRO WCF', 'SYSPRO Reporting'
+  )
+  $syPaths = @(
+    'C:\SYSPRO',
+    'C:\SYSPRO7',
+    'C:\SYSPRO8',
+    'C:\SYSPRO9',
+    'C:\Syspro',
+    'D:\SYSPRO',
+    'D:\SYSPRO8',
+    'E:\SYSPRO',
+    (Join-Path $env:ProgramFiles 'SYSPRO'),
+    (Join-Path ${env:ProgramFiles(x86)} 'SYSPRO'),
+    (Join-Path $env:ProgramFiles 'Syspro'),
+    (Join-Path ${env:ProgramFiles(x86)} 'Syspro')
+  )
+  $syReg = @(
+    'HKLM:\SOFTWARE\SYSPRO',
+    'HKLM:\SOFTWARE\WOW6432Node\SYSPRO',
+    'HKLM:\SOFTWARE\Syspro',
+    'HKLM:\SOFTWARE\WOW6432Node\Syspro'
+  )
+  if (Test-RpmaService $sySvc) {
+    $out.Syspro = $true
+    [void]$details.Add('SYSPRO: service present')
+  } elseif ($syPaths | Where-Object { Test-RpmaPath $_ }) {
+    $out.Syspro = $true
+    [void]$details.Add('SYSPRO: install folder present')
+  } elseif (Test-RpmaReg $syReg) {
+    $out.Syspro = $true
+    [void]$details.Add('SYSPRO: registry present')
+  } else {
+    $db = Test-RpmaSysproDatabases
+    if ($db) {
+      $out.Syspro = $true
+      [void]$details.Add("SYSPRO: database present ($db)")
+    }
   }
 
   # ---- Pulseway / PC Monitor (RMM) ----
@@ -134,10 +212,9 @@ function Get-RpmaLocalServices {
   return $out
 }
 
-# When dot-sourced, functions are available.
-# When run directly, print a quick report.
 if ($MyInvocation.InvocationName -ne '.') {
   $r = Get-RpmaLocalServices
+  Write-Host ("SYSPRO       : " + $r.Syspro)
   Write-Host ("Pulseway     : " + $r.Pulseway)
   Write-Host ("Bitdefender  : " + $r.Bitdefender)
   Write-Host ("Cove         : " + $r.Cove)

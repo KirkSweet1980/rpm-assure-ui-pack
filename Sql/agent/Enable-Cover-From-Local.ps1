@@ -7,6 +7,7 @@ param(
   [Parameter(Mandatory)][string]$CentralDatabase,
   [Parameter(Mandatory)][string]$CentralSqlUser,
   [Parameter(Mandatory)][string]$CentralSqlPassword,
+  [bool]$Syspro = $false,
   [bool]$Pulseway = $false,
   [bool]$Bitdefender = $false,
   [bool]$Cove = $false,
@@ -15,7 +16,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $CustomerCode = $CustomerCode.Trim().ToUpperInvariant()
-if (-not ($Pulseway -or $Bitdefender -or $Cove)) {
+if (-not ($Syspro -or $Pulseway -or $Bitdefender -or $Cove)) {
   Write-Host 'No local products to enable on cover.'
   return @{ Enabled = @(); SqlOk = $true }
 }
@@ -26,6 +27,7 @@ function Sql-Lit([string]$s) {
 }
 
 $sets = @()
+if ($Syspro) { $sets += 'PillarSyspro = 1' }
 if ($Pulseway) { $sets += 'PillarPulseway = 1' }
 if ($Cove) { $sets += 'PillarCove = 1' }
 if ($Bitdefender) { $sets += 'PillarBitdefender = 1' }
@@ -38,7 +40,6 @@ BEGIN
   INSERT INTO dbo.Dim_Customer_AmsConfig (CustomerCode) VALUES ($(Sql-Lit $CustomerCode));
 END
 
--- Ensure EPP column exists (soft)
 IF COL_LENGTH(N'dbo.Dim_Customer_AmsConfig', N'PillarBitdefender') IS NULL
 BEGIN
   ALTER TABLE dbo.Dim_Customer_AmsConfig ADD PillarBitdefender bit NULL;
@@ -50,6 +51,7 @@ SET
 WHERE CustomerCode = $(Sql-Lit $CustomerCode);
 
 SELECT
+  ISNULL(PillarSyspro, 0) AS Syspro,
   ISNULL(PillarPulseway, 0) AS Rmm,
   ISNULL(PillarCove, 0) AS Cove,
   ISNULL(PillarBitdefender, 0) AS Epp
@@ -67,6 +69,7 @@ $csb['TrustServerCertificate'] = $true
 $csb['Connect Timeout'] = 20
 
 $enabled = @()
+if ($Syspro) { $enabled += 'syspro' }
 if ($Pulseway) { $enabled += 'rmm/Pulseway' }
 if ($Cove) { $enabled += 'cove' }
 if ($Bitdefender) { $enabled += 'epp/Bitdefender' }
@@ -81,9 +84,10 @@ try {
   $after = $null
   if ($reader.Read()) {
     $after = [ordered]@{
-      Rmm = [int]$reader.GetValue(0)
-      Cove = [int]$reader.GetValue(1)
-      Epp = [int]$reader.GetValue(2)
+      Syspro = [int]$reader.GetValue(0)
+      Rmm = [int]$reader.GetValue(1)
+      Cove = [int]$reader.GetValue(2)
+      Epp = [int]$reader.GetValue(3)
     }
   }
   $reader.Close()
@@ -91,7 +95,7 @@ try {
   $conn.Dispose()
   Write-Host ("Cover enabled on central for $CustomerCode : " + ($enabled -join ', '))
   if ($after) {
-    Write-Host ("  AmsConfig now: Rmm=$($after.Rmm) Cove=$($after.Cove) Epp=$($after.Epp)")
+    Write-Host ("  AmsConfig now: Syspro=$($after.Syspro) Rmm=$($after.Rmm) Cove=$($after.Cove) Epp=$($after.Epp)")
   }
   return @{ Enabled = $enabled; SqlOk = $true; After = $after }
 } catch {
