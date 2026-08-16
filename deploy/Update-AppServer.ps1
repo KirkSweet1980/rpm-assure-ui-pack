@@ -205,6 +205,13 @@ if (Test-Path -LiteralPath $apiPack) {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $apiSched
 }
 
+$repSched = Join-Path $Pack 'deploy\Install-Report-Schedules.ps1'
+if (Test-Path -LiteralPath $repSched) {
+  Copy-Item -LiteralPath $repSched -Destination (Join-Path $Root 'deploy\Install-Report-Schedules.ps1') -Force
+  W Cyan '--- Report pack schedules (daily / Friday / 1st) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $repSched
+}
+
 Write-Host '========================================' -ForegroundColor Cyan
 Write-Host ' GIT UPDATE COMPLETE'
 Write-Host (" Pack   : " + $Pack)
