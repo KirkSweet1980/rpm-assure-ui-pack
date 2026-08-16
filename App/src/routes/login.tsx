@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "glass-datahall-20260814";
-const HALL = "/brand/login-datacenter.jpg?v=20260814k";
+const LOGIN_BUILD = "valuation-bg-20260816";
+const HALL = "/brand/login-valuation.jpg?v=20260816a";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -167,7 +167,7 @@ const GLASS_CSS = `
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 50%;
+  object-position: 38% 42%;
   display: block;
 }
 .rpma-gl-wash {
@@ -175,8 +175,8 @@ const GLASS_CSS = `
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(70% 70% at 78% 50%, rgba(4, 14, 22, 0.22) 0%, transparent 62%),
-    linear-gradient(90deg, rgba(4, 12, 20, 0.12) 0%, transparent 42%, rgba(4, 12, 20, 0.28) 100%);
+    radial-gradient(58% 70% at 82% 50%, rgba(4, 12, 22, 0.42) 0%, transparent 70%),
+    linear-gradient(90deg, rgba(3, 10, 18, 0.18) 0%, rgba(3, 10, 18, 0.08) 38%, rgba(3, 10, 18, 0.38) 100%);
 }
 .rpma-gl-stage {
   position: relative;
