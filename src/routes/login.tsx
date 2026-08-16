@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-tv-20260816";
-const HALL = "/brand/login-boardroom-tv.jpg?v=20260816b";
+const LOGIN_BUILD = "boardroom-nologo-20260816";
+const HALL = "/brand/login-boardroom-tv.jpg?v=20260816c";
 
 function LoginPage() {
   const navigate = useNavigate();
