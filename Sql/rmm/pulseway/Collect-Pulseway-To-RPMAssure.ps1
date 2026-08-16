@@ -139,6 +139,15 @@ function Invoke-PwGet([string]$Path) {
     try {
       $resp = Invoke-WebRequest -Uri $url -Headers (Get-BasicAuthHeader) -Method GET -UseBasicParsing -TimeoutSec 180
       Register-PwRequest
+      try {
+        $remain = $resp.Headers['X-RateLimit-Remaining']
+        if ($remain -is [System.Array]) { $remain = $remain[0] }
+        $nRemain = 0
+        if ($remain -and [int]::TryParse([string]$remain, [ref]$nRemain) -and $nRemain -lt 30) {
+          Write-Log ("RateLimit remaining=$nRemain - backing off 3s")
+          Start-Sleep -Seconds 3
+        }
+      } catch {}
       $obj = $null
       try { $obj = $resp.Content | ConvertFrom-Json } catch { }
       return [pscustomobject]@{ Ok = $true; Status = [int]$resp.StatusCode; Url = $url; Json = $obj; Raw = $resp.Content; Error = $null }
@@ -752,7 +761,7 @@ function Get-PwAll([string]$Path) {
   $seen = @{}
   $top = 100
   $skip = 0
-  $maxPages = 80
+  $maxPages = 200
   for ($page = 1; $page -le $maxPages; $page++) {
     $sep = if ($Path -match '\?') { '&' } else { '?' }
     $odata = $Path + $sep + '$top=' + $top + '&$skip=' + $skip
@@ -959,11 +968,12 @@ function Get-PwEntity($res) {
   return $null
 }
 
-$MaxDetail = 400
+$MaxDetail = 800
 if ($env:PULSEWAY_MAX_DETAIL) {
   try { $MaxDetail = [int]$env:PULSEWAY_MAX_DETAIL } catch {}
 }
 if ($MaxDeviceDetail -gt 0) { $MaxDetail = [int]$MaxDeviceDetail }
+if ($devices.Count -gt 0 -and $devices.Count -le $MaxDetail) { $MaxDetail = $devices.Count }
 Write-Log ("MaxDeviceDetail=$MaxDetail DetailOnly=$DetailOnly deviceList=$($devices.Count)")
 
 # Index devices by Identifier for bulk merges
@@ -973,48 +983,46 @@ foreach ($d in $devices) {
   if ($k) { $devById["$k"] = $d }
 }
 
-# Bulk: systems (v2-style, often richer than devices list)
+# Bulk: systems (paged)
 Write-Log 'GET systems (bulk metrics)'
-$sysRes = Invoke-PwGet 'systems'
 $sysMerged = 0
-if ($sysRes.Ok) {
-  $systems = Get-DataArray $sysRes.Json
-  Write-Log ('systems count=' + $systems.Count)
-  if ($systems.Count -gt 0) {
-    $sp = ($systems[0].PSObject.Properties.Name -join ',')
-    Write-Log ('systems fields: ' + $sp)
-    $ss = ($systems[0] | ConvertTo-Json -Depth 5 -Compress)
-    if ($ss.Length -gt 900) { $ss = $ss.Substring(0, 900) }
-    Write-Log ('systems sample: ' + $ss)
-  }
+$systems = @()
+try { $systems = Flatten-PwItems (Get-PwAll 'systems') } catch { $systems = @() }
+Write-Log ('systems count=' + $systems.Count)
+if ($systems.Count -gt 0) {
+  $sp = ($systems[0].PSObject.Properties.Name -join ',')
+  Write-Log ('systems fields: ' + $sp)
+  $ss = ($systems[0] | ConvertTo-Json -Depth 5 -Compress)
+  if ($ss.Length -gt 900) { $ss = $ss.Substring(0, 900) }
+  Write-Log ('systems sample: ' + $ss)
   foreach ($s in $systems) {
     $sid = Get-Prop $s @('Id','DeviceId','Identifier','id','device_id','SystemId','InstanceId')
     if (-not $sid) { continue }
-    if (-not $devById.ContainsKey("$sid")) {
-      # try match by name later - skip
-      continue
-    }
+    if (-not $devById.ContainsKey("$sid")) { continue }
     if (Merge-PwOntoDevice $devById["$sid"] $s) { $sysMerged++ }
   }
   Write-Log ("systems merge hit=$sysMerged")
 } else {
-  Write-Log ('systems skip status=' + $sysRes.Status)
+  Write-Log 'systems skip (empty or failed)'
 }
 
-# Bulk: assets
+# Bulk: assets (paged + update/security sections when the host supports include=)
 Write-Log 'GET assets (bulk)'
-$assetRes = Invoke-PwGet 'assets'
 $assetMerged = 0
-if ($assetRes.Ok) {
-  $assets = Get-DataArray $assetRes.Json
-  Write-Log ('assets count=' + $assets.Count)
-  if ($assets.Count -gt 0) {
-    $ap = ($assets[0].PSObject.Properties.Name -join ',')
-    Write-Log ('assets fields: ' + $ap)
-    $as = ($assets[0] | ConvertTo-Json -Depth 5 -Compress)
-    if ($as.Length -gt 900) { $as = $as.Substring(0, 900) }
-    Write-Log ('assets sample: ' + $as)
-  }
+$assets = @()
+try {
+  $assets = Flatten-PwItems (Get-PwAll 'assets?include=AvailableUpdates,Security,AssetInfo')
+} catch { $assets = @() }
+if ($assets.Count -lt 1) {
+  try { $assets = Flatten-PwItems (Get-PwAll 'assets') } catch { $assets = @() }
+}
+Write-Log ('assets count=' + $assets.Count)
+if ($assets.Count -gt 0) {
+  $ap = ($assets[0].PSObject.Properties.Name -join ',')
+  Write-Log ('assets fields: ' + $ap)
+  $as = ($assets[0] | ConvertTo-Json -Depth 5 -Compress)
+  if ($as.Length -gt 900) { $as = $as.Substring(0, 900) }
+  Write-Log ('assets sample: ' + $as)
   foreach ($a in $assets) {
     $aid = Get-Prop $a @('Id','DeviceId','Identifier','id','device_id','SystemId','AssetId')
     if (-not $aid) { continue }
@@ -1023,7 +1031,7 @@ if ($assetRes.Ok) {
   }
   Write-Log ("assets merge hit=$assetMerged")
 } else {
-  Write-Log ('assets skip status=' + $assetRes.Status)
+  Write-Log 'assets skip (empty or failed)'
 }
 
 
@@ -1356,15 +1364,14 @@ if ($devices.Count -gt 0) {
 }
 
 Write-Log ("API stats: requests=$($script:PwRequestCount) retries=$($script:PwRetryCount) throttleWaits=$($script:PwThrottleWaits)")
-Write-Log 'GET notifications'
-$notifRes = Invoke-PwGet 'notifications'
+Write-Log 'GET notifications (all pages)'
 $notifs = @()
-if ($notifRes.Ok) {
-  $notifs = Get-DataArray $notifRes.Json
-  Write-Log ('notifications count=' + $notifs.Count)
-} else {
-  Write-Log ('notifications skip ' + $notifRes.Status)
+try { $notifs = Flatten-PwItems (Get-PwAll 'notifications') } catch { $notifs = @() }
+if ($notifs.Count -lt 1) {
+  $notifRes = Invoke-PwGet 'notifications'
+  if ($notifRes.Ok) { $notifs = Get-DataArray $notifRes.Json }
 }
+Write-Log ('notifications count=' + $notifs.Count)
 
 # --- Build device rows in PowerShell with mapping ---
 $sb = New-Object System.Text.StringBuilder
@@ -1717,7 +1724,7 @@ if ($notifs.Count -gt 0) {
         (SqlEsc ([string]$nid)), (SqlEsc $code), (SqlEsc ([string]$did)), (SqlEsc $dname), (SqlEsc $sev), (SqlEsc $title), (SqlEsc $msg), (SqlDt $raised), (SqlBit $active), (SqlEsc $oname)
     ))
     $nN++
-    if ($nN -ge 2000) { break }
+    if ($nN -ge 8000) { break }
   }
   [void]$sb.AppendLine('END')
   Write-Log ("Notification inserts=$nN")
@@ -1945,5 +1952,20 @@ Invoke-SqlFile -SqlText $summarySql -Label 'summary' -Soft | Out-Null
 
 Write-Log '=== Pulseway collect done ==='
 Write-Log ("log=" + $log)
+try {
+  Invoke-SqlFile -SqlText @"
+SET NOCOUNT ON;
+IF OBJECT_ID(N'dbo.Dim_Connection', N'U') IS NULL RETURN;
+UPDATE dbo.Dim_Connection
+SET LastSyncAt = SYSUTCDATETIME(),
+    Status = N'Active',
+    Notes = N'Pulseway collect OK',
+    UpdatedAt = SYSUTCDATETIME()
+WHERE ConnectionCode IN (N'PULSEWAY', N'RMM');
+"@ -Label 'pw_stamp_conn' -Soft | Out-Null
+  Write-Log 'Dim_Connection PULSEWAY stamped Active'
+} catch {
+  Write-Log ('stamp Dim_Connection skip: ' + $_.Exception.Message)
+}
 Write-Log 'If MappedCustomers=0: insert aliases into Dim_Pulseway_OrgAlias then re-run collect.'
 exit 0

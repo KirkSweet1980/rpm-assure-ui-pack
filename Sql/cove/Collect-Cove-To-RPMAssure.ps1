@@ -420,6 +420,7 @@ foreach ($row in $allRows) {
   $an = Get-Setting $row 'AN'
   $mn = Get-Setting $row 'MN'
   $us = Get-Setting $row 'US'
+  $tb = Get-Setting $row 'TB'
   $ts = Get-Setting $row 'TS'
   $pn = Get-Setting $row 'PN'   # Retention Policy name
   $op = Get-Setting $row 'OP'   # Profile
@@ -443,6 +444,11 @@ foreach ($row in $allRows) {
   if ($us) {
     $ub = 0L
     if ([long]::TryParse($us, [ref]$ub)) { $usSql = [string]$ub }
+  }
+  $tbSql = 'NULL'
+  if ($tb) {
+    $tbn = 0L
+    if ([long]::TryParse($tb, [ref]$tbn)) { $tbSql = [string]$tbn }
   }
 
   $status = 'Unknown'
@@ -520,7 +526,7 @@ foreach ($row in $allRows) {
   }
 
   $values.Add((
-    "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23})" -f `
+    "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24})" -f `
       ("'{0}'" -f $snap),
       $au,
       $covePartnerIdSql,
@@ -528,6 +534,7 @@ foreach ($row in $allRows) {
       (Sql-Str $an),
       (Sql-Str $mn),
       $usSql,
+      $tbSql,
       (Epoch-ToSql $ts),
       (Sql-Str $status),
       $planType,
@@ -613,6 +620,7 @@ CREATE TABLE #cove (
   DeviceName nvarchar(200) NULL,
   MachineName nvarchar(200) NULL,
   UsedBytes bigint NULL,
+  SelectedBytes bigint NULL,
   LastSuccessTime datetime2(3) NULL,
   LastBackupStatus nvarchar(100) NULL,
   RecoveryPlanType int NULL,
@@ -632,7 +640,7 @@ CREATE TABLE #cove (
   LastBackupDurationSec int NULL
 );
 
-INSERT INTO #cove (SnapshotDate, AccountId, PartnerId, PartnerName, DeviceName, MachineName, UsedBytes, LastSuccessTime, LastBackupStatus, RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus, Physicality, LastRecoveryTestAt, RetentionPolicy, ProfileName, RetentionFiles, RetentionSystemState, RetentionHyperV, RetentionSql, RetentionVmware, RetentionNetwork, LastBackupDurationSec)
+INSERT INTO #cove (SnapshotDate, AccountId, PartnerId, PartnerName, DeviceName, MachineName, UsedBytes, SelectedBytes, LastSuccessTime, LastBackupStatus, RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus, Physicality, LastRecoveryTestAt, RetentionPolicy, ProfileName, RetentionFiles, RetentionSystemState, RetentionHyperV, RetentionSql, RetentionVmware, RetentionNetwork, LastBackupDurationSec)
 VALUES
 $($values -join ",`n");
 
@@ -657,7 +665,7 @@ INSERT INTO dbo.Cove_DeviceStatistics (
 )
 SELECT
   SnapshotDate, AccountId, PartnerId, CustomerCode,
-  DeviceName, MachineName, UsedBytes, NULL,
+  DeviceName, MachineName, UsedBytes, SelectedBytes,
   LastSuccessTime, LastBackupStatus, PartnerName, SYSUTCDATETIME(),
   RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus, Physicality, LastRecoveryTestAt,
   RetentionPolicy, ProfileName, RetentionFiles, RetentionSystemState, RetentionHyperV, RetentionSql, RetentionVmware, RetentionNetwork, LastBackupDurationSec

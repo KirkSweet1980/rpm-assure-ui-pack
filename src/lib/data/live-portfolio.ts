@@ -4346,7 +4346,7 @@ WHERE CustomerCode = @code`);
   )
 )`;
       const deviceSelects = [
-        `SELECT TOP 200
+        `SELECT TOP 2000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
@@ -4356,7 +4356,7 @@ WHERE CustomerCode = @code`);
 FROM dbo.vw_Kpi_Rmm_Devices_Latest WITH (NOLOCK)
 WHERE ${rmmOwner}
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 200
+        `SELECT TOP 2000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
@@ -4367,7 +4367,7 @@ FROM dbo.Pulseway_Devices WITH (NOLOCK)
 WHERE ${rmmOwner}
   AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 200
+        `SELECT TOP 2000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
@@ -4377,7 +4377,7 @@ FROM dbo.Pulseway_Devices WITH (NOLOCK)
 WHERE ${rmmOwner}
   AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 200
+        `SELECT TOP 2000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   SnapshotDate, ImportedAt
@@ -4969,7 +4969,7 @@ WHERE d.CustomerCode = @code`);
       const alertOwner = ownerBits.join(" OR ");
 
       const alertSelects = [
-        `SELECT TOP 200
+        `SELECT TOP 2000
   NotificationId, DeviceId, DeviceName, Severity, Title, Message, RaisedAt, IsActive
 FROM dbo.vw_Kpi_Rmm_Notifications_Latest WITH (NOLOCK)
 WHERE ${alertOwner}
@@ -4977,7 +4977,7 @@ ORDER BY
   CASE UPPER(ISNULL(Severity,N''))
     WHEN N'CRITICAL' THEN 0 WHEN N'ELEVATED' THEN 1 ELSE 2 END,
   RaisedAt DESC`,
-        `SELECT TOP 200
+        `SELECT TOP 2000
   NotificationId, DeviceId, DeviceName, Severity, Title, Message, RaisedAt, IsActive
 FROM dbo.Pulseway_Notifications WITH (NOLOCK)
 WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Notifications WITH (NOLOCK))
@@ -5076,7 +5076,7 @@ ORDER BY
 
     try {
       const evRes = await pool.request().input("code", sql.NVarChar(50), code).query(`
-SELECT TOP 200
+SELECT TOP 2000
   HostName, TimeCreatedUtc, LogName, EventId, LevelName, ProviderName, MessageText
 FROM dbo.Agent_EventLog WITH (NOLOCK)
 WHERE CustomerCode = @code

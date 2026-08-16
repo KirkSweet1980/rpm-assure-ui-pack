@@ -1,25 +1,10 @@
 /**
- * After live SQL load: an active vendor map = Covered for that service.
- * Same rule for every customer. Ignores junk "Invalid column" maps.
+ * After live SQL load: vendor maps never invent cover.
+ * Cover = live rows only (same as cover.ts). Maps stay for join/ownership.
  */
 import { getPool } from "./sql-pool";
 import { coverFromDetail, type CustomerCover } from "./cover";
 import type { CustomerDetailPayload, PortfolioPayload, PortfolioRow } from "./types";
-
-function on(row: PortfolioRow, pillar: keyof CustomerCover) {
-  row.cover = {
-    syspro: row.cover?.syspro ?? false,
-    rmm: row.cover?.rmm ?? false,
-    cove: row.cover?.cove ?? false,
-    epp: row.cover?.epp ?? false,
-    csp: row.cover?.csp ?? false,
-    [pillar]: true,
-  };
-  if (pillar === "rmm") row.pillarPulseway = true;
-  if (pillar === "cove") row.pillarCove = true;
-  if (pillar === "epp") row.pillarEpp = true;
-  if (pillar === "csp") row.pillarCsp = true;
-}
 
 async function mappedCodes(query: string): Promise<Set<string>> {
   const pool = await getPool();
@@ -61,11 +46,11 @@ WHERE ISNULL(Active,1)=1`),
 
 function stamp(row: PortfolioRow, maps: Awaited<ReturnType<typeof loadMaps>>) {
   const k = String(row.customerCode || "").toUpperCase();
-  if (maps.rmm.has(k)) on(row, "rmm");
-  if (maps.cove.has(k)) on(row, "cove");
-  // EPP cover is endpoints only — a company map with 0 endpoints is No Cover
-  if (maps.epp.has(k) && (Number(row.eppDeviceCount) || 0) > 0) on(row, "epp");
-  if (maps.csp.has(k)) on(row, "csp");
+  if (maps.rmm.has(k)) row.pulsewayMapped = true;
+  if (maps.cove.has(k)) row.coveMapped = true;
+  if (maps.epp.has(k)) row.eppMapped = true;
+  if (maps.csp.has(k)) row.cspMapped = true;
+  // Cover stays data-driven — do not flip green from a map with 0 rows
 }
 
 export async function applyVendorMapCover(payload: PortfolioPayload): Promise<void> {
@@ -87,15 +72,8 @@ export async function applyVendorMapCoverDetail(detail: CustomerDetailPayload): 
   const maps = await loadMaps();
   stamp(detail.customer, maps);
   const inferred = coverFromDetail(detail);
-  const k = String(detail.customer.customerCode || "").toUpperCase();
-  detail.cover = {
-    syspro: inferred.syspro,
-    rmm: inferred.rmm || maps.rmm.has(k),
-    cove: inferred.cove || maps.cove.has(k),
-    epp: inferred.epp,
-    csp: inferred.csp || maps.csp.has(k),
-  };
-  detail.customer.cover = detail.cover;
+  detail.cover = inferred;
+  detail.customer.cover = inferred;
   if (detail.cover) {
     detail.cover = { ...(detail.cover ?? detail.customer.cover), ...detail.customer.cover };
     if (detail.cove) {

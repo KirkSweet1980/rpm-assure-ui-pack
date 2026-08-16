@@ -3,12 +3,12 @@
  * Legs: SYSPRO · RMM (Pulseway) · Cloud Backup (Cove) · EPP · M365.
  *
  * ONE RULE for list, rail, modules, reports, and Exco:
- *   live warehouse evidence OR an active vendor map OR explicit pillar flag
+ *   live warehouse rows (devices / seats / SYSPRO evidence)
  *     → Covered (green)
- *   none of the above → No Cover
+ *   map-only or a pillar flag with zero rows → No Cover
  * Exceptions:
  *   SYSPRO: PillarSyspro = false is a hard deferred off.
- *   EPP: endpoints only (a map with 0 endpoints is No Cover).
+ *   M365 (CSP) is visibility only — not scored in assurance / SLA.
  *
  * Uncovered legs stay in the menu and show "No Cover". They do not drive estate health / SLA.
  */
@@ -34,13 +34,12 @@ function hasText(v: string | null | undefined): boolean {
   return Boolean(v != null && String(v).trim());
 }
 
-/** Vendor pillars: evidence or flag-true = Covered. Stale AmsConfig false cannot hide a map or live rows. */
+/** Vendor pillars: live rows only. A flag or map cannot invent cover. */
 function resolveVendor(
   evidence: boolean,
-  flag: boolean | null | undefined,
+  _flag: boolean | null | undefined,
 ): boolean {
-  if (evidence) return true;
-  return flag === true;
+  return evidence;
 }
 
 export type CoverInput = {
@@ -86,19 +85,12 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     Boolean(input.sysproHasVersion) ||
     (Number(input.sysproHotfixCount) || 0) > 0;
 
-  const rmmEvidence =
-    (Number(input.pulsewayDeviceCount) || 0) > 0 ||
-    Boolean(input.pulsewayMapped) ||
-    hasText(input.pulsewayOrgName);
-  const coveEvidence =
-    (Number(input.coveDeviceCount) || 0) > 0 ||
-    Boolean(input.coveMapped) ||
-    hasText(input.covePartnerName);
+  const rmmEvidence = (Number(input.pulsewayDeviceCount) || 0) > 0;
+  const coveEvidence = (Number(input.coveDeviceCount) || 0) > 0;
   const eppEvidence = (Number(input.eppDeviceCount) || 0) > 0;
   const cspEvidence =
     (Number(input.cspUserCount) || 0) > 0 ||
-    (Number(input.cspLicenseCount) || 0) > 0 ||
-    Boolean(input.cspMapped);
+    (Number(input.cspLicenseCount) || 0) > 0;
 
   return {
     syspro: input.pillarSyspro === false ? false : sysproEvidence || input.pillarSyspro === true,

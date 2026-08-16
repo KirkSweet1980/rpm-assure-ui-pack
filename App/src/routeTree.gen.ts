@@ -43,8 +43,10 @@ import { Route as SettingsSqlRouteImport } from './routes/settings.sql'
 import { Route as SettingsSslRouteImport } from './routes/settings.ssl'
 import { Route as SettingsThemeRouteImport } from './routes/settings.theme'
 import { Route as SettingsUsersRouteImport } from './routes/settings.users'
+import { Route as ApiAgentPackCodeRouteImport } from './routes/api/agent-pack.$code'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCronWeeklyReportRouteImport } from './routes/api/cron/weekly-report'
+import { Route as ApiPulsewayWebhookRouteImport } from './routes/api/pulseway.webhook'
 import { Route as ApiWpEstateRouteImport } from './routes/api/wp.estate'
 import { Route as CustomersCodeIndexRouteImport } from './routes/customers.$code.index'
 import { Route as CustomersCodeAmsRouteImport } from './routes/customers.$code.ams'
@@ -80,6 +82,8 @@ import { Route as CustomersCodeEppSlaRouteImport } from './routes/customers.$cod
 import { Route as CustomersCodeRmmIndexRouteImport } from './routes/customers.$code.rmm.index'
 import { Route as CustomersCodeRmmAlertsRouteImport } from './routes/customers.$code.rmm.alerts'
 import { Route as CustomersCodeRmmDevicesRouteImport } from './routes/customers.$code.rmm.devices'
+import { Route as CustomersCodeRmmEventsRouteImport } from './routes/customers.$code.rmm.events'
+import { Route as CustomersCodeRmmIopsRouteImport } from './routes/customers.$code.rmm.iops'
 import { Route as CustomersCodeRmmMappingRouteImport } from './routes/customers.$code.rmm.mapping'
 import { Route as CustomersCodeRmmOverviewRouteImport } from './routes/customers.$code.rmm.overview'
 import { Route as CustomersCodeRmmPatchRouteImport } from './routes/customers.$code.rmm.patch'
@@ -266,6 +270,11 @@ const SettingsUsersRoute = SettingsUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => SettingsRoute,
 } as any)
+const ApiAgentPackCodeRoute = ApiAgentPackCodeRouteImport.update({
+  id: '/api/agent-pack/$code',
+  path: '/api/agent-pack/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -274,6 +283,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const ApiCronWeeklyReportRoute = ApiCronWeeklyReportRouteImport.update({
   id: '/api/cron/weekly-report',
   path: '/api/cron/weekly-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPulsewayWebhookRoute = ApiPulsewayWebhookRouteImport.update({
+  id: '/api/pulseway/webhook',
+  path: '/api/pulseway/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWpEstateRoute = ApiWpEstateRouteImport.update({
@@ -463,6 +477,16 @@ const CustomersCodeRmmDevicesRoute = CustomersCodeRmmDevicesRouteImport.update({
   path: '/devices',
   getParentRoute: () => CustomersCodeRmmRoute,
 } as any)
+const CustomersCodeRmmEventsRoute = CustomersCodeRmmEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => CustomersCodeRmmRoute,
+} as any)
+const CustomersCodeRmmIopsRoute = CustomersCodeRmmIopsRouteImport.update({
+  id: '/iops',
+  path: '/iops',
+  getParentRoute: () => CustomersCodeRmmRoute,
+} as any)
 const CustomersCodeRmmMappingRoute = CustomersCodeRmmMappingRouteImport.update({
   id: '/mapping',
   path: '/mapping',
@@ -583,8 +607,10 @@ export interface FileRoutesByFullPath {
   '/settings/theme': typeof SettingsThemeRoute
   '/settings/users': typeof SettingsUsersRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
+  '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
   '/api/wp/estate': typeof ApiWpEstateRoute
   '/customers/$code/ams': typeof CustomersCodeAmsRouteWithChildren
   '/customers/$code/cove': typeof CustomersCodeCoveRouteWithChildren
@@ -615,6 +641,8 @@ export interface FileRoutesByFullPath {
   '/customers/$code/epp/sla': typeof CustomersCodeEppSlaRoute
   '/customers/$code/rmm/alerts': typeof CustomersCodeRmmAlertsRoute
   '/customers/$code/rmm/devices': typeof CustomersCodeRmmDevicesRoute
+  '/customers/$code/rmm/events': typeof CustomersCodeRmmEventsRoute
+  '/customers/$code/rmm/iops': typeof CustomersCodeRmmIopsRoute
   '/customers/$code/rmm/mapping': typeof CustomersCodeRmmMappingRoute
   '/customers/$code/rmm/overview': typeof CustomersCodeRmmOverviewRoute
   '/customers/$code/rmm/patch': typeof CustomersCodeRmmPatchRoute
@@ -669,8 +697,10 @@ export interface FileRoutesByTo {
   '/settings/theme': typeof SettingsThemeRoute
   '/settings/users': typeof SettingsUsersRoute
   '/settings': typeof SettingsIndexRoute
+  '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
+  '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
   '/api/wp/estate': typeof ApiWpEstateRoute
   '/customers/$code': typeof CustomersCodeIndexRoute
   '/customers/$code/ams/change': typeof CustomersCodeAmsChangeRoute
@@ -695,6 +725,8 @@ export interface FileRoutesByTo {
   '/customers/$code/epp/sla': typeof CustomersCodeEppSlaRoute
   '/customers/$code/rmm/alerts': typeof CustomersCodeRmmAlertsRoute
   '/customers/$code/rmm/devices': typeof CustomersCodeRmmDevicesRoute
+  '/customers/$code/rmm/events': typeof CustomersCodeRmmEventsRoute
+  '/customers/$code/rmm/iops': typeof CustomersCodeRmmIopsRoute
   '/customers/$code/rmm/mapping': typeof CustomersCodeRmmMappingRoute
   '/customers/$code/rmm/overview': typeof CustomersCodeRmmOverviewRoute
   '/customers/$code/rmm/patch': typeof CustomersCodeRmmPatchRoute
@@ -752,8 +784,10 @@ export interface FileRoutesById {
   '/settings/theme': typeof SettingsThemeRoute
   '/settings/users': typeof SettingsUsersRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
+  '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
   '/api/wp/estate': typeof ApiWpEstateRoute
   '/customers/$code/ams': typeof CustomersCodeAmsRouteWithChildren
   '/customers/$code/cove': typeof CustomersCodeCoveRouteWithChildren
@@ -784,6 +818,8 @@ export interface FileRoutesById {
   '/customers/$code/epp/sla': typeof CustomersCodeEppSlaRoute
   '/customers/$code/rmm/alerts': typeof CustomersCodeRmmAlertsRoute
   '/customers/$code/rmm/devices': typeof CustomersCodeRmmDevicesRoute
+  '/customers/$code/rmm/events': typeof CustomersCodeRmmEventsRoute
+  '/customers/$code/rmm/iops': typeof CustomersCodeRmmIopsRoute
   '/customers/$code/rmm/mapping': typeof CustomersCodeRmmMappingRoute
   '/customers/$code/rmm/overview': typeof CustomersCodeRmmOverviewRoute
   '/customers/$code/rmm/patch': typeof CustomersCodeRmmPatchRoute
@@ -842,8 +878,10 @@ export interface FileRouteTypes {
     | '/settings/theme'
     | '/settings/users'
     | '/settings/'
+    | '/api/agent-pack/$code'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
+    | '/api/pulseway/webhook'
     | '/api/wp/estate'
     | '/customers/$code/ams'
     | '/customers/$code/cove'
@@ -874,6 +912,8 @@ export interface FileRouteTypes {
     | '/customers/$code/epp/sla'
     | '/customers/$code/rmm/alerts'
     | '/customers/$code/rmm/devices'
+    | '/customers/$code/rmm/events'
+    | '/customers/$code/rmm/iops'
     | '/customers/$code/rmm/mapping'
     | '/customers/$code/rmm/overview'
     | '/customers/$code/rmm/patch'
@@ -928,8 +968,10 @@ export interface FileRouteTypes {
     | '/settings/theme'
     | '/settings/users'
     | '/settings'
+    | '/api/agent-pack/$code'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
+    | '/api/pulseway/webhook'
     | '/api/wp/estate'
     | '/customers/$code'
     | '/customers/$code/ams/change'
@@ -954,6 +996,8 @@ export interface FileRouteTypes {
     | '/customers/$code/epp/sla'
     | '/customers/$code/rmm/alerts'
     | '/customers/$code/rmm/devices'
+    | '/customers/$code/rmm/events'
+    | '/customers/$code/rmm/iops'
     | '/customers/$code/rmm/mapping'
     | '/customers/$code/rmm/overview'
     | '/customers/$code/rmm/patch'
@@ -1010,8 +1054,10 @@ export interface FileRouteTypes {
     | '/settings/theme'
     | '/settings/users'
     | '/settings/'
+    | '/api/agent-pack/$code'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
+    | '/api/pulseway/webhook'
     | '/api/wp/estate'
     | '/customers/$code/ams'
     | '/customers/$code/cove'
@@ -1042,6 +1088,8 @@ export interface FileRouteTypes {
     | '/customers/$code/epp/sla'
     | '/customers/$code/rmm/alerts'
     | '/customers/$code/rmm/devices'
+    | '/customers/$code/rmm/events'
+    | '/customers/$code/rmm/iops'
     | '/customers/$code/rmm/mapping'
     | '/customers/$code/rmm/overview'
     | '/customers/$code/rmm/patch'
@@ -1078,8 +1126,10 @@ export interface RootRouteChildren {
   ApiPortfolioRefreshRoute: typeof ApiPortfolioRefreshRoute
   ApiReportPreviewRoute: typeof ApiReportPreviewRoute
   CustomersCodeRoute: typeof CustomersCodeRouteWithChildren
+  ApiAgentPackCodeRoute: typeof ApiAgentPackCodeRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronWeeklyReportRoute: typeof ApiCronWeeklyReportRoute
+  ApiPulsewayWebhookRoute: typeof ApiPulsewayWebhookRoute
   ApiWpEstateRoute: typeof ApiWpEstateRoute
 }
 
@@ -1323,6 +1373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsUsersRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/api/agent-pack/$code': {
+      id: '/api/agent-pack/$code'
+      path: '/api/agent-pack/$code'
+      fullPath: '/api/agent-pack/$code'
+      preLoaderRoute: typeof ApiAgentPackCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -1335,6 +1392,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/weekly-report'
       fullPath: '/api/cron/weekly-report'
       preLoaderRoute: typeof ApiCronWeeklyReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pulseway/webhook': {
+      id: '/api/pulseway/webhook'
+      path: '/api/pulseway/webhook'
+      fullPath: '/api/pulseway/webhook'
+      preLoaderRoute: typeof ApiPulsewayWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/wp/estate': {
@@ -1580,6 +1644,20 @@ declare module '@tanstack/react-router' {
       path: '/devices'
       fullPath: '/customers/$code/rmm/devices'
       preLoaderRoute: typeof CustomersCodeRmmDevicesRouteImport
+      parentRoute: typeof CustomersCodeRmmRoute
+    }
+    '/customers/$code/rmm/events': {
+      id: '/customers/$code/rmm/events'
+      path: '/events'
+      fullPath: '/customers/$code/rmm/events'
+      preLoaderRoute: typeof CustomersCodeRmmEventsRouteImport
+      parentRoute: typeof CustomersCodeRmmRoute
+    }
+    '/customers/$code/rmm/iops': {
+      id: '/customers/$code/rmm/iops'
+      path: '/iops'
+      fullPath: '/customers/$code/rmm/iops'
+      preLoaderRoute: typeof CustomersCodeRmmIopsRouteImport
       parentRoute: typeof CustomersCodeRmmRoute
     }
     '/customers/$code/rmm/mapping': {
@@ -1829,6 +1907,8 @@ const CustomersCodeEppRouteWithChildren =
 interface CustomersCodeRmmRouteChildren {
   CustomersCodeRmmAlertsRoute: typeof CustomersCodeRmmAlertsRoute
   CustomersCodeRmmDevicesRoute: typeof CustomersCodeRmmDevicesRoute
+  CustomersCodeRmmEventsRoute: typeof CustomersCodeRmmEventsRoute
+  CustomersCodeRmmIopsRoute: typeof CustomersCodeRmmIopsRoute
   CustomersCodeRmmMappingRoute: typeof CustomersCodeRmmMappingRoute
   CustomersCodeRmmOverviewRoute: typeof CustomersCodeRmmOverviewRoute
   CustomersCodeRmmPatchRoute: typeof CustomersCodeRmmPatchRoute
@@ -1840,6 +1920,8 @@ interface CustomersCodeRmmRouteChildren {
 const CustomersCodeRmmRouteChildren: CustomersCodeRmmRouteChildren = {
   CustomersCodeRmmAlertsRoute: CustomersCodeRmmAlertsRoute,
   CustomersCodeRmmDevicesRoute: CustomersCodeRmmDevicesRoute,
+  CustomersCodeRmmEventsRoute: CustomersCodeRmmEventsRoute,
+  CustomersCodeRmmIopsRoute: CustomersCodeRmmIopsRoute,
   CustomersCodeRmmMappingRoute: CustomersCodeRmmMappingRoute,
   CustomersCodeRmmOverviewRoute: CustomersCodeRmmOverviewRoute,
   CustomersCodeRmmPatchRoute: CustomersCodeRmmPatchRoute,
@@ -1918,8 +2000,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPortfolioRefreshRoute: ApiPortfolioRefreshRoute,
   ApiReportPreviewRoute: ApiReportPreviewRoute,
   CustomersCodeRoute: CustomersCodeRouteWithChildren,
+  ApiAgentPackCodeRoute: ApiAgentPackCodeRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronWeeklyReportRoute: ApiCronWeeklyReportRoute,
+  ApiPulsewayWebhookRoute: ApiPulsewayWebhookRoute,
   ApiWpEstateRoute: ApiWpEstateRoute,
 }
 export const routeTree = rootRouteImport
