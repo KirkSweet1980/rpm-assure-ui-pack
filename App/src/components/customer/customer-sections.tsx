@@ -46,7 +46,7 @@ import { formatProgramLabel } from "@/lib/data/syspro-programs";
 import type { CustomerDetailPayload } from "@/lib/data/types";
 import { coverFromDetail, isPillarCovered, type CustomerCover, type PillarId } from "@/lib/data/cover";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
-import { dayEndTone } from "@/lib/data/day-end";
+import { dayEndTone, isJobFailed } from "@/lib/data/day-end";
 import {
   INDUSTRY_MEASURES,
   INDUSTRY_SLA_DOC,
@@ -2204,7 +2204,7 @@ export function JobsSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
-  const jobs = data.jobErrors ?? [];
+  const jobs = (data.jobErrors ?? []).filter((j) => isJobFailed(j));
   const byProg = useMemo(() => {
     const m = new Map<string, number>();
     for (const j of jobs) {

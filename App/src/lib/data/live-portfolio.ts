@@ -543,18 +543,21 @@ OUTER APPLY (
   SELECT COUNT_BIG(*) AS JobErrorCount
   FROM dbo.Syspro_JobLogging AS jl
   WHERE ${instance ? "jl.InstanceName = @instance" : "1 = 0"}
-    AND o.AsOfDate IS NOT NULL
-    AND jl.SnapshotDate = o.AsOfDate
+    AND jl.SnapshotDate = (
+      SELECT MAX(jl2.SnapshotDate) FROM dbo.Syspro_JobLogging AS jl2
+      WHERE ${instance ? "jl2.InstanceName = @instance" : "1 = 0"}
+    )
     AND (
       NULLIF(LTRIM(RTRIM(jl.ErrorStatusCode)), N'') IS NOT NULL
       OR (jl.ProgErrorCode IS NOT NULL AND jl.ProgErrorCode <> 0)
       OR (jl.TransactionStatus LIKE N'%Fail%')
-      OR (jl.Message LIKE N'%error%')
     )
 ) AS j
 OUTER APPLY (
   SELECT COUNT_BIG(*) AS DtrVarianceLines
   FROM dbo.vw_Kpi_FinSight_Variance_Latest AS dv
+  INNER JOIN dbo.Dim_DtrBalanceType AS t
+    ON t.BalanceTypeCode = dv.SourceArea AND t.Active = 1
   WHERE dv.CustomerCode = @code
 ) AS d`);
     const row = q.recordset?.[0];
@@ -1214,18 +1217,21 @@ OUTER APPLY (
   FROM dbo.Syspro_JobLogging AS jl
   WHERE c.SqlInstanceName IS NOT NULL
     AND jl.InstanceName = c.SqlInstanceName
-    AND o.AsOfDate IS NOT NULL
-    AND jl.SnapshotDate = o.AsOfDate
+    AND jl.SnapshotDate = (
+      SELECT MAX(jl2.SnapshotDate) FROM dbo.Syspro_JobLogging AS jl2
+      WHERE jl2.InstanceName = c.SqlInstanceName
+    )
     AND (
       NULLIF(LTRIM(RTRIM(jl.ErrorStatusCode)), N'') IS NOT NULL
       OR (jl.ProgErrorCode IS NOT NULL AND jl.ProgErrorCode <> 0)
       OR (jl.TransactionStatus LIKE N'%Fail%')
-      OR (jl.Message LIKE N'%error%')
     )
 ) AS j
 OUTER APPLY (
   SELECT COUNT_BIG(*) AS DtrVarianceLines
   FROM dbo.vw_Kpi_FinSight_Variance_Latest AS dv
+  INNER JOIN dbo.Dim_DtrBalanceType AS t
+    ON t.BalanceTypeCode = dv.SourceArea AND t.Active = 1
   WHERE dv.CustomerCode = c.CustomerCode
 ) AS d
 WHERE c.Active = 1
@@ -1276,7 +1282,6 @@ WHERE InstanceName = @instance
     NULLIF(LTRIM(RTRIM(ErrorStatusCode)), N'') IS NOT NULL
     OR (ProgErrorCode IS NOT NULL AND ProgErrorCode <> 0)
     OR (TransactionStatus LIKE N'%Fail%')
-    OR (Message LIKE N'%error%')
   )
 ORDER BY ProgRunDate DESC, RowId DESC;
 `;
