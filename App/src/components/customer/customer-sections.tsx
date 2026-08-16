@@ -1774,69 +1774,116 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
   }
   const alerts = data.rmm?.alerts ?? [];
   const devices = data.rmm?.devices ?? [];
-  const byDevice = new Map<string, number>();
-  for (const a of alerts) {
-    const k = a.deviceName || a.deviceId || "Unknown";
-    byDevice.set(k, (byDevice.get(k) ?? 0) + 1);
+  const byDevice = new Map<
+    string,
+    {
+      name: string;
+      deviceId: string | null;
+      type: string | null;
+      online: boolean | null;
+      crit: number;
+      elev: number;
+      rows: typeof alerts;
+    }
+  >();
+  for (const d of devices) {
+    const crit = d.criticalNotifications || 0;
+    const elev = d.elevatedNotifications || 0;
+    if (crit + elev <= 0) continue;
+    const key = (d.deviceId || d.name || "unknown").toLowerCase();
+    byDevice.set(key, {
+      name: d.name || d.deviceId,
+      deviceId: d.deviceId,
+      type: d.deviceType,
+      online: d.isOnline,
+      crit,
+      elev,
+      rows: [],
+    });
   }
+  for (const a of alerts) {
+    const key = (a.deviceId || a.deviceName || "unknown").toLowerCase();
+    const existing = byDevice.get(key);
+    if (existing) {
+      existing.rows.push(a);
+      continue;
+    }
+    const sev = (a.severity || "").toLowerCase();
+    byDevice.set(key, {
+      name: a.deviceName || a.deviceId || "Unknown",
+      deviceId: a.deviceId,
+      type: null,
+      online: null,
+      crit: sev === "critical" ? 1 : 0,
+      elev: sev === "elevated" ? 1 : 0,
+      rows: [a],
+    });
+  }
+  const groups = [...byDevice.values()].sort((a, b) => b.crit - a.crit || b.elev - a.elev || a.name.localeCompare(b.name));
+
   return (
     <div className="space-y-4">
       <ChartCaption
         title="RMM Alerts"
-        why="Pulseway notifications for this customer (latest day). Critical first. Pair with Servers / Workstations for CPU, disk, and reboot age."
+        why="Devices with Pulseway alerts for this customer only. Hostname map wins (SBS-PROD is Simply Bright, not RPM). Critical first."
       />
       <div className="grid gap-2 sm:grid-cols-3">
+        <StatCard label="Devices with alerts" value={groups.length} />
         <StatCard label="Alert rows" value={alerts.length} />
-        <StatCard label="Devices with alerts" value={byDevice.size} />
         <StatCard
           label="Devices in estate"
           value={devices.length}
-          hint="Latest RMM snapshot"
+          hint="This customer only"
         />
       </div>
-      {byDevice.size > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {[...byDevice.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 12)
-            .map(([name, n]) => (
-              <span
-                key={name}
-                className="rounded-md border border-border bg-surface px-2 py-0.5 text-[11px] font-medium text-fg"
-              >
-                {name} · {n}
-              </span>
-            ))}
-        </div>
-      ) : null}
-      {alerts.length === 0 ? (
-        <p className="text-sm text-muted">No notifications on latest snapshot.</p>
+      {groups.length === 0 ? (
+        <p className="text-sm text-muted">No devices with alerts on the latest snapshot.</p>
       ) : (
-        <div className="space-y-2">
-          {alerts.map((a) => (
+        <div className="space-y-3">
+          {groups.map((g) => (
             <div
-              key={a.notificationId}
+              key={g.deviceId || g.name}
               className="rounded-xl border border-border bg-surface p-3 shadow-sm"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant={
-                    (a.severity || "").toLowerCase() === "critical"
-                      ? "red"
-                      : (a.severity || "").toLowerCase() === "elevated"
-                        ? "amber"
-                        : "muted"
-                  }
-                >
-                  {a.severity ?? "Alert"}
-                </Badge>
-                <span className="text-sm font-semibold text-fg">{a.title ?? "Notification"}</span>
-                <span className="text-xs text-muted">{a.deviceName ?? a.deviceId ?? ""}</span>
+                <span className="text-sm font-semibold text-fg">{g.name}</span>
+                {g.type ? <span className="text-[11px] text-muted">{g.type}</span> : null}
+                {g.online === false ? (
+                  <Badge variant="red">Offline</Badge>
+                ) : g.online === true ? (
+                  <Badge variant="green">Online</Badge>
+                ) : null}
+                {g.crit > 0 ? <Badge variant="red">{g.crit} critical</Badge> : null}
+                {g.elev > 0 ? <Badge variant="amber">{g.elev} elevated</Badge> : null}
               </div>
-              {a.message ? <p className="mt-1 text-xs text-muted">{a.message}</p> : null}
-              {a.raisedAt ? (
-                <p className="mt-1 text-[11px] text-muted">{formatSastDateTime(a.raisedAt)}</p>
-              ) : null}
+              {g.rows.length > 0 ? (
+                <div className="mt-2 space-y-1.5">
+                  {g.rows.map((a) => (
+                    <div key={a.notificationId} className="rounded-lg bg-bg/60 px-2 py-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge
+                          variant={
+                            (a.severity || "").toLowerCase() === "critical"
+                              ? "red"
+                              : (a.severity || "").toLowerCase() === "elevated"
+                                ? "amber"
+                                : "muted"
+                          }
+                        >
+                          {a.severity ?? "Alert"}
+                        </Badge>
+                        <span className="text-xs font-medium text-fg">{a.title ?? "Notification"}</span>
+                      </div>
+                      {a.message ? <p className="mt-0.5 text-[11px] text-muted">{a.message}</p> : null}
+                      {a.raisedAt ? (
+                        <p className="mt-0.5 text-[11px] text-muted">{formatSastDateTime(a.raisedAt)}</p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-[11px] text-muted">Alert counters on the device — no notification text in this snapshot.</p>
+              )}
             </div>
           ))}
         </div>

@@ -54,6 +54,7 @@ import type {
 import { formatSastDate } from "@/lib/utils";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
+import { rmmDeviceBelongsToCustomer } from "@/lib/data/rmm-device-owner";
 import { coveHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
 import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } from "./day-end";
 import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfEvidence } from "./cover";
@@ -4874,40 +4875,124 @@ WHERE d.CustomerCode = @code`);
       rmm.devices = [];
     }
 
+    rmm.devices = rmm.devices.filter((d) =>
+      rmmDeviceBelongsToCustomer(code, d.name, null),
+    );
+
     try {
-      const alRes = await pool
-        .request()
-        .input("code", sql.NVarChar(50), code)
-        .query(`
-SELECT TOP 100
+      const ids = rmm.devices.map((d) => d.deviceId).filter(Boolean);
+      const names = rmm.devices
+        .map((d) => (d.name ?? "").trim())
+        .filter((n) => n.length > 0);
+      const idList = ids.map((_, i) => `@did${i}`).join(", ");
+      const nameList = names.map((_, i) => `@dn${i}`).join(", ");
+      const ownerBits = ["CustomerCode = @code"];
+      if (ids.length) ownerBits.push(`DeviceId IN (${idList})`);
+      if (names.length) ownerBits.push(`DeviceName IN (${nameList})`);
+      const alertOwner = ownerBits.join(" OR ");
+
+      const alertSelects = [
+        `SELECT TOP 200
   NotificationId, DeviceId, DeviceName, Severity, Title, Message, RaisedAt, IsActive
 FROM dbo.vw_Kpi_Rmm_Notifications_Latest WITH (NOLOCK)
-WHERE CustomerCode = @code
+WHERE ${alertOwner}
 ORDER BY
   CASE UPPER(ISNULL(Severity,N''))
     WHEN N'CRITICAL' THEN 0 WHEN N'ELEVATED' THEN 1 ELSE 2 END,
-  RaisedAt DESC`);
-      rmm.alerts = (alRes.recordset ?? []).map(
-        (r: {
-          NotificationId: string;
-          DeviceId: string | null;
-          DeviceName: string | null;
-          Severity: string | null;
-          Title: string | null;
-          Message: string | null;
-          RaisedAt: Date | string | null;
-          IsActive: boolean | number | null;
-        }): RmmAlertRow => ({
-          notificationId: String(r.NotificationId),
-          deviceId: r.DeviceId != null ? String(r.DeviceId) : null,
-          deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
-          severity: r.Severity != null ? String(r.Severity) : null,
-          title: r.Title != null ? String(r.Title) : null,
-          message: r.Message != null ? String(r.Message) : null,
-          raisedAt: toIso(r.RaisedAt),
-          isActive: r.IsActive == null ? null : Boolean(r.IsActive),
-        }),
+  RaisedAt DESC`,
+        `SELECT TOP 200
+  NotificationId, DeviceId, DeviceName, Severity, Title, Message, RaisedAt, IsActive
+FROM dbo.Pulseway_Notifications WITH (NOLOCK)
+WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Notifications WITH (NOLOCK))
+  AND (${alertOwner})
+ORDER BY
+  CASE UPPER(ISNULL(Severity,N''))
+    WHEN N'CRITICAL' THEN 0 WHEN N'ELEVATED' THEN 1 ELSE 2 END,
+  RaisedAt DESC`,
+      ];
+
+      let alertRows: any[] = [];
+      for (const q of alertSelects) {
+        try {
+          const req = pool.request().input("code", sql.NVarChar(50), code);
+          ids.forEach((id, i) => req.input(`did${i}`, sql.NVarChar(100), id));
+          names.forEach((n, i) => req.input(`dn${i}`, sql.NVarChar(200), n));
+          const alRes = await req.query(q);
+          alertRows = alRes.recordset ?? [];
+          if (alertRows.length) break;
+        } catch {
+          /* try next shape */
+        }
+      }
+
+      const mapped: RmmAlertRow[] = alertRows
+        .map(
+          (r: {
+            NotificationId: string;
+            DeviceId: string | null;
+            DeviceName: string | null;
+            Severity: string | null;
+            Title: string | null;
+            Message: string | null;
+            RaisedAt: Date | string | null;
+            IsActive: boolean | number | null;
+          }): RmmAlertRow => ({
+            notificationId: String(r.NotificationId),
+            deviceId: r.DeviceId != null ? String(r.DeviceId) : null,
+            deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
+            severity: r.Severity != null ? String(r.Severity) : null,
+            title: r.Title != null ? String(r.Title) : null,
+            message: r.Message != null ? String(r.Message) : null,
+            raisedAt: toIso(r.RaisedAt),
+            isActive: r.IsActive == null ? null : Boolean(r.IsActive),
+          }),
+        )
+        .filter((a) =>
+          rmmDeviceBelongsToCustomer(code, a.deviceName, null),
+        );
+
+      const have = new Set(
+        mapped.map((a) => (a.deviceId || a.deviceName || "").toLowerCase()),
       );
+      for (const d of rmm.devices) {
+        const crit = d.criticalNotifications || 0;
+        const elev = d.elevatedNotifications || 0;
+        if (crit + elev <= 0) continue;
+        const key = (d.deviceId || d.name || "").toLowerCase();
+        if (have.has(key)) continue;
+        if (crit > 0) {
+          mapped.push({
+            notificationId: `dev-${d.deviceId}-crit`,
+            deviceId: d.deviceId,
+            deviceName: d.name,
+            severity: "Critical",
+            title: `${crit} critical alert${crit === 1 ? "" : "s"} on device`,
+            message: "From Pulseway device counters (notification text not in latest snapshot).",
+            raisedAt: d.lastSeenOnline,
+            isActive: true,
+          });
+        }
+        if (elev > 0) {
+          mapped.push({
+            notificationId: `dev-${d.deviceId}-elev`,
+            deviceId: d.deviceId,
+            deviceName: d.name,
+            severity: "Elevated",
+            title: `${elev} elevated alert${elev === 1 ? "" : "s"} on device`,
+            message: "From Pulseway device counters (notification text not in latest snapshot).",
+            raisedAt: d.lastSeenOnline,
+            isActive: true,
+          });
+        }
+      }
+
+      rmm.alerts = mapped;
+      if (rmm.summary) {
+        const withAlerts = new Set(
+          mapped.map((a) => (a.deviceId || a.deviceName || "").toLowerCase()),
+        );
+        rmm.summary.devicesWithAlerts = withAlerts.size;
+      }
     } catch {
       rmm.alerts = [];
     }
