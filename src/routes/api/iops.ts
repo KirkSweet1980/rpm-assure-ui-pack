@@ -107,26 +107,43 @@ export const Route = createFileRoute("/api/iops")({
               .input("org", sql.NVarChar(200), org || null)
               .query(`
 DECLARE @code nvarchar(32) = NULL;
+DECLARE @short nvarchar(128) = UPPER(LTRIM(RTRIM(@h)));
+IF CHARINDEX(N'.', @short) > 1 SET @short = LEFT(@short, CHARINDEX(N'.', @short) - 1);
+DECLARE @pfx nvarchar(32) = @short;
+IF CHARINDEX(N'-', @pfx) > 1 SET @pfx = LEFT(@pfx, CHARINDEX(N'-', @pfx) - 1);
+
 IF @org IS NOT NULL AND OBJECT_ID(N'dbo.Dim_Pulseway_OrgMap', N'U') IS NOT NULL
   SELECT TOP 1 @code = CustomerCode FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)
   WHERE Active = 1 AND LTRIM(RTRIM(OrganizationName)) = LTRIM(RTRIM(@org));
+
 IF @code IS NULL AND OBJECT_ID(N'dbo.Pulseway_Devices', N'U') IS NOT NULL
   SELECT TOP 1 @code = d.CustomerCode
   FROM dbo.Pulseway_Devices d WITH (NOLOCK)
   WHERE d.CustomerCode IS NOT NULL AND LTRIM(RTRIM(d.CustomerCode)) <> N''
     AND (
       UPPER(LTRIM(RTRIM(d.Name))) = UPPER(@h)
+      OR UPPER(LTRIM(RTRIM(d.Name))) = @short
       OR UPPER(LTRIM(RTRIM(d.DeviceId))) = UPPER(@h)
+      OR UPPER(LTRIM(RTRIM(d.Name))) LIKE @short + N'.%'
+      OR @short LIKE UPPER(LTRIM(RTRIM(d.Name))) + N'.%'
     )
   ORDER BY d.SnapshotDate DESC;
+
 IF @code IS NULL AND OBJECT_ID(N'dbo.Dim_Pulseway_NameMap', N'U') IS NOT NULL
   SELECT TOP 1 @code = CustomerCode FROM dbo.Dim_Pulseway_NameMap WITH (NOLOCK)
-  WHERE Active = 1 AND @h LIKE NameLike
+  WHERE Active = 1 AND (@h LIKE NameLike OR @short LIKE NameLike)
   ORDER BY Priority;
+
 IF @code IS NULL AND OBJECT_ID(N'dbo.Agent_Registry', N'U') IS NOT NULL
   SELECT TOP 1 @code = CustomerCode FROM dbo.Agent_Registry WITH (NOLOCK)
-  WHERE UPPER(LTRIM(RTRIM(HostName))) = UPPER(@h)
+  WHERE UPPER(LTRIM(RTRIM(HostName))) IN (UPPER(@h), @short)
   ORDER BY LastHeartbeatUtc DESC;
+
+IF @code IS NULL AND @pfx IS NOT NULL AND LEN(@pfx) BETWEEN 2 AND 16
+   AND OBJECT_ID(N'dbo.Dim_Customer', N'U') IS NOT NULL
+  SELECT TOP 1 @code = CustomerCode FROM dbo.Dim_Customer WITH (NOLOCK)
+  WHERE UPPER(LTRIM(RTRIM(CustomerCode))) = @pfx;
+
 SELECT @code AS CustomerCode;`);
             customerCode = str((mapped.recordset?.[0] as { CustomerCode?: string } | undefined)?.CustomerCode, 32).toUpperCase();
           }
@@ -161,7 +178,10 @@ BEGIN
     ImportedAt     datetime2(3)  NOT NULL CONSTRAINT DF_Agent_DiskIops_Imp DEFAULT SYSUTCDATETIME(),
     CONSTRAINT PK_Agent_DiskIops PRIMARY KEY (SnapshotUtc, CustomerCode, HostName, DriveLetter)
   );
-END`);
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'Source') IS NULL
+  ALTER TABLE dbo.Agent_DiskIops ADD Source nvarchar(40) NULL;
+`);
+          const source = str(body.source ?? "pulseway", 40) || "pulseway";
           const snap = new Date();
           snap.setMilliseconds(0);
           let n = 0;
@@ -189,6 +209,7 @@ END`);
               .input("lr", sql.Decimal(18, 2), num(v.readLatencyMs))
               .input("lw", sql.Decimal(18, 2), num(v.writeLatencyMs))
               .input("sec", sql.Decimal(6, 2), sampleSec)
+              .input("src", sql.NVarChar(40), source)
               .query(`
 MERGE dbo.Agent_DiskIops AS tgt
 USING (SELECT @snap SnapshotUtc, @c CustomerCode, @h HostName, @l DriveLetter) AS src
@@ -197,13 +218,13 @@ ON tgt.SnapshotUtc = src.SnapshotUtc AND tgt.CustomerCode = src.CustomerCode
 WHEN MATCHED THEN UPDATE SET
   TotalGb=@tot, FreeGb=@free, UsedPct=@used, MediaType=@media,
   ReadIops=@r, WriteIops=@w, TotalIops=@t, QueueLen=@q,
-  ReadLatencyMs=@lr, WriteLatencyMs=@lw, SampleSec=@sec, ImportedAt=SYSUTCDATETIME()
+  ReadLatencyMs=@lr, WriteLatencyMs=@lw, SampleSec=@sec, Source=@src, ImportedAt=SYSUTCDATETIME()
 WHEN NOT MATCHED THEN INSERT (
   SnapshotUtc, CustomerCode, HostName, DriveLetter,
   TotalGb, FreeGb, UsedPct, MediaType, ReadIops, WriteIops, TotalIops, QueueLen,
-  ReadLatencyMs, WriteLatencyMs, SampleSec
+  ReadLatencyMs, WriteLatencyMs, SampleSec, Source
 ) VALUES (
-  @snap, @c, @h, @l, @tot, @free, @used, @media, @r, @w, @t, @q, @lr, @lw, @sec
+  @snap, @c, @h, @l, @tot, @free, @used, @media, @r, @w, @t, @q, @lr, @lw, @sec, @src
 );`);
             n++;
           }
@@ -214,7 +235,7 @@ DELETE FROM dbo.Agent_DiskIops WHERE SnapshotUtc < DATEADD(day, -14, SYSUTCDATET
             customerCode,
             hostName,
             volumes: n,
-            source: str(body.source ?? "pulseway", 40),
+            source,
           });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);

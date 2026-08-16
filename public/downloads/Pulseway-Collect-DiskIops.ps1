@@ -1,11 +1,10 @@
-# Pulseway Automation script — sample Windows disk performance counters
-# and POST them to RPM Assure. Pulseway REST v3 cannot return IOPS or
-# script output, so the device must push.
-#
+# Pulseway Automation — no Assure Edge agent required.
 # Pulseway → Automation → Scripts → New (PowerShell). Inputs:
-#   AssureUrl    = https://assure.rpmresources.co.za/api/iops
-#   AssureSecret = same value as PULSEWAY_WEBHOOK_SECRET / RPM_ASSURE_IOPS_SECRET
-# Schedule every 15 min on Windows servers (and workstations you want on Disk IOPS).
+#   AssureUrl      = https://assure.rpmresources.co.za/api/iops
+#   AssureSecret   = RPM_ASSURE_IOPS_SECRET from the website host
+#   CustomerCode   = optional (RSR / AHIC / RSS). Leave empty for auto-map.
+#   OrganizationName = optional Pulseway org name (helps mapping)
+# Scope: Windows servers. Do not require C:\RPM-Assure.
 #
 # ASCII only. Windows PowerShell 5.1.
 
@@ -134,12 +133,15 @@ if (-not $AssureSecret) {
   exit 1
 }
 
-$body = @{
-  hostName     = $env:COMPUTERNAME
-  source       = 'pulseway'
-  sampleSec    = $SampleSec
-  volumes      = $volumes
-} | ConvertTo-Json -Depth 6 -Compress
+$bodyObj = @{
+  hostName  = $env:COMPUTERNAME
+  source    = 'pulseway'
+  sampleSec = $SampleSec
+  volumes   = $volumes
+}
+if ($CustomerCode) { $bodyObj.customerCode = [string]$CustomerCode }
+if ($OrganizationName) { $bodyObj.organizationName = [string]$OrganizationName }
+$body = $bodyObj | ConvertTo-Json -Depth 6 -Compress
 
 try {
   $resp = Invoke-WebRequest -Uri $AssureUrl -Method POST -UseBasicParsing -TimeoutSec 45 `
