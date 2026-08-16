@@ -32,15 +32,41 @@ function New-RpmaCs {
     [int]$TimeoutSec = 8
   )
   $n = Normalize-RpmaHost $Server
-  $h = [string]$n.Sql
-  $db = [string]$(if ($Database) { $Database } else { "master" })
-  $enc = [string]$Encrypt
-  $u = [string]$User
-  $p = ([string]$Password) -replace '"', '""'
-  $cs = "Data Source=$h;Initial Catalog=$db;Connect Timeout=$TimeoutSec;Encrypt=$enc;TrustServerCertificate=True;"
-  if ($Mode -eq "windows") { $cs += "Integrated Security=True;" }
-  else { $cs += "User ID=$u;Password=`"$p`";" }
-  return $cs
+  $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
+  $b["Data Source"] = [string]$n.Sql
+  $b["Initial Catalog"] = [string]$(if ($Database) { $Database } else { "master" })
+  $b["Connect Timeout"] = [string]$TimeoutSec
+  $b["Encrypt"] = [string]$Encrypt
+  $b["TrustServerCertificate"] = "True"
+  if ($Mode -eq "windows") {
+    $b["Integrated Security"] = "True"
+  } else {
+    $b["User ID"] = [string]$User
+    $b["Password"] = [string]$Password
+  }
+  return [string]$b.ConnectionString
+}
+
+function Get-RpmaLocalSqlHosts {
+  $list = New-Object System.Collections.Generic.List[string]
+  foreach ($x in @(".", "localhost", "(local)", "127.0.0.1", [string]$env:COMPUTERNAME)) {
+    if ($x -and -not $list.Contains($x)) { [void]$list.Add($x) }
+  }
+  try {
+    $key = Get-Item "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL" -EA SilentlyContinue
+    if ($key) {
+      foreach ($n in $key.GetValueNames()) {
+        if ($n -eq "MSSQLSERVER") {
+          foreach ($h in @(".", [string]$env:COMPUTERNAME)) { if (-not $list.Contains($h)) { [void]$list.Add($h) } }
+        } else {
+          foreach ($h in @(".\$n", "$($env:COMPUTERNAME)\$n", "localhost\$n")) {
+            if (-not $list.Contains($h)) { [void]$list.Add($h) }
+          }
+        }
+      }
+    }
+  } catch {}
+  return $list
 }
 
 function Test-RpmaSql {
@@ -59,7 +85,7 @@ function Test-RpmaSql {
     [void]$hosts.Add([string]$n0.Sql)
   }
   if (-not $StrictHost) {
-    foreach ($x in @(".", "localhost", "(local)", [string]$env:COMPUTERNAME)) {
+    foreach ($x in @(Get-RpmaLocalSqlHosts)) {
       if ($x -and -not $hosts.Contains($x)) { [void]$hosts.Add($x) }
     }
   }

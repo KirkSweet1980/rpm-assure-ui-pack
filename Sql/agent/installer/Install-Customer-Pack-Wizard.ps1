@@ -216,9 +216,13 @@ $rbSql = New-Object Windows.Forms.RadioButton
 $rbSql.Text = "Existing SQL login (sa / RPMAdmin / other sysadmin)"
 $rbSql.Location = New-Object Drawing.Point 24, 120
 $rbSql.Size = New-Object Drawing.Size 540, 24
-$txtExistUser = New-Box 24 180; $txtExistUser.Enabled = $false
+$txtExistUser = New-Box 24 180; $txtExistUser.Text = "sa"; $txtExistUser.Enabled = $false
 $txtExistPwd = New-Box 24 240 -Password; $txtExistPwd.Enabled = $false
-$rbSql.add_CheckedChanged({ $txtExistUser.Enabled = $rbSql.Checked; $txtExistPwd.Enabled = $rbSql.Checked })
+$rbSql.add_CheckedChanged({
+  $txtExistUser.Enabled = $rbSql.Checked
+  $txtExistPwd.Enabled = $rbSql.Checked
+  if ($rbSql.Checked -and -not $txtExistUser.Text) { $txtExistUser.Text = "sa" }
+})
 
 $lblExist = New-Lbl "Not tested" 24 132 560 22
 $lblAssure = New-Lbl "Local rpmassure not tested" 24 154 560 36
@@ -374,9 +378,28 @@ function Show-Page {
 $btnTestExist.add_Click({
   try {
     $mode = $(if ($rbSql.Checked) { "sql" } else { "windows" })
-    $who = Test-Ado $txtHost.Text "master" $mode $txtExistUser.Text $txtExistPwd.Text
+    $u = [string]$txtExistUser.Text.Trim()
+    $p = [string]$txtExistPwd.Text
+    if ($mode -eq "sql") {
+      if (-not $u) { $u = "sa"; $txtExistUser.Text = "sa" }
+      if (-not $p) {
+        $lblExist.Text = "Type the sa password on the SQL access page, then test again."
+        $lblExist.ForeColor = $Fail
+        $script:AccessOk = $false
+        return
+      }
+    }
+    $lblExist.Text = "Testing " + $mode + " as " + $(if ($mode -eq "sql") { $u } else { "Windows" }) + "..."
+    $lblExist.ForeColor = $Muted
+    [Windows.Forms.Application]::DoEvents()
+    $who = Test-Ado $txtHost.Text "master" $mode $u $p
     if ($who -like "FAIL:*") {
-      $lblExist.Text = "Existing login failed. " + $who.Substring(5)
+      $err = $who.Substring(5)
+      if ($err -match "Login failed") {
+        $lblExist.Text = "SQL rejected " + $u + ". Mixed Mode must be on and sa enabled. " + $err
+      } else {
+        $lblExist.Text = "Existing login failed. " + $err
+      }
       $lblExist.ForeColor = $Fail
       $script:AccessOk = $false
       $btnMake.Enabled = $false
