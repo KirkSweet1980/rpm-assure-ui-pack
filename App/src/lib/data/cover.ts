@@ -3,11 +3,12 @@
  * Legs: SYSPRO · RMM (Pulseway) · Cloud Backup (Cove) · EPP · M365.
  *
  * ONE RULE for list, rail, modules, reports, and Exco:
- *   live warehouse rows (devices / seats / SYSPRO evidence)
+ *   live warehouse rows (devices / seats / SYSPRO evidence or mapped instance)
  *     → Covered (green)
  *   map-only or a pillar flag with zero rows → No Cover
  * Exceptions:
  *   SYSPRO: PillarSyspro = false is a hard deferred off.
+ *   A mapped SqlInstanceName is SYSPRO evidence (collect can land).
  *   M365 (CSP) is visibility only — not scored in assurance / SLA.
  *
  * Uncovered legs stay in the menu and show "No Cover". They do not drive estate health / SLA.
@@ -24,7 +25,7 @@ export type CustomerCover = {
 };
 
 export const NO_COVER = "No Cover";
-export const COVERED = "Covered";
+export const COVERED = "Cover";
 
 export function coverLabel(on: boolean): string {
   return on ? COVERED : NO_COVER;
@@ -32,6 +33,16 @@ export function coverLabel(on: boolean): string {
 
 function hasText(v: string | null | undefined): boolean {
   return Boolean(v != null && String(v).trim());
+}
+
+function firstPositive(
+  ...vals: Array<number | null | undefined>
+): number {
+  for (const v of vals) {
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 0;
 }
 
 /** Vendor pillars: live rows only. A flag or map cannot invent cover. */
@@ -76,6 +87,7 @@ export type CoverInput = {
  */
 export function inferCustomerCover(input: CoverInput): CustomerCover {
   const sysproEvidence =
+    hasText(input.sqlInstanceName) ||
     (Number(input.operatorCount) || 0) > 0 ||
     (Number(input.activeUserCount) || 0) > 0 ||
     hasText(input.sysproLastImportAt) ||
@@ -99,6 +111,56 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     epp: eppEvidence,
     csp: resolveVendor(cspEvidence, input.pillarCsp),
   };
+}
+
+/** Portfolio / list row → same cover rule as the customer page. */
+export function coverFromRow(row: {
+  pillarSyspro?: boolean | null;
+  pillarPulseway?: boolean | null;
+  pillarCove?: boolean | null;
+  pillarEpp?: boolean | null;
+  pillarCsp?: boolean | null;
+  sqlInstanceName?: string | null;
+  operatorCount?: number | null;
+  activeUserCount?: number | null;
+  lastImportAt?: string | null;
+  sysproJobErrorCount?: number | null;
+  sysproDtrVarianceLines?: number | null;
+  pulsewayOrgName?: string | null;
+  pulsewayDeviceCount?: number | null;
+  pulsewayMapped?: boolean | null;
+  coveDeviceCount?: number | null;
+  coveMapped?: boolean | null;
+  eppDeviceCount?: number | null;
+  eppMapped?: boolean | null;
+  cspUserCount?: number | null;
+  cspLicenseSkuCount?: number | null;
+  cspLicenseCount?: number | null;
+  cspMapped?: boolean | null;
+}): CustomerCover {
+  return inferCustomerCover({
+    pillarSyspro: row.pillarSyspro,
+    pillarPulseway: row.pillarPulseway,
+    pillarCove: row.pillarCove,
+    pillarEpp: row.pillarEpp,
+    pillarCsp: row.pillarCsp,
+    sqlInstanceName: row.sqlInstanceName,
+    operatorCount: row.operatorCount,
+    activeUserCount: row.activeUserCount,
+    sysproLastImportAt: row.lastImportAt,
+    sysproJobErrorCount: row.sysproJobErrorCount,
+    sysproDtrVarianceLines: row.sysproDtrVarianceLines,
+    pulsewayOrgName: row.pulsewayOrgName,
+    pulsewayDeviceCount: row.pulsewayDeviceCount,
+    pulsewayMapped: row.pulsewayMapped,
+    coveDeviceCount: row.coveDeviceCount,
+    coveMapped: row.coveMapped,
+    eppDeviceCount: row.eppDeviceCount,
+    eppMapped: row.eppMapped,
+    cspUserCount: row.cspUserCount,
+    cspLicenseCount: row.cspLicenseSkuCount ?? row.cspLicenseCount,
+    cspMapped: row.cspMapped,
+  });
 }
 
 /** Detail payload → same cover rule as the customer list. */
@@ -154,14 +216,26 @@ export function coverFromDetail(data: {
   } | null;
 }): CustomerCover {
   const c = data.customer;
-  const rmmCount =
-    data.rmm?.summary?.deviceCount ?? data.rmm?.devices?.length ?? c?.pulsewayDeviceCount ?? 0;
-  const coveCount =
-    data.cove?.summary?.deviceCount ?? data.cove?.devices?.length ?? c?.coveDeviceCount ?? 0;
-  const eppCount =
-    data.epp?.summary?.deviceCount ?? data.epp?.devices?.length ?? c?.eppDeviceCount ?? 0;
-  const cspUsers =
-    data.csp?.summary?.licensedUserCount ?? data.csp?.users?.length ?? c?.cspUserCount ?? 0;
+  const rmmCount = firstPositive(
+    data.rmm?.summary?.deviceCount,
+    data.rmm?.devices?.length,
+    c?.pulsewayDeviceCount,
+  );
+  const coveCount = firstPositive(
+    data.cove?.summary?.deviceCount,
+    data.cove?.devices?.length,
+    c?.coveDeviceCount,
+  );
+  const eppCount = firstPositive(
+    data.epp?.summary?.deviceCount,
+    data.epp?.devices?.length,
+    c?.eppDeviceCount,
+  );
+  const cspUsers = firstPositive(
+    data.csp?.summary?.licensedUserCount,
+    data.csp?.users?.length,
+    c?.cspUserCount,
+  );
   return inferCustomerCover({
     pillarSyspro: c?.pillarSyspro,
     pillarPulseway: c?.pillarPulseway,

@@ -866,7 +866,7 @@ WHERE ISNULL(Active,1) = 1
       for (const row of rows) {
         if (mapped.has(row.customerCode.toUpperCase())) {
           row.pillarPulseway = true;
-          if (row.cover) row.cover = { ...row.cover, rmm: true };
+          row.pulsewayMapped = true;
         }
       }
     } catch {
@@ -913,8 +913,8 @@ SELECT DISTINCT CustomerCode FROM dbo.Dim_Cove_PartnerMap WITH (NOLOCK) WHERE Ac
         row.coveLastImportAt = toIso(c.ImportedAt);
       }
       if (mapped.has(row.customerCode.toUpperCase())) {
-        row.cover = { ...(row.cover ?? { syspro: false, rmm: false, cove: false }), cove: true };
         row.pillarCove = true;
+        row.coveMapped = true;
       }
     }
   } catch (e) {
@@ -1020,7 +1020,7 @@ WHERE ISNULL(Active,1) = 1
         );
         if (row) {
           row.pillarEpp = true;
-          if (row.cover) row.cover = { ...row.cover, epp: true };
+          row.eppMapped = true;
         }
       }
     } catch {
@@ -1113,7 +1113,7 @@ WHERE ISNULL(Active,1) = 1`);
         );
         if (row) {
           row.pillarCsp = true;
-          if (row.cover) row.cover = { ...row.cover, csp: true };
+          row.cspMapped = true;
         }
       }
     } catch {
@@ -6852,8 +6852,7 @@ ORDER BY UserPrincipalName, DisplayName`);
   const coveHasData =
     (cove.devices?.length ?? 0) > 0 ||
     (cove.summary?.deviceCount ?? 0) > 0 ||
-    (cove.mapping?.filter((m) => m.active && m.partnerName && !/^invalid/i.test(m.partnerName)).length ?? 0) > 0 ||
-    customer.pillarCove === true;
+    (customer.coveDeviceCount ?? 0) > 0;
   if (coveHasData && !cover.cove && customer.pillarCove !== false) {
     cover = { ...cover, cove: true };
     customer.cover = { ...(customer.cover ?? cover), cove: true };

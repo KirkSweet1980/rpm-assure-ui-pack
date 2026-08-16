@@ -19,6 +19,7 @@ import { ChartTooltip, CHART_TOOLTIP_CURSOR } from "@/components/portfolio/chart
 import { RagBadge } from "@/components/portfolio/rag-badge";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { HelpTip } from "@/components/ui/help-tip";
+import { CoverTag } from "@/components/ui/status-robot";
 import { coverFromDetail, isPillarCovered } from "@/lib/data/cover";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import { assuranceTone, floorScoreToRag } from "@/lib/data/rag-score";
@@ -54,19 +55,22 @@ function hoursAgo(iso: string | null | undefined): string {
 function Pane({
   title,
   tip,
+  covered,
   children,
   className,
   ...rest
 }: {
   title: string;
   tip?: string;
+  covered?: boolean;
   children: ReactNode;
   className?: string;
 } & HTMLAttributes<HTMLElement>) {
   return (
     <section className={cn("rpma-glass p-3", className)} {...rest}>
-      <p className="mb-1.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-muted">
-        {title}
+      <p className="mb-1.5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-muted">
+        <span className="min-w-0 flex-1 truncate">{title}</span>
+        {covered != null ? <CoverTag on={covered} /> : null}
         {tip ? <HelpTip text={tip} /> : null}
       </p>
       {children}
@@ -256,7 +260,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           </div>
         </div>
 
-        <Pane title="Service cover" tip="Green = in scope. Grey = no cover." {...wgt("cover")}>
+        <Pane title="Service cover" tip="Green chip = live collect in scope. Grey = No Cover (not scored)." {...wgt("cover")}>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -364,7 +368,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           ) : null}
         </Pane>
 
-        <Pane title="RPM RMM" tip="Pulseway agents on the latest snapshot." {...wgt("rmm")}>
+        <Pane title="RPM RMM" tip="Pulseway agents on the latest snapshot." covered={isPillarCovered(cover, "rmm")} {...wgt("rmm")}>
           {isPillarCovered(cover, "rmm") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Online" value={rmmOn} tone="green" />
@@ -384,7 +388,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
-        <Pane title="Cloud Backup" tip="Cove devices vs 24h RPO." {...wgt("backup")}>
+        <Pane title="Cloud Backup" tip="Cove devices vs 24h RPO." covered={isPillarCovered(cover, "cove")} {...wgt("backup")}>
           {isPillarCovered(cover, "cove") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Healthy" value={coveOk} tone="green" />
@@ -395,7 +399,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
-        <Pane title="RPM EPP" tip="Protected endpoints, incidents, and quarantine." {...wgt("epp")}>
+        <Pane title="RPM EPP" tip="Protected endpoints, incidents, and quarantine." covered={isPillarCovered(cover, "epp")} {...wgt("epp")}>
           {isPillarCovered(cover, "epp") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Endpoints" value={eppDevices} />
@@ -410,7 +414,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
-        <Pane title="Microsoft CSP" tip="Tenant posture from Graph collect." {...wgt("csp")}>
+        <Pane title="Microsoft CSP" tip="Tenant posture from Graph collect. Visibility only — not scored." covered={isPillarCovered(cover, "csp")} {...wgt("csp")}>
           {isPillarCovered(cover, "csp") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard

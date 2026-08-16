@@ -1330,27 +1330,44 @@ html[data-density="comfortable"] .rpma-xls th {
 
 .rpma-cover-tag {
   flex: 0 0 auto;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   line-height: 1.2;
-  padding: 2px 5px;
-  border-radius: 3px;
-  max-width: 68px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 3px 7px;
+  border-radius: 4px;
+  max-width: none;
+  overflow: visible;
   white-space: nowrap;
 }
 .rpma-cover-tag.is-on {
-  color: var(--color-muted);
-  border: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  color: #052e16;
+  border: 1px solid #15803d;
+  background: #22c55e;
 }
 .rpma-cover-tag.is-off {
-  color: color-mix(in srgb, var(--color-muted) 70%, #8b95a3);
-  border: 1px dashed var(--color-border);
-  background: transparent;
+  color: #f8fafc;
+  border: 1px solid #4b5563;
+  background: #3f4650;
+}
+.rpma-modbtn.is-cover {
+  background: #16a34a;
+  color: #052e16;
+  border-color: #15803d;
+  font-weight: 700;
+}
+.rpma-modbtn.is-nocover {
+  background: #3f4650;
+  color: #f8fafc;
+  border-color: #4b5563;
+  font-weight: 700;
+}
+.rpma-pane-coverline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 @media (prefers-reduced-motion: reduce) {
   .rpma-pane.is-tile, .rpma-kpi-tile { transition: none; }

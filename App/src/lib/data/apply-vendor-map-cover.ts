@@ -3,7 +3,7 @@
  * Cover = live rows only (same as cover.ts). Maps stay for join/ownership.
  */
 import { getPool } from "./sql-pool";
-import { coverFromDetail, type CustomerCover } from "./cover";
+import { coverFromDetail, coverFromRow, type CustomerCover } from "./cover";
 import type { CustomerDetailPayload, PortfolioPayload, PortfolioRow } from "./types";
 
 async function mappedCodes(query: string): Promise<Set<string>> {
@@ -50,7 +50,7 @@ function stamp(row: PortfolioRow, maps: Awaited<ReturnType<typeof loadMaps>>) {
   if (maps.cove.has(k)) row.coveMapped = true;
   if (maps.epp.has(k)) row.eppMapped = true;
   if (maps.csp.has(k)) row.cspMapped = true;
-  // Cover stays data-driven — do not flip green from a map with 0 rows
+  row.cover = coverFromRow(row);
 }
 
 export async function applyVendorMapCover(payload: PortfolioPayload): Promise<void> {
@@ -74,31 +74,28 @@ export async function applyVendorMapCoverDetail(detail: CustomerDetailPayload): 
   const inferred = coverFromDetail(detail);
   detail.cover = inferred;
   detail.customer.cover = inferred;
-  if (detail.cover) {
-    detail.cover = { ...(detail.cover ?? detail.customer.cover), ...detail.customer.cover };
-    if (detail.cove) {
-      detail.cove.enabled = Boolean(detail.cover.cove);
-      if (detail.cove.enabled && detail.cove.message?.toLowerCase().includes("no cover")) {
-        detail.cove.message = null;
-      }
+  if (detail.cove) {
+    detail.cove.enabled = Boolean(inferred.cove);
+    if (detail.cove.enabled && detail.cove.message?.toLowerCase().includes("no cover")) {
+      detail.cove.message = null;
     }
-    if (detail.rmm) {
-      detail.rmm.enabled = Boolean(detail.cover.rmm);
-      if (detail.rmm.enabled && detail.rmm.message?.toLowerCase().includes("no cover")) {
-        detail.rmm.message = null;
-      }
+  }
+  if (detail.rmm) {
+    detail.rmm.enabled = Boolean(inferred.rmm);
+    if (detail.rmm.enabled && detail.rmm.message?.toLowerCase().includes("no cover")) {
+      detail.rmm.message = null;
     }
-    if (detail.epp) {
-      detail.epp.enabled = Boolean(detail.cover.epp);
-      if (detail.epp.enabled && detail.epp.message?.toLowerCase().includes("no cover")) {
-        detail.epp.message = null;
-      }
+  }
+  if (detail.epp) {
+    detail.epp.enabled = Boolean(inferred.epp);
+    if (detail.epp.enabled && detail.epp.message?.toLowerCase().includes("no cover")) {
+      detail.epp.message = null;
     }
-    if (detail.csp) {
-      detail.csp.enabled = Boolean(detail.cover.csp);
-      if (detail.csp.enabled && detail.csp.message?.toLowerCase().includes("no cover")) {
-        detail.csp.message = null;
-      }
+  }
+  if (detail.csp) {
+    detail.csp.enabled = Boolean(inferred.csp);
+    if (detail.csp.enabled && detail.csp.message?.toLowerCase().includes("no cover")) {
+      detail.csp.message = null;
     }
   }
 }

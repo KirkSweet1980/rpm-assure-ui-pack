@@ -251,6 +251,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
                 >
                   <Icon className="rpma-nav-ico" style={{ color: m.color }} aria-hidden />
                   <span className="min-w-0 flex-1 truncate">{m.label}</span>
+                  <CoverTag on={active.covered(cover)} />
                   <StatusRobot rag={flag?.rag ?? (active.covered(cover) ? "Green" : "Off")} title={flag?.hint} />
                 </SpaLink>
               );

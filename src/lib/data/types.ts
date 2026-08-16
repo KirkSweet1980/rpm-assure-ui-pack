@@ -76,6 +76,10 @@ export type PortfolioRow = {
   /** Maps from Dim_Customer_AmsConfig.PillarBitdefender */
   pillarEpp?: boolean | null;
   pillarCsp?: boolean | null;
+  pulsewayMapped?: boolean | null;
+  coveMapped?: boolean | null;
+  eppMapped?: boolean | null;
+  cspMapped?: boolean | null;
 };
 
 export type OperatorRow = {
