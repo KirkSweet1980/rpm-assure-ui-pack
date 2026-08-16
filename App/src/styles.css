@@ -721,7 +721,9 @@ html.dark .rpma-hud-head {
 }
 
 .rpma-eco-menubar {
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -729,7 +731,9 @@ html.dark .rpma-hud-head {
   padding: 10px 8.5rem 10px 14px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: 0 8px 18px color-mix(in srgb, #000 12%, transparent);
 }
 .rpma-eco-menubar-title {
   margin: 0;
