@@ -7,7 +7,10 @@ import {
   fetchConfigHealth,
   fetchIntegrations,
   requestAgentSync,
+  fetchApiFeedSyncStatus,
+  startApiFeedSync,
   type ConfigHealthItem,
+  type ApiFeedSyncStatus,
 } from "@/lib/settings/settings-api";
 import { fetchInfraAgents, type InfraAgentRow } from "@/lib/settings/infra-status";
 import type { LucideIcon } from "lucide-react";
@@ -84,10 +87,10 @@ function kindToHealthId(raw: string) {
 
 function feedTone(iso: string | null): { tone: "green" | "amber" | "red"; result: string } {
   if (!iso) return { tone: "red", result: "Never" };
-  const h = (Date.now() - new Date(iso).getTime()) / 3600000;
-  if (!Number.isFinite(h) || h < 0) return { tone: "red", result: "Never" };
-  if (h <= 24) return { tone: "green", result: "OK" };
-  if (h <= 72) return { tone: "amber", result: "Stale" };
+  const m = (Date.now() - new Date(iso).getTime()) / 60000;
+  if (!Number.isFinite(m) || m < 0) return { tone: "red", result: "Never" };
+  if (m <= 25) return { tone: "green", result: "OK" };
+  if (m <= 120) return { tone: "amber", result: "Due" };
   return { tone: "red", result: "Stale" };
 }
 
@@ -122,20 +125,25 @@ function InfrastructureStatusPage() {
   const [agentMsg, setAgentMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sync, setSync] = useState<Record<string, SyncPhase>>({});
+  const [feed, setFeed] = useState<ApiFeedSyncStatus | null>(null);
+  const [feedBusy, setFeedBusy] = useState(false);
+  const [feedMsg, setFeedMsg] = useState<string | null>(null);
   const armed = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setBusy(true);
     try {
-      const [h, i, a] = await Promise.all([
+      const [h, i, a, f] = await Promise.all([
         fetchConfigHealth(),
         fetchIntegrations(),
         fetchInfraAgents(),
+        fetchApiFeedSyncStatus(),
       ]);
       setItems(h.items ?? []);
       setConns(i.rows ?? []);
       setAgents(a.rows ?? []);
       setAgentMsg(a.ok ? null : a.message);
+      setFeed(f);
       setSync((prev) => {
         const next = { ...prev };
         for (const row of a.rows ?? []) {
@@ -164,12 +172,27 @@ function InfrastructureStatusPage() {
     void load();
   }, [load]);
 
-  const polling = Object.values(sync).some((s) => s === "queued" || s === "running");
+  const polling = Object.values(sync).some((s) => s === "queued" || s === "running") || Boolean(feed?.running);
   useEffect(() => {
     if (!polling) return;
-    const id = window.setInterval(() => void load(), 2500);
+    const id = window.setInterval(() => void load(), 2000);
     return () => window.clearInterval(id);
   }, [polling, load]);
+
+  async function syncApis() {
+    setFeedBusy(true);
+    setFeedMsg(null);
+    try {
+      const r = await startApiFeedSync();
+      setFeedMsg(r.message);
+      if (r.status) setFeed(r.status);
+      void load();
+    } catch (e) {
+      setFeedMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setFeedBusy(false);
+    }
+  }
 
   async function syncOne(row: InfraAgentRow) {
     if (!row.hostName) return;
@@ -213,7 +236,41 @@ function InfrastructureStatusPage() {
       </div>
 
       <section className="rpma-panel p-0">
-        <div className="rpma-settings-panel-head">Assure API Feed Status</div>
+        <div className="rpma-settings-panel-head">
+          Assure API Feed Status
+          <span className="rpma-settings-count">every 15 min</span>
+          <Button
+            type="button"
+            size="sm"
+            className="ml-auto h-7 px-2.5 text-[11px]"
+            disabled={feedBusy || Boolean(feed?.running)}
+            onClick={() => void syncApis()}
+          >
+            {feed?.running ? "Syncing…" : "Sync APIs"}
+          </Button>
+        </div>
+        <div className="px-3 pb-3">
+          <p className="mb-2 text-[11px] text-muted">
+            Pulseway, N-Able Cove Backup, Bitdefender and Microsoft Graph. Cloud backup collect stays on this cycle.
+          </p>
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                feed?.running ? "bg-amber-400" : (feed?.pct ?? 0) >= 100 ? "bg-rag-green" : "bg-accent",
+              )}
+              style={{ width: `${Math.min(100, Math.max(feed?.running ? Math.max(4, feed.pct) : (feed?.pct ?? 0), 0))}%` }}
+            />
+          </div>
+          <p className="mt-1 text-[11px] text-muted">
+            {feed?.running
+              ? `${feed.pct}% · ${feed.current || "starting"} · ${feed.message}`
+              : feed?.finishedUtc
+                ? `Last run ${formatSastDateTime(feed.finishedUtc)} · ${feed.message || "idle"}`
+                : feed?.message || "No on-demand run yet. Scheduled every 15 minutes."}
+          </p>
+          {feedMsg ? <p className="mt-1 text-[11px] font-semibold text-fg">{feedMsg}</p> : null}
+        </div>
           <table className="rpma-xls text-left">
             <thead>
               <tr>
@@ -222,12 +279,13 @@ function InfrastructureStatusPage() {
                 <th>Status</th>
                 <th>Last Sync</th>
                 <th>Result</th>
+                <th>Collect</th>
               </tr>
             </thead>
             <tbody>
               {connRows.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     No API feeds yet.
                   </td>
                 </tr>
@@ -237,6 +295,17 @@ function InfrastructureStatusPage() {
                   const live = items.find((h) => h.id === hid);
                   const lastAt = r.lastSyncAt || live?.lastAt || null;
                   const { tone, result } = feedTone(lastAt);
+                  const leg = (feed?.legs ?? []).find(
+                    (l) =>
+                      l.kind.toLowerCase() === r.sourceKind.toLowerCase() ||
+                      l.name.toLowerCase() === r.connectionCode.toLowerCase() ||
+                      (hid === "rmm" && l.name === "Pulseway") ||
+                      (hid === "cove" && l.name === "Cove") ||
+                      (hid === "epp" && l.name === "Bitdefender") ||
+                      (hid === "csp" && l.name === "CspGraph"),
+                  );
+                  const legLabel =
+                    !leg ? "—" : leg.status === "running" ? "Running" : leg.status === "ok" ? "OK" : leg.status === "error" ? "Error" : leg.status === "skip" ? "Skip" : "Queued";
                   return (
                     <tr key={r.connectionCode}>
                       <td>{r.displayName}</td>
@@ -257,6 +326,20 @@ function InfrastructureStatusPage() {
                           >
                             {result}
                           </span>
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            leg?.status === "running" && "text-amber-400",
+                            leg?.status === "ok" && "text-rag-green",
+                            leg?.status === "error" && "text-rag-red",
+                            (!leg || leg.status === "queued") && "text-muted",
+                          )}
+                        >
+                          {legLabel}
+                          {leg?.message && leg.status !== "queued" ? ` · ${leg.message}` : ""}
                         </span>
                       </td>
                     </tr>

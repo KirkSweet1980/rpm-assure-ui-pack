@@ -192,6 +192,19 @@ if ($SyncApis) {
   }
 }
 
+$apiSched = Join-Path $Root 'Sql\ops\Install-All-Api-Collect-15min.ps1'
+$apiPack = Join-Path $Pack 'Sql\ops\Install-All-Api-Collect-15min.ps1'
+if (Test-Path -LiteralPath $apiPack) {
+  New-Item -ItemType Directory -Force -Path (Join-Path $Root 'Sql\ops') | Out-Null
+  Copy-Item -LiteralPath $apiPack -Destination $apiSched -Force
+  $runPack = Join-Path $Pack 'Sql\ops\Run-All-Api-Collects-Scheduled.ps1'
+  if (Test-Path -LiteralPath $runPack) {
+    Copy-Item -LiteralPath $runPack -Destination (Join-Path $Root 'Sql\ops\Run-All-Api-Collects-Scheduled.ps1') -Force
+  }
+  W Cyan '--- API collect every 15 min (Pulseway + Cove + Bitdefender + CSP) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $apiSched
+}
+
 Write-Host '========================================' -ForegroundColor Cyan
 Write-Host ' GIT UPDATE COMPLETE'
 Write-Host (" Pack   : " + $Pack)
