@@ -138,7 +138,7 @@ PRINT N'Local collect login ready.';
 Write-Host "COLLECT_LOGIN_WORKS"
 Write-Host "COLLECT_LOGIN_READY"
 
-$cen = Test-RpmaSql -Server $CentralHost -Database $CentralDatabase -Mode sql -User $CentralUser -Password $CentralPassword -TimeoutSec 15
+$cen = Test-RpmaSql -Server $CentralHost -Database $CentralDatabase -Mode sql -User $CentralUser -Password $CentralPassword -TimeoutSec 12 -StrictHost
 if (-not $cen.Ok) { throw ("Central Assure login failed: " + $cen.Error) }
 Write-Host ("CENTRAL_OK who=" + $cen.Who)
 

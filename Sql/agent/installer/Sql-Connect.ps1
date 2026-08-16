@@ -28,12 +28,15 @@ function Test-RpmaSql {
     [string]$Mode = "sql",
     [string]$User = "",
     [string]$Password = "",
-    [int]$TimeoutSec = 8
+    [int]$TimeoutSec = 8,
+    [switch]$StrictHost
   )
   $hosts = New-Object System.Collections.Generic.List[string]
   if ($Server) { [void]$hosts.Add(([string]$Server).Trim()) }
-  foreach ($x in @(".", "localhost", "(local)", [string]$env:COMPUTERNAME)) {
-    if ($x -and -not $hosts.Contains($x)) { [void]$hosts.Add($x) }
+  if (-not $StrictHost) {
+    foreach ($x in @(".", "localhost", "(local)", [string]$env:COMPUTERNAME)) {
+      if ($x -and -not $hosts.Contains($x)) { [void]$hosts.Add($x) }
+    }
   }
   $last = "no attempt"
   foreach ($h in $hosts) {
