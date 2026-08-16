@@ -1,19 +1,18 @@
 # RPM Assure Edge Agent - unattended install engine (called by the wizard).
-# ASCII only. Run as Administrator on the customer SYSPRO SQL host.
+# ASCII only. Run as Administrator.
 #
 # Policy (2026-08):
-# - Online / heartbeat NEVER depends on which pillars are on cover.
-# - All collect scripts are always deployed to every agent.
-# - At install: detect SYSPRO / Pulseway / Bitdefender / Cove on this host and
-#   ENABLE matching cover pillars on central (never clears cover).
-# - Cover influences RoleTags + default job schedule only.
+# - Online / heartbeat NEVER depends on cover.
+# - All collect scripts always deployed.
+# - Detect SYSPRO / Pulseway / Bitdefender / Cove; enable cover (never clear).
+# - No local SQL => no SYSPRO; local SQL config is optional (install must not fail).
 param(
   [string]$ConfigFile = "",
   [string]$CustomerCode = "",
   [string]$DisplayName = "",
   [string]$SqlHost = "",
   [string]$InstanceName = "",
-  [ValidateSet("Windows", "Sql")][string]$LocalAuth = "Windows",
+  [ValidateSet("Windows", "Sql", "")][string]$LocalAuth = "Windows",
   [string]$LocalSqlUser = "",
   [string]$LocalSqlPassword = "",
   [string]$CentralDataSource = "102.222.21.220,14333",
@@ -34,6 +33,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+try {
 if ($ConfigFile -and (Test-Path -LiteralPath $ConfigFile)) {
   $j = Get-Content -LiteralPath $ConfigFile -Raw | ConvertFrom-Json
   if ($j.CustomerCode) { $CustomerCode = [string]$j.CustomerCode }
@@ -57,10 +57,9 @@ if ($ConfigFile -and (Test-Path -LiteralPath $ConfigFile)) {
   if ($j.PSObject.Properties.Name -contains "SkipGit") { $SkipGit = [bool]$j.SkipGit }
 }
 
-$ErrorActionPreference = "Stop"
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
   [Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $IsAdmin) { throw "Run as Administrator on the customer SYSPRO SQL server." }
+if (-not $IsAdmin) { throw "Run as Administrator on the customer host." }
 
 $CustomerCode = $CustomerCode.Trim().ToUpperInvariant()
 if ($CustomerCode -notmatch '^[A-Z0-9]{2,20}$') { throw "Customer code must be 2-20 A-Z / 0-9." }
@@ -70,7 +69,7 @@ if ([string]::IsNullOrWhiteSpace($InstanceName)) { $InstanceName = $SqlHost }
 if ([string]::IsNullOrWhiteSpace($AdminPassword) -or $AdminPassword.Length -lt 8) {
   throw "Agent admin password must be at least 8 characters."
 }
-if ([string]::IsNullOrWhiteSpace($CentralSqlPassword)) { throw "Central SQL password is required." }
+if ([string]::IsNullOrWhiteSpace($CentralSqlPassword)) { throw "Central SQL password is required (for heartbeat to Assure)." }
 if (-not $ConfigFile) {
   if (-not $PSBoundParameters.ContainsKey("InstallTray")) { $InstallTray = $true }
   if (-not $PSBoundParameters.ContainsKey("StartService")) { $StartService = $true }
@@ -143,50 +142,71 @@ WHERE c.CustomerCode = N'$safe'
 $cover = Get-InstallCover $CustomerCode
 W ("Central cover: syspro=$($cover.syspro) rmm=$($cover.rmm) cove=$($cover.cove) epp=$($cover.epp) csp=$($cover.csp)")
 
-# ---- Local product detection (SYSPRO / Pulseway / Bitdefender / Cove) ----
-$detectPs1 = Join-Path $pack 'Sql\agent\Detect-Local-Services.ps1'
-if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Sql\agent\Detect-Local-Services.ps1' }
-if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Agent\Detect-Local-Services.ps1' }
-$local = @{ Syspro = $false; Pulseway = $false; Bitdefender = $false; Cove = $false; Details = @() }
-if (Test-Path $detectPs1) {
-  . $detectPs1
-  $local = Get-RpmaLocalServices
-  W "Local product scan:"
-  W ("  SYSPRO       : " + $local.Syspro)
-  W ("  Pulseway     : " + $local.Pulseway)
-  W ("  Bitdefender  : " + $local.Bitdefender)
-  W ("  Cove         : " + $local.Cove)
-  foreach ($d in $local.Details) { W ("    - " + $d) }
-  if (-not $local.Details.Count) { W '    (none detected on this host)' }
-} else {
-  W 'WARN Detect-Local-Services.ps1 missing - skipping product scan'
+# ---- Local product detection ----
+$local = @{ SqlPresent = $false; Syspro = $false; Pulseway = $false; Bitdefender = $false; Cove = $false; Details = @() }
+try {
+  $detectPs1 = Join-Path $pack 'Sql\agent\Detect-Local-Services.ps1'
+  if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Sql\agent\Detect-Local-Services.ps1' }
+  if (-not (Test-Path $detectPs1)) { $detectPs1 = 'C:\RPM-Assure\Agent\Detect-Local-Services.ps1' }
+  if (Test-Path $detectPs1) {
+    . $detectPs1
+    $local = Get-RpmaLocalServices
+    W "Local product scan:"
+    W ("  SQL present  : " + $local.SqlPresent)
+    W ("  SYSPRO       : " + $local.Syspro)
+    W ("  Pulseway     : " + $local.Pulseway)
+    W ("  Bitdefender  : " + $local.Bitdefender)
+    W ("  Cove         : " + $local.Cove)
+    foreach ($d in $local.Details) { W ("    - " + $d) }
+    if (-not $local.Details.Count) { W '    (none detected on this host)' }
+  } else {
+    W 'WARN Detect-Local-Services.ps1 missing - skipping product scan'
+  }
+} catch {
+  W ("WARN local product scan failed (continuing): " + $_.Exception.Message)
 }
 
-# Enable cover on central for anything found locally (never clears)
-if ($local.Syspro -or $local.Pulseway -or $local.Bitdefender -or $local.Cove) {
-  $enablePs1 = Join-Path $pack 'Sql\agent\Enable-Cover-From-Local.ps1'
-  if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Sql\agent\Enable-Cover-From-Local.ps1' }
-  if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Agent\Enable-Cover-From-Local.ps1' }
-  if (Test-Path $enablePs1) {
-    W 'Enabling cover on central from local products...'
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $enablePs1 `
-      -CustomerCode $CustomerCode `
-      -CentralDataSource $CentralDataSource `
-      -CentralDatabase $CentralDatabase `
-      -CentralSqlUser $CentralSqlUser `
-      -CentralSqlPassword $CentralSqlPassword `
-      -Syspro:([bool]$local.Syspro) `
-      -Pulseway:([bool]$local.Pulseway) `
-      -Bitdefender:([bool]$local.Bitdefender) `
-      -Cove:([bool]$local.Cove) `
-      -AgentRoot (Join-Path $Root 'Agent') | Out-Null
-  } else {
-    W 'WARN Enable-Cover-From-Local.ps1 missing'
+# No local SQL => never treat as SYSPRO host; local SQL config is optional
+$needsLocalSql = [bool]$local.SqlPresent -and [bool]$local.Syspro
+if (-not $local.SqlPresent) {
+  W 'No SQL Server on this host - SYSPRO cover/config not required.'
+  $local.Syspro = $false
+  # Soften empty local SQL settings so they never block install
+  if ([string]::IsNullOrWhiteSpace($LocalAuth)) { $LocalAuth = 'Windows' }
+}
+
+# Enable cover on central (soft-fail)
+try {
+  if ($local.Syspro -or $local.Pulseway -or $local.Bitdefender -or $local.Cove) {
+    $enablePs1 = Join-Path $pack 'Sql\agent\Enable-Cover-From-Local.ps1'
+    if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Sql\agent\Enable-Cover-From-Local.ps1' }
+    if (-not (Test-Path $enablePs1)) { $enablePs1 = 'C:\RPM-Assure\Agent\Enable-Cover-From-Local.ps1' }
+    if (Test-Path $enablePs1) {
+      W 'Enabling cover on central from local products...'
+      $oldEap = $ErrorActionPreference
+      $ErrorActionPreference = 'Continue'
+      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $enablePs1 `
+        -CustomerCode $CustomerCode `
+        -CentralDataSource $CentralDataSource `
+        -CentralDatabase $CentralDatabase `
+        -CentralSqlUser $CentralSqlUser `
+        -CentralSqlPassword $CentralSqlPassword `
+        -Syspro:([bool]$local.Syspro) `
+        -Pulseway:([bool]$local.Pulseway) `
+        -Bitdefender:([bool]$local.Bitdefender) `
+        -Cove:([bool]$local.Cove) `
+        -AgentRoot (Join-Path $Root 'Agent') 2>&1 | ForEach-Object { W ([string]$_) }
+      $ErrorActionPreference = $oldEap
+    } else {
+      W 'WARN Enable-Cover-From-Local.ps1 missing'
+    }
+    if ($local.Syspro) { $cover.syspro = $true }
+    if ($local.Pulseway) { $cover.rmm = $true }
+    if ($local.Cove) { $cover.cove = $true }
+    if ($local.Bitdefender) { $cover.epp = $true }
   }
-  if ($local.Syspro) { $cover.syspro = $true }
-  if ($local.Pulseway) { $cover.rmm = $true }
-  if ($local.Cove) { $cover.cove = $true }
-  if ($local.Bitdefender) { $cover.epp = $true }
+} catch {
+  W ("WARN cover enable failed (install continues): " + $_.Exception.Message)
 }
 
 $tags = @('agent')
@@ -205,30 +225,35 @@ $custDir = Join-Path $sqlRoot ("customers\" + $CustomerCode)
 New-Item -ItemType Directory -Force -Path $agentRoot, (Join-Path $agentRoot "logs"), (Join-Path $agentRoot "tools"), (Join-Path $agentRoot "tray"), $custDir, (Join-Path $sqlRoot "base\syspro-direct") | Out-Null
 
 W "Stopping old Edge service so files are not locked..."
-$oldE = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-Stop-Service RPMAssure-Edge -Force -EA SilentlyContinue
-Get-Process nssm -EA SilentlyContinue | Stop-Process -Force -EA SilentlyContinue
-Start-Sleep -Seconds 1
-$ErrorActionPreference = $oldE
+try {
+  $oldE = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  Stop-Service RPMAssure-Edge -Force -EA SilentlyContinue
+  Get-Process nssm -EA SilentlyContinue | Stop-Process -Force -EA SilentlyContinue
+  Start-Sleep -Seconds 1
+  $ErrorActionPreference = $oldE
+} catch {}
 
 W "Copying agent files..."
-robocopy $from $agentRoot /E /XO /R:1 /W:1 /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-W "Copying sql agent files..."
-robocopy $from (Join-Path $sqlRoot "agent") /E /XO /R:1 /W:1 /XF Update-Agent-From-Central.ps1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-
-$baseSrc = Join-Path $pack "Sql\base\syspro-direct"
-if (Test-Path $baseSrc) {
-  W "Deploying ALL collect scripts (syspro-direct)."
-  robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-} else {
-  W "WARN pack has no Sql\base\syspro-direct"
+try {
+  robocopy $from $agentRoot /E /XO /R:1 /W:1 /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  robocopy $from (Join-Path $sqlRoot "agent") /E /XO /R:1 /W:1 /XF Update-Agent-From-Central.ps1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  $baseSrc = Join-Path $pack "Sql\base\syspro-direct"
+  if (Test-Path $baseSrc) {
+    W "Deploying collect scripts (syspro-direct)."
+    robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  }
+  W "Copies done."
+} catch {
+  W ("WARN copy issue: " + $_.Exception.Message)
 }
-W "Copies done."
 
+# Customer.Config - always write minimal identity; local SQL fields only when useful
 $custCfg = Join-Path $custDir "Customer.Config.ps1"
-$custBody = @"
+if ($needsLocalSql) {
+  $custBody = @"
 # Generated by Assure Agent Wizard. Passwords are NOT stored here.
+# Local SQL present - SYSPRO collect may use these.
 `$CustomerCode = '$CustomerCode'
 `$DisplayName = '$($DisplayName.Replace("'", "''"))'
 `$InstanceName = '$($InstanceName.Replace("'", "''"))'
@@ -241,8 +266,29 @@ $custBody = @"
 `$SqlRoot = '$sqlRoot'
 `$AgentRoot = '$agentRoot'
 "@
-[IO.File]::WriteAllText($custCfg, $custBody, [Text.UTF8Encoding]::new($false))
-W "Wrote $custCfg"
+} else {
+  $custBody = @"
+# Generated by Assure Agent Wizard. Passwords are NOT stored here.
+# No local SQL / no SYSPRO on this host - identity only (heartbeat + host jobs).
+`$CustomerCode = '$CustomerCode'
+`$DisplayName = '$($DisplayName.Replace("'", "''"))'
+`$InstanceName = '$($env:COMPUTERNAME.Replace("'", "''"))'
+`$SqlHost = '$($env:COMPUTERNAME.Replace("'", "''"))'
+`$LocalAuth = 'Windows'
+`$LocalSqlUser = ''
+`$CentralDataSource = '$($CentralDataSource.Replace("'", "''"))'
+`$CentralDatabase = '$($CentralDatabase.Replace("'", "''"))'
+`$CentralSqlUser = '$($CentralSqlUser.Replace("'", "''"))'
+`$SqlRoot = '$sqlRoot'
+`$AgentRoot = '$agentRoot'
+"@
+}
+try {
+  [IO.File]::WriteAllText($custCfg, $custBody, [Text.UTF8Encoding]::new($false))
+  W "Wrote $custCfg"
+} catch {
+  W ("WARN could not write Customer.Config: " + $_.Exception.Message)
+}
 
 $cfgPath = Join-Path $agentRoot "Agent.Config.ps1"
 $cfgBody = @"
@@ -262,49 +308,75 @@ $cfgBody = @"
 [IO.File]::WriteAllText($cfgPath, $cfgBody, [Text.UTF8Encoding]::new($false))
 W "Wrote $cfgPath"
 
-$lib = Join-Path $agentRoot "Lib-SecureConfig.ps1"
-. $lib
-$script:RpmaAgentRoot = $agentRoot
-W "Saving encrypted settings..."
-Initialize-RpmaSecureStore -AdminPassword $AdminPassword -CentralSqlPassword $CentralSqlPassword -LocalSqlPassword $LocalSqlPassword -CentralDataSource $CentralDataSource -CentralDatabase $CentralDatabase -CentralSqlUser $CentralSqlUser
-W "Encrypted settings saved."
-$set = Get-RpmaAgentSettings
-$set.collectIntervalMin = [int]$CollectIntervalMin
-$set.jobsIntervalMin = [int]$JobsIntervalMin
-$set.centralDataSource = $CentralDataSource
-$set.centralDatabase = $CentralDatabase
-$set.centralSqlUser = $CentralSqlUser
-Save-RpmaAgentSettings $set
-W "Secrets saved."
-
-$install = Join-Path $agentRoot "Install-Agent-Service.ps1"
-if (-not (Test-Path $install)) { throw "Missing $install" }
-$svcArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $install, "-AgentRoot", $agentRoot, "-SqlRoot", $sqlRoot)
-if ($RunOnce) { $svcArgs += "-RunOnce" }
-W "Installing Windows service..."
-& powershell.exe @svcArgs
-W "Service installer returned."
-if (-not $StartService) {
-  Stop-Service RPMAssure-Edge -Force -EA SilentlyContinue
+# Secrets - LocalSqlPassword optional when no local SQL
+try {
+  $lib = Join-Path $agentRoot "Lib-SecureConfig.ps1"
+  if (-not (Test-Path $lib)) { throw "Missing $lib" }
+  . $lib
+  $script:RpmaAgentRoot = $agentRoot
+  W "Saving encrypted settings..."
+  $localPass = if ($needsLocalSql) { $LocalSqlPassword } else { '' }
+  Initialize-RpmaSecureStore -AdminPassword $AdminPassword -CentralSqlPassword $CentralSqlPassword -LocalSqlPassword $localPass -CentralDataSource $CentralDataSource -CentralDatabase $CentralDatabase -CentralSqlUser $CentralSqlUser
+  $set = Get-RpmaAgentSettings
+  $set.collectIntervalMin = [int]$CollectIntervalMin
+  $set.jobsIntervalMin = [int]$JobsIntervalMin
+  $set.centralDataSource = $CentralDataSource
+  $set.centralDatabase = $CentralDatabase
+  $set.centralSqlUser = $CentralSqlUser
+  Save-RpmaAgentSettings $set
+  W "Secrets saved."
+} catch {
+  W ("ERROR saving secrets: " + $_.Exception.Message)
+  throw
 }
 
-if ($InstallTray) {
-  W "Installing tray icon..."
-  $tray = Join-Path $agentRoot "Install-Agent-Tray.ps1"
-  if (Test-Path $tray) {
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $tray -AgentRoot $agentRoot
+# Service install - soft-fail tray, hard-fail only if service script missing
+try {
+  $install = Join-Path $agentRoot "Install-Agent-Service.ps1"
+  if (-not (Test-Path $install)) { throw "Missing $install" }
+  $svcArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $install, "-AgentRoot", $agentRoot, "-SqlRoot", $sqlRoot)
+  if ($RunOnce) { $svcArgs += "-RunOnce" }
+  W "Installing Windows service..."
+  & powershell.exe @svcArgs
+  W "Service installer returned."
+  if (-not $StartService) {
+    Stop-Service RPMAssure-Edge -Force -EA SilentlyContinue
   }
-  W "Tray done."
+} catch {
+  W ("ERROR service install: " + $_.Exception.Message)
+  throw
+}
+
+try {
+  if ($InstallTray) {
+    W "Installing tray icon..."
+    $tray = Join-Path $agentRoot "Install-Agent-Tray.ps1"
+    if (Test-Path $tray) {
+      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $tray -AgentRoot $agentRoot
+    }
+    W "Tray done."
+  }
+} catch {
+  W ("WARN tray install failed (agent service still OK): " + $_.Exception.Message)
 }
 
 $svc = Get-Service RPMAssure-Edge -EA SilentlyContinue
 W "========================================"
 W (" Customer : " + $DisplayName + " (" + $CustomerCode + ")")
 W (" Host     : " + $env:COMPUTERNAME)
-W (" Instance : " + $InstanceName)
+W (" SQL host : " + $(if ($local.SqlPresent) { 'yes' } else { 'no - SYSPRO not required' }))
+W (" Instance : " + $(if ($needsLocalSql) { $InstanceName } else { '(n/a)' }))
 W (" Service  : " + $(if ($svc) { $svc.Status } else { "not installed" }))
 W (" Roles    : " + $RoleTags)
-W (" Local    : SYSPRO=$($local.Syspro) Pulseway=$($local.Pulseway) Bitdefender=$($local.Bitdefender) Cove=$($local.Cove)")
+W (" Local    : SQL=$($local.SqlPresent) SYSPRO=$($local.Syspro) Pulseway=$($local.Pulseway) Bitdefender=$($local.Bitdefender) Cove=$($local.Cove)")
 W (" Online   : heartbeat only")
-W (" Cover    : local products enable pillars on central (never clear)")
 W "========================================"
+
+} catch {
+  Write-Host ("INSTALL FAILED: " + $_.Exception.Message) -ForegroundColor Red
+  try {
+    Add-Content -LiteralPath "C:\RPM-Assure\Agent\logs\wizard-install.log" -Value ("FAILED: " + $_.Exception.Message) -Encoding ASCII
+  } catch {}
+  exit 1
+}
+exit 0

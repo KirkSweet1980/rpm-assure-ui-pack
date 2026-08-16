@@ -1,65 +1,41 @@
 # RPM Assure Edge Agent
 
-Windows service on each customer SYSPRO SQL host. One charter for every tenant.
+Windows service on each customer host. Works with or without local SQL Server.
 
 ## Online / heartbeat policy
 
-- **Online status is heartbeat-only.** It does **not** depend on which services (SYSPRO, RMM, Cove, EPP, CSP) are on cover.
-- Every agent always has the full set of collect scripts on disk.
-- Cover only influences which jobs the agent *schedules by default*.
-- Central can later enable or deploy any script for any agent.
+- **Online status is heartbeat-only.** Cover never gates online/offline.
+- All collect scripts always deployed.
+- Cover only influences default job schedule.
 
 ## Local product detection (install)
 
-On install the agent scans this host and **enables** matching cover on central:
-
-| Product found | Cover pillar |
+| Detected | Cover |
 |---|---|
-| **SYSPRO** (service / `C:\SYSPRO*` / registry / `Syspro%` databases) | `PillarSyspro = 1` |
-| **Pulseway** (PC Monitor service / folder / registry) | RMM → `PillarPulseway = 1` |
-| **Bitdefender** / GravityZone / Endpoint Security | EPP → `PillarBitdefender = 1` |
-| **Cove** Data Protection / Backup Manager | `PillarCove = 1` |
+| **SQL Server** on host | Required before SYSPRO can be true |
+| **SYSPRO** (only if SQL present) | `PillarSyspro = 1` |
+| **Pulseway** | `PillarPulseway = 1` |
+| **Bitdefender** | `PillarBitdefender = 1` |
+| **Cove** | `PillarCove = 1` |
 
-Rules:
-- Only **enables** (sets 1). Never clears a pillar from the agent.
-- Scripts: `Detect-Local-Services.ps1`, `Enable-Cover-From-Local.ps1`
-- Manual test on a host:
-  ```powershell
-  powershell -File C:\RPM-Assure\Agent\Detect-Local-Services.ps1
-  ```
+**No SQL on the machine → SYSPRO is assumed absent.** Local SQL credentials and SYSPRO config are not required; install continues for heartbeat + host jobs (IOPS, event log, link probe) and any RMM/EPP/Cove cover found.
 
-## Responsibilities
+Only **enables** cover. Never clears.
 
-| Job | Script | Interval |
-|---|---|---|
-| Heartbeat to central | built into `RpmAssure-Agent.ps1` | every cycle |
-| SYSPRO collect (when on cover) | `Run-Syspro-Collect-Direct.ps1` | 30 min / daily |
-| Windows Critical + Error event logs | `Collect-Windows-EventLog.ps1` | ~2–30 min |
-| Disk IOPS on this host | `Collect-Host-Iops.ps1` | ~2–30 min |
-| Assure App server link | `Probe-Assure-Link.ps1` | ~2–30 min |
+```powershell
+powershell -File C:\RPM-Assure\Agent\Detect-Local-Services.ps1
+```
 
-## Security
+## Error handling
 
-- Settings are **password protected** (`Set-AgentSettings.ps1`)
-- SQL passwords in `Agent.Secrets.bin` (Windows DPAPI, this machine only)
-- Folder locked to **SYSTEM + Administrators** when LockFiles is used
-
-## Tray RAG
-
-| Light | State |
-|---|---|
-| Green | Connected — service up, heartbeat fresh |
-| Amber | Error — connected but last job failed |
-| Red | Disconnected — service down or heartbeat stale |
+- Cover lookup / enable: soft-fail (install continues)
+- Local product scan: soft-fail
+- Tray install: soft-fail
+- Missing pack / secrets / service script: hard-fail with logged message
+- Non-SQL hosts: write identity-only Customer.Config (no local SQL password required)
 
 ## Install
 
 ```cmd
 C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Start-Agent-Wizard.cmd
-```
-
-Hydrasales one-click:
-
-```cmd
-C:\RPM-Assure\deploy\ui-pack\Sql\customers\HYDRA\Install-Hydrasales-Agent.cmd
 ```
