@@ -60,6 +60,27 @@ function Test-RpmaSql {
   return @{ Ok = $false; Who = ""; Error = $last; ServerUsed = [string]$Server }
 }
 
+function Test-RpmaTcpPort {
+  param([string]$Server, [int]$WaitMs = 8000)
+  $raw = [string]$Server
+  $hostOnly = $raw
+  $port = 1433
+  if ($raw -match '^tcp:') { $raw = $raw.Substring(4) }
+  if ($raw -match '^([^,]+),(\d+)$') { $hostOnly = $Matches[1]; $port = [int]$Matches[2] }
+  $client = New-Object System.Net.Sockets.TcpClient
+  try {
+    $iar = $client.BeginConnect($hostOnly, $port, $null, $null)
+    $ok = $iar.AsyncWaitHandle.WaitOne($WaitMs, $false)
+    if (-not $ok) { return @{ Ok = $false; Error = ("TCP timeout to " + $hostOnly + " port " + $port + " (blocked or filtered)") } }
+    $client.EndConnect($iar)
+    return @{ Ok = $true; Error = ""; Host = $hostOnly; Port = $port }
+  } catch {
+    return @{ Ok = $false; Error = ("TCP closed to " + $hostOnly + " port " + $port + ". " + $_.Exception.Message) }
+  } finally {
+    try { $client.Close() } catch {}
+  }
+}
+
 function Test-RpmaCentral {
   param(
     [string]$Server = "102.222.21.220,14333",
@@ -71,15 +92,24 @@ function Test-RpmaCentral {
   $u = [string]$User
   $p = [string]$Password
   $db = [string]$Database
-  $master = Test-RpmaSql -Server $h -Database "master" -Mode sql -User $u -Password $p -TimeoutSec 5 -StrictHost
-  if (-not $master.Ok) {
-    return @{ Ok = $false; Who = ""; Error = ("Cannot reach central " + $h + " as " + $u + ". " + $master.Error); ServerUsed = $h }
+  $tcp = Test-RpmaTcpPort -Server $h -WaitMs 8000
+  if (-not $tcp.Ok) {
+    return @{ Ok = $false; Who = ""; Error = ("PORT BLOCKED: " + $tcp.Error + ". Open outbound TCP 14333 from this SQL host to central, and allow this site on the central firewall."); ServerUsed = $h }
   }
-  $app = Test-RpmaSql -Server $h -Database $db -Mode sql -User $u -Password $p -TimeoutSec 5 -StrictHost
-  if (-not $app.Ok) {
-    return @{ Ok = $false; Who = $master.Who; Error = ("Login works on central master but cannot open " + $db + ". " + $app.Error); ServerUsed = $h }
+  $tryHosts = New-Object System.Collections.Generic.List[string]
+  [void]$tryHosts.Add($h)
+  if ($h -notlike "tcp:*") { [void]$tryHosts.Add("tcp:" + $h) }
+  $last = ""
+  foreach ($cand in $tryHosts) {
+    $master = Test-RpmaSql -Server $cand -Database "master" -Mode sql -User $u -Password $p -TimeoutSec 20 -StrictHost
+    if ($master.Ok) {
+      $app = Test-RpmaSql -Server $cand -Database $db -Mode sql -User $u -Password $p -TimeoutSec 20 -StrictHost
+      if ($app.Ok) { return @{ Ok = $true; Who = $app.Who; Error = ""; ServerUsed = $cand } }
+      return @{ Ok = $false; Who = $master.Who; Error = ("Login works on central master but cannot open " + $db + ". " + $app.Error); ServerUsed = $cand }
+    }
+    $last = $master.Error
   }
-  return @{ Ok = $true; Who = $app.Who; Error = ""; ServerUsed = $h }
+  return @{ Ok = $false; Who = ""; Error = ("TCP port is open but SQL login failed as " + $u + ". " + $last); ServerUsed = $h }
 }
 
 function Invoke-RpmaSql {

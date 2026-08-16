@@ -222,6 +222,13 @@ $txtCentralPwd = New-Box 280 308 240 -Password
 $txtCentralPwd.Text = $script:CentralPwd
 $txtCentralHost = New-Box 24 368 360
 $txtCentralHost.Text = $script:CentralHost
+$chkSkip = New-Object Windows.Forms.CheckBox
+$chkSkip.Text = "Install local only (central port blocked). Heartbeat will stay offline until 14333 is open."
+$chkSkip.Location = New-Object Drawing.Point 24, 404
+$chkSkip.Size = New-Object Drawing.Size 560, 36
+$chkSkip.Font = New-Object Drawing.Font("Segoe UI", 8.5)
+$chkSkip.ForeColor = $Ink
+$chkSkip.add_CheckedChanged({ Set-NextGate })
 $btnTestExist = New-Btn "Test sa / admin" 24 ([Drawing.Color]::FromArgb(18, 32, 42)) ([Drawing.Color]::White)
 $btnTestExist.Location = New-Object Drawing.Point 24, 88
 $btnTestExist.Size = New-Object Drawing.Size 130, 34
@@ -270,7 +277,9 @@ function Test-Ado([string]$server, [string]$db, [string]$mode, [string]$user, [s
 }
 
 function Set-NextGate {
-  $script:AssureOk = ($script:LocalOk -and $script:CentralOk)
+  $skip = $false
+  if ($chkSkip -and $chkSkip.Checked) { $skip = $true }
+  $script:AssureOk = ($script:LocalOk -and ($script:CentralOk -or $skip))
   if ($script:Page -eq 2) { $btnNext.Enabled = $script:AssureOk }
 }
 
@@ -328,6 +337,7 @@ function Show-Page {
       $content.Controls.Add($txtCentralPwd)
       $content.Controls.Add((New-Lbl "Central host,port  (do not use this SQL server)" 24 350 400 16 $null $Muted))
       $content.Controls.Add($txtCentralHost)
+      $content.Controls.Add($chkSkip)
       Set-NextGate
     }
     3 {
@@ -419,7 +429,12 @@ $btnTestCentral.add_Click({
       $who = Test-Ado $h "RPMAssure_App" "sql" $u $p -Strict
     }
     if ($who -like "FAIL:*") {
-      $lblCentral.Text = "Central failed. Edit user/password/host and test again. " + $who.Substring(5)
+      $err = $who.Substring(5)
+      if ($err -like "*PORT BLOCKED*") {
+        $lblCentral.Text = "Central port 14333 is blocked from this SQL host. Tick Install local only, or open outbound TCP 14333 to 102.222.21.220."
+      } else {
+        $lblCentral.Text = "Central failed. " + $err
+      }
       $lblCentral.ForeColor = $Fail
       $script:CentralOk = $false
     } else {
