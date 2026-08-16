@@ -193,7 +193,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="rpma-eco-visuals space-y-3">
       <div className="rpma-eco-menubar">
-        <h2 className="rpma-eco-menubar-title">Customer EcoSystem</h2>
+        <h2 className="rpma-eco-menubar-title sr-only">Customer EcoSystem</h2>
         <div className="ml-auto flex items-center gap-2">
           <Button asChild size="sm" variant="secondary" className="h-8 gap-1.5 text-[12px] font-semibold">
             <a href={`/api/agent-pack/${encodeURIComponent(customer.customerCode)}`} download>

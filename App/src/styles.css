@@ -337,8 +337,8 @@ body {
 }
 html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); border-color: var(--color-border); }
 .rpma-nav-block + .rpma-nav-block { border-top: 1px solid #e8edf3; }
-.rpma-pillar-rail-head { padding: 0.75rem 0.9rem 0.2rem; display: flex; align-items: center; gap: 6px; }
-.rpma-pillar-rail-head h2 { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6b7785; }
+.rpma-pillar-rail-head { padding: 0.85rem 0.6rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.rpma-pillar-rail-head h2 { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; color: #4b5563; }
 .rpma-dd { position: relative; padding: 0.4rem 0.8rem 0.85rem; }
 .rpma-dd-trigger {
   width: 100%; display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 5px 9px;
@@ -439,6 +439,35 @@ html.dark .rpma-context-bar {
   overflow-x: hidden;
   padding-right: 2px;
 }
+.rpma-pane-menubar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin: 0 0 0.65rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(12px) saturate(1.1);
+}
+.rpma-pane-menubar-title {
+  margin: 0;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--color-fg);
+}
+html[data-theme="dark"] .rpma-pane-menubar,
+html.dark .rpma-pane-menubar {
+  background: color-mix(in srgb, var(--color-surface) 90%, #000);
+}
+html[data-theme="dark"] .rpma-pillar-rail-head h2,
+html.dark .rpma-pillar-rail-head h2 { color: #9aa6b2; }
 
 .rpma-rpt-hero {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
@@ -738,7 +767,7 @@ html.dark .rpma-hud-head {
 .rpma-eco-menubar-title {
   margin: 0;
   width: 100%;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;

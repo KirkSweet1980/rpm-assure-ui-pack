@@ -377,6 +377,9 @@ function CustomerLayout() {
           />
 
           <div className="rpma-d3-detail min-w-0">
+            <div className="rpma-pane-menubar" role="banner">
+              <h2 className="rpma-pane-menubar-title">{pageTitle}</h2>
+            </div>
             {missing ? (
               <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
                 <p className="font-semibold">Customer code not resolved</p>
