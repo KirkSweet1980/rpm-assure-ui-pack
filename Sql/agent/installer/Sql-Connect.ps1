@@ -1,5 +1,26 @@
 # Shared ADO.NET connect. Never use SqlConnectionStringBuilder indexer with
 # PowerShell bools (they wrap as PSObject and crash ConvertToString).
+# Host input accepts IP:Port or IP,Port. SQL client always gets IP,Port.
+function Normalize-RpmaHost {
+  param([string]$Server)
+  $raw = ([string]$Server).Trim()
+  if ($raw -match '^tcp:') { $raw = $raw.Substring(4) }
+  $hostOnly = $raw
+  $port = $null
+  if ($raw -match '^\[([^\]]+)\]:(\d+)$') { $hostOnly = $Matches[1]; $port = [int]$Matches[2] }
+  elseif ($raw -match '^([^,]+),(\d+)$') { $hostOnly = $Matches[1]; $port = [int]$Matches[2] }
+  elseif ($raw -match '^([^:]+):(\d+)$') { $hostOnly = $Matches[1]; $port = [int]$Matches[2] }
+  $hostOnly = $hostOnly.Trim()
+  $sql = $hostOnly
+  if ($port) { $sql = $hostOnly + "," + $port }
+  return @{
+    Host = $hostOnly
+    Port = $(if ($port) { $port } else { 1433 })
+    Sql  = $sql
+    Tcp  = $hostOnly + ":" + $(if ($port) { $port } else { 1433 })
+  }
+}
+
 function New-RpmaCs {
   param(
     [string]$Server,
@@ -10,7 +31,8 @@ function New-RpmaCs {
     [string]$Encrypt = "False",
     [int]$TimeoutSec = 8
   )
-  $h = [string]$Server
+  $n = Normalize-RpmaHost $Server
+  $h = [string]$n.Sql
   $db = [string]$(if ($Database) { $Database } else { "master" })
   $enc = [string]$Encrypt
   $u = [string]$User
@@ -32,7 +54,10 @@ function Test-RpmaSql {
     [switch]$StrictHost
   )
   $hosts = New-Object System.Collections.Generic.List[string]
-  if ($Server) { [void]$hosts.Add(([string]$Server).Trim()) }
+  if ($Server) {
+    $n0 = Normalize-RpmaHost $Server
+    [void]$hosts.Add([string]$n0.Sql)
+  }
   if (-not $StrictHost) {
     foreach ($x in @(".", "localhost", "(local)", [string]$env:COMPUTERNAME)) {
       if ($x -and -not $hosts.Contains($x)) { [void]$hosts.Add($x) }
@@ -62,20 +87,18 @@ function Test-RpmaSql {
 
 function Test-RpmaTcpPort {
   param([string]$Server, [int]$WaitMs = 8000)
-  $raw = [string]$Server
-  $hostOnly = $raw
-  $port = 1433
-  if ($raw -match '^tcp:') { $raw = $raw.Substring(4) }
-  if ($raw -match '^([^,]+),(\d+)$') { $hostOnly = $Matches[1]; $port = [int]$Matches[2] }
+  $n = Normalize-RpmaHost $Server
+  $hostOnly = [string]$n.Host
+  $port = [int]$n.Port
   $client = New-Object System.Net.Sockets.TcpClient
   try {
     $iar = $client.BeginConnect($hostOnly, $port, $null, $null)
     $ok = $iar.AsyncWaitHandle.WaitOne($WaitMs, $false)
-    if (-not $ok) { return @{ Ok = $false; Error = ("TCP timeout to " + $hostOnly + " port " + $port + " (blocked or filtered)") } }
+    if (-not $ok) { return @{ Ok = $false; Error = ("TCP timeout to " + $hostOnly + ":" + $port + " (blocked or filtered)") } }
     $client.EndConnect($iar)
-    return @{ Ok = $true; Error = ""; Host = $hostOnly; Port = $port }
+    return @{ Ok = $true; Error = ""; Host = $hostOnly; Port = $port; Tcp = ($hostOnly + ":" + $port) }
   } catch {
-    return @{ Ok = $false; Error = ("TCP closed to " + $hostOnly + " port " + $port + ". " + $_.Exception.Message) }
+    return @{ Ok = $false; Error = ("TCP closed to " + $hostOnly + ":" + $port + ". " + $_.Exception.Message) }
   } finally {
     try { $client.Close() } catch {}
   }
@@ -88,17 +111,18 @@ function Test-RpmaCentral {
     [string]$Password = "",
     [string]$Database = "RPMAssure_App"
   )
-  $h = [string]$Server
+  $n = Normalize-RpmaHost $Server
+  $h = [string]$n.Sql
   $u = [string]$User
   $p = [string]$Password
   $db = [string]$Database
   $tcp = Test-RpmaTcpPort -Server $h -WaitMs 8000
   if (-not $tcp.Ok) {
-    return @{ Ok = $false; Who = ""; Error = ("PORT BLOCKED: " + $tcp.Error + ". Open outbound TCP 14333 from this SQL host to central, and allow this site on the central firewall."); ServerUsed = $h }
+    return @{ Ok = $false; Who = ""; Error = ("PORT BLOCKED: cannot open " + $n.Tcp + ". Open outbound TCP from this SQL host to " + $n.Tcp + "."); ServerUsed = $h }
   }
   $tryHosts = New-Object System.Collections.Generic.List[string]
   [void]$tryHosts.Add($h)
-  if ($h -notlike "tcp:*") { [void]$tryHosts.Add("tcp:" + $h) }
+  [void]$tryHosts.Add("tcp:" + $h)
   $last = ""
   foreach ($cand in $tryHosts) {
     $master = Test-RpmaSql -Server $cand -Database "master" -Mode sql -User $u -Password $p -TimeoutSec 20 -StrictHost

@@ -39,6 +39,9 @@ if ($ConfigFile -and (Test-Path -LiteralPath $ConfigFile)) {
   if ($j.CentralUser) { $CentralUser = [string]$j.CentralUser }
   if ($j.CentralPassword) { $CentralPassword = [string]$j.CentralPassword }
 }
+if (Get-Command Normalize-RpmaHost -EA SilentlyContinue) {
+  $CentralHost = [string](Normalize-RpmaHost $CentralHost).Sql
+}
 
 if (-not $CollectPassword) { $CollectPassword = "@ssuR3me!" }
 if (-not $CentralPassword) { $CentralPassword = $CollectPassword }

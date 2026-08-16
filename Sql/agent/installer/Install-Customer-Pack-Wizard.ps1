@@ -95,7 +95,7 @@ $script:AssureOk = $false
 $script:CollectPwd = "@ssuR3me!"
 $script:CentralUser = "rpmassure"
 $script:CentralPwd = "@ssuR3me!"
-$script:CentralHost = "102.222.21.220,14333"
+$script:CentralHost = "102.222.21.220:14333"
 $script:ExtraPwds = New-Object System.Collections.Generic.List[string]
 [void]$script:ExtraPwds.Add("@ssuR3me!")
 $cfgGuess = $null
@@ -335,7 +335,7 @@ function Show-Page {
       $content.Controls.Add((New-Lbl "Central Assure password" 280 290 240 16 $null $Muted))
       $content.Controls.Add($txtCentralUser)
       $content.Controls.Add($txtCentralPwd)
-      $content.Controls.Add((New-Lbl "Central host,port  (do not use this SQL server)" 24 350 400 16 $null $Muted))
+      $content.Controls.Add((New-Lbl "Central host:port  (example 102.222.21.220:14333)" 24 350 500 16 $null $Muted))
       $content.Controls.Add($txtCentralHost)
       $content.Controls.Add($chkSkip)
       Set-NextGate
@@ -418,7 +418,7 @@ $btnTestCentral.add_Click({
     $p = [string]$txtCentralPwd.Text
     $h = [string]$txtCentralHost.Text.Trim()
     if (-not $u) { $u = "rpmassure" }
-    if (-not $h) { $h = "102.222.21.220,14333" }
+    if (-not $h) { $h = "102.222.21.220:14333" }
     $lblCentral.Text = "Testing central " + $h + " as " + $u + "..."
     $lblCentral.ForeColor = $Muted
     [Windows.Forms.Application]::DoEvents()
@@ -486,7 +486,7 @@ $btnMake.add_Click({
     CustomerCode     = $txtCode.Text.Trim().ToUpperInvariant()
     DisplayName      = $txtName.Text.Trim()
     InstanceName     = $txtHost.Text.Trim()
-    CentralHost      = $(if ($txtCentralHost.Text) { $txtCentralHost.Text.Trim() } else { "102.222.21.220,14333" })
+    CentralHost      = $(if ($txtCentralHost.Text) { [string](Normalize-RpmaHost $txtCentralHost.Text).Sql } else { "102.222.21.220,14333" })
     CentralDatabase  = "RPMAssure_App"
     CentralUser      = $(if ($txtCentralUser.Text) { $txtCentralUser.Text.Trim() } else { "rpmassure" })
     CentralPassword  = $(if ($txtCentralPwd.Text) { $txtCentralPwd.Text } else { "@ssuR3me!" })
@@ -542,7 +542,7 @@ function Run-Install {
     LocalAuth          = "Sql"
     LocalSqlUser       = "rpmassure"
     LocalSqlPassword   = $(if ($script:CollectPwd) { $script:CollectPwd } else { "@ssuR3me!" })
-    CentralDataSource  = $(if ($script:CentralHost) { $script:CentralHost } else { "102.222.21.220,14333" })
+    CentralDataSource  = $(if ($script:CentralHost) { [string](Normalize-RpmaHost $script:CentralHost).Sql } else { "102.222.21.220,14333" })
     CentralDatabase    = "RPMAssure_App"
     CentralSqlUser     = $(if ($script:CentralUser) { $script:CentralUser } else { "rpmassure" })
     CentralSqlPassword = $(if ($script:CentralPwd) { $script:CentralPwd } else { "@ssuR3me!" })
