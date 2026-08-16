@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "yours-bottom-20260816";
-const HALL = "/brand/login-picks/mine.jpg?v=20260816y";
+const LOGIN_BUILD = "yours-right-20260816";
+const HALL = "/brand/login-picks/boardroom-tv.jpg?v=20260816rc";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -149,7 +149,7 @@ const GLASS_CSS = `
   min-height: 100dvh;
   width: 100%;
   overflow: hidden;
-  background: #071018;
+  background: #0b1218;
   color: var(--fg);
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -159,7 +159,7 @@ const GLASS_CSS = `
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #071018;
+  background: #0b1218;
 }
 .rpma-gl-still {
   position: absolute;
@@ -168,7 +168,7 @@ const GLASS_CSS = `
   height: 100%;
   object-fit: contain;
   object-position: center center;
-  background: #071018;
+  background: #0b1218;
   display: block;
 }
 .rpma-gl-wash {
@@ -176,23 +176,23 @@ const GLASS_CSS = `
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(4, 10, 16, 0.08) 0%, transparent 28%, transparent 62%, rgba(4, 10, 16, 0.55) 100%);
+    linear-gradient(90deg, transparent 0 48%, rgba(7, 14, 20, 0.18) 68%, rgba(7, 14, 20, 0.38) 100%);
 }
 .rpma-gl-stage {
   position: relative;
   z-index: 2;
   min-height: 100dvh;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 1.2rem 1rem 2.4rem;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 1.4rem 5.2vw 1.4rem 1.2rem;
 }
 .rpma-gl-card {
   position: relative;
-  width: min(100%, 18.4rem);
-  padding: 1.05rem 1.05rem 0.8rem;
+  width: min(100%, 17.6rem);
+  padding: 1rem 1rem 0.75rem;
   border-radius: 1.05rem;
-  background: rgba(8, 16, 24, 0.52);
+  background: rgba(8, 16, 24, 0.54);
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow:
     0 1px 0 rgba(255,255,255,0.22) inset,
@@ -209,7 +209,7 @@ const GLASS_CSS = `
   background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
 }
 .rpma-gl-kicker {
-  margin: 0.1rem 0 0.28rem;
+  margin: 0.08rem 0 0.24rem;
   text-align: center;
   font-size: 0.56rem;
   font-weight: 700;
@@ -218,9 +218,9 @@ const GLASS_CSS = `
   color: var(--muted);
 }
 .rpma-gl-word {
-  margin: 0 0 0.18rem;
+  margin: 0 0 0.16rem;
   text-align: center;
-  font-size: 1.42rem;
+  font-size: 1.36rem;
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
@@ -231,19 +231,19 @@ const GLASS_CSS = `
   -webkit-text-fill-color: transparent;
 }
 .rpma-gl-tag {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.7rem;
   text-align: center;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--lime) 78%, white);
 }
-.rpma-gl-form { display: flex; flex-direction: column; gap: 0.52rem; }
+.rpma-gl-form { display: flex; flex-direction: column; gap: 0.48rem; }
 .rpma-gl-field span {
   display: block;
-  margin-bottom: 0.18rem;
-  font-size: 0.64rem;
+  margin-bottom: 0.16rem;
+  font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--muted);
@@ -258,12 +258,12 @@ const GLASS_CSS = `
 .rpma-gl-wrap input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.52rem 2.2rem 0.52rem 2rem;
+  padding: 0.5rem 2.2rem 0.5rem 2rem;
   border: 0;
   border-radius: 0.62rem;
   background: rgba(255, 255, 255, 0.1);
   color: var(--fg);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   outline: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset;
 }
@@ -305,15 +305,15 @@ const GLASS_CSS = `
   box-shadow: 0 0 0 1px rgba(255, 180, 180, 0.28) inset;
 }
 .rpma-gl-submit {
-  margin-top: 0.1rem;
+  margin-top: 0.08rem;
   width: 100%;
   min-height: 38px;
-  padding: 0.55rem 0.85rem;
+  padding: 0.52rem 0.85rem;
   border: 0;
   border-radius: 0.68rem;
   background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
   color: #fff;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -323,13 +323,20 @@ const GLASS_CSS = `
 .rpma-gl-submit:active:not(:disabled) { transform: scale(0.98); }
 .rpma-gl-submit:disabled { opacity: 0.65; cursor: wait; }
 .rpma-gl-foot {
-  margin: 0.7rem 0 0;
+  margin: 0.64rem 0 0;
   text-align: center;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   color: var(--muted);
 }
-@media (max-width: 640px) {
-  .rpma-gl-stage { padding: 0.8rem 0.75rem 1.1rem; }
+@media (max-width: 860px) {
+  .rpma-gl-stage {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0.8rem 0.75rem 1.25rem;
+  }
   .rpma-gl-card { width: min(100%, 17.2rem); }
+  .rpma-gl-wash {
+    background: linear-gradient(180deg, transparent 0 46%, rgba(7, 14, 20, 0.42) 100%);
+  }
 }
 `;
