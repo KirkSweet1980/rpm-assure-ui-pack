@@ -176,7 +176,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-rmm-iops`,
             label: "Disk IOPS",
-            blurb: "Read / write IOPS from Assure agents",
+            blurb: "PowerShell disk performance counters via the Assure agent",
             href: `${base}/rmm/iops`,
             match: "exact",
             audience: "ops",

@@ -96,10 +96,144 @@ if (-not $CentralSqlUser) { throw "CentralSqlUser missing" }
 if (-not $CentralSqlPassword) { throw "CentralSqlPassword missing" }
 if (-not $CustomerCode) { $CustomerCode = $env:COMPUTERNAME }
 $HostName = $env:COMPUTERNAME
-W ("START iops host=$HostName customer=$CustomerCode sample=${SampleSec}s v2.5.4")
+W ("START iops host=$HostName customer=$CustomerCode sample=${SampleSec}s v2.6.0")
 
-# --- counters: drop the first sample (almost always 0) ---
-$paths = @(
+# --- Windows disk performance counters (PowerShell) ---
+# Pulseway does not publish IOPS. This host must have:
+#   1) diskperf enabled  (we turn it on)
+#   2) LogicalDisk or PhysicalDisk counters
+# Get-Counter is preferred (interval sample). WMI is the fallback when
+# counters are localized, disabled, or the PDH query fails.
+
+function New-IopsBucket {
+  return @{ Read = $null; Write = $null; Total = $null; Queue = $null; LatR = $null; LatW = $null }
+}
+function Drive-Key([string]$inst) {
+  if (-not $inst) { return $null }
+  $t = $inst.Trim()
+  if ($t -eq "_Total" -or $t -eq "Total") { return $null }
+  if ($t -match "HarddiskVolume") { return $null }
+  if ($t -match "([A-Za-z]):") { return $Matches[1].ToUpper() + ":" }
+  if ($t -match "^[A-Za-z]$") { return $t.ToUpper() + ":" }
+  if ($t -match "^(\d+)$") { return "PD" + $Matches[1] }
+  return $t
+}
+function Ensure-Bucket($map, [string]$key) {
+  if (-not $map.ContainsKey($key)) { $map[$key] = New-IopsBucket }
+  return $map[$key]
+}
+function Set-IopsField($bucket, [string]$kind, $val) {
+  if ($null -eq $val) { return }
+  try {
+    $n = [double]$val
+    if ([double]::IsNaN($n) -or [double]::IsInfinity($n) -or $n -lt 0) { return }
+    if ($kind -eq "Read") { $bucket.Read = [math]::Round($n, 2) }
+    if ($kind -eq "Write") { $bucket.Write = [math]::Round($n, 2) }
+    if ($kind -eq "Total") { $bucket.Total = [math]::Round($n, 2) }
+    if ($kind -eq "Queue") { $bucket.Queue = [math]::Round($n, 2) }
+    if ($kind -eq "LatR") { $bucket.LatR = [math]::Round($n, 2) }
+    if ($kind -eq "LatW") { $bucket.LatW = [math]::Round($n, 2) }
+  } catch {}
+}
+function Ingest-CounterSet($map, $samples) {
+  if (-not $samples) { return 0 }
+  $sets = @($samples)
+  if ($sets.Count -gt 1) { $sets = @($sets | Select-Object -Last 1) }
+  $n = 0
+  foreach ($set in $sets) {
+    $rows = @()
+    if ($set.CounterSamples) { $rows = @($set.CounterSamples) } else { $rows = @($set) }
+    foreach ($s in $rows) {
+      $key = Drive-Key ([string]$s.InstanceName)
+      if (-not $key) { continue }
+      $b = Ensure-Bucket $map $key
+      $path = [string]$s.Path
+      $val = $null
+      try { $val = [double]$s.CookedValue } catch { continue }
+      if ($path -match "Disk Reads/sec") { Set-IopsField $b "Read" $val; $n++ }
+      if ($path -match "Disk Writes/sec") { Set-IopsField $b "Write" $val; $n++ }
+      if ($path -match "Disk Transfers/sec") { Set-IopsField $b "Total" $val; $n++ }
+      if ($path -match "Current Disk Queue Length") { Set-IopsField $b "Queue" $val; $n++ }
+      if ($path -match "Avg\. Disk sec/Read") { Set-IopsField $b "LatR" ($val * 1000); $n++ }
+      if ($path -match "Avg\. Disk sec/Write") { Set-IopsField $b "LatW" ($val * 1000); $n++ }
+    }
+  }
+  return $n
+}
+function Try-GetCounter([string[]]$paths) {
+  try {
+    return Get-Counter -Counter $paths -SampleInterval $SampleSec -MaxSamples 2 -ErrorAction Stop
+  } catch {
+    W ("WARN Get-Counter: " + $_.Exception.Message)
+    return $null
+  }
+}
+function Ingest-WmiFormatted($map, [string]$className) {
+  $n = 0
+  try {
+    foreach ($row in @(Get-CimInstance -ClassName $className -ErrorAction Stop)) {
+      $key = Drive-Key ([string]$row.Name)
+      if (-not $key) { continue }
+      $b = Ensure-Bucket $map $key
+      Set-IopsField $b "Read" $row.DiskReadsPersec
+      Set-IopsField $b "Write" $row.DiskWritesPersec
+      Set-IopsField $b "Total" $row.DiskTransfersPersec
+      Set-IopsField $b "Queue" $row.CurrentDiskQueueLength
+      if ($null -ne $row.AvgDisksecPerRead) { Set-IopsField $b "LatR" ([double]$row.AvgDisksecPerRead * 1000) }
+      if ($null -ne $row.AvgDisksecPerWrite) { Set-IopsField $b "LatW" ([double]$row.AvgDisksecPerWrite * 1000) }
+      $n++
+    }
+  } catch {
+    W ("WARN " + $className + ": " + $_.Exception.Message)
+  }
+  return $n
+}
+function Ingest-WmiRaw($map, [string]$className) {
+  try {
+    $first = @(Get-CimInstance -ClassName $className -ErrorAction Stop)
+    Start-Sleep -Seconds $SampleSec
+    $second = @(Get-CimInstance -ClassName $className -ErrorAction Stop)
+    $prevBy = @{}
+    foreach ($row in $first) { $prevBy[[string]$row.Name] = $row }
+    $n = 0
+    foreach ($row in $second) {
+      $name = [string]$row.Name
+      $key = Drive-Key $name
+      if (-not $key) { continue }
+      $prev = $prevBy[$name]
+      if (-not $prev) { continue }
+      $freq = 0.0; $t1 = 0.0; $t2 = 0.0
+      try { $freq = [double]$row.Frequency_PerfTime } catch {}
+      try { $t1 = [double]$prev.Timestamp_PerfTime } catch {}
+      try { $t2 = [double]$row.Timestamp_PerfTime } catch {}
+      if ($freq -le 0 -or $t2 -le $t1) { continue }
+      $sec = ($t2 - $t1) / $freq
+      if ($sec -le 0) { continue }
+      $bk = Ensure-Bucket $map $key
+      Set-IopsField $bk "Read" (([double]$row.DiskReadsPersec - [double]$prev.DiskReadsPersec) / $sec)
+      Set-IopsField $bk "Write" (([double]$row.DiskWritesPersec - [double]$prev.DiskWritesPersec) / $sec)
+      Set-IopsField $bk "Total" (([double]$row.DiskTransfersPersec - [double]$prev.DiskTransfersPersec) / $sec)
+      Set-IopsField $bk "Queue" $row.CurrentDiskQueueLength
+      $n++
+    }
+    return $n
+  } catch {
+    W ("WARN raw " + $className + ": " + $_.Exception.Message)
+    return 0
+  }
+}
+
+W "enabling disk performance counters (diskperf -Y)"
+try {
+  $dp = Start-Process -FilePath "diskperf.exe" -ArgumentList "-Y" -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
+  W ("diskperf exit=" + $dp.ExitCode)
+} catch {
+  W ("WARN diskperf: " + $_.Exception.Message)
+}
+
+$byInst = @{}
+$method = "none"
+$logicalPaths = @(
   "\LogicalDisk(*)\Disk Reads/sec",
   "\LogicalDisk(*)\Disk Writes/sec",
   "\LogicalDisk(*)\Disk Transfers/sec",
@@ -107,43 +241,43 @@ $paths = @(
   "\LogicalDisk(*)\Avg. Disk sec/Read",
   "\LogicalDisk(*)\Avg. Disk sec/Write"
 )
-$samples = $null
-try {
-  $samples = Get-Counter -Counter $paths -SampleInterval $SampleSec -MaxSamples 2 -ErrorAction Stop
-} catch {
-  W ("WARN Get-Counter failed: " + $_.Exception.Message)
-  throw
+$physicalPaths = @(
+  "\PhysicalDisk(*)\Disk Reads/sec",
+  "\PhysicalDisk(*)\Disk Writes/sec",
+  "\PhysicalDisk(*)\Disk Transfers/sec",
+  "\PhysicalDisk(*)\Current Disk Queue Length",
+  "\PhysicalDisk(*)\Avg. Disk sec/Read",
+  "\PhysicalDisk(*)\Avg. Disk sec/Write"
+)
+
+$got = Ingest-CounterSet $byInst (Try-GetCounter $logicalPaths)
+if ($got -gt 0) { $method = "Get-Counter LogicalDisk" }
+if ($got -eq 0) {
+  $got = Ingest-CounterSet $byInst (Try-GetCounter $physicalPaths)
+  if ($got -gt 0) { $method = "Get-Counter PhysicalDisk" }
 }
-
-$setList = @($samples)
-if ($samples.CounterSamples) { $setList = @($samples) }
-# Get-Counter -MaxSamples 2 returns an array of PerformanceCounterSampleSet
-$sets = @($samples)
-if ($sets.Count -gt 1) { $sets = @($sets | Select-Object -Last 1) }
-
-$byInst = @{}
-foreach ($set in $sets) {
-  $rows = @()
-  if ($set.CounterSamples) { $rows = @($set.CounterSamples) } else { $rows = @($set) }
-  foreach ($s in $rows) {
-    $inst = [string]$s.InstanceName
-    if (-not $inst -or $inst -eq "_Total") { continue }
-    if ($inst -match "HarddiskVolume") { continue }
-    $letter = $inst.Trim()
-    if ($letter -match "^([A-Za-z]):") { $letter = $Matches[1].ToUpper() + ":" }
-    if (-not $byInst.ContainsKey($letter)) {
-      $byInst[$letter] = @{ Read = $null; Write = $null; Total = $null; Queue = $null; LatR = $null; LatW = $null }
-    }
-    $path = [string]$s.Path
-    $val = [double]$s.CookedValue
-    if ([double]::IsNaN($val) -or [double]::IsInfinity($val) -or $val -lt 0) { continue }
-    if ($path -match "Disk Reads/sec") { $byInst[$letter].Read = [math]::Round($val, 2) }
-    elseif ($path -match "Disk Writes/sec") { $byInst[$letter].Write = [math]::Round($val, 2) }
-    elseif ($path -match "Disk Transfers/sec") { $byInst[$letter].Total = [math]::Round($val, 2) }
-    elseif ($path -match "Current Disk Queue Length") { $byInst[$letter].Queue = [math]::Round($val, 2) }
-    elseif ($path -match "Avg. Disk sec/Read") { $byInst[$letter].LatR = [math]::Round($val * 1000, 2) }
-    elseif ($path -match "Avg. Disk sec/Write") { $byInst[$letter].LatW = [math]::Round($val * 1000, 2) }
-  }
+if ($got -eq 0) {
+  $got = Ingest-WmiFormatted $byInst "Win32_PerfFormattedData_PerfDisk_LogicalDisk"
+  if ($got -gt 0) { $method = "WMI LogicalDisk formatted" }
+}
+if ($got -eq 0) {
+  $got = Ingest-WmiFormatted $byInst "Win32_PerfFormattedData_PerfDisk_PhysicalDisk"
+  if ($got -gt 0) { $method = "WMI PhysicalDisk formatted" }
+}
+if ($got -eq 0) {
+  $got = Ingest-WmiRaw $byInst "Win32_PerfRawData_PerfDisk_LogicalDisk"
+  if ($got -gt 0) { $method = "WMI LogicalDisk raw interval" }
+}
+if ($got -eq 0) {
+  $got = Ingest-WmiRaw $byInst "Win32_PerfRawData_PerfDisk_PhysicalDisk"
+  if ($got -gt 0) { $method = "WMI PhysicalDisk raw interval" }
+}
+W ("counters method=$method hits=$got drives=" + $byInst.Count)
+if ($byInst.Count -eq 0) {
+  W "FAIL no disk performance counters available on this host"
+  W "  Run elevated: diskperf -Y"
+  W "  Then: Get-Counter '\LogicalDisk(*)\Disk Transfers/sec'"
+  exit 1
 }
 
 # Drive size

@@ -167,7 +167,7 @@ USING (VALUES
   (N'syspro-core',     N'SYSPRO core collect',     15, N'jobs\Run-Syspro-Core.ps1',     1, N'syspro', N'Operators license health DTR'),
   (N'syspro-native',   N'SYSPRO FinSight native',  15, N'jobs\Run-Syspro-Native.ps1',   1, N'syspro', N'INV AP AR WIP L1-3 without Datarapt'),
   (N'syspro-jobs',     N'SYSPRO full jobs',      1440, N'jobs\Run-Syspro-Jobs.ps1',     1, N'syspro', N'Nightly full job extract'),
-  (N'host-iops',       N'Host disk IOPS',          15, N'Collect-Host-Iops.ps1',           1, N'syspro', N'Windows LogicalDisk IOPS on this SQL host'),
+  (N'host-iops',       N'Host disk IOPS',          15, N'Collect-Host-Iops.ps1',           1, N'all',    N'PowerShell disk performance counters (LogicalDisk / PhysicalDisk / WMI)'),
   (N'win-eventlog',    N'Windows critical events', 15, N'Collect-Windows-EventLog.ps1',    1, N'all',    N'Application + System Critical/Error'),
   (N'assure-link',     N'Assure App link',          5, N'Probe-Assure-Link.ps1',           1, N'all',    N'Prove SQL path to central Assure'),
   (N'heartbeat-only',  N'Heartbeat only',           5, NULL,                               1, N'all',    N'No payload job')

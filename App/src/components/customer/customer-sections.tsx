@@ -1325,7 +1325,7 @@ function AgentHostTelemetry({
         </div>
         {iopsShow.length === 0 ? (
           <p className="px-3 py-3 text-[12px] text-muted">
-            No live IOPS yet. Pulseway does not publish IOPS. Install the Assure agent on each Windows host you want here (IOPS-only is fine if there is no SYSPRO). Recheck queues every installed agent.
+            No live IOPS yet. The Assure agent samples Windows disk performance counters with PowerShell (Get-Counter LogicalDisk, then PhysicalDisk / WMI). Pulseway does not publish IOPS. Install the agent on each host (IOPS-only is fine). Recheck queues a sample.
           </p>
         ) : (
           <table className="rpma-xls text-left">
@@ -2141,7 +2141,7 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-3">
       <ChartCaption
         title="Disk IOPS performance"
-        why="LogicalDisk counters from every Assure agent for this customer. Pulseway does not publish IOPS. Empty means no agent has sampled this customer yet."
+        why="PowerShell disk performance counters from every Assure agent (LogicalDisk first, PhysicalDisk / WMI if those counters are off). Pulseway does not publish IOPS. Empty means no agent has sampled this customer yet."
       />
       <AgentHostTelemetry iops={data.rmm?.agentIops ?? []} events={[]} />
     </div>
