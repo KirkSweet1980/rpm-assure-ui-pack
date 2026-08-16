@@ -221,8 +221,12 @@ if (Test-Path -LiteralPath $apiPack) {
 $repSched = Join-Path $Pack 'deploy\Install-Report-Schedules.ps1'
 if (Test-Path -LiteralPath $repSched) {
   Copy-Item -LiteralPath $repSched -Destination (Join-Path $Root 'deploy\Install-Report-Schedules.ps1') -Force
+  $repRun = Join-Path $Pack 'deploy\Run-Report-Slot.ps1'
+  if (Test-Path -LiteralPath $repRun) {
+    Copy-Item -LiteralPath $repRun -Destination (Join-Path $Root 'deploy\Run-Report-Slot.ps1') -Force
+  }
   W Cyan '--- Report pack schedules (daily / Friday / 1st) ---'
-  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $repSched
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'deploy\Install-Report-Schedules.ps1')
 }
 
 Write-Host '========================================' -ForegroundColor Cyan
