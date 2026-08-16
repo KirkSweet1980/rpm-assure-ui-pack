@@ -1,5 +1,5 @@
 # Sync-All-Apis-Now.ps1
-# Runs Pulseway, Cove, Bitdefender and Microsoft 365 Graph collect now.
+# Runs Pulseway, Cove, RPM EPP and Microsoft 365 Graph collect now.
 # SYSPRO collect stays on each customer SQL job (not an API).
 # Run as Administrator on the APP server:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\Sync-All-Apis-Now.ps1
@@ -42,7 +42,7 @@ W 'START all API collect'
 
 Run-Leg 'Pulseway'    (Join-Path $Root 'Sql\rmm\pulseway\Collect-Pulseway-To-RPMAssure.ps1')
 Run-Leg 'Cove'        (Join-Path $Root 'Sql\cove\Collect-Cove-To-RPMAssure.ps1')
-Run-Leg 'Bitdefender' (Join-Path $Root 'Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1')
+Run-Leg 'RpmEpp' (Join-Path $Root 'Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1')
 Run-Leg 'CspGraph'    (Join-Path $Root 'Sql\csp\Collect-Csp-Graph-To-RPMAssure.ps1') @('-WindowsAuth','-SkipSchema')
 
 W ("DONE log=" + $log)

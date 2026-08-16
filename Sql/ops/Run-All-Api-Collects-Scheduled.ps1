@@ -1,5 +1,5 @@
 # Sequential API collect every 15 min (or on demand from the UI).
-# Pulseway + Cove + Bitdefender + Microsoft Graph. Soft-fail each leg.
+# Pulseway + Cove + RPM EPP + Microsoft Graph. Soft-fail each leg.
 # Writes C:\RPM-Assure\Sql\ops\api-sync-status.json for the progress bars.
 param([string]$Root = "C:\RPM-Assure")
 $ErrorActionPreference = "Continue"
@@ -22,7 +22,7 @@ function Resolve-Collect([string]$rel) {
 $legs = @(
   @{ Name = "Pulseway";    Label = "RMM";     Kind = "rmm";        Rel = "Sql\rmm\pulseway\Collect-Pulseway-To-RPMAssure.ps1"; Extra = @() },
   @{ Name = "Cove";        Label = "BACKUP";  Kind = "backup";     Rel = "Sql\cove\Collect-Cove-To-RPMAssure.ps1"; Extra = @() },
-  @{ Name = "Bitdefender"; Label = "EPP";     Kind = "epp";        Rel = "Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1"; Extra = @() },
+  @{ Name = "RPM EPP";     Label = "RPM EPP"; Kind = "epp";        Rel = "Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1"; Extra = @() },
   @{ Name = "CspGraph";    Label = "CSP";     Kind = "licensing";  Rel = "Sql\csp\Run-Csp-Collect-All.ps1"; Extra = @() }
 )
 
@@ -87,8 +87,9 @@ foreach ($l in $legs) {
 
   W ("=== RUN " + $l.Name + " " + $path + " ===")
   $sw = [Diagnostics.Stopwatch]::StartNew()
-  $outF = Join-Path $logDir ("sched_" + $l.Name + "_" + $stamp + "_out.txt")
-  $errF = Join-Path $logDir ("sched_" + $l.Name + "_" + $stamp + "_err.txt")
+  $safe = ($l.Name -replace '[^\w\-]', '_')
+  $outF = Join-Path $logDir ("sched_" + $safe + "_" + $stamp + "_out.txt")
+  $errF = Join-Path $logDir ("sched_" + $safe + "_" + $stamp + "_err.txt")
   try {
     $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $path) + $l.Extra
     $p = Start-Process -FilePath "powershell.exe" -ArgumentList $args -Wait -PassThru -NoNewWindow `

@@ -56,7 +56,7 @@ export const REPORT_FIELD_GROUPS: ReportFieldGroup[] = [
   },
   {
     id: "epp",
-    label: "RPM End Point Protection",
+    label: "RPM EPP",
     blurb: "Endpoints, managed status, license",
   },
   {
@@ -234,8 +234,8 @@ export const REPORT_FIELDS: ReportFieldDef[] = [
   // EPP
   {
     id: "epp_summary",
-    label: "EPP endpoints",
-    blurb: "Managed endpoints and license slots",
+    label: "RPM EPP endpoints",
+    blurb: "Managed endpoints and MSP licence (estate-wide)",
     group: "epp",
     defaultOn: true,
   },

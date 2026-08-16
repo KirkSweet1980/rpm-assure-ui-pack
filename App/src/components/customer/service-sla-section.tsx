@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const TITLES: Record<IndustryPillarKey, string> = {
   rmm: "RPM Remote Management · Service SLA",
   cove: "RPM Cloud Backup · Service SLA",
-  epp: "RPM Endpoint Security · Service SLA",
+  epp: "RPM EPP · Service SLA",
 };
 
 function toneClass(tone: ServiceSlaPack["lines"][number]["tone"]) {

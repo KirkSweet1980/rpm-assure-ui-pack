@@ -269,8 +269,8 @@ function CustomerLayout() {
     };
     pageTitle =
       pathBits.length === 3
-        ? "RPM Endpoint Security"
-        : `RPM Endpoint Security · ${map[pathBits[3]] || pathBits[3]}`;
+        ? "RPM EPP"
+        : `RPM EPP · ${map[pathBits[3]] || pathBits[3]}`;
   } else if (pathBits[2] === "csp") {
     const map: Record<string, string> = {
       users: "Users",

@@ -145,12 +145,12 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
   },
   epp: {
     pillar: "epp",
-    label: "RPM Endpoint Security",
+    label: "RPM EPP",
     metric: "Protection coverage",
     targetPct: 98,
     targetLabel: "98% endpoints managed",
     howWeMeasure:
-      "managed ÷ (managed + unmanaged) from GravityZone. Open critical incidents pull the score down. Detection-efficacy is not contractual.",
+      "managed ÷ (managed + unmanaged) from RPM EPP. Open critical incidents pull the score down. Detection-efficacy is not contractual.",
     source: INDUSTRY_SLA_DOC,
   },
 };
@@ -259,7 +259,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 98–100% of in-scope endpoints",
       contractual: true,
       measurable: true,
-      how: "GravityZone managed ÷ (managed + unmanaged).",
+      how: "RPM EPP managed ÷ (managed + unmanaged).",
     },
     {
       id: "epp-update",
@@ -267,8 +267,8 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetPct: 95,
       targetLabel: "≥ 95–99% within 24 hours",
       contractual: true,
-      measurable: false,
-      how: "Needs last-successful-update timestamps from GravityZone. Not in current collect.",
+      measurable: true,
+      how: "RPM EPP product / signature outdated flags from last collect. Current = not outdated.",
     },
     {
       id: "epp-mttd",
@@ -295,7 +295,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "0 open criticals",
       contractual: false,
       measurable: true,
-      how: "GravityZone incidents currently open at critical / high. Operational, not a contractual nines target.",
+      how: "RPM EPP incidents currently open at critical / high. Operational, not a contractual nines target.",
     },
   ],
 };

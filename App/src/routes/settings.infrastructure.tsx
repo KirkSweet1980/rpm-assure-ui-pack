@@ -59,14 +59,14 @@ const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string; ico
   { key: "syspro", label: "SYSPRO", icon: Database },
   { key: "rmm", label: "RMM", icon: Server },
   { key: "cove", label: "Backup", icon: Cloud },
-  { key: "epp", label: "EPP", icon: Shield },
+  { key: "epp", label: "RPM EPP", icon: Shield },
   { key: "csp", label: "CSP", icon: Mail },
 ];
 
 const KIND_LABEL: Record<string, string> = {
   erp: "SYSPRO",
   rmm: "RMM",
-  epp: "EPP",
+  epp: "RPM EPP",
   backup: "BACKUP",
   licensing: "CSP",
 };
@@ -273,13 +273,13 @@ function InfrastructureStatusPage() {
         </div>
         <div className="px-3 pb-3">
           <p className="mb-2 text-[11px] text-muted">
-            Pulseway, N-Able Cove Backup, Bitdefender and Microsoft Graph. Recheck runs every feed and queues every Assure SQL agent to sync / auto-update.
+            Pulseway, N-Able Cove Backup, RPM EPP and Microsoft Graph. Recheck runs every feed and queues every Assure SQL agent to sync / auto-update.
           </p>
           {(() => {
             const defaultLegs = [
               { name: "Pulseway", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "" },
               { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "" },
-              { name: "Bitdefender", label: "EPP", kind: "epp", status: "queued", pct: 0, message: "" },
+              { name: "RPM EPP", label: "RPM EPP", kind: "epp", status: "queued", pct: 0, message: "" },
               { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "" },
             ];
             const legs = (feed?.legs?.length ? feed.legs : defaultLegs).map((l) => ({
@@ -306,7 +306,7 @@ function InfrastructureStatusPage() {
                     <div key={leg.name}>
                       <div className="mb-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wide">
                         <span className="text-fg">
-                          {leg.label} · {leg.name}
+                          {leg.label} · {leg.name === "Bitdefender" ? "RPM EPP" : leg.name}
                         </span>
                         <span
                           className={cn(
@@ -381,7 +381,7 @@ function InfrastructureStatusPage() {
                       l.name.toLowerCase() === r.connectionCode.toLowerCase() ||
                       (hid === "rmm" && l.name === "Pulseway") ||
                       (hid === "cove" && l.name === "Cove") ||
-                      (hid === "epp" && l.name === "Bitdefender") ||
+                      (hid === "epp" && (l.name === "Bitdefender" || l.name === "RPM EPP")) ||
                       (hid === "csp" && l.name === "CspGraph"),
                   );
                   const legLabel =

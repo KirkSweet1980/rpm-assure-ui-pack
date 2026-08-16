@@ -36,7 +36,7 @@ export const ECO_WIDGETS: EcoWidgetMeta[] = [
   { id: "sla", label: "SLA By Service", span: 6, hint: "Covered-pillar SLA scores" },
   { id: "rmm", label: "RPM RMM", span: 6, hint: "Servers, workstations, critical alerts" },
   { id: "backup", label: "Cloud Backup", span: 4, hint: "Cove healthy vs failed or stale" },
-  { id: "epp", label: "Endpoint Security", span: 4, hint: "Managed endpoints and infections" },
+  { id: "epp", label: "RPM EPP", span: 4, hint: "Managed endpoints and infections" },
   { id: "csp", label: "Microsoft CSP", span: 4, hint: "Secure Score, MFA, seats" },
   { id: "finsight", label: "FinSight Close", span: 12, hint: "Out-of-balance modules" },
   { id: "jumps", label: "Assurance Shortcuts", span: 12, hint: "Incidents, risks, SLA, issues" },

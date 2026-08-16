@@ -1247,10 +1247,20 @@ ORDER BY
         LastSyncAt: Date | string | null;
       }) => ({
         connectionCode: String(row.ConnectionCode),
-        displayName: String(row.DisplayName ?? row.ConnectionCode),
+        displayName: String(row.DisplayName ?? row.ConnectionCode)
+          .replace(/Bitdefender GravityZone/gi, "RPM EPP")
+          .replace(/Bitdefender/gi, "RPM EPP")
+          .replace(/GravityZone/gi, "RPM EPP")
+          .replace(/RPM End Point Protection/gi, "RPM EPP")
+          .replace(/Endpoint Security/gi, "RPM EPP"),
         sourceKind: String(row.SourceKind ?? ""),
         status: String(row.Status ?? "Planned"),
-        notes: row.Notes != null ? String(row.Notes) : null,
+        notes: row.Notes != null
+          ? String(row.Notes)
+              .replace(/Bitdefender GravityZone/gi, "RPM EPP")
+              .replace(/Bitdefender/gi, "RPM EPP")
+              .replace(/GravityZone/gi, "RPM EPP")
+          : null,
         lastSyncAt: row.LastSyncAt
           ? new Date(row.LastSyncAt as string | Date).toISOString()
           : null,
@@ -1599,7 +1609,7 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
   const rest: Array<[string, string, string]> = [
     ["rmm", "Pulseway API", "/settings/infrastructure"],
     ["cove", "N-Able Cove Backup", "/settings/infrastructure"],
-    ["epp", "Bitdefender API", "/settings/infrastructure"],
+    ["epp", "RPM EPP API", "/settings/infrastructure"],
     ["csp", "Microsoft Graph API", "/settings/infrastructure"],
   ];
 
@@ -2213,7 +2223,7 @@ async function startApiFeedSyncHandler() {
       legs: [
         { name: "Pulseway", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "Waiting" },
         { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "Waiting" },
-        { name: "Bitdefender", label: "EPP", kind: "epp", status: "queued", pct: 0, message: "Waiting" },
+        { name: "RPM EPP", label: "RPM EPP", kind: "epp", status: "queued", pct: 0, message: "Waiting" },
         { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "Waiting" },
       ],
     };
@@ -2246,7 +2256,7 @@ async function startApiFeedSyncHandler() {
   return {
     ok: true as const,
     started: true as const,
-    message: "API collect started (Pulseway, Cove, Bitdefender, Microsoft Graph).",
+    message: "API collect started (Pulseway, Cove, RPM EPP, Microsoft Graph).",
     status: await readApiFeedStatusFile(),
   };
 }

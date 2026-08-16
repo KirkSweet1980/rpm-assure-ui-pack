@@ -112,7 +112,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { name: "SYSPRO", on: cover.syspro, href: `${base}/syspro` },
     { name: "RPM RMM", on: Boolean(cover.rmm), href: `${base}/rmm` },
     { name: "Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
-    { name: "Endpoint Security", on: Boolean(cover.epp), href: `${base}/epp` },
+    { name: "RPM EPP", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft CSP", on: Boolean(cover.csp), href: `${base}/csp` },
   ];
   const coverCount = serviceBars.filter((s) => s.on).length;
@@ -395,7 +395,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
-        <Pane title="Endpoint Security" tip="Bitdefender / RPM EPP." {...wgt("epp")}>
+        <Pane title="RPM EPP" tip="Protected endpoints, incidents, and quarantine." {...wgt("epp")}>
           {isPillarCovered(cover, "epp") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Endpoints" value={eppDevices} />
@@ -406,7 +406,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
               />
             </div>
           ) : (
-            <p className="text-[12px] text-muted">No cover — Endpoint Security is not in scope.</p>
+            <p className="text-[12px] text-muted">No cover — RPM EPP is not in scope.</p>
           )}
         </Pane>
 

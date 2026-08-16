@@ -5849,18 +5849,26 @@ ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
   if (want("epp")) try {
     // PolicyName is optional (added by 450); select only columns that exist
     let hasPolicyName = false;
+    let hasDetailCols = false;
     try {
       const col = await pool.request().query(
-        `SELECT CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'PolicyName') IS NOT NULL THEN 1 ELSE 0 END AS ok`,
+        `SELECT
+  CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'PolicyName') IS NOT NULL THEN 1 ELSE 0 END AS policyOk,
+  CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSeenAt') IS NOT NULL THEN 1 ELSE 0 END AS detailOk`,
       );
-      hasPolicyName = Number(col.recordset?.[0]?.ok) === 1;
+      hasPolicyName = Number(col.recordset?.[0]?.policyOk) === 1;
+      hasDetailCols = Number(col.recordset?.[0]?.detailOk) === 1;
     } catch {
       hasPolicyName = false;
+      hasDetailCols = false;
     }
+    const detailCols = hasDetailCols
+      ? ", LastSeenAt, LastSuccessfulScanAt, MalwareDetected, Infected, ProductOutdated, SignatureOutdated"
+      : "";
     const epSql = hasPolicyName
       ? `
 SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
-       PolicyName, SnapshotDate
+       PolicyName, SnapshotDate${detailCols}
 FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
 WHERE (
     UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
@@ -5903,7 +5911,7 @@ WHERE (
 ORDER BY DeviceName`
       : `
 SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
-       CAST(NULL AS nvarchar(200)) AS PolicyName, SnapshotDate
+       CAST(NULL AS nvarchar(200)) AS PolicyName, SnapshotDate${detailCols}
 FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
 WHERE (
     UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
@@ -5958,6 +5966,12 @@ ORDER BY DeviceName`;
       operatingSystem: r.OperatingSystem != null ? String(r.OperatingSystem) : null,
       policyName: r.PolicyName != null ? String(r.PolicyName) : null,
       snapshotDate: toDateOnly(r.SnapshotDate),
+      lastSeenAt: toIso(r.LastSeenAt ?? null),
+      lastSuccessfulScanAt: toIso(r.LastSuccessfulScanAt ?? null),
+      malwareDetected: r.MalwareDetected == null ? null : Boolean(r.MalwareDetected),
+      infected: r.Infected == null ? null : Boolean(r.Infected),
+      productOutdated: r.ProductOutdated == null ? null : Boolean(r.ProductOutdated),
+      signatureOutdated: r.SignatureOutdated == null ? null : Boolean(r.SignatureOutdated),
     }));
     // Collapse GZ clean-name + name-MAC duplicates (all customers)
     epp.devices = dedupeEppDevices(epp.devices);
@@ -6066,7 +6080,7 @@ ORDER BY SnapshotDate DESC, DeviceName`);
       enrichCount > 0;
     if (!epp.enabled) {
       epp.message =
-        "No Bitdefender endpoints mapped to this customer yet. Run Collect-Bitdefender-To-RPMAssure.ps1 and add Dim_Bitdefender_NameMap patterns.";
+        "No RPM EPP endpoints mapped to this customer yet.";
     } else if (epp.devices.length === 0 && enrichCount > 0) {
       epp.summary = epp.summary ?? {
         deviceCount: enrichCount,
@@ -6089,6 +6103,7 @@ ORDER BY SnapshotDate DESC`);
         epp.license = {
           usedSlots: lr.UsedSlots != null ? Number(lr.UsedSlots) : null,
           totalSlots: lr.TotalSlots != null ? Number(lr.TotalSlots) : null,
+          scope: "msp",
           endSubscription:
             lr.EndSubscription != null
               ? String(lr.EndSubscription).slice(0, 10)
@@ -6752,7 +6767,7 @@ ORDER BY UserPrincipalName, DisplayName`);
     cover = { ...cover, epp: false };
     if (!epp.message) {
       epp.message =
-        "No cover — Endpoint Protection (Bitdefender) is not in scope for this customer.";
+        "No cover — RPM EPP is not in scope for this customer.";
     }
   }
   // Warehouse footprint => SYSPRO Covered — unless explicit PillarSyspro = false (deferred)

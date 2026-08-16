@@ -1207,7 +1207,7 @@ function ExcoInsightPage() {
                   ["SYSPRO", coverStats.syspro],
                   ["Remote Management", coverStats.rmm],
                   ["Cloud Backup", coverStats.cove],
-                  ["Endpoint Security", coverStats.epp],
+                  ["RPM EPP", coverStats.epp],
                   ["Microsoft 365 CSP", coverStats.csp],
                 ].map(([name, n]) => (
                   <li key={String(name)}>
@@ -1235,11 +1235,11 @@ function ExcoInsightPage() {
                   ["SYSPRO", slaByService.syspro],
                   ["Remote Management", slaByService.rmm],
                   ["Cloud Backup", slaByService.cove],
-                  ["Endpoint Security", slaByService.epp],
+                  ["RPM EPP", slaByService.epp],
                 ].map(([name, pct]) => {
                   const n = pct as number | null;
                   const target =
-                    name === "Remote Management" ? 99.9 : name === "Cloud Backup" ? 99.5 : name === "Endpoint Security" ? 98 : 90;
+                    name === "Remote Management" ? 99.9 : name === "Cloud Backup" ? 99.5 : name === "RPM EPP" ? 98 : 90;
                   const tone = n == null ? "" : n >= target ? "text-rag-green" : n >= target - 5 ? "text-rag-amber" : "text-rag-red";
                   const bar = n == null ? "" : n >= target ? "is-green" : n >= target - 5 ? "is-amber" : "is-red";
                   return (
@@ -1310,8 +1310,8 @@ function ExcoInsightPage() {
                   </p>
                 </div>
                 <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Bitdefender endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">EPP Unmanaged: Bitdefender endpoints not under a managed policy, versus all mapped endpoints.</span>
+                  <MetricLabel showIcon={false} tip="RPM EPP endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">EPP Unmanaged: RPM EPP endpoints not under a managed policy, versus all mapped endpoints.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.eppUnmanagedTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.eppUnmanagedTotal ?? 0}
                     <span className="ml-1 text-[10px] font-semibold text-muted">/ {exco.eppEndpointTotal ?? 0}</span>

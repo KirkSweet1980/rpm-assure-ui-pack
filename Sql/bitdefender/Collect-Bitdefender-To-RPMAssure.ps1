@@ -4,7 +4,16 @@
 
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
-. (Join-Path $here 'Bitdefender.Config.ps1')
+$cfg = $null
+foreach ($c in @(
+    (Join-Path $here 'Bitdefender.Config.ps1'),
+    'C:\RPM-Assure\Sql\bitdefender\Bitdefender.Config.ps1',
+    'C:\RPM-Assure\deploy\ui-pack\Sql\bitdefender\Bitdefender.Config.ps1'
+  )) {
+  if (Test-Path -LiteralPath $c) { $cfg = $c; break }
+}
+if (-not $cfg) { throw 'Missing Bitdefender.Config.ps1 — copy Bitdefender.Config.example.ps1 next to the collector and set $ApiKey' }
+. $cfg
 
 # Optional SQL overrides in config; else defaults used on central
 if (-not $SqlServer)   { $SqlServer = '102.222.21.220,14333' }
@@ -109,11 +118,14 @@ function Sql-Bit($v) {
   return '0'
 }
 
-function Sql-Int($v) {
+function Sql-Dt($v) {
   if ($null -eq $v -or "$v" -eq '') { return 'NULL' }
-  $n = 0
-  if ([int]::TryParse("$v", [ref]$n)) { return [string]$n }
-  return 'NULL'
+  try {
+    $dto = [datetime]::Parse("$v", [Globalization.CultureInfo]::InvariantCulture)
+    return ("'{0:yyyy-MM-ddTHH:mm:ss}'" -f $dto.ToUniversalTime())
+  } catch {
+    return 'NULL'
+  }
 }
 
 Write-Log '=== Bitdefender EPP collect start ==='
@@ -337,25 +349,34 @@ function Resolve-EndpointCode([string]$Name, [string]$Fqdn, [string]$CompanyName
   return $null
 }
 
-# Discover companies (MSP multi-tenant)
+# Discover companies (MSP multi-tenant) — page until short
 $companyTargets = New-Object System.Collections.Generic.List[object]
 try {
-  $rawCo = Invoke-GzRpc -Service 'companies' -Method 'getCompaniesList' -Params @{}
-  [IO.File]::WriteAllText((Join-Path $logDir 'last_companies.json'), $rawCo, [Text.UTF8Encoding]::new($false))
-  if ($rawCo -notmatch '"error"') {
+  $pg = 1; $pages = 1
+  do {
+    $rawCo = Invoke-GzRpc -Service 'companies' -Method 'getCompaniesList' -Params @{ page = $pg; perPage = 50 }
+    if ($pg -eq 1) {
+      [IO.File]::WriteAllText((Join-Path $logDir 'last_companies.json'), $rawCo, [Text.UTF8Encoding]::new($false))
+    }
+    if ($rawCo -match '"error"\s*:\s*\{') {
+      Write-Log ("getCompaniesList: " + $rawCo.Substring(0, [Math]::Min(160, $rawCo.Length)))
+      break
+    }
     $jo = $rawCo | ConvertFrom-Json
     $items = @()
     if ($jo.result.items) { $items = @($jo.result.items) }
     elseif ($jo.result -is [System.Array]) { $items = @($jo.result) }
+    if ($jo.result.pagesCount) { $pages = [int]$jo.result.pagesCount }
+    if ($pages -lt 1) { $pages = 1 }
     foreach ($it in $items) {
       if ($it.id) {
         $companyTargets.Add([pscustomobject]@{ Id = [string]$it.id; Name = [string]$it.name })
         Write-Log ("Company list: " + $it.name + " id=" + $it.id)
       }
     }
-  } else {
-    Write-Log ("getCompaniesList: " + $rawCo.Substring(0, [Math]::Min(160, $rawCo.Length)))
-  }
+    if ($items.Count -lt 50) { break }
+    $pg++
+  } while ($pg -le $pages -and $pg -le 40)
 } catch {
   Write-Log ("getCompaniesList soft-fail: " + $_.Exception.Message)
 }
@@ -369,16 +390,23 @@ try {
     if ([string]$it.name -eq 'Companies') { $cfId = [string]$it.id }
   }
   if ($cfId) {
-    $rawKids = Invoke-GzRpc -Service 'network' -Method 'getNetworkInventoryItems' -Params @{ parentId = $cfId; page = 1; perPage = 100 }
-    if ($rawKids -notmatch '"error"') {
+    $ipg = 1; $ipages = 1
+    do {
+      $rawKids = Invoke-GzRpc -Service 'network' -Method 'getNetworkInventoryItems' -Params @{ parentId = $cfId; page = $ipg; perPage = 100 }
+      if ($rawKids -match '"error"\s*:\s*\{') { break }
       $jk = $rawKids | ConvertFrom-Json
-      foreach ($it in @($jk.result.items)) {
+      if ($jk.result.pagesCount) { $ipages = [int]$jk.result.pagesCount }
+      if ($ipages -lt 1) { $ipages = 1 }
+      $kids = @($jk.result.items)
+      foreach ($it in $kids) {
         if ($it.id -and $it.name) {
           $companyTargets.Add([pscustomobject]@{ Id = [string]$it.id; Name = [string]$it.name })
           Write-Log ("Inventory company: " + $it.name + " id=" + $it.id)
         }
       }
-    }
+      if ($kids.Count -lt 100) { break }
+      $ipg++
+    } while ($ipg -le $ipages -and $ipg -le 20)
   }
 } catch {
   Write-Log ("inventory companies soft-fail: " + $_.Exception.Message)
@@ -427,11 +455,11 @@ foreach ($co in $companyTargets) {
       break
     }
     $page++
-  } while ($page -le $pages -and $page -le 40)
+  } while ($page -le $pages -and $page -le 80)
 }
 
 Write-Log ("Unique endpoints from API=" + $epBag.Count)
-if ($epBag.Count -eq 0) { throw 'No endpoints from GravityZone' }
+if ($epBag.Count -eq 0) { throw 'No endpoints from RPM EPP' }
 
 # Collapse clean-name + name-MAC duplicates (same FQDN/IP) before SQL insert
 function Get-EppIdentityKey($ep) {
@@ -486,6 +514,44 @@ foreach ($eid in @($epBag.Keys)) {
 Write-Log ("After host de-dupe=" + $deduped.Count + " (removed " + ($epBag.Count - $deduped.Count) + " MAC twin rows)")
 $epBag = $deduped
 
+# Enrich managed endpoints: last scan, malware, outdated (cap keeps collect under 15 min)
+$detailCap = 80
+$detailN = 0
+$detailOk = 0
+foreach ($eid in @($epBag.Keys)) {
+  $bag = $epBag[$eid]
+  $ep = $bag.Ep
+  if ($ep.isManaged -ne $true) { continue }
+  if ($detailN -ge $detailCap) { break }
+  $detailN++
+  try {
+    $rawD = Invoke-GzRpc -Service 'network' -Method 'getManagedEndpointDetails' -Params @{
+      endpointId = [string]$eid
+      options    = @{ includeScanLogs = $true }
+    }
+    if ($rawD -match '"error"\s*:\s*\{') { continue }
+    $det = ($rawD | ConvertFrom-Json).result
+    if (-not $det) { continue }
+    $bag.LastSeen = $det.lastSeen
+    if ($det.lastSuccessfulScan) { $bag.LastScan = $det.lastSuccessfulScan.date }
+    if ($det.malwareStatus) {
+      $bag.MalwareDetected = $det.malwareStatus.detection
+      $bag.Infected = $det.malwareStatus.infected
+    }
+    if ($det.agent) {
+      $bag.ProductOutdated = $det.agent.productOutdated
+      $bag.SignatureOutdated = $det.agent.signatureOutdated
+    }
+    if ($det.policy -and $det.policy.name -and -not $ep.policy) {
+      $ep | Add-Member -NotePropertyName policy -NotePropertyValue $det.policy -Force
+    }
+    $detailOk++
+  } catch {
+    Write-Log ("detail skip id=$eid err=$($_.Exception.Message)")
+  }
+}
+Write-Log ("Endpoint detail enrich tried=$detailN ok=$detailOk")
+
 $hasCoCols = $false
 try {
   $colChk = @'
@@ -498,6 +564,34 @@ SELECT CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'CompanyName') IS NOT
   if ($cr -match '1') { $hasCoCols = $true }
 } catch {}
 Write-Log ("Company columns on table=" + $hasCoCols)
+
+try {
+  Invoke-SqlText -SqlText @"
+SET NOCOUNT ON;
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSeenAt') IS NULL
+  ALTER TABLE dbo.Bitdefender_Endpoints ADD LastSeenAt datetime2(3) NULL;
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSuccessfulScanAt') IS NULL
+  ALTER TABLE dbo.Bitdefender_Endpoints ADD LastSuccessfulScanAt datetime2(3) NULL;
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'MalwareDetected') IS NULL
+  ALTER TABLE dbo.Bitdefender_Endpoints ADD MalwareDetected bit NULL;
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'Infected') IS NULL
+  ALTER TABLE dbo.Bitdefender_Endpoints ADD Infected bit NULL;
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'ProductOutdated') IS NULL
+  ALTER TABLE dbo.Bitdefender_Endpoints ADD ProductOutdated bit NULL;
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'SignatureOutdated') IS NULL
+  ALTER TABLE dbo.Bitdefender_Endpoints ADD SignatureOutdated bit NULL;
+"@ -Label 'bd_endpoint_detail_cols'
+} catch {
+  Write-Log ("WARN detail cols (need ALTER rights): " + $_.Exception.Message)
+}
+$hasDetailCols = $false
+try {
+  $dcf = Join-Path $logDir 'detail_col_chk.sql'
+  [IO.File]::WriteAllText($dcf, "SET NOCOUNT ON; SELECT CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSeenAt') IS NOT NULL THEN 1 ELSE 0 END;", [Text.UTF8Encoding]::new($false))
+  $dcr = (& $sqlcmd -S $SqlServer -d $SqlDatabase -U $SqlUser -P $SqlPassword -C -h -1 -W -i $dcf 2>&1 | Out-String)
+  if ($dcr -match '1') { $hasDetailCols = $true }
+} catch {}
+Write-Log ("Detail columns on table=" + $hasDetailCols)
 
 $snap = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
 $values = New-Object System.Collections.Generic.List[string]
@@ -669,6 +763,31 @@ WHERE SnapshotDate = '$snap' AND (CustomerCode IS NULL OR CustomerCode = N'');
 }
 
 Invoke-SqlText -SqlText $load -Label 'bd_endpoints_load'
+
+if ($hasDetailCols) {
+  $upd = New-Object System.Collections.Generic.List[string]
+  [void]$upd.Add('SET NOCOUNT ON;')
+  foreach ($eid in $epBag.Keys) {
+    $bag = $epBag[$eid]
+    if (-not $bag.LastSeen -and $null -eq $bag.MalwareDetected -and $null -eq $bag.ProductOutdated -and -not $bag.LastScan) { continue }
+    [void]$upd.Add((
+      "UPDATE dbo.Bitdefender_Endpoints SET LastSeenAt={0}, LastSuccessfulScanAt={1}, MalwareDetected={2}, Infected={3}, ProductOutdated={4}, SignatureOutdated={5} WHERE SnapshotDate='{6}' AND EndpointId={7};" -f `
+        (Sql-Dt $bag.LastSeen),
+        (Sql-Dt $bag.LastScan),
+        (Sql-Bit $bag.MalwareDetected),
+        (Sql-Bit $bag.Infected),
+        (Sql-Bit $bag.ProductOutdated),
+        (Sql-Bit $bag.SignatureOutdated),
+        $snap,
+        (Sql-Str $eid)
+    ))
+  }
+  if ($upd.Count -gt 1) {
+    try { Invoke-SqlText -SqlText ($upd -join "`r`n") -Label 'bd_endpoint_details' } catch {
+      Write-Log ("WARN detail update: " + $_.Exception.Message)
+    }
+  }
+}
 
 # Build id → customer map for incidents/quarantine stamping
 $epCodeById = @{}

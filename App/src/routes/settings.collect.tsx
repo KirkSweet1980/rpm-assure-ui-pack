@@ -38,7 +38,7 @@ const SOURCE_MAP: Array<[string, string, string]> = [
   ["SYSPRO EcoSystem", "Overview / Operators / Jobs / FinSight / Licence / Day End", "RPM Assure Agent"],
   ["RPM Remote Management", "Overview / Servers / Workstations / Patch / Alerts", "Pulseway API"],
   ["RPM Cloud Backup", "Overview / Devices / Recovery / Retention", "N-Able Cove Backup"],
-  ["RPM Endpoint Security", "Overview / Endpoints / Incidents / Quarantine", "Bitdefender API"],
+  ["RPM EPP", "Overview / Endpoints / Incidents / Quarantine", "RPM EPP API"],
   ["Microsoft 365 CSP", "Tenant / Secure Score / MFA / Admins / Licences", "Microsoft Graph API"],
   ["Customer Assurance", "Customer Incidents / Risks / SLA", "Assure AMS"],
 ];

@@ -15,10 +15,10 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
     if (!covered) {
       return (
         <NoCoverPanel
-          service="Endpoint Protection (EPP) · Endpoints"
+          service="RPM EPP · Endpoints"
           hint={
             epp?.message ||
-            "No cover — no Bitdefender endpoints mapped to this customer."
+            "No cover — no RPM EPP endpoints mapped to this customer."
           }
         />
       );
@@ -26,23 +26,25 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
     return (
       <div className="space-y-3">
         <Card>
-          <CardHead>RPM End Point Protection · Endpoints ({devices.length})</CardHead>
+          <CardHead>RPM EPP · Endpoints ({devices.length})</CardHead>
           <CardContent className="p-0">
             {devices.length === 0 ? (
               <p className="p-4 text-sm text-muted">
-                No endpoint rows for this customer on the latest snapshot. Re-run Bitdefender collect.
+                No endpoint rows for this customer on the latest snapshot. Recheck RPM EPP on Assure API Feed Status.
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full min-w-[880px] text-left text-sm">
                   <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
                     <tr>
                       <th className="px-3 py-2">Device</th>
                       <th className="px-3 py-2">FQDN</th>
-                      <th className="px-3 py-2">IP</th>
                       <th className="px-3 py-2">OS</th>
                       <th className="px-3 py-2">Managed</th>
                       <th className="px-3 py-2">Policy</th>
+                      <th className="px-3 py-2">Last scan</th>
+                      <th className="px-3 py-2">Threat</th>
+                      <th className="px-3 py-2">Update</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -50,7 +52,6 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
                       <tr key={d.endpointId} className="border-b border-border/70">
                         <td className="px-3 py-2 font-medium">{d.deviceName ?? "—"}</td>
                         <td className="px-3 py-2 text-xs text-muted">{d.fqdn ?? "—"}</td>
-                        <td className="px-3 py-2 text-xs tabular-nums">{d.ipAddress ?? "—"}</td>
                         <td
                           className="max-w-[180px] truncate px-3 py-2 text-xs text-muted"
                           title={d.operatingSystem ?? undefined}
@@ -67,6 +68,27 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
                           )}
                         </td>
                         <td className="px-3 py-2 text-xs text-muted">{d.policyName ?? "—"}</td>
+                        <td className="px-3 py-2 text-xs text-muted">
+                          {d.lastSuccessfulScanAt
+                            ? new Date(d.lastSuccessfulScanAt).toLocaleString()
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-xs">
+                          {d.infected || d.malwareDetected ? (
+                            <span className="font-semibold text-rag-red">
+                              {d.infected ? "Infected" : "Detected"}
+                            </span>
+                          ) : (
+                            <span className="text-rag-green">Clean</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-xs">
+                          {d.productOutdated || d.signatureOutdated ? (
+                            <span className="font-semibold text-rag-amber">Outdated</span>
+                          ) : (
+                            <span className="text-rag-green">Current</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -119,7 +119,7 @@ export const CUSTOMER_PILLARS: {
   },
   {
     id: "epp",
-    title: "RPM Endpoint Security",
+    title: "RPM EPP",
     overview: "/epp",
     icon: Shield,
     color: "#dc2626",

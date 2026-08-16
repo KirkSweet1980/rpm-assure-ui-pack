@@ -227,7 +227,7 @@ export function PortfolioTable({
                 </h2>
                 ) : null}
                 <p className="text-[12px] text-muted">
-                  Estate health across SYSPRO, remote management, and backup
+                  Assure Eco-System health across SYSPRO, remote management, and backup
                 </p>
               </div>
             </div>

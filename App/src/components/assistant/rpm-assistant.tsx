@@ -144,7 +144,7 @@ export function RpmAssistant({
             <div>
               <p>Jarvis</p>
               <span>
-                {tenant ? `${tenant.name} · ${tenant.healthRag}` : "Estate"}
+                {tenant ? `${tenant.name} · ${tenant.healthRag}` : "Assure Eco-System"}
               </span>
             </div>
           </header>

@@ -244,8 +244,8 @@ export function customerTree(code: string, displayName: string): NavNode {
 
       {
         id: `${code}-epp`,
-        label: "RPM End Point Protection",
-        blurb: "Endpoint protection — devices, incidents, quarantine",
+        label: "RPM EPP",
+        blurb: "RPM EPP — devices, incidents, quarantine",
         href: `${base}/epp`,
         match: "prefix",
         audience: "ops",
@@ -277,7 +277,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-epp-incidents`,
             label: "Incidents",
-            blurb: "GravityZone security incidents",
+            blurb: "RPM EPP security incidents",
             href: `${base}/epp/incidents`,
             match: "exact",
             audience: "ops",

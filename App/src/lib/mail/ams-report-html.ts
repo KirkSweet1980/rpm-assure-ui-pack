@@ -883,7 +883,7 @@ function coveredServicesHtml(detail: CustomerDetailPayload): string {
     ["SYSPRO EcoSystem", ynCover(isPillarCovered(cover, "syspro"))],
     ["RPM RMM", ynCover(isPillarCovered(cover, "rmm"))],
     ["RPM Cloud Backup", ynCover(isPillarCovered(cover, "cove"))],
-    ["Endpoint Security", ynCover(isPillarCovered(cover, "epp"))],
+    ["RPM EPP", ynCover(isPillarCovered(cover, "epp"))],
     ["Microsoft CSP", ynCover(isPillarCovered(cover, "csp"))],
   ])}`);
 
@@ -927,10 +927,10 @@ function coveredServicesHtml(detail: CustomerDetailPayload): string {
 
   const epp = detail.epp;
   if (!isPillarCovered(cover, "epp")) {
-    parts.push(`<h3 class="sub">Endpoint Security</h3><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
+    parts.push(`<h3 class="sub">RPM EPP</h3><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
   } else {
     const es = epp?.summary;
-    parts.push(`<h3 class="sub">Endpoint Security</h3>${kvTable([
+    parts.push(`<h3 class="sub">RPM EPP</h3>${kvTable([
       ["Endpoints", esc(String(es?.deviceCount ?? epp?.devices?.length ?? c.eppDeviceCount ?? 0))],
       ["Managed / unmanaged", `${esc(String(es?.managedCount ?? "—"))} / ${esc(String(es?.unmanagedCount ?? "—"))}`],
       ["Infected", esc(String(c.bdInfectedCount ?? 0))],
@@ -1033,10 +1033,10 @@ export function buildApplicationsAmsHtml(opts: {
   <p class="muted">${esc(c.healthSummary || oa?.summary || "")}</p>
   ${
     variant === "weekly"
-      ? `<p class="muted"><strong>Weekly RPM Assure focus:</strong> every service on cover — SYSPRO, RMM, Cloud Backup, Endpoint Security, Microsoft CSP — plus jobs, FinSight, and open risks.</p>`
+      ? `<p class="muted"><strong>Weekly RPM Assure focus:</strong> every service on cover — SYSPRO, RMM, Cloud Backup, RPM EPP, Microsoft CSP — plus jobs, FinSight, and open risks.</p>`
       : variant === "monthly"
         ? `<p class="muted"><strong>Monthly RPM Assure board pack:</strong> executive narrative for ExCo across all services on cover. Uncovered services are listed as No cover and are not scored.</p>`
-        : `<p class="muted"><strong>Full assurance pack:</strong> SYSPRO plus every RPM service on cover (RMM, Cloud Backup, Endpoint Security, Microsoft CSP). No cover stays visible and is not scored.</p>`
+        : `<p class="muted"><strong>Full assurance pack:</strong> SYSPRO plus every RPM service on cover (RMM, Cloud Backup, RPM EPP, Microsoft CSP). No cover stays visible and is not scored.</p>`
   }
 
   ${coveredServicesHtml(detail)}
@@ -1237,7 +1237,7 @@ export function buildApplicationsAmsHtml(opts: {
   <div class="note">
     <strong>Notes</strong>
     <ul>
-      <li>This pack is generated from RPM Assure central collect (SYSPRO, RMM, Cloud Backup, Endpoint Security, Microsoft CSP, and AMS facts).</li>
+      <li>This pack is generated from RPM Assure central collect (SYSPRO, RMM, Cloud Backup, RPM EPP, Microsoft CSP, and AMS facts).</li>
       <li>Every service is listed. Cover uses the same rule as the customer rail. No cover is not scored.</li>
       <li>Sections such as 12-month sparkline trends, kill-script history, and full NOLOCK estate inventory appear when those collectors are enabled for the customer.</li>
       <li>Print or save as PDF from the browser. Outbound email is disabled.</li>
@@ -1427,7 +1427,7 @@ export function buildCustomPackHtml(opts: {
       ["SYSPRO Deployment", yn(Boolean(row.pillarSyspro) || cover.syspro || Boolean(detail.dtrLevel1?.length))],
       ["RPM Remote Management", yn(Boolean(row.pillarPulseway) || cover.rmm || Boolean(detail.rmm?.enabled))],
       ["RPM Cloud Backup", yn(Boolean(row.pillarCove) || cover.cove || Boolean(detail.cove?.enabled))],
-      ["RPM End Point Protection", yn(Boolean(row.pillarBitdefender) || cover.epp || Boolean(detail.epp?.enabled))],
+      ["RPM EPP", yn(Boolean(row.pillarBitdefender) || cover.epp || Boolean(detail.epp?.enabled))],
       ["Microsoft 365 Tenant", yn(Boolean(row.pillarCsp) || cover.csp || Boolean(detail.csp?.enabled))],
     ])}`);
   }
@@ -1648,7 +1648,7 @@ export function buildCustomPackHtml(opts: {
   const epp = detail.epp;
   if (fieldOn(selected, "epp_summary") || fieldOn(selected, "epp_incidents")) {
     if (!isPillarCovered(cover, "epp")) {
-      sections.push(`<h2 class="sec">RPM End Point Protection</h2><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
+      sections.push(`<h2 class="sec">RPM EPP</h2><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
     } else {
       const es = epp?.summary;
       const rows: Array<[string, string]> = [];
@@ -1657,8 +1657,8 @@ export function buildCustomPackHtml(opts: {
         rows.push(["Managed / unmanaged", `${esc(String(es.managedCount))} / ${esc(String(es.unmanagedCount))}`]);
         rows.push(["Servers / workstations", `${esc(String(es.serverCount))} / ${esc(String(es.workstationCount))}`]);
         if (epp?.license) {
-          rows.push([
-            "License slots",
+        rows.push([
+            "MSP licence slots (estate-wide)",
             `${esc(String(epp.license.usedSlots ?? "—"))} / ${esc(String(epp.license.totalSlots ?? "—"))}`,
           ]);
         }
@@ -1682,7 +1682,7 @@ export function buildCustomPackHtml(opts: {
           ),
         ]);
       }
-      sections.push(`<h2 class="sec">RPM End Point Protection</h2>${kvTable(rows)}`);
+      sections.push(`<h2 class="sec">RPM EPP</h2>${kvTable(rows)}`);
     }
   }
 
@@ -2097,19 +2097,19 @@ function eppPack(
   const es = epp?.summary;
   const devices = epp?.devices ?? [];
   const covered = (es?.deviceCount ?? 0) > 0 || devices.length > 0;
-  const title = kind === "incidents" ? "Incidents & Quarantine" : "Endpoint Security Pack";
+  const title = kind === "incidents" ? "Incidents & Quarantine" : "RPM EPP Pack";
   const sections: string[] = [];
-  sections.push(`<p class="note">This pack is <strong>Bitdefender / Endpoint Security only</strong>. It does not include Pulseway / RMM devices.</p>`);
+  sections.push(`<p class="note">This pack is <strong>RPM EPP only</strong>. It does not include Pulseway / RMM devices.</p>`);
   if (!covered) {
     sections.push(`<p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
   } else {
-    sections.push(`<p class="note">Endpoint Security only. Cover requires at least one endpoint.</p>`);
+    sections.push(`<p class="note">RPM EPP only. Cover requires at least one endpoint.</p>`);
     if (kind === "service") {
       sections.push(`<h2 class="sec">Endpoints</h2>${kvTable([
         ["Endpoints", esc(String(es?.deviceCount ?? devices.length))],
         ["Managed / unmanaged", `${esc(String(es?.managedCount ?? "—"))} / ${esc(String(es?.unmanagedCount ?? "—"))}`],
         ["Servers / workstations", `${esc(String(es?.serverCount ?? "—"))} / ${esc(String(es?.workstationCount ?? "—"))}`],
-        ["License slots", epp?.license ? `${esc(String(epp.license.usedSlots ?? "—"))} / ${esc(String(epp.license.totalSlots ?? "—"))}` : "—"],
+        ["MSP licence slots (estate-wide)", epp?.license ? `${esc(String(epp.license.usedSlots ?? "—"))} / ${esc(String(epp.license.totalSlots ?? "—"))}` : "—"],
         ["Subscription end", esc(fmtD(epp?.license?.endSubscription))],
         ["Last import", esc(fmtDt(es?.lastImportAt))],
       ])}`);
@@ -2163,5 +2163,5 @@ function eppPack(
       }</tbody></table>`);
     }
   }
-  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Endpoint Security · Bitdefender snapshot");
+  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM EPP snapshot");
 }

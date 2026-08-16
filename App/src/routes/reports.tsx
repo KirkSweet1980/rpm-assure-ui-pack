@@ -141,9 +141,9 @@ const PACKS: {
   },
   {
     id: "epp-service",
-    title: "Endpoint Security Pack",
+    title: "RPM EPP Pack",
     when: "On demand",
-    blurb: "Managed endpoints, license slots, policy sample.",
+    blurb: "Managed endpoints, MSP licence, policy sample.",
     needsCustomer: true,
     service: "epp",
   },
@@ -242,10 +242,10 @@ const REPORT_SERVICES: CorpService[] = [
   },
   {
     id: "epp",
-    title: "Endpoint Security Reports",
+    title: "RPM EPP Reports",
     overview: "/reports?format=epp-service",
     modules: [
-      { label: "Endpoint Security Pack", path: "/reports?format=epp-service" },
+      { label: "RPM EPP Pack", path: "/reports?format=epp-service" },
       { label: "Incidents & Quarantine", path: "/reports?format=epp-incidents" },
     ],
   },
@@ -477,7 +477,7 @@ function ReportsPage() {
     if (format === "rmm-capacity") return "Capacity & Performance · disk / CPU / memory / IOPS";
     if (format === "cove-service") return "Cove Executive Summary · safeguards, RPO, restore, retention";
     if (format === "cove-recovery") return "Recovery Testing · plans and last test";
-    if (format === "epp-service") return "Endpoint Security · endpoints only for cover";
+    if (format === "epp-service") return "RPM EPP · endpoints only for cover";
     if (format === "epp-incidents") return "Incidents & Quarantine · latest collect";
     if (format === "services-cover") return "Services on cover · multi-pillar snapshot";
     if (format === "custom-pack") return `Custom · ${selectedCount} field(s) selected`;

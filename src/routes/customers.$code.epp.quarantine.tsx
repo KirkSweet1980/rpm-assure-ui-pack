@@ -24,10 +24,10 @@ export const Route = createFileRoute("/customers/$code/epp/quarantine")({
     if (!covered) {
       return (
         <NoCoverPanel
-          service="Endpoint Protection (EPP) · Quarantine"
+          service="RPM EPP · Quarantine"
           hint={
             epp?.message ||
-            "No cover — no Bitdefender endpoints mapped to this customer."
+            "No cover — no RPM EPP endpoints mapped to this customer."
           }
         />
       );
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/customers/$code/epp/quarantine")({
         <Card>
           <CardHead>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>RPM End Point Protection · Quarantine ({rows.length})</span>
+              <span>RPM EPP · Quarantine ({rows.length})</span>
               {feed?.quarantineOk != null ? (
                 <span
                   className={
@@ -64,7 +64,7 @@ export const Route = createFileRoute("/customers/$code/epp/quarantine")({
                 </p>
                 {feed?.quarantineOk === false ? (
                   <p className="text-[12px] text-subtle">
-                    GravityZone quarantine feed failed
+                    RPM EPP quarantine feed failed
                     {feed.quarantineMessage ? `: ${feed.quarantineMessage}` : "."}
                   </p>
                 ) : (

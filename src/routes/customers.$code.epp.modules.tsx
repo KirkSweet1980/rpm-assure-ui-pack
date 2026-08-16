@@ -15,10 +15,10 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
     if (!covered) {
       return (
         <NoCoverPanel
-          service="Endpoint Protection (EPP)"
+          service="RPM EPP · Policies"
           hint={
             epp?.message ||
-            "No cover — enable EPP for this customer to collect this module."
+            "No cover — enable RPM EPP for this customer to collect this module."
           }
         />
       );
@@ -32,10 +32,10 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
     return (
       <div className="space-y-3">
         <Card>
-          <CardHead>RPM End Point Protection · Policies</CardHead>
+          <CardHead>RPM EPP · Policies</CardHead>
           <CardContent className="p-4 text-sm">
             <p className="mb-3 text-muted">
-              Security policies assigned in GravityZone (from endpoint list). Expand with packages/modules when API rights allow.
+              Security policies assigned on RPM EPP (from the latest collect).
             </p>
             {policies.length === 0 ? (
               <p className="text-muted">No endpoint/policy rows for this customer on latest snapshot.</p>

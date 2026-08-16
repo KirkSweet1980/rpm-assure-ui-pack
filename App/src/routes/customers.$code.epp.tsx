@@ -30,7 +30,7 @@ export const Route = createFileRoute("/customers/$code/epp")({
       <PillarCoverGate
         cover={data?.cover}
         pillar="epp"
-        service="RPM End Point Protection"
+        service="RPM EPP"
       />
     );
   },

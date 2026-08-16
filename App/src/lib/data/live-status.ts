@@ -232,7 +232,7 @@ export function customerLiveStatus(
       cover: Boolean(c.epp),
       href: infected > 0 || eppInc > 0 ? `${base}/epp/incidents` : `${base}/epp/endpoints`,
       hint: !c.epp
-        ? "Endpoint Security not on cover"
+        ? "RPM EPP not on cover"
         : infected
           ? `${infected} infected`
           : unmanaged

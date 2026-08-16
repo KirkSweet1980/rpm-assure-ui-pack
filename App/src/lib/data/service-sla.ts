@@ -239,9 +239,25 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const openPct = slaCover ? (openCrit === 0 ? 100 : clamp(100 - openCrit * 20)) : null;
   const openLabel = slaCover ? `${openCrit} open critical / high incident(s)` : "No Cover for Devices";
 
+  const devices = data.epp?.devices ?? [];
+  const scored = devices.filter(
+    (d) =>
+      d.productOutdated != null ||
+      d.signatureOutdated != null ||
+      Boolean(d.lastSuccessfulScanAt),
+  );
+  const current = scored.filter((d) => !d.productOutdated && !d.signatureOutdated).length;
+  const upd = scored.length > 0 ? clamp((current / scored.length) * 100) : null;
+  const updLabel =
+    scored.length > 0
+      ? `${current}/${scored.length} endpoints current (product + signatures)`
+      : "No last-scan / outdated flags on this collect";
+
   const lines: ServiceSlaLine[] = [
     line("epp-coverage", "epp", cov, covLabel, slaCover && cov != null),
-    unmeasured("epp-update", "epp"),
+    scored.length > 0
+      ? line("epp-update", "epp", upd, updLabel, slaCover && upd != null)
+      : unmeasured("epp-update", "epp"),
     unmeasured("epp-mttd", "epp"),
     unmeasured("epp-respond", "epp"),
     line("epp-open", "epp", openPct, openLabel, slaCover && openPct != null),

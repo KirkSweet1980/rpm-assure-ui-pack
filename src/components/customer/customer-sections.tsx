@@ -392,7 +392,7 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
     { name: "SYSPRO", on: cover.syspro, href: `${base}/syspro` },
     { name: "RPM Remote Management", on: Boolean(cover.rmm), href: `${base}/rmm` },
     { name: "RPM Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
-    { name: "RPM Endpoint Security", on: Boolean(cover.epp), href: `${base}/epp` },
+    { name: "RPM EPP", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft 365 CSP", on: Boolean(cover.csp), href: `${base}/csp` },
   ];
   const coverCount = serviceBars.filter((s) => s.on).length;
@@ -4322,7 +4322,7 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
       </div>
 
       <ChartCaption
-        title="Service SLA — RMM · Cloud Backup · Endpoint Security"
+        title="Service SLA — RMM · Cloud Backup · RPM EPP"
         why={`${INDUSTRY_SLA_DOC}. Measured from live collect. Ticket MTTD/MTTR lines stay unmeasured until a helpdesk feed exists.`}
       />
       <ServiceSlaTable pack={buildRmmServiceSla(data)} />
@@ -4560,8 +4560,8 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   if (!cover.epp) {
     return (
       <NoCoverPanel
-        service="RPM Endpoint Security"
-        hint={epp?.message || "No cover — no Bitdefender endpoints mapped for this customer."}
+        service="RPM EPP"
+        hint={epp?.message || "No cover — no RPM EPP endpoints mapped for this customer."}
       />
     );
   }
@@ -4569,13 +4569,17 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   const servers = s?.serverCount ?? 0;
   const workstations = s?.workstationCount ?? 0;
   const incidents = epp?.incidents?.length ?? 0;
+  const infected = devices.filter((d) => d.infected || d.malwareDetected).length;
+  const outdated = devices.filter((d) => d.productOutdated || d.signatureOutdated).length;
   return (
     <ServiceVisuals
-      title="RPM Endpoint Security"
+      title="RPM EPP"
       subtitle={data.customer.displayName}
       kpis={[
         { label: "Endpoints", value: s?.deviceCount ?? devices.length },
         { label: "Managed", value: managed, tone: "green" },
+        { label: "Infected", value: infected, tone: infected > 0 ? "red" : "green" },
+        { label: "Outdated", value: outdated, tone: outdated > 0 ? "amber" : "green" },
         { label: "Incidents", value: incidents, tone: incidents > 0 ? "red" : "green" },
       ]}
       pie={[

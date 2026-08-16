@@ -140,7 +140,7 @@ export function AssuranceGauge({ value }: { value: number }) {
   return (
     <div
       className="relative mx-auto h-28 w-full max-w-[220px]"
-      title={`Estate assurance ${v}%. Blend of health, collect freshness and job errors.`}
+      title={`Assure Eco-System assurance ${v}%. Blend of health, collect freshness and job errors.`}
     >
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
@@ -163,7 +163,7 @@ export function AssuranceGauge({ value }: { value: number }) {
               if (!active || !payload?.length) return null;
               return (
                 <ChartTipBox
-                  title="Estate assurance"
+                  title="Assure Eco-System assurance"
                   rows={[
                     { label: "Score", value: `${v}%`, color: BLUE },
                     {

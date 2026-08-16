@@ -5,7 +5,7 @@ export type CustomerCover = {
   syspro: boolean;
   rmm: boolean;
   cove: boolean;
-  /** Endpoint protection (Bitdefender / RPM EPP) — future collect */
+  /** RPM EPP — live warehouse endpoints only */
   epp?: boolean;
   /** Microsoft CSP / 365 licensing — future collect */
   csp?: boolean;
@@ -882,6 +882,12 @@ export type EppDeviceRow = {
   operatingSystem: string | null;
   policyName: string | null;
   snapshotDate: string | null;
+  lastSeenAt?: string | null;
+  lastSuccessfulScanAt?: string | null;
+  malwareDetected?: boolean | null;
+  infected?: boolean | null;
+  productOutdated?: boolean | null;
+  signatureOutdated?: boolean | null;
 };
 
 export type EppSummary = {
@@ -924,6 +930,8 @@ export type EppPayload = {
     usedSlots: number | null;
     totalSlots: number | null;
     endSubscription: string | null;
+    /** Tenant-wide MSP licence — not this customer's seats */
+    scope?: "msp";
   } | null;
   incidents?: EppIncidentRow[];
   quarantine?: EppQuarantineRow[];
@@ -1096,7 +1104,7 @@ export type CustomerDetailPayload = {
   rmm: RmmPayload;
   /** Cyber Backup (Cove) */
   cove: CovePayload;
-  /** RPM End Point Protection (Bitdefender GravityZone) */
+  /** RPM EPP */
   epp?: EppPayload | null;
   /** Microsoft 365 Tenant (CSP pilot) */
   csp?: CspPayload | null;

@@ -25,10 +25,10 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
     if (!covered) {
       return (
         <NoCoverPanel
-          service="Endpoint Protection (EPP) · Incidents"
+          service="RPM EPP · Incidents"
           hint={
             epp?.message ||
-            "No cover — no Bitdefender endpoints mapped to this customer."
+            "No cover — no RPM EPP endpoints mapped to this customer."
           }
         />
       );
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
         <Card>
           <CardHead>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>RPM End Point Protection · Incidents ({rows.length})</span>
+              <span>RPM EPP · Incidents ({rows.length})</span>
               {feed?.incidentsOk != null ? (
                 <span
                   className={
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
                 <p className="font-medium text-fg">No open incidents for this customer.</p>
                 {feed?.incidentsOk === false ? (
                   <p className="text-[12px] text-subtle">
-                    GravityZone incidents feed failed
+                    RPM EPP incidents feed failed
                     {feed.incidentsMessage ? `: ${feed.incidentsMessage}` : "."}
                   </p>
                 ) : (
