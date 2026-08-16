@@ -1,21 +1,34 @@
 # Enable-Cover-From-Local.ps1
 # Push cover=1 to central for products found on this host. Only ENABLES. Never clears.
+# Bools accepted as switch OR 0/1/true/false strings (safe for powershell -File).
 param(
   [Parameter(Mandatory)][string]$CustomerCode,
   [Parameter(Mandatory)][string]$CentralDataSource,
   [Parameter(Mandatory)][string]$CentralDatabase,
   [Parameter(Mandatory)][string]$CentralSqlUser,
   [Parameter(Mandatory)][string]$CentralSqlPassword,
-  [bool]$Syspro = $false,
-  [bool]$Pulseway = $false,
-  [bool]$Bitdefender = $false,
-  [bool]$Cove = $false,
+  [string]$Syspro = '0',
+  [string]$Pulseway = '0',
+  [string]$Bitdefender = '0',
+  [string]$Cove = '0',
   [string]$AgentRoot = 'C:\RPM-Assure\Agent'
 )
 
 $ErrorActionPreference = 'Continue'
+
+function Convert-RpmaFlag([string]$v) {
+  if ([string]::IsNullOrWhiteSpace($v)) { return $false }
+  $t = $v.Trim().ToLowerInvariant()
+  return ($t -eq '1' -or $t -eq 'true' -or $t -eq '$true' -or $t -eq 'yes')
+}
+
+$doSyspro = Convert-RpmaFlag $Syspro
+$doPulseway = Convert-RpmaFlag $Pulseway
+$doBitdefender = Convert-RpmaFlag $Bitdefender
+$doCove = Convert-RpmaFlag $Cove
+
 $CustomerCode = $CustomerCode.Trim().ToUpperInvariant()
-if (-not ($Syspro -or $Pulseway -or $Bitdefender -or $Cove)) {
+if (-not ($doSyspro -or $doPulseway -or $doBitdefender -or $doCove)) {
   Write-Host 'No local products to enable on cover.'
   return @{ Enabled = @(); SqlOk = $true }
 }
@@ -26,10 +39,10 @@ function Sql-Lit([string]$s) {
 }
 
 $sets = @()
-if ($Syspro) { $sets += 'PillarSyspro = 1' }
-if ($Pulseway) { $sets += 'PillarPulseway = 1' }
-if ($Cove) { $sets += 'PillarCove = 1' }
-if ($Bitdefender) { $sets += 'PillarBitdefender = 1' }
+if ($doSyspro) { $sets += 'PillarSyspro = 1' }
+if ($doPulseway) { $sets += 'PillarPulseway = 1' }
+if ($doCove) { $sets += 'PillarCove = 1' }
+if ($doBitdefender) { $sets += 'PillarBitdefender = 1' }
 $setClause = $sets -join ",`n  "
 
 $sql = @"
@@ -68,10 +81,10 @@ $csb['TrustServerCertificate'] = $true
 $csb['Connect Timeout'] = 20
 
 $enabled = @()
-if ($Syspro) { $enabled += 'syspro' }
-if ($Pulseway) { $enabled += 'rmm/Pulseway' }
-if ($Cove) { $enabled += 'cove' }
-if ($Bitdefender) { $enabled += 'epp/Bitdefender' }
+if ($doSyspro) { $enabled += 'syspro' }
+if ($doPulseway) { $enabled += 'rmm/Pulseway' }
+if ($doCove) { $enabled += 'cove' }
+if ($doBitdefender) { $enabled += 'epp/Bitdefender' }
 
 try {
   $conn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
