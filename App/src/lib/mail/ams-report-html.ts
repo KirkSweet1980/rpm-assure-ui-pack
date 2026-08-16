@@ -817,6 +817,25 @@ function patchComplianceHtml(detail: CustomerDetailPayload): string {
   }
   const serverRows = [...sp.offenders];
   const wsRows = [...wp.offenders];
+  const recentCutoff = Date.now() - 30 * 24 * 3600 * 1000;
+  const named = (rmm?.patches ?? []).filter((p) => p.title);
+  const installed = named.filter((p) => p.status === "installed");
+  const recent = installed.filter(
+    (p) => p.installedAt && new Date(p.installedAt).getTime() >= recentCutoff,
+  );
+  const missingNamed = named.filter((p) => p.status === "missing" || p.status === "pending");
+  function patchListTable(heading: string, list: typeof named, mode: "installed" | "missing"): string {
+    const rows = list
+      .slice(0, 120)
+      .map((p) => {
+        const when = p.installedAt ? esc(fmtDt(p.installedAt)) : "—";
+        return `<tr><td>${esc(p.deviceName || p.deviceId)}</td><td>${esc(p.title)}</td><td>${esc(p.kb || "—")}</td><td>${esc(p.classification || p.status)}</td><td>${when}</td></tr>`;
+      })
+      .join("");
+    return `<h3 class="sub">${esc(heading)}</h3>
+    <table class="ams"><thead><tr><th class="dark">Server / device</th><th class="dark">Patch</th><th class="dark">KB</th><th class="dark">${mode === "installed" ? "Class" : "Status"}</th><th class="dark">${mode === "installed" ? "Installed" : "Seen"}</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="5" class="muted">Pulseway did not publish named patches this collect — counts above still apply.</td></tr>`}</tbody></table>`;
+  }
   return `<h3 class="sub">Patch compliance</h3>
   <p class="muted">Full estate from Pulseway. <strong>Servers feed SLA</strong>. Workstations are visibility only and do not move assurance score. Devices with no patch counters are omitted from %.</p>
   ${kvTable([
@@ -824,6 +843,9 @@ function patchComplianceHtml(detail: CustomerDetailPayload): string {
     ["Servers current (0 missing)", fmtN(sp.compliant)],
     ["Server compliance", `<span class="${(sp.compliancePct ?? 0) < 80 ? "bad" : (sp.compliancePct ?? 0) < 95 ? "warn" : "ok"}">${esc(fmtN(sp.compliancePct, "%"))}</span>`],
     ["Server outstanding / pending", `${fmtN(sp.missing)} / ${fmtN(sp.pending)}`],
+    ["Installed patches (named, this customer)", fmtN(installed.length)],
+    ["Recently installed (last 30 days)", fmtN(recent.length)],
+    ["Named outstanding / pending", fmtN(missingNamed.length)],
     ["Workstation devices reporting", fmtN(wp.reporting)],
     ["Workstation compliance (visibility)", fmtN(wp.compliancePct, "%")],
     ["Workstation outstanding / pending", `${fmtN(wp.missing)} / ${fmtN(wp.pending)}`],
@@ -843,7 +865,10 @@ function patchComplianceHtml(detail: CustomerDetailPayload): string {
     </tbody>
   </table>
   ${rmmDeviceTable("Servers — full patch list", serverRows, "patch", 200)}
-  ${rmmDeviceTable("Workstations — visibility only", wsRows, "patch", 200)}`;
+  ${rmmDeviceTable("Workstations — visibility only", wsRows, "patch", 200)}
+  ${patchListTable("Recently installed patches (last 30 days)", recent, "installed")}
+  ${patchListTable("Installed patches (this customer)", installed, "installed")}
+  ${patchListTable("Outstanding / pending patches by device", missingNamed, "missing")}`;
 }
 
 /** Cover strip + RMM / Cove / EPP / M365 sections for every customer pack. */

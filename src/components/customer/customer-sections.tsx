@@ -925,8 +925,8 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="space-y-4">
       <ChartCaption
-        title="Customer Patches - Not Deployed"
-        why="Outstanding Windows / OS updates per agent from Pulseway (Critical + Important + Unspecified). Installed history is not exposed by the API. Not SYSPRO hotfixes — those stay under SYSPRO → Hotfix Information."
+        title="Patch compliance — installed and outstanding"
+        why="Installed, recently installed (30 days), and outstanding Windows updates per server from Pulseway. Servers feed SLA. Workstations are visibility only."
       />
       {rmm?.message ? (
         <p className="text-sm text-muted">{rmm.message}</p>
@@ -953,6 +953,16 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
           label="Pending / reboot"
           value={s?.patchPending ?? "—"}
           hint="Only when agent reports pending"
+        />
+        <StatCard
+          label="Installed (named)"
+          value={(rmm?.patches ?? []).filter((p) => p.status === "installed").length || (s?.patchInstalled ?? "—")}
+          hint="Named installed updates this customer"
+        />
+        <StatCard
+          label="Recently installed"
+          value={s?.patchInstalledRecent ?? (rmm?.patches ?? []).filter((p) => p.status === "installed" && p.installedAt && Date.now() - new Date(p.installedAt).getTime() <= 30 * 86400000).length}
+          hint="Last 30 days"
         />
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -1177,6 +1187,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                 <th className="px-3 py-2">Device</th>
                 <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Online</th>
+                <th className="px-3 py-2 text-right">Installed</th>
                 <th className="px-3 py-2 text-right">Outstanding</th>
                 <th className="px-3 py-2 text-right">Pending</th>
                 <th className="px-3 py-2">Band</th>
@@ -1205,6 +1216,9 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                           ? <span className="rpma-online">Online</span>
                           : "Offline"}
                     </td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums">
+                      {reports ? (d.patchInstalled ?? "—") : "—"}
+                    </td>
                     <td
                       className={
                         "px-3 py-2 text-right font-mono tabular-nums " +
@@ -1226,6 +1240,52 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
           </table>
         </div>
       )}
+      {(() => {
+        const named = rmm?.patches ?? [];
+        if (!named.length) return null;
+        const cutoff = Date.now() - 30 * 86400000;
+        const recent = named.filter(
+          (p) => p.status === "installed" && p.installedAt && new Date(p.installedAt).getTime() >= cutoff,
+        );
+        const installed = named.filter((p) => p.status === "installed");
+        const miss = named.filter((p) => p.status === "missing" || p.status === "pending");
+        const Block = ({ title, rows }: { title: string; rows: typeof named }) => (
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-muted">{title}</p>
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="px-3 py-2">Device</th>
+                  <th className="px-3 py-2">Patch</th>
+                  <th className="px-3 py-2">KB</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Installed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(0, 80).map((p, i) => (
+                  <tr key={`${p.deviceId}-${p.title}-${i}`} className="border-b border-border/70">
+                    <td className="px-3 py-2">{p.deviceName || p.deviceId}</td>
+                    <td className="px-3 py-2">{p.title}</td>
+                    <td className="px-3 py-2 font-mono text-[11px]">{p.kb || "—"}</td>
+                    <td className="px-3 py-2">{p.status}</td>
+                    <td className="px-3 py-2 text-[12px] text-muted">
+                      {p.installedAt ? new Date(p.installedAt).toLocaleString("en-ZA") : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        return (
+          <div className="space-y-3">
+            <Block title="Recently installed (30 days)" rows={recent} />
+            <Block title="Installed patches (this customer)" rows={installed} />
+            <Block title="Outstanding / pending by device" rows={miss} />
+          </div>
+        );
+      })()}
     </div>
   );
 }

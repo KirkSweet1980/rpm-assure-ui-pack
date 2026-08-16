@@ -103,5 +103,16 @@ if (Test-Path -LiteralPath $rmmMap) {
   if ($LASTEXITCODE -eq 0) { W Green 'RMM device remap OK' } else { W Yellow 'RMM device remap warned.' }
 }
 
+$patchTbl = 'C:\RPM-Assure\Sql\rmm\pulseway\462_Ensure_Pulseway_DevicePatches.sql'
+if (-not (Test-Path -LiteralPath $patchTbl)) { $patchTbl = Join-Path (Split-Path $PSScriptRoot -Parent) 'rmm\pulseway\462_Ensure_Pulseway_DevicePatches.sql' }
+if (Test-Path -LiteralPath $patchTbl) {
+  W Cyan '--- Pulseway device patch list table ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $patchTbl @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'Pulseway_DevicePatches OK' } else { W Yellow 'Pulseway_DevicePatches warned.' }
+}
+
 Write-Host 'Agents, RequestSyncUtc, vendor maps, and pillar columns are in place.'
 Write-Host 'Hard-refresh Assure. Cloud Backup and EPP fill from stamped devices, not just the map lamp.'

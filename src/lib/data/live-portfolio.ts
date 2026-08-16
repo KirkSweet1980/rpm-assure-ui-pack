@@ -4904,6 +4904,52 @@ WHERE d.CustomerCode = @code`);
         rmm.summary.patchPending = pDev ? pPend : null;
         rmm.summary.patchDevicesReporting = pDev || null;
       }
+
+      try {
+        const pr = await pool
+          .request()
+          .input("code", sql.NVarChar(50), code)
+          .query(`
+          SELECT TOP 4000
+            DeviceId, DeviceName, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode
+          FROM dbo.Pulseway_DevicePatches WITH (NOLOCK)
+          WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_DevicePatches WITH (NOLOCK))
+            AND (CustomerCode = @code)
+          ORDER BY
+            CASE WHEN Status = N'installed' THEN 0 WHEN Status = N'missing' THEN 1 ELSE 2 END,
+            InstalledUtc DESC, Title`);
+        const items = (pr.recordset as Array<Record<string, unknown>>).map((r) => {
+          const st = String(r.Status ?? "unknown").toLowerCase();
+          const status =
+            st === "installed" || st === "missing" || st === "pending" ? st : "unknown";
+          return {
+            deviceId: String(r.DeviceId ?? ""),
+            deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
+            title: String(r.Title ?? ""),
+            kb: r.KbArticle != null ? String(r.KbArticle) : null,
+            status: status as "installed" | "missing" | "pending" | "unknown",
+            installedAt: r.InstalledUtc ? new Date(r.InstalledUtc as string).toISOString() : null,
+            classification: r.Classification != null ? String(r.Classification) : null,
+          };
+        });
+        rmm.patches = items;
+        const byDev = new Map<string, typeof items>();
+        for (const it of items) {
+          const list = byDev.get(it.deviceId) ?? [];
+          list.push(it);
+          byDev.set(it.deviceId, list);
+        }
+        for (const d of rmm.devices) {
+          d.patches = byDev.get(d.deviceId) ?? [];
+        }
+        const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+        const recent = items.filter(
+          (p) => p.status === "installed" && p.installedAt && new Date(p.installedAt).getTime() >= cutoff,
+        );
+        if (rmm.summary) rmm.summary.patchInstalledRecent = recent.length;
+      } catch {
+        rmm.patches = [];
+      }
     } catch {
       rmm.devices = [];
     }

@@ -500,6 +500,17 @@ export type RmmOrgSummary = {
   patchMissing?: number | null;
   patchPending?: number | null;
   patchDevicesReporting?: number | null;
+  patchInstalledRecent?: number | null;
+};
+
+export type RmmPatchItem = {
+  deviceId: string;
+  deviceName: string | null;
+  title: string;
+  kb: string | null;
+  status: "installed" | "missing" | "pending" | "unknown";
+  installedAt: string | null;
+  classification: string | null;
 };
 
 export type RmmDeviceRow = {
@@ -522,6 +533,7 @@ export type RmmDeviceRow = {
   patchInstalled?: number | null;
   patchMissing?: number | null;
   patchPending?: number | null;
+  patches?: RmmPatchItem[];
   /** Hours offline in current stretch (0 if online) */
   offlineHoursCurrent?: number | null;
   /** Estimated offline hours last 7 days (from OnlinePct or daily history) */
@@ -700,6 +712,7 @@ export type RmmPayload = {
   pulsewayOrgName: string | null;
   summary: RmmOrgSummary | null;
   devices: RmmDeviceRow[];
+  patches?: RmmPatchItem[];
   alerts: RmmAlertRow[];
   windowsEvents?: RmmWindowsEventRow[];
   agentIops?: RmmAgentIopsRow[];

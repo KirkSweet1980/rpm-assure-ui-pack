@@ -1104,7 +1104,36 @@ function Get-PatchCountsFromObject($obj) {
   if ($cInst -eq 0 -and $cMiss -eq 0 -and $cPend -eq 0 -and $looksUpdate -gt 0) {
     $cMiss = $looksUpdate
   }
-  return @{ Inst = $cInst; Miss = $cMiss; Pend = $cPend; Source = 'list' }
+  $items = @(Get-PatchItemList $rows)
+  return @{ Inst = $cInst; Miss = $cMiss; Pend = $cPend; Source = 'list'; Items = $items }
+}
+
+function Get-PatchItemList($rows) {
+  $out = @()
+  if (-not $rows) { return $out }
+  foreach ($u in @($rows)) {
+    if ($null -eq $u -or $u -is [string] -or $u -is [ValueType]) { continue }
+    $title = ''
+    try { $title = [string](Get-Prop $u @('Title','Name','UpdateName','KbArticle','KB','DisplayName','Id')) } catch { $title = '' }
+    $title = $title.Trim()
+    if (-not $title) { continue }
+    if ($title.Length -gt 390) { $title = $title.Substring(0, 390) }
+    $kb = ''
+    try { $kb = [string](Get-Prop $u @('KbArticle','KB','KnowledgeBase','Kb','ArticleId')) } catch {}
+    if (-not $kb -and $title -match '(KB\d{5,7})') { $kb = $Matches[1] }
+    $st = ''
+    try { $st = [string](Get-Prop $u @('Status','State','UpdateStatus','InstallationStatus','InstallStatus','Result')) } catch {}
+    $sl = $st.ToLowerInvariant()
+    $norm = 'unknown'
+    if ($sl -match 'install|success|complete|applied') { $norm = 'installed' }
+    elseif ($sl -match 'pend|download|reboot|scheduled|queued|waiting') { $norm = 'pending' }
+    elseif ($sl -match 'fail|error|abort|avail|missing|needed|not.?install|approved|outstanding|required|new') { $norm = 'missing' }
+    $when = Get-Prop $u @('InstalledOn','InstalledDate','InstallDate','InstalledUtc','DateInstalled','LastInstallTime','UpdatedAt','Date')
+    $cls = ''
+    try { $cls = [string](Get-Prop $u @('Classification','Category','Severity','Type','UpdateClassification')) } catch {}
+    $out += [pscustomobject]@{ Title = $title; Kb = $kb; Status = $norm; InstalledOn = $when; Classification = $cls }
+  }
+  return $out
 }
 
 function Set-DevicePatchNote($d, $counts, [string]$via) {
@@ -1120,6 +1149,10 @@ function Set-DevicePatchNote($d, $counts, [string]$via) {
   }
   if ($null -ne $counts.Pend) {
     $d | Add-Member -NotePropertyName 'PatchPendingCount' -NotePropertyValue ([int]$counts.Pend) -Force
+    $set = $true
+  }
+  if ($counts.Items -and @($counts.Items).Count -gt 0) {
+    $d | Add-Member -NotePropertyName 'PatchItems' -NotePropertyValue @($counts.Items) -Force
     $set = $true
   }
   if ($set -and -not $script:LoggedPatchHit) {
@@ -1165,11 +1198,21 @@ function Enrich-DevicePatch($d, [string]$did) {
   $c0 = Get-PatchCountsFromObject $d
   if ($c0) { if (Set-DevicePatchNote $d $c0 'device-object') { return $true } }
 
-  # 3) Do NOT storm subpaths every collect (was 13 GETs x N devices).
-  # Only probe once per run for the first few devices if still empty (diagnostics).
-  if (-not $script:PatchProbeN) { $script:PatchProbeN = 0 }
-  if ($script:PatchProbeN -ge 2) { return $false }
-  $script:PatchProbeN++
+  # 3) Per-server update list (names + installed dates). Cap to keep under Pulseway RPS.
+  $looksServer = $false
+  try {
+    $dt = [string](Get-Prop $d @('Type','DeviceType','ComputerType','OsType','Category'))
+    if ($dt -match '(?i)server|domain.?control') { $looksServer = $true }
+  } catch {}
+  if (-not $script:PatchListN) { $script:PatchListN = 0 }
+  $doList = $looksServer -and ($script:PatchListN -lt 80)
+  if (-not $doList) {
+    if (-not $script:PatchProbeN) { $script:PatchProbeN = 0 }
+    if ($script:PatchProbeN -ge 2) { return $false }
+    $script:PatchProbeN++
+  } else {
+    $script:PatchListN++
+  }
 
   $paths = @(
     ("devices/{0}/updates" -f $did),
@@ -1347,6 +1390,7 @@ if ($orgs.Count -gt 0) {
 [void]$sb.AppendLine('DELETE FROM dbo.Pulseway_Devices WHERE SnapshotDate = @Snap;')
 if (-not (Get-Variable -Name diskSb -ErrorAction SilentlyContinue)) { $diskSb = New-Object System.Text.StringBuilder }
 $diskSb = New-Object System.Text.StringBuilder
+$patchSb = New-Object System.Text.StringBuilder
 $script:LoggedDiskSample = $false
 $script:UptimeLogN = 0
 $devN = 0
@@ -1556,6 +1600,26 @@ foreach ($d in $devices) {
       (SqlEsc ([string]$did)), (SqlEsc $code), (SqlEsc $name), (SqlInt $oid), (SqlEsc $oname), (SqlBit $online), (SqlEsc $os), (SqlEsc $dtype), (SqlInt $crit), (SqlInt $elev), (SqlDt $last), (SqlEsc ([string]$ip)), (SqlDec $cpu), (SqlDec $mem), (SqlDec $onlinePct), (SqlDec $uptimeDays), (SqlDt $lastBoot), (SqlInt $patchInst), (SqlInt $patchMiss), (SqlInt $patchPend), (SqlDec $offlineHrsCur), (SqlDec $offlineHrs7), (SqlDec $offlineHrs30)
   ))
 
+  $items = @()
+  if ($d.PSObject.Properties.Name -contains 'PatchItems' -and $d.PatchItems) { $items = @($d.PatchItems) }
+  if ($items.Count -eq 0) {
+    foreach ($dp in @('Updates','WindowsUpdates','InstalledUpdates','AvailableUpdates')) {
+      if ($d.PSObject.Properties.Name -contains $dp -and $d.$dp) {
+        $cand = $d.$dp
+        if ($cand -is [System.Array]) { $items = @(Get-PatchItemList $cand) }
+        elseif ($cand.PSObject -and $cand.PSObject.Properties.Name -contains 'Data') { $items = @(Get-PatchItemList $cand.Data) }
+        if ($items.Count -gt 0) { break }
+      }
+    }
+  }
+  foreach ($it in $items) {
+    if (-not $it.Title) { continue }
+    [void]$patchSb.AppendLine((
+      "INSERT INTO dbo.Pulseway_DevicePatches (SnapshotDate, DeviceId, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode, DeviceName, ImportedAt) VALUES (@Snap, {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, @Imp);" -f `
+        (SqlEsc ([string]$did)), (SqlEsc $it.Title), (SqlEsc $it.Kb), (SqlEsc $it.Status), (SqlDt $it.InstalledOn), (SqlEsc $it.Classification), (SqlEsc $code), (SqlEsc $name)
+    ))
+  }
+
   # Disks nested on device (sizes via Get-DiskSizePair)
   $drives = @()
   foreach ($dp in @('Disks','Drives','Volumes','Storage','disks','drives','LogicalDisks','Partitions','VolumeList','LogicalDisk','FixedDisks')) {
@@ -1735,6 +1799,27 @@ END TRY BEGIN CATCH END CATCH
 
 Invoke-SqlFile -SqlText $ensureCols -Label 'ensure_stats_cols' -Soft | Out-Null
 
+$ensurePatch = @'
+SET NOCOUNT ON;
+IF OBJECT_ID(N'dbo.Pulseway_DevicePatches', N'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.Pulseway_DevicePatches (
+    SnapshotDate date NOT NULL,
+    DeviceId nvarchar(80) NOT NULL,
+    Title nvarchar(400) NOT NULL,
+    KbArticle nvarchar(40) NULL,
+    Status nvarchar(40) NOT NULL,
+    InstalledUtc datetime2(3) NULL,
+    Classification nvarchar(80) NULL,
+    CustomerCode nvarchar(50) NULL,
+    DeviceName nvarchar(200) NULL,
+    ImportedAt datetime2(3) NOT NULL CONSTRAINT DF_Pulseway_DevicePatches_Imp DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_Pulseway_DevicePatches PRIMARY KEY (SnapshotDate, DeviceId, Title)
+  );
+END
+'@
+Invoke-SqlFile -SqlText $ensurePatch -Label 'ensure_device_patches' -Soft | Out-Null
+
 Invoke-SqlFile -SqlText $sb.ToString() -Label 'collect_write' -Soft | Out-Null
 
 # Disks
@@ -1762,9 +1847,22 @@ if ($diskSb -and $diskSb.Length -gt 0) {
     Write-Log ('disk insert sample: ' + $snip)
   }
   Invoke-SqlFile -SqlText $diskSql.ToString() -Label 'collect_disks' -Soft | Out-Null
-
 } else {
   Write-Log 'No disk objects on device payload (API list may be thin - stats stay NULL until detail enrichment).'
+}
+
+if ($patchSb -and $patchSb.Length -gt 0) {
+  $pSql = New-Object System.Text.StringBuilder
+  [void]$pSql.AppendLine('SET NOCOUNT ON; DECLARE @Snap date = CAST(SYSUTCDATETIME() AT TIME ZONE ''UTC'' AT TIME ZONE ''South Africa Standard Time'' AS date); DECLARE @Imp datetime2(3) = SYSUTCDATETIME();')
+  [void]$pSql.AppendLine('IF OBJECT_ID(N''dbo.Pulseway_DevicePatches'',N''U'') IS NOT NULL BEGIN')
+  [void]$pSql.AppendLine('DELETE FROM dbo.Pulseway_DevicePatches WHERE SnapshotDate = @Snap;')
+  [void]$pSql.AppendLine($patchSb.ToString())
+  [void]$pSql.AppendLine('END')
+  $pIns = ([regex]::Matches($patchSb.ToString(), 'INSERT INTO')).Count
+  Write-Log ("Writing device patches... insertRows=$pIns")
+  Invoke-SqlFile -SqlText $pSql.ToString() -Label 'collect_patches' -Soft | Out-Null
+} else {
+  Write-Log 'No named patches from Pulseway this cycle (counts still stored on devices).'
 }
 
 # Auto-map
