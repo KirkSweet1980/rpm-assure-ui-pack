@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-nologo-20260816";
-const HALL = "/brand/login-boardroom-tv.jpg?v=20260816c";
+const LOGIN_BUILD = "yours-bottom-20260816";
+const HALL = "/brand/login-picks/mine.jpg?v=20260816y";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -88,7 +88,7 @@ function LoginPage() {
               <label className="rpma-gl-field">
                 <span>Username</span>
                 <span className="rpma-gl-wrap">
-                  <User size={16} aria-hidden />
+                  <User size={14} aria-hidden />
                   <input
                     type="text"
                     required
@@ -102,7 +102,7 @@ function LoginPage() {
               <label className="rpma-gl-field">
                 <span>Password</span>
                 <span className="rpma-gl-wrap">
-                  <Lock size={16} aria-hidden />
+                  <Lock size={14} aria-hidden />
                   <input
                     type={showPw ? "text" : "password"}
                     required
@@ -119,7 +119,7 @@ function LoginPage() {
                     aria-label={showPw ? "Hide password" : "Show password"}
                     tabIndex={-1}
                   >
-                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </span>
               </label>
@@ -166,8 +166,9 @@ const GLASS_CSS = `
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 28% 48%;
+  object-fit: contain;
+  object-position: center center;
+  background: #071018;
   display: block;
 }
 .rpma-gl-wash {
@@ -175,31 +176,29 @@ const GLASS_CSS = `
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(42% 58% at 32% 48%, transparent 0%, transparent 46%, rgba(4, 12, 20, 0.18) 100%),
-    linear-gradient(90deg, rgba(3, 10, 18, 0.08) 0%, rgba(3, 10, 18, 0.04) 42%, rgba(3, 10, 18, 0.52) 78%, rgba(3, 10, 18, 0.62) 100%);
+    linear-gradient(180deg, rgba(4, 10, 16, 0.08) 0%, transparent 28%, transparent 62%, rgba(4, 10, 16, 0.55) 100%);
 }
 .rpma-gl-stage {
   position: relative;
   z-index: 2;
   min-height: 100dvh;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 2.4rem 5vw;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.2rem 1rem 2.4rem;
 }
 .rpma-gl-card {
   position: relative;
-  width: min(100%, 24.25rem);
-  padding: 1.9rem 1.7rem 1.2rem;
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  width: min(100%, 18.4rem);
+  padding: 1.05rem 1.05rem 0.8rem;
+  border-radius: 1.05rem;
+  background: rgba(8, 16, 24, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.28) inset,
-    0 0 0 1px rgba(8, 20, 32, 0.18),
-    0 22px 56px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(16px) saturate(1.55);
-  -webkit-backdrop-filter: blur(16px) saturate(1.55);
+    0 1px 0 rgba(255,255,255,0.22) inset,
+    0 16px 36px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
   overflow: hidden;
 }
 .rpma-gl-sheen {
@@ -210,22 +209,21 @@ const GLASS_CSS = `
   background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
 }
 .rpma-gl-kicker {
-  margin: 0.15rem 0 0.55rem;
+  margin: 0.1rem 0 0.28rem;
   text-align: center;
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted);
 }
 .rpma-gl-word {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.18rem;
   text-align: center;
-  font-size: clamp(1.75rem, 3vw, 2.2rem);
+  font-size: 1.42rem;
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
-  text-wrap: balance;
   color: transparent;
   background: linear-gradient(90deg, #9ec6d8 0%, var(--teal) 46%, var(--lime) 100%);
   -webkit-background-clip: text;
@@ -233,19 +231,19 @@ const GLASS_CSS = `
   -webkit-text-fill-color: transparent;
 }
 .rpma-gl-tag {
-  margin: 0 0 1.25rem;
+  margin: 0 0 0.75rem;
   text-align: center;
-  font-size: 0.66rem;
+  font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--lime) 78%, white);
 }
-.rpma-gl-form { display: flex; flex-direction: column; gap: 0.78rem; }
+.rpma-gl-form { display: flex; flex-direction: column; gap: 0.52rem; }
 .rpma-gl-field span {
   display: block;
-  margin-bottom: 0.28rem;
-  font-size: 0.72rem;
+  margin-bottom: 0.18rem;
+  font-size: 0.64rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--muted);
@@ -253,22 +251,21 @@ const GLASS_CSS = `
 .rpma-gl-wrap { position: relative; display: flex; align-items: center; }
 .rpma-gl-wrap > svg {
   position: absolute;
-  left: 0.8rem;
+  left: 0.65rem;
   color: rgba(243, 247, 251, 0.62);
   pointer-events: none;
 }
 .rpma-gl-wrap input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.74rem 2.55rem 0.74rem 2.35rem;
+  padding: 0.52rem 2.2rem 0.52rem 2rem;
   border: 0;
-  border-radius: 0.78rem;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0.62rem;
+  background: rgba(255, 255, 255, 0.1);
   color: var(--fg);
-  font-size: 0.92rem;
+  font-size: 0.82rem;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.22) inset;
-  transition: box-shadow 160ms ease-out, background 160ms ease-out;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset;
 }
 .rpma-gl-wrap input::placeholder { color: rgba(243, 247, 251, 0.45); }
 .rpma-gl-wrap input:-webkit-autofill,
@@ -276,74 +273,63 @@ const GLASS_CSS = `
 .rpma-gl-wrap input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--fg);
   transition: background-color 9999s ease-out 0s;
-  box-shadow: 0 0 0 1000px rgba(20, 40, 55, 0.35) inset;
+  box-shadow: 0 0 0 1000px rgba(20, 40, 55, 0.4) inset;
 }
 .rpma-gl-wrap input:focus {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--teal) 70%, white) inset,
-    0 0 0 4px color-mix(in srgb, var(--teal) 22%, transparent);
+    0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent);
 }
 .rpma-gl-eye {
   position: absolute;
-  right: 0.35rem;
+  right: 0.2rem;
   border: 0;
   background: transparent;
   color: rgba(243, 247, 251, 0.7);
   cursor: pointer;
-  padding: 0.35rem;
+  padding: 0.28rem;
   display: inline-flex;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 34px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
 }
 .rpma-gl-error {
   margin: 0;
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.7rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.55rem;
   background: rgba(155, 44, 44, 0.28);
   color: #ffd4d4;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   box-shadow: 0 0 0 1px rgba(255, 180, 180, 0.28) inset;
 }
 .rpma-gl-submit {
-  margin-top: 0.2rem;
+  margin-top: 0.1rem;
   width: 100%;
-  min-height: 46px;
-  padding: 0.78rem 1rem;
+  min-height: 38px;
+  padding: 0.55rem 0.85rem;
   border: 0;
-  border-radius: 0.85rem;
+  border-radius: 0.68rem;
   background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(27, 184, 166, 0.28);
-  transition: filter 160ms ease-out, transform 160ms ease-out;
+  box-shadow: 0 8px 18px rgba(27, 184, 166, 0.26);
 }
 .rpma-gl-submit:hover:not(:disabled) { filter: brightness(1.06); }
 .rpma-gl-submit:active:not(:disabled) { transform: scale(0.98); }
 .rpma-gl-submit:disabled { opacity: 0.65; cursor: wait; }
 .rpma-gl-foot {
-  margin: 1.15rem 0 0;
+  margin: 0.7rem 0 0;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   color: var(--muted);
 }
-@media (max-width: 860px) {
-  .rpma-gl-stage {
-    align-items: flex-end;
-    justify-content: center;
-    padding: 0 0.9rem 1rem;
-  }
-  .rpma-gl-card {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.1);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rpma-gl-wrap input, .rpma-gl-submit { transition: none; }
+@media (max-width: 640px) {
+  .rpma-gl-stage { padding: 0.8rem 0.75rem 1.1rem; }
+  .rpma-gl-card { width: min(100%, 17.2rem); }
 }
 `;
