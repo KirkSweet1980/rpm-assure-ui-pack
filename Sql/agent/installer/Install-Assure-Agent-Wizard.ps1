@@ -37,14 +37,14 @@ $Pages = @(
   "Install"
 )
 
-function New-Lbl([string]$text, [int]$x, [int]$y, [int]$w = 520, [int]$h = 22, [Drawing.Font]$font = $null, [Drawing.Color]$c = $null) {
+function New-Lbl([string]$text, [int]$x, [int]$y, [int]$w = 520, [int]$h = 22, $font = $null, $c = $null) {
   $l = New-Object Windows.Forms.Label
   $l.Text = $text
   $l.Location = New-Object Drawing.Point $x, $y
   $l.Size = New-Object Drawing.Size $w, $h
   $l.BackColor = [Drawing.Color]::Transparent
   if ($font) { $l.Font = $font } else { $l.Font = New-Object Drawing.Font("Segoe UI", 9.5) }
-  $l.ForeColor = $(if ($c) { $c } else { $Ink })
+  if ($c) { $l.ForeColor = $c } else { $l.ForeColor = $Ink }
   return $l
 }
 function New-Box([int]$x, [int]$y, [int]$w = 420, [switch]$Password) {
