@@ -106,6 +106,45 @@ END
 ELSE PRINT 'Agent_DiskIops exists';
 GO
 
+IF OBJECT_ID(N'dbo.Agent_EventLog', N'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.Agent_EventLog (
+    SnapshotUtc     datetime2(0)  NOT NULL,
+    CustomerCode    nvarchar(32)  NOT NULL,
+    HostName        nvarchar(128) NOT NULL,
+    TimeCreatedUtc  datetime2(0)  NOT NULL,
+    LogName         nvarchar(40)  NOT NULL,
+    EventId         int           NOT NULL,
+    LevelName       nvarchar(16)  NOT NULL,
+    ProviderName    nvarchar(200) NULL,
+    MessageText     nvarchar(1800) NULL,
+    ImportedAt      datetime2(3)  NOT NULL CONSTRAINT DF_Agent_EventLog_Imp DEFAULT SYSUTCDATETIME()
+  );
+  CREATE INDEX IX_Agent_EventLog_Cust ON dbo.Agent_EventLog (CustomerCode, HostName, TimeCreatedUtc DESC);
+  PRINT 'Agent_EventLog created';
+END
+ELSE PRINT 'Agent_EventLog exists';
+GO
+
+IF OBJECT_ID(N'dbo.Agent_LinkProbe', N'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.Agent_LinkProbe (
+    SnapshotUtc    datetime2(0)  NOT NULL,
+    CustomerCode   nvarchar(32)  NOT NULL,
+    HostName       nvarchar(128) NOT NULL,
+    SqlOk          bit           NOT NULL,
+    HttpOk         bit           NOT NULL,
+    HttpStatus     int           NULL,
+    LatencyMs      int           NULL,
+    Message        nvarchar(400) NULL,
+    ImportedAt     datetime2(3)  NOT NULL CONSTRAINT DF_Agent_LinkProbe_Imp DEFAULT SYSUTCDATETIME()
+  );
+  CREATE INDEX IX_Agent_LinkProbe_Cust ON dbo.Agent_LinkProbe (CustomerCode, HostName, SnapshotUtc DESC);
+  PRINT 'Agent_LinkProbe created';
+END
+ELSE PRINT 'Agent_LinkProbe exists';
+GO
+
 IF OBJECT_ID(N'dbo.Agent_JobDefinition', N'U') IS NULL
 BEGIN
   CREATE TABLE dbo.Agent_JobDefinition (
@@ -128,8 +167,10 @@ USING (VALUES
   (N'syspro-core',     N'SYSPRO core collect',     15, N'jobs\Run-Syspro-Core.ps1',     1, N'syspro', N'Operators license health DTR'),
   (N'syspro-native',   N'SYSPRO FinSight native',  15, N'jobs\Run-Syspro-Native.ps1',   1, N'syspro', N'INV AP AR WIP L1-3 without Datarapt'),
   (N'syspro-jobs',     N'SYSPRO full jobs',      1440, N'jobs\Run-Syspro-Jobs.ps1',     1, N'syspro', N'Nightly full job extract'),
-  (N'host-iops',       N'Host disk IOPS',          15, N'Collect-Host-Iops.ps1',        1, N'syspro', N'Windows LogicalDisk IOPS on this SQL host'),
-  (N'heartbeat-only',  N'Heartbeat only',           5, NULL,                             1, N'all',    N'No payload job')
+  (N'host-iops',       N'Host disk IOPS',          15, N'Collect-Host-Iops.ps1',           1, N'syspro', N'Windows LogicalDisk IOPS on this SQL host'),
+  (N'win-eventlog',    N'Windows critical events', 15, N'Collect-Windows-EventLog.ps1',    1, N'all',    N'Application + System Critical/Error'),
+  (N'assure-link',     N'Assure App link',          5, N'Probe-Assure-Link.ps1',           1, N'all',    N'Prove SQL path to central Assure'),
+  (N'heartbeat-only',  N'Heartbeat only',           5, NULL,                               1, N'all',    N'No payload job')
 ) AS s (JobName, DisplayName, DefaultIntervalMin, ScriptRelativePath, IsEnabled, AppliesToRoles, Notes)
 ON t.JobName = s.JobName
 WHEN NOT MATCHED THEN INSERT (JobName, DisplayName, DefaultIntervalMin, ScriptRelativePath, IsEnabled, AppliesToRoles, Notes)
@@ -168,6 +209,8 @@ BEGIN TRY
   GRANT SELECT, INSERT ON dbo.Agent_Heartbeat TO [Rpm_collect];
   GRANT SELECT, INSERT ON dbo.Agent_JobRun TO [Rpm_collect];
   GRANT SELECT, INSERT, DELETE ON dbo.Agent_DiskIops TO [Rpm_collect];
+  GRANT SELECT, INSERT, DELETE ON dbo.Agent_EventLog TO [Rpm_collect];
+  GRANT SELECT, INSERT, DELETE ON dbo.Agent_LinkProbe TO [Rpm_collect];
   GRANT SELECT ON dbo.Agent_JobDefinition TO [Rpm_collect];
   GRANT SELECT ON dbo.vw_Agent_Status_Latest TO [Rpm_collect];
   PRINT 'Granted Rpm_collect';
@@ -178,6 +221,8 @@ BEGIN TRY
   GRANT SELECT, INSERT ON dbo.Agent_Heartbeat TO [rpmassure];
   GRANT SELECT, INSERT ON dbo.Agent_JobRun TO [rpmassure];
   GRANT SELECT, INSERT, DELETE ON dbo.Agent_DiskIops TO [rpmassure];
+  GRANT SELECT, INSERT, DELETE ON dbo.Agent_EventLog TO [rpmassure];
+  GRANT SELECT, INSERT, DELETE ON dbo.Agent_LinkProbe TO [rpmassure];
   GRANT SELECT ON dbo.Agent_JobDefinition TO [rpmassure];
   GRANT SELECT ON dbo.vw_Agent_Status_Latest TO [rpmassure];
   PRINT 'Granted rpmassure write';

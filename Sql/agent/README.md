@@ -1,32 +1,35 @@
 # RPM Assure Edge Agent
 
-Windows service `RPMAssure-Edge` on each customer SQL host.
+Windows service on each customer SYSPRO SQL host. One charter for every tenant.
+
+## Responsibilities
+
+| Job | Script | Interval |
+|---|---|---|
+| SYSPRO collect (core / jobs / FinSight) | `Run-Syspro-Collect-Direct.ps1` | 30 min / daily |
+| Windows Critical + Error event logs | `Collect-Windows-EventLog.ps1` | 30 min |
+| Disk IOPS on this host | `Collect-Host-Iops.ps1` | 30 min |
+| Assure App server link | `Probe-Assure-Link.ps1` | 5 min |
+| Heartbeat | built into `RpmAssure-Agent.ps1` | every cycle |
 
 ## Security
 
-- Secrets in `Agent.Secrets.bin` — Windows **DPAPI LocalMachine** (this box only)
-- Agent admin password (PBKDF2) required to change settings
-- Folder ACL: **SYSTEM + Administrators** only
-- SQL password is **not** passed on the sqlcmd command line (`SQLCMDPASSWORD` + encrypt `-N`)
-- `Agent.Config.ps1` has **no** passwords
+- Settings are **password protected** (`Set-AgentSettings.ps1`)
+- SQL passwords in `Agent.Secrets.bin` (Windows DPAPI, this machine only)
+- Folder locked to **SYSTEM + Administrators**
 
-Change settings:
+## Tray RAG (keep as-is)
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\Agent\Set-AgentSettings.ps1
-```
+| Light | State |
+|---|---|
+| Green | Connected — service up, heartbeat fresh |
+| Amber | Error — connected but last job failed |
+| Red | Disconnected — service down or heartbeat stale |
 
-## Deploy (every customer SQL host)
+## Install
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\Sql\agent\Deploy-Customer-Sql-Agent.ps1
-```
+Use the Windows wizard (same pack for every customer):
 
-You will be asked for an **agent admin password** on first install.
-
-## Proof
-
-```powershell
-Get-Service RPMAssure-Edge
-# Assure: Configuration > Edge Agents
+```cmd
+C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Start-Agent-Wizard.cmd
 ```

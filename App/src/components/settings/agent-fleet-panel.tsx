@@ -3,10 +3,12 @@ import { Bot, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   fetchAgentStatus,
+  fetchAgentHostHealth,
   requestAgentSync,
   requestAgentUpdate,
   SHIPPED_AGENT_VERSION,
   type AgentStatusRow,
+  type AgentHostHealth,
 } from "@/lib/settings/settings-api";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +35,7 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [sync, setSync] = useState<Record<string, SyncState>>({});
   const [selected, setSelected] = useState<string | null>(null);
+  const [health, setHealth] = useState<AgentHostHealth | null>(null);
   const armed = useRef<Set<string>>(new Set());
   const startedAt = useRef<Record<string, number>>({});
 
@@ -112,6 +115,20 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
 
   const sel = rows.find((r) => r.agentId === selected);
   const selSt = sel ? sync[sel.agentId] : undefined;
+
+  useEffect(() => {
+    if (!sel?.hostName) {
+      setHealth(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchAgentHostHealth({ data: { customerCode: sel.customerCode, hostName: sel.hostName } }).then((r) => {
+      if (!cancelled && r.ok) setHealth(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sel?.agentId, sel?.customerCode, sel?.hostName]);
 
   return (
     <div className="rpma-panel space-y-3 p-4">
@@ -225,6 +242,48 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
               </div>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {sel && health ? (
+        <div className="grid gap-3 border-t border-border/40 pt-3 md:grid-cols-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted">App server link</p>
+            <p className="mt-1 text-[13px] font-semibold text-fg">
+              {health.link?.sqlOk ? "SQL connected" : health.link ? "SQL down" : "No probe yet"}
+              {health.link?.latencyMs != null ? ` · ${health.link.latencyMs} ms` : ""}
+            </p>
+            {health.link?.message ? <p className="mt-0.5 text-[11px] text-muted">{health.link.message}</p> : null}
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Disk IOPS</p>
+            {health.iops.length === 0 ? (
+              <p className="mt-1 text-[12px] text-muted">Waiting for first sample</p>
+            ) : (
+              <ul className="mt-1 space-y-0.5 text-[12px] text-fg">
+                {health.iops.map((d) => (
+                  <li key={d.driveLetter}>
+                    {d.driveLetter} {d.totalIops != null ? `${Math.round(d.totalIops)} IOPS` : "—"}
+                    {d.usedPct != null ? ` · ${d.usedPct}% used` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Critical / Error (24h)</p>
+            {health.events.length === 0 ? (
+              <p className="mt-1 text-[12px] text-muted">None collected</p>
+            ) : (
+              <ul className="mt-1 space-y-0.5 text-[12px] text-fg">
+                {health.events.slice(0, 4).map((e, i) => (
+                  <li key={`${e.eventId}-${i}`} className="truncate" title={e.message}>
+                    {e.levelName} {e.logName} {e.eventId}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       ) : null}
     </div>

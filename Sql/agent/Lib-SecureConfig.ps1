@@ -58,6 +58,7 @@ function Get-RpmaAgentSettings {
     centralDatabase    = 'RPMAssure_App'
     centralSqlUser     = 'rpmassure'
     encryptSql         = $true
+    appHttpsUrl        = ''
   }
   if (-not (Test-Path $p)) { return [pscustomobject]$def }
   try {

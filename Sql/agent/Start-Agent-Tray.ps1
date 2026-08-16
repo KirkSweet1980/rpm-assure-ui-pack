@@ -27,9 +27,18 @@ function New-RpmaIconFromPng([string]$path, [string]$fallbackHex) {
 }
 
 $trayDir = Join-Path $AgentRoot 'tray'
-$iconOn   = New-RpmaIconFromPng (Join-Path $trayDir 'assure-ok-32.png')   '#16a34a'
-$iconWait = New-RpmaIconFromPng (Join-Path $trayDir 'assure-error-32.png') '#d97706'
-$iconOff  = New-RpmaIconFromPng (Join-Path $trayDir 'assure-off-32.png')  '#dc2626'
+$iconOn   = New-RpmaIconFromPng (Join-Path $trayDir 'robot-ok-32.png')    '#16a34a'
+if (-not (Test-Path (Join-Path $trayDir 'robot-ok-32.png'))) {
+  $iconOn = New-RpmaIconFromPng (Join-Path $trayDir 'assure-ok-32.png') '#16a34a'
+}
+$iconWait = New-RpmaIconFromPng (Join-Path $trayDir 'robot-error-32.png') '#d97706'
+if (-not (Test-Path (Join-Path $trayDir 'robot-error-32.png'))) {
+  $iconWait = New-RpmaIconFromPng (Join-Path $trayDir 'assure-error-32.png') '#d97706'
+}
+$iconOff  = New-RpmaIconFromPng (Join-Path $trayDir 'robot-off-32.png')   '#dc2626'
+if (-not (Test-Path (Join-Path $trayDir 'robot-off-32.png'))) {
+  $iconOff = New-RpmaIconFromPng (Join-Path $trayDir 'assure-off-32.png') '#dc2626'
+}
 
 function Read-RpmaStatus {
   $svc = Get-Service -Name 'RPMAssure-Edge' -ErrorAction SilentlyContinue
@@ -50,7 +59,7 @@ function Read-RpmaStatus {
       if ($msg -match 'fail|error|JOB_FAIL') { $err = $true }
       if ($hb) {
         $ageMin = ((Get-Date).ToUniversalTime() - [datetime]$hb).TotalMinutes
-        if ($ageMin -gt 20) { $online = $false }
+        if ($ageMin -gt 45) { $online = $false }
       } else { $online = $false }
     } catch {}
   }
@@ -58,7 +67,7 @@ function Read-RpmaStatus {
   $kind = 'red'
   $state = 'DISCONNECTED'
   if ($online -and $err) { $kind = 'amber'; $state = 'ERROR' }
-  elseif ($online) { $kind = 'green'; $state = 'OK' }
+  elseif ($online) { $kind = 'green'; $state = 'CONNECTED' }
   return [pscustomobject]@{
     kind  = $kind
     state = $state
@@ -82,9 +91,9 @@ $notify.Visible = $true
 $notify.Text = 'RPM Assure'
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
-$miTitle = $menu.Items.Add('RPM Assure Agent')
+$miTitle = $menu.Items.Add('RPM Assure Robot')
 $miTitle.Enabled = $false
-$miState = $menu.Items.Add('Status: ...')
+$miState = $menu.Items.Add('Robot: ...')
 $miState.Enabled = $false
 $miSync = $menu.Items.Add('Last sync: ...')
 $miSync.Enabled = $false
@@ -175,7 +184,7 @@ function Update-Tray {
   if ($tip.Length -gt 63) { $tip = $tip.Substring(0, 63) }
   $notify.Text = $tip
   $notify.Icon = if ($s.kind -eq 'green') { $iconOn } elseif ($s.kind -eq 'amber') { $iconWait } else { $iconOff }
-  $miState.Text = "Status: $($s.state)"
+  $miState.Text = "Robot: $($s.state)"
   $miSync.Text = "Last sync: $(FmtUtc $s.sync)"
 }
 

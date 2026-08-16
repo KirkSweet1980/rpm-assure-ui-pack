@@ -1647,7 +1647,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
   };
 });
 
-export const SHIPPED_AGENT_VERSION = "2.3.1";
+export const SHIPPED_AGENT_VERSION = "2.4.0";
 
 export type AgentStatusRow = {
   customerCode: string;
@@ -1895,6 +1895,95 @@ SELECT @@ROWCOUNT AS n;`);
       return { ok: false as const, message: e instanceof Error ? e.message : String(e) };
     }
   });
+
+export type AgentHostHealth = {
+  iops: Array<{
+    driveLetter: string;
+    usedPct: number | null;
+    readIops: number | null;
+    writeIops: number | null;
+    totalIops: number | null;
+    snapshotUtc: string | null;
+  }>;
+  events: Array<{
+    timeUtc: string;
+    logName: string;
+    eventId: number;
+    levelName: string;
+    providerName: string;
+    message: string;
+  }>;
+  link: { sqlOk: boolean; httpOk: boolean; latencyMs: number | null; message: string; snapshotUtc: string | null } | null;
+};
+
+export const fetchAgentHostHealth = createServerFn({ method: "GET" })
+  .validator((data: { customerCode: string; hostName: string }) => data)
+  .handler(async ({ data }) => {
+    const empty: AgentHostHealth = { iops: [], events: [], link: null };
+    const pool = await getPool();
+    if (!pool) return { ok: false as const, message: "SQL not connected", ...empty };
+    const code = data.customerCode.trim().toUpperCase();
+    const host = data.hostName.trim();
+    if (!code || !host) return { ok: false as const, message: "Customer and host required", ...empty };
+    try {
+      const iopsRes = await pool.request().input("c", sqlTypes.NVarChar(32), code).input("h", sqlTypes.NVarChar(128), host).query(`
+SELECT TOP 8 DriveLetter, UsedPct, ReadIops, WriteIops, TotalIops, SnapshotUtc
+FROM dbo.Agent_DiskIops WITH (NOLOCK)
+WHERE CustomerCode = @c AND HostName = @h
+  AND SnapshotUtc = (SELECT MAX(SnapshotUtc) FROM dbo.Agent_DiskIops WITH (NOLOCK) WHERE CustomerCode = @c AND HostName = @h)
+ORDER BY DriveLetter`);
+      const evRes = await pool.request().input("c", sqlTypes.NVarChar(32), code).input("h", sqlTypes.NVarChar(128), host).query(`
+SELECT TOP 12 TimeCreatedUtc, LogName, EventId, LevelName, ProviderName, MessageText
+FROM dbo.Agent_EventLog WITH (NOLOCK)
+WHERE CustomerCode = @c AND HostName = @h
+  AND TimeCreatedUtc >= DATEADD(hour, -24, SYSUTCDATETIME())
+ORDER BY TimeCreatedUtc DESC`);
+      let link: AgentHostHealth["link"] = null;
+      try {
+        const linkRes = await pool.request().input("c", sqlTypes.NVarChar(32), code).input("h", sqlTypes.NVarChar(128), host).query(`
+SELECT TOP 1 SnapshotUtc, SqlOk, HttpOk, LatencyMs, Message
+FROM dbo.Agent_LinkProbe WITH (NOLOCK)
+WHERE CustomerCode = @c AND HostName = @h
+ORDER BY SnapshotUtc DESC`);
+        const lr = linkRes.recordset?.[0] as Record<string, unknown> | undefined;
+        if (lr) {
+          link = {
+            sqlOk: Boolean(lr.SqlOk),
+            httpOk: Boolean(lr.HttpOk),
+            latencyMs: lr.LatencyMs != null ? Number(lr.LatencyMs) : null,
+            message: String(lr.Message ?? ""),
+            snapshotUtc: lr.SnapshotUtc ? new Date(lr.SnapshotUtc as string).toISOString() : null,
+          };
+        }
+      } catch {
+        /* table may not exist yet */
+      }
+      return {
+        ok: true as const,
+        message: "ok",
+        iops: (iopsRes.recordset ?? []).map((row: Record<string, unknown>) => ({
+          driveLetter: String(row.DriveLetter ?? ""),
+          usedPct: row.UsedPct != null ? Number(row.UsedPct) : null,
+          readIops: row.ReadIops != null ? Number(row.ReadIops) : null,
+          writeIops: row.WriteIops != null ? Number(row.WriteIops) : null,
+          totalIops: row.TotalIops != null ? Number(row.TotalIops) : null,
+          snapshotUtc: row.SnapshotUtc ? new Date(row.SnapshotUtc as string).toISOString() : null,
+        })),
+        events: (evRes.recordset ?? []).map((row: Record<string, unknown>) => ({
+          timeUtc: row.TimeCreatedUtc ? new Date(row.TimeCreatedUtc as string).toISOString() : "",
+          logName: String(row.LogName ?? ""),
+          eventId: Number(row.EventId ?? 0),
+          levelName: String(row.LevelName ?? ""),
+          providerName: String(row.ProviderName ?? ""),
+          message: String(row.MessageText ?? "").slice(0, 220),
+        })),
+        link,
+      };
+    } catch (e) {
+      return { ok: false as const, message: e instanceof Error ? e.message : String(e), ...empty };
+    }
+  });
+
 
 export const runAllApiSync = createServerFn({ method: "POST" }).handler(async () => {
   try {

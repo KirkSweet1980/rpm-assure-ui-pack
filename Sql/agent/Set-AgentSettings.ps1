@@ -37,14 +37,15 @@ Write-Host ('  Database    : ' + $set.centralDatabase)
 Write-Host ('  SQL user    : ' + $set.centralSqlUser)
 Write-Host ('  Collect min : ' + $set.collectIntervalMin)
 Write-Host ('  Full jobs   : every ' + $set.jobsIntervalMin + ' min')
-Write-Host ('  Encrypt SQL : ' + $set.encryptSql)
+Write-Host ('  App HTTPS   : ' + $(if ($set.appHttpsUrl) { $set.appHttpsUrl } else { '(not set)' }))
 Write-Host ''
 Write-Host '1) Collect interval (minutes)'
 Write-Host '2) Full-jobs interval (minutes)'
 Write-Host '3) Central SQL host'
 Write-Host '4) Central SQL login / password'
 Write-Host '5) Change agent admin password'
-Write-Host '6) Save and exit'
+Write-Host '6) Assure App HTTPS URL (optional probe)'
+Write-Host '7) Save and exit'
 Write-Host '0) Exit without save'
 $choice = Read-Host 'Choice'
 
@@ -90,6 +91,11 @@ switch ($choice) {
     Write-Host 'Admin password updated.'
   }
   '6' {
+    $set.appHttpsUrl = Read-Default 'Assure App HTTPS URL (blank = SQL only)' ([string]$(if ($set.appHttpsUrl) { $set.appHttpsUrl } else { '' }))
+    Save-RpmaAgentSettings $set
+    Write-Host 'Saved. Restart-Service RPMAssure-Edge'
+  }
+  '7' {
     Save-RpmaAgentSettings $set
     Save-RpmaAgentSecrets $secrets
     Write-Host 'Saved.'

@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.3.1"
+$AgentVersion = "2.4.0"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -191,6 +191,7 @@ if ($hostCustomers.Count) {
   Write-Host "WARN no Customer.Config.ps1 matched this host $HostName"
 }
 W "=== Agent cycle start v$AgentVersion host=$HostName customer=$CustomerCode matched=$($hostCustomers.Count) ==="
+$script:RpmaJobFailed = $false
 if ($hostCustomers.Count) {
   W ("Host customers: " + (($hostCustomers | ForEach-Object { $_.Code }) -join ','))
 }
@@ -436,6 +437,28 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
         Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
       }
     }
+    $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
+    if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
+    if (Test-Path $evtRunner) {
+      $jobs += @{
+        Name = "win-eventlog-$code"
+        Customer = $code
+        IntervalMin = $light
+        Script = $evtRunner
+        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
+      }
+    }
+    $linkRunner = Join-Path $AgentRoot "Probe-Assure-Link.ps1"
+    if (-not (Test-Path $linkRunner)) { $linkRunner = Join-Path $SqlRoot "agent\Probe-Assure-Link.ps1" }
+    if (Test-Path $linkRunner) {
+      $jobs += @{
+        Name = "assure-link-$code"
+        Customer = $code
+        IntervalMin = 5
+        Script = $linkRunner
+        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
+      }
+    }
   }
   W ("jobs queued: " + $jobs.Count + " from " + $configs.Count + " config(s)")
 }
@@ -482,7 +505,7 @@ foreach ($j in $jobs) {
   $name = $j.Name
   $interval = [int]$j.IntervalMin
   $cust = if ($j.Customer) { [string]$j.Customer } else { $CustomerCode }
-  $forced = $ForceJob -eq $name -or (($forceCodes -contains $cust.ToUpperInvariant()) -and ($name -like 'syspro-core-*' -or $name -like 'host-iops-*'))
+  $forced = $ForceJob -eq $name -or (($forceCodes -contains $cust.ToUpperInvariant()) -and ($name -like 'syspro-core-*' -or $name -like 'host-iops-*' -or $name -like 'win-eventlog-*' -or $name -like 'assure-link-*'))
   if (-not $forced -and -not (Test-JobDue -Name $name -IntervalMin $interval)) {
     W "SKIP $name not due (interval ${interval}m)"
     continue
@@ -529,5 +552,5 @@ WHERE HostName = $(Sql-Lit $HostName)
 }
 
 W "=== Agent cycle done log=$log ==="
-Write-RpmaStatusFile -Online ($r.ExitCode -eq 0) -Message $(if ($script:RpmaJobFailed) { 'job error' } else { 'cycle done' }) -HadError ([bool]$script:RpmaJobFailed)
+Write-RpmaStatusFile -Online (-not $hbFailed) -Message $(if ($script:RpmaJobFailed) { 'job error' } elseif ($hbFailed) { 'disconnected' } else { 'cycle done' }) -HadError ([bool]$script:RpmaJobFailed)
 exit 0

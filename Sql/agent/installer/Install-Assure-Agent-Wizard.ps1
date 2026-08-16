@@ -231,8 +231,8 @@ function Show-Page {
     0 {
       $content.Controls.Add((New-Lbl "Welcome" 24 28 560 32 (New-Object Drawing.Font("Segoe UI Semibold", 18))))
       $content.Controls.Add((New-Lbl "This wizard installs the RPM Assure Edge Agent on this SQL server for one customer. The same package is used for every tenant." 24 80 560 56 $null $Muted))
-      $content.Controls.Add((New-Lbl "What it does" 24 150 400 22 (New-Object Drawing.Font("Segoe UI Semibold", 11))))
-      $content.Controls.Add((New-Lbl "1. Pulls the latest agent from Git`r`n2. Registers the customer and encrypts SQL passwords`r`n3. Installs Windows service RPMAssure-Edge`r`n4. Locks agent files so only Administrators can change them`r`n5. Optional tray icon for status and Sync now" 24 178 560 140 $null $Ink))
+      $content.Controls.Add((New-Lbl "What the agent is responsible for" 24 150 500 22 (New-Object Drawing.Font("Segoe UI Semibold", 11))))
+      $content.Controls.Add((New-Lbl "1. SYSPRO collect scripts (core, jobs, FinSight)`r`n2. Windows Critical / Error event logs`r`n3. Disk IOPS on this SQL host`r`n4. Keep the link to the Assure App server alive`r`n5. Password-locked settings + locked system files`r`n6. System tray RAG: Connected / Disconnected / Error" 24 178 560 160 $null $Ink))
     }
     1 {
       $content.Controls.Add((New-Lbl "Customer" 24 28 400 32 (New-Object Drawing.Font("Segoe UI Semibold", 18))))
