@@ -1,0 +1,34 @@
+# Kill hung wizard, pull git, launch v2.4 from the pack (not a stale copy).
+# Administrator PowerShell:
+#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Launch-Fresh-Wizard.ps1
+$ErrorActionPreference = "Stop"
+$git = "C:\Program Files\Git\cmd\git.exe"
+$Pack = "C:\RPM-Assure\deploy\ui-pack"
+$Repo = "https://github.com/KirkSweet1980/rpm-assure-ui-pack.git"
+
+Write-Host "Stopping hung wizard windows..."
+Get-Process powershell, powershell_ise -EA SilentlyContinue | ForEach-Object {
+  try {
+    $cl = (Get-CimInstance Win32_Process -Filter ("ProcessId=" + $_.Id) -EA SilentlyContinue).CommandLine
+    if ($cl -and ($cl -match "Install-Customer-Pack-Wizard|Install-Assure-Agent-Wizard")) {
+      Stop-Process -Id $_.Id -Force -EA SilentlyContinue
+    }
+  } catch {}
+}
+
+New-Item -ItemType Directory -Force -Path (Split-Path $Pack) | Out-Null
+if (Test-Path "$Pack\.git\index.lock") { Remove-Item "$Pack\.git\index.lock" -Force -EA SilentlyContinue }
+if (Test-Path "$Pack\.git") {
+  & $git -C $Pack fetch --all --prune
+  & $git -C $Pack reset --hard origin/main
+} else {
+  if (Test-Path $Pack) { cmd /c ("rmdir /s /q `"" + $Pack + "`"") | Out-Null }
+  & $git clone --depth 1 --branch main $Repo $Pack
+}
+
+$wiz = Join-Path $Pack "Sql\agent\installer\Install-Customer-Pack-Wizard.ps1"
+if (-not (Test-Path $wiz)) { throw "Wizard missing after git pull: $wiz" }
+$head = & $git -C $Pack log -1 --oneline
+Write-Host ("HEAD " + $head)
+Write-Host "Launching wizard 2.4 from git pack..."
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $wiz

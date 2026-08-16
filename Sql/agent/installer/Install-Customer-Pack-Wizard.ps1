@@ -76,7 +76,7 @@ function New-Box([int]$x, [int]$y, [int]$w = 360, [switch]$Password) {
 }
 
 $form = New-Object Windows.Forms.Form
-$form.Text = "RPM Assure Agent"
+$form.Text = "RPM Assure Agent 2.4"
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
@@ -350,7 +350,12 @@ $btnTestCentral.add_Click({
     $lblCentral.Text = "Testing central " + $h + " as " + $u + "..."
     $lblCentral.ForeColor = $Muted
     [Windows.Forms.Application]::DoEvents()
-    $who = Test-Ado $h "RPMAssure_App" "sql" $u $p -Strict
+    if (Get-Command Test-RpmaCentral -EA SilentlyContinue) {
+      $r = Test-RpmaCentral -Server $h -User $u -Password $p
+      if ($r.Ok) { $who = $r.Who } else { $who = "FAIL:" + $r.Error }
+    } else {
+      $who = Test-Ado $h "RPMAssure_App" "sql" $u $p -Strict
+    }
     if ($who -like "FAIL:*") {
       $lblCentral.Text = "Central failed. Edit user/password/host and test again. " + $who.Substring(5)
       $lblCentral.ForeColor = $Fail

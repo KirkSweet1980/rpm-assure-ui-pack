@@ -60,6 +60,28 @@ function Test-RpmaSql {
   return @{ Ok = $false; Who = ""; Error = $last; ServerUsed = [string]$Server }
 }
 
+function Test-RpmaCentral {
+  param(
+    [string]$Server = "102.222.21.220,14333",
+    [string]$User = "rpmassure",
+    [string]$Password = "",
+    [string]$Database = "RPMAssure_App"
+  )
+  $h = [string]$Server
+  $u = [string]$User
+  $p = [string]$Password
+  $db = [string]$Database
+  $master = Test-RpmaSql -Server $h -Database "master" -Mode sql -User $u -Password $p -TimeoutSec 5 -StrictHost
+  if (-not $master.Ok) {
+    return @{ Ok = $false; Who = ""; Error = ("Cannot reach central " + $h + " as " + $u + ". " + $master.Error); ServerUsed = $h }
+  }
+  $app = Test-RpmaSql -Server $h -Database $db -Mode sql -User $u -Password $p -TimeoutSec 5 -StrictHost
+  if (-not $app.Ok) {
+    return @{ Ok = $false; Who = $master.Who; Error = ("Login works on central master but cannot open " + $db + ". " + $app.Error); ServerUsed = $h }
+  }
+  return @{ Ok = $true; Who = $app.Who; Error = ""; ServerUsed = $h }
+}
+
 function Invoke-RpmaSql {
   param(
     [string]$Server,
