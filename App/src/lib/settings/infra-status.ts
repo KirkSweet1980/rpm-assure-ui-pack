@@ -267,6 +267,8 @@ INNER JOIN (
 ORDER BY DisplayName, d.HostName, d.DriveLetter`);
     for (const row of r.recordset ?? []) {
       const rec = row as Record<string, unknown>;
+      const hostName = String(rec.HostName ?? "").trim();
+      if (!hostName || /^(DEMO[-_]?|SAMPLE[-_]?|TEST[-_]?|FAKE[-_])/i.test(hostName)) continue;
       iops.push({
         customerCode: String(rec.CustomerCode ?? ""),
         displayName: String(rec.DisplayName ?? rec.CustomerCode ?? ""),

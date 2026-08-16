@@ -4671,9 +4671,9 @@ WHERE d.CustomerCode = @code
               usedGb: usedGb ?? undefined,
               usedPct,
               mediaType: mediaRaw,
-              readIops: readIops ?? undefined,
-              writeIops: writeIops ?? undefined,
-              totalIops: totalIops ?? undefined,
+              readIops: /^(DEMO[-_]?)/i.test(id) ? undefined : readIops ?? undefined,
+              writeIops: /^(DEMO[-_]?)/i.test(id) ? undefined : writeIops ?? undefined,
+              totalIops: /^(DEMO[-_]?)/i.test(id) ? undefined : totalIops ?? undefined,
             });
             byDev.set(key, arr);
           }
@@ -4764,7 +4764,12 @@ WHERE d.CustomerCode = @code`);
               QueueLen?: number | null;
               SnapshotUtc?: Date | string | null;
             }>;
-            rmm.agentIops = iopsRows.map((row) => {
+            rmm.agentIops = iopsRows
+              .filter((row) => {
+                const host = String(row.HostName ?? "").trim();
+                return host.length > 0 && !/^(DEMO[-_]?|SAMPLE[-_]?|TEST[-_]?|FAKE[-_])/i.test(host);
+              })
+              .map((row) => {
               const mediaRaw = row.MediaType ? String(row.MediaType) : "";
               const media =
                 !mediaRaw || /unspecified|unknown|fixed hard disk/i.test(mediaRaw)

@@ -92,6 +92,17 @@ if (Test-Path $restamp) {
   if ($LASTEXITCODE -eq 0) { W Green 'Cove/EPP restamp OK' } else { W Yellow 'Cove/EPP restamp warned — UI will still try a live restamp.' }
 }
 
+$iopsPurge = Join-Path $PSScriptRoot '441_Purge_Sample_Iops.sql'
+if (-not (Test-Path $iopsPurge)) { $iopsPurge = 'C:\RPM-Assure\Sql\central\441_Purge_Sample_Iops.sql' }
+if (Test-Path $iopsPurge) {
+  W Cyan '--- Purge demo / sample IOPS ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $iopsPurge @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'Sample IOPS purge OK' } else { W Yellow 'Sample IOPS purge warned.' }
+}
+
 $rmmMap = 'C:\RPM-Assure\Sql\rmm\pulseway\461_Fix_Rmm_Device_Customer_Map.sql'
 if (-not (Test-Path -LiteralPath $rmmMap)) { $rmmMap = Join-Path (Split-Path $PSScriptRoot -Parent) 'rmm\pulseway\461_Fix_Rmm_Device_Customer_Map.sql' }
 if (Test-Path -LiteralPath $rmmMap) {

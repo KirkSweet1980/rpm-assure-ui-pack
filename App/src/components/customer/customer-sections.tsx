@@ -19,6 +19,7 @@ import {
 import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import { SpaLink } from "@/components/nav/spa-link";
+import { keepLiveIops } from "@/lib/data/agent-iops";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
   Bar,
@@ -1296,7 +1297,7 @@ function AgentHostTelemetry({
   focusHost?: string | null;
 }) {
   const [open, setOpen] = useState<string | null>(null);
-  const rows = iops ?? [];
+  const rows = keepLiveIops(iops ?? []);
   const evs = events ?? [];
   const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
   const focus = focusHost ? norm(focusHost) : "";
@@ -1312,8 +1313,8 @@ function AgentHostTelemetry({
         return h === focus || h.startsWith(focus) || focus.startsWith(h);
       })
     : evs;
-  const iopsShow = iopsView.length ? iopsView : rows;
-  const evShow = evView.length ? evView : evs;
+  const iopsShow = focus ? iopsView : rows;
+  const evShow = focus ? evView : evs;
 
   return (
     <div className="space-y-3">
@@ -1324,7 +1325,7 @@ function AgentHostTelemetry({
         </div>
         {iopsShow.length === 0 ? (
           <p className="px-3 py-3 text-[12px] text-muted">
-            No IOPS from Assure agents yet. Agents sample LogicalDisk counters each cycle and push to central.
+            No live IOPS yet. Pulseway does not publish IOPS. Install the Assure agent on each Windows host you want here (IOPS-only is fine if there is no SYSPRO). Recheck queues every installed agent.
           </p>
         ) : (
           <table className="rpma-xls text-left">
@@ -2140,7 +2141,7 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-3">
       <ChartCaption
         title="Disk IOPS performance"
-        why="LogicalDisk counters from every Assure Edge agent for this customer. Pulseway does not publish IOPS — this is agent telemetry."
+        why="LogicalDisk counters from every Assure agent for this customer. Pulseway does not publish IOPS. Empty means no agent has sampled this customer yet."
       />
       <AgentHostTelemetry iops={data.rmm?.agentIops ?? []} events={[]} />
     </div>

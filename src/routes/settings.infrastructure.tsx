@@ -555,7 +555,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                         )}
                       </td>
                       <td className="text-right">
-                        {row.cover.syspro ? (
+                        {row.hostName ? (
                           <Button
                             type="button"
                             size="sm"
@@ -566,7 +566,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                             Sync
                           </Button>
                         ) : (
-                          <span className="text-[11px] text-muted">No SQL agent</span>
+                          <span className="text-[11px] text-muted">No agent</span>
                         )}
                       </td>
                     </tr>
@@ -584,7 +584,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
         </div>
         {estateIops.length === 0 ? (
           <p className="px-3 py-3 text-[12px] text-muted">
-            No IOPS yet. Recheck queues every Assure agent to sample LogicalDisk and push here.
+            No live IOPS yet. Pulseway cannot supply IOPS. Each Windows host needs an Assure agent (IOPS-only is fine if there is no SYSPRO). Recheck queues every installed agent.
           </p>
         ) : (
           <table className="rpma-xls text-left">

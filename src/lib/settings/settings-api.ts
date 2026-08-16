@@ -2021,6 +2021,9 @@ export const fetchAgentHostHealth = createServerFn({ method: "GET" })
     const code = data.customerCode.trim().toUpperCase();
     const host = data.hostName.trim();
     if (!code || !host) return { ok: false as const, message: "Customer and host required", ...empty };
+    if (/^(DEMO[-_]?|SAMPLE[-_]?|TEST[-_]?|FAKE[-_])/i.test(host)) {
+      return { ok: true as const, message: "ok", ...empty };
+    }
     try {
       const iopsRes = await pool.request().input("c", sqlTypes.NVarChar(32), code).input("h", sqlTypes.NVarChar(128), host).query(`
 SELECT TOP 8 DriveLetter, UsedPct, ReadIops, WriteIops, TotalIops, SnapshotUtc
