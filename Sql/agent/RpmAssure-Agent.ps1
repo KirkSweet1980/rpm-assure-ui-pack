@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.5.0"
+$AgentVersion = "2.5.1"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -507,17 +507,20 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
           Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
         }
       }
-      $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
-      if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
-      if (Test-Path $evtRunner) {
-        $jobs += @{
-          Name = "win-eventlog-$code"
-          Customer = $code
-          IntervalMin = $light
-          Script = $evtRunner
-          Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
-        }
+    }
+
+    $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
+    if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
+    if (Test-Path $evtRunner) {
+      $jobs += @{
+        Name = "win-eventlog-$code"
+        Customer = $code
+        IntervalMin = $light
+        Script = $evtRunner
+        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
       }
+    } else {
+      W "WARN Collect-Windows-EventLog.ps1 missing"
     }
 
     if (-not $rmmOn) { W ("SKIP RMM scripts for $code - no RMM cover") }
@@ -538,6 +541,21 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
     }
   }
   W ("jobs queued: " + $jobs.Count + " from " + $configs.Count + " config(s)")
+}
+
+if (-not ($jobs | Where-Object { $_.Name -like 'win-eventlog-*' })) {
+  $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
+  if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
+  if (Test-Path $evtRunner) {
+    $jobs += @{
+      Name = "win-eventlog-$CustomerCode"
+      Customer = $CustomerCode
+      IntervalMin = 30
+      Script = $evtRunner
+      Args = @("-AgentRoot", $AgentRoot)
+    }
+    W "queued win-eventlog for $CustomerCode (no customer config match)"
+  }
 }
 
 function Test-JobDue([string]$Name, [int]$IntervalMin) {
