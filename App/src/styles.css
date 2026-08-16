@@ -299,7 +299,7 @@ body {
 
 .rpma-d3-workspace {
   --rail-customers: 17.75rem;
-  --rail-services: 14.5rem;
+  --rail-services: 17.25rem;
   display: grid;
   grid-template-columns: var(--rail-customers) var(--rail-services) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
