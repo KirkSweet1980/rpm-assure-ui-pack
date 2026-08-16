@@ -551,7 +551,7 @@ function Run-Install {
     JobsIntervalMin    = 1440
     InstallTray        = $true
     StartService       = $true
-    RunOnce            = $true
+    RunOnce            = $false
     LockFiles          = $true
   }
   ($obj | ConvertTo-Json) | Set-Content -LiteralPath $cfg -Encoding UTF8
@@ -569,21 +569,33 @@ function Run-Install {
     }
   }
   if (-not (Test-Path $engine)) { Log "ERROR engine missing"; return }
-  $p = New-Object Diagnostics.Process
-  $p.StartInfo.FileName = "powershell.exe"
-  $p.StartInfo.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$engine`" -ConfigFile `"$cfg`""
-  $p.StartInfo.UseShellExecute = $false
-  $p.StartInfo.RedirectStandardOutput = $true
-  $p.StartInfo.RedirectStandardError = $true
-  $p.StartInfo.CreateNoWindow = $true
-  [void]$p.Start()
+  $log = Join-Path $env:TEMP ("rpma-install-" + [guid]::NewGuid().ToString("N") + ".log")
+  $errlog = $log + ".err"
+  $p = Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile","-ExecutionPolicy","Bypass","-File",$engine,"-ConfigFile",$cfg) -RedirectStandardOutput $log -RedirectStandardError $errlog -PassThru -WindowStyle Hidden
+  $deadline = (Get-Date).AddMinutes(3)
+  $seen = 0
   while (-not $p.HasExited) {
-    $line = $p.StandardOutput.ReadLine()
-    if ($null -ne $line) { Log $line }
+    if (Test-Path -LiteralPath $log) {
+      $lines = @(Get-Content -LiteralPath $log -EA SilentlyContinue)
+      while ($seen -lt $lines.Count) { Log $lines[$seen]; $seen++ }
+    }
     [Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Milliseconds 250
+    if ((Get-Date) -gt $deadline) {
+      try { Stop-Process -Id $p.Id -Force } catch {}
+      Log "TIMEOUT - installer hung. Close this window. Run Finish-Agent-Now.ps1"
+      return
+    }
   }
-  $rest = $p.StandardOutput.ReadToEnd(); if ($rest) { Log $rest }
-  $err = $p.StandardError.ReadToEnd(); if ($err) { Log $err }
+  Start-Sleep -Milliseconds 200
+  if (Test-Path -LiteralPath $log) {
+    $lines = @(Get-Content -LiteralPath $log -EA SilentlyContinue)
+    while ($seen -lt $lines.Count) { Log $lines[$seen]; $seen++ }
+  }
+  if (Test-Path -LiteralPath $errlog) {
+    $el = Get-Content -LiteralPath $errlog -Raw -EA SilentlyContinue
+    if ($el) { Log $el }
+  }
   Remove-Item -LiteralPath $cfg -Force -EA SilentlyContinue
   if ($p.ExitCode -eq 0) { Log ""; Log "INSTALL COMPLETE  collect login = rpmassure" } else { Log ("FAILED exit " + $p.ExitCode) }
 }

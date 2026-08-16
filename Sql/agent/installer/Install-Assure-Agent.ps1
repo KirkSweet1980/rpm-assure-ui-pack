@@ -95,6 +95,8 @@ function Ensure-Git {
 
 function Invoke-GitQuiet {
   param([Parameter(Mandatory)][string]$GitExe, [Parameter(Mandatory)][string[]]$GitArgs)
+  $env:GIT_TERMINAL_PROMPT = "0"
+  $env:GCM_INTERACTIVE = "Never"
   $prev = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   $out = & $GitExe @GitArgs 2>&1
@@ -110,22 +112,21 @@ function Invoke-GitQuiet {
 function Ensure-Pack([string]$git) {
   $pack = "C:\RPM-Assure\deploy\ui-pack"
   New-Item -ItemType Directory -Force -Path "C:\RPM-Assure\deploy" | Out-Null
+  $agentPs1 = Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"
+  if (Test-Path -LiteralPath $agentPs1) {
+    Write-Host "Pack already present - skip git (avoids hang)."
+    return [string]$pack
+  }
   $lock = Join-Path $pack ".git\index.lock"
   if (Test-Path -LiteralPath $lock) { Remove-Item -LiteralPath $lock -Force -EA SilentlyContinue }
   $ok = $false
   if (Test-Path -LiteralPath (Join-Path $pack ".git")) {
     [void](Invoke-GitQuiet -GitExe $git -GitArgs @("-C", $pack, "fetch", "--all", "--prune"))
     $rc = Invoke-GitQuiet -GitExe $git -GitArgs @("-C", $pack, "reset", "--hard", "origin/main")
-    if ($rc -eq 0 -and (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"))) { $ok = $true }
+    if ($rc -eq 0 -and (Test-Path -LiteralPath $agentPs1)) { $ok = $true }
   }
   if (-not $ok) {
-    if (Test-Path -LiteralPath $pack) {
-      cmd /c ("rmdir /s /q `"" + $pack + "`"") | Out-Null
-    }
-    $rc = Invoke-GitQuiet -GitExe $git -GitArgs @("clone", "--depth", "1", "--branch", "main", $RepoUrl, $pack)
-    if ($rc -ne 0 -or -not (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1"))) {
-      throw "git clone failed for ui-pack"
-    }
+    throw "ui-pack missing Sql\agent. Run git reset on the app/SQL host first, then Finish again. Do not wait on this window."
   }
   return [string]$pack
 }
