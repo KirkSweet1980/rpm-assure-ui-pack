@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
@@ -10,9 +10,11 @@ import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import type { ExcoCustomerBoard, ExcoInsightPayload } from "@/lib/data/types";
 import { buildExcoPillarSla, hasSlaCover } from "@/lib/data/exco-sla-stats";
 import { finsightOobAttention } from "@/lib/brand/finsight";
+import { issueHrefForDrill } from "@/lib/data/live-status";
 import { cn } from "@/lib/utils";
 import { ChevronRight, RefreshCw } from "lucide-react";
-import { HelpTip, MetricLabel, PaneHead } from "@/components/ui/help-tip";
+import { HelpTip, HoverTip, MetricLabel, PaneHead } from "@/components/ui/help-tip";
+import { SpaLink } from "@/components/nav/spa-link";
 import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
 import { CustomizeWidgetsButton, CustomizeWidgetsPanel } from "@/components/exco/customize-widgets";
 import {
@@ -69,7 +71,7 @@ function KpiMini({
           : "text-fg";
   return (
     <div className="min-w-0 rounded-lg border border-border/80 bg-card/40 px-2.5 py-2">
-      <MetricLabel tip={tip || `${label} — click related tiles for the customer list.`}>{label}</MetricLabel>
+      <MetricLabel showIcon={false} tip={tip || `${label} — click related tiles for the customer list.`}>{label}</MetricLabel>
       <p className={cn("font-mono text-lg font-bold tabular-nums leading-tight", color)}>
         {value}
       </p>
@@ -410,6 +412,7 @@ function deriveExcoFromRows(
 
 function ExcoInsightPage() {
   const loader = Route.useLoaderData();
+  const navigate = useNavigate();
   const { profile } = useStaffProfile();
   const { dashboard: dash } = useDashboardConfig();
 
@@ -933,6 +936,42 @@ function ExcoInsightPage() {
       return next;
     });
 
+  function customersForDrill(k: DrillKind) {
+    if (k === "rag-green") return scoreboard.filter((b) => b.healthRag === "Green");
+    if (k === "rag-amber") return scoreboard.filter((b) => b.healthRag === "Amber");
+    if (k === "rag-red") return scoreboard.filter((b) => b.healthRag === "Red");
+    if (k === "attention") return scoreboard.filter((b) => b.attentionReasons.length > 0);
+    if (k === "jobs") return scoreboard.filter((b) => (b.jobErrorCount || 0) > 0);
+    if (k === "finsight") return scoreboard.filter((b) => (b.dtrVarianceLines || 0) > 0);
+    if (k === "rmm-offline") return scoreboard.filter((b) => (b.pulsewayServerOffline || 0) > 0);
+    if (k === "rmm-critical") return scoreboard.filter((b) => (b.pulsewayCriticalAlerts || 0) > 0);
+    if (k === "backup") return scoreboard.filter((b) => b.backupHealthy === false);
+    if (k === "stale") return scoreboard.filter((b) => b.coverSyspro && !b.collectFresh);
+    if (k === "sla") return scoreboard.filter((b) => b.slaOverallPct != null && (b.slaOverallPct as number) < 80);
+    if (k === "risks") return scoreboard.filter((b) => (b.openRiskCount || 0) > 0 || (b.openIssueCount || 0) > 0);
+    if (k === "incidents") return scoreboard.filter((b) => incidents.some((i) => i.customerCode === b.customerCode));
+    return [];
+  }
+
+  function openTile(tone: "green" | "amber" | "red" | undefined, k: DrillKind) {
+    const slice = customersForDrill(k);
+    if ((tone === "amber" || tone === "red") && slice.length === 1) {
+      const href = issueHrefForDrill(slice[0].customerCode, k);
+      void navigate({ to: href as never });
+      return;
+    }
+    if ((tone === "amber" || tone === "red") && slice.length > 1) {
+      toggleDrill(k);
+      return;
+    }
+    toggleDrill(k);
+  }
+
+  function customerIssueTo(code: string, rag: string, kind: DrillKind | null = drill) {
+    if (rag === "Amber" || rag === "Red") return issueHrefForDrill(code, kind);
+    return `/customers/${encodeURIComponent(code)}`;
+  }
+
   function applyView(v: EstateView) {
     setActiveView(v.id);
     setDrill((v.drill as DrillKind) ?? null);
@@ -1088,8 +1127,8 @@ function ExcoInsightPage() {
             />
           ) : null}
           <div className="rpma-exco-board">
-          <section className="rpma-pane" {...wgt("brief")}>
-            <PaneHead tip="Estate RAG, SLA average, collect freshness and the twelve KPIs Exco uses to decide who needs attention. Click a KPI to list those customers.">
+          <section className={cn("rpma-pane is-tile", `is-${estateTone}`)} {...wgt("brief")}>
+            <PaneHead tip="Each KPI tile lights Green / Amber / Red. Click an amber tile to open that customer's amber issues (or the amber list if several).">
               Executive Brief
             </PaneHead>
             <div className="rpma-pane-body">
@@ -1139,22 +1178,28 @@ function ExcoInsightPage() {
                 <button
                   key={`${x.l}-${i}`}
                   type="button"
-                  onClick={() => toggleDrill(x.k)}
-                  className={cn("rounded-md bg-surface-2 px-2 py-1.5 text-left", drill === x.k && "ring-1 ring-[var(--color-nav)]")}
+                  onClick={() => openTile((Number(x.v) > 0 || String(x.v).includes("%")) ? x.t : "green", x.k)}
+                  className={cn("rpma-kpi-tile rpma-hovertip", `is-${(Number(x.v) > 0 || x.t === "green") ? x.t : "green"}`, drill === x.k && "is-on")}
                 >
-                  <MetricLabel tip={x.tip}>{x.l}</MetricLabel>
+                  <MetricLabel tip={x.tip} showIcon={false}>{x.l}</MetricLabel>
                   <p className={cn("font-mono text-[15px] font-bold tabular-nums leading-tight",
                     x.t === "red" && Number(x.v) > 0 ? "text-rag-red" :
                     x.t === "amber" && Number(x.v) > 0 ? "text-rag-amber" :
                     x.t === "green" ? "text-rag-green" : "text-fg")}>{x.v}</p>
+                  <span role="tooltip" className="rpma-help-bubble is-top">
+                    {x.l}: {x.v}. {x.tip}
+                    {(x.t === "amber" || x.t === "red") && Number(x.v) > 0
+                      ? " Click to open the customer's amber/red issues."
+                      : ""}
+                  </span>
                 </button>
               ))}
             </div>
             </div>
           </section>
 
-          <section className="rpma-pane" {...wgt("cover")}>
-              <PaneHead tip="How many active customers have each RPM service mapped and collecting. Green bar is cover rate versus the estate.">
+          <section className={cn("rpma-pane is-tile", coverStats.n && (coverStats.syspro + coverStats.rmm + coverStats.cove + coverStats.epp + coverStats.csp) / (coverStats.n * 5) < 0.4 ? "is-amber" : "is-green")} {...wgt("cover")}>
+              <PaneHead tip="Scope only — not live health. Chip on the tenant rail is Cover / No Cover. This tile lights amber if estate cover is thin.">
                 Services On Cover
               </PaneHead>
               <ul className="rpma-pane-body space-y-2">
@@ -1165,19 +1210,24 @@ function ExcoInsightPage() {
                   ["Endpoint Security", coverStats.epp],
                   ["Microsoft 365 CSP", coverStats.csp],
                 ].map(([name, n]) => (
-                  <li key={String(name)} className="flex items-center gap-2 text-[12px]">
-                    <span className="min-w-0 flex-1 truncate font-medium text-fg">{name}</span>
-                    <span className="font-mono text-[12px] font-bold tabular-nums">{n}</span>
-                    <span className="w-16 text-right text-[10px] text-muted">of {coverStats.n}</span>
-                    <span className="rpma-impact-track !h-1.5 w-16">
-                      <span className="rpma-impact-bar is-green" style={{ width: `${coverStats.n ? Math.round((Number(n) / coverStats.n) * 100) : 0}%` }} />
-                    </span>
+                  <li key={String(name)}>
+                    <HoverTip
+                      className="flex w-full items-center gap-2 text-[12px]"
+                      text={`${name}: ${n} of ${coverStats.n} customers on cover (${coverStats.n ? Math.round((Number(n) / coverStats.n) * 100) : 0}%). Scope only — not live health.`}
+                    >
+                      <span className="min-w-0 flex-1 truncate font-medium text-fg">{name}</span>
+                      <span className="font-mono text-[12px] font-bold tabular-nums">{n}</span>
+                      <span className="w-16 text-right text-[10px] text-muted">of {coverStats.n}</span>
+                      <span className="rpma-impact-track !h-1.5 w-16">
+                        <span className="rpma-impact-bar is-green" style={{ width: `${coverStats.n ? Math.round((Number(n) / coverStats.n) * 100) : 0}%` }} />
+                      </span>
+                    </HoverTip>
                   </li>
                 ))}
               </ul>
             </section>
-            <section className="rpma-pane" {...wgt("sla")}>
-              <PaneHead tip="Live SLA for customers on that service. Targets: SYSPRO 90%, RMM 99.9% availability, Cloud Backup 99.5% success, Endpoint Security 98% managed.">
+            <section className={cn("rpma-pane is-tile is-click", slaAvg >= 80 ? "is-green" : slaAvg >= 55 ? "is-amber" : "is-red")} {...wgt("sla")} onClick={() => openTile(slaAvg >= 80 ? "green" : slaAvg >= 55 ? "amber" : "red", "sla")}>
+              <PaneHead tip="Live SLA for covered services. Amber/red tile opens the customers missing target.">
                 SLA By Service
               </PaneHead>
               <ul className="rpma-pane-body space-y-2">
@@ -1193,88 +1243,105 @@ function ExcoInsightPage() {
                   const tone = n == null ? "" : n >= target ? "text-rag-green" : n >= target - 5 ? "text-rag-amber" : "text-rag-red";
                   const bar = n == null ? "" : n >= target ? "is-green" : n >= target - 5 ? "is-amber" : "is-red";
                   return (
-                    <li key={String(name)} className="flex items-center gap-2 text-[12px]">
-                      <span className="min-w-0 flex-1 truncate font-medium text-fg">{name}</span>
-                      <span className={cn("font-mono text-[12px] font-bold tabular-nums", tone)}>{n == null ? "—" : `${n}%`}</span>
-                      <span className="rpma-impact-track !h-1.5 w-20">
-                        <span className={cn("rpma-impact-bar", bar)} style={{ width: `${n ?? 0}%` }} />
-                      </span>
+                    <li key={String(name)}>
+                      <HoverTip
+                        className="flex w-full items-center gap-2 text-[12px]"
+                        text={`${name} SLA ${n == null ? "not scored (no cover)" : n + "%"}. Target ${target}%. ${n == null ? "" : n >= target ? "On target." : n >= target - 5 ? "Amber — within 5 points of target." : "Red — below target."}`}
+                      >
+                        <span className="min-w-0 flex-1 truncate font-medium text-fg">{name}</span>
+                        <span className={cn("font-mono text-[12px] font-bold tabular-nums", tone)}>{n == null ? "—" : `${n}%`}</span>
+                        <span className="rpma-impact-track !h-1.5 w-20">
+                          <span className={cn("rpma-impact-bar", bar)} style={{ width: `${n ?? 0}%` }} />
+                        </span>
+                      </HoverTip>
                     </li>
                   );
                 })}
               </ul>
             </section>
-            <section className="rpma-pane" {...wgt("pulse")}>
-              <PaneHead tip="Live Pulseway, Cove and Bitdefender signals across the estate. Hover each tile for what it measures and the threshold that turns amber or red.">
+            <section className={cn("rpma-pane is-tile", (serversOffline > 0 || (exco.coveFailedTotal ?? 0) > 0) ? "is-red" : ((exco.coveStaleTotal ?? 0) > 0 || (exco.rmmDiskHighTotal ?? 0) > 0 || (exco.eppUnmanagedTotal ?? 0) > 0) ? "is-amber" : "is-green")} {...wgt("pulse")}>
+              <PaneHead tip="Operations pulse. The tile glows the worst live signal. Click an amber KPI above to jump to that customer's issue.">
                 Operations Pulse
               </PaneHead>
               <div className="rpma-pane-body grid grid-cols-2 gap-2">
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Pulseway servers reporting online on the latest collect.">Online</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Pulseway servers reporting online on the latest collect.">Online</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Online: Pulseway servers reporting online on the latest collect.</span>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{serversOnline}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Pulseway servers that have not checked in. Any count above 0 is red.">Servers Offline</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Pulseway servers that have not checked in. Any count above 0 is red.">Servers Offline</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Servers Offline: Pulseway servers that have not checked in. Any count above 0 is red.</span>
                   <p className={cn("font-mono text-[15px] font-bold", serversOffline > 0 ? "text-rag-red" : "text-fg")}>{serversOffline}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Online servers ÷ (online + offline). Target 99.9%. Below 99% is amber.">Server Availability</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Online servers ÷ (online + offline). Target 99.9%. Below 99% is amber.">Server Availability</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Server Availability: Online servers ÷ (online + offline). Target 99.9%. Below 99% is amber.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.rmmServerAvailabilityPct ?? 100) < 99 ? "text-rag-amber" : "text-rag-green")}>
                     {exco.rmmServerAvailabilityPct == null ? "—" : `${exco.rmmServerAvailabilityPct}%`}
                   </p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Share of servers with current OS patches. Below 90% is amber.">Patch Compliance</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Share of servers with current OS patches. Below 90% is amber.">Patch Compliance</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Patch Compliance: Share of servers with current OS patches. Below 90% is amber.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.rmmPatchCompliancePct ?? 100) < 90 ? "text-rag-amber" : "text-rag-green")}>
                     {exco.rmmPatchCompliancePct == null ? "—" : `${exco.rmmPatchCompliancePct}%`}
                   </p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Servers with a volume over the disk-risk threshold (typically 85%+ used).">Disk At Risk</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Servers with a volume over the disk-risk threshold (typically 85%+ used).">Disk At Risk</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Disk At Risk: Servers with a volume over the disk-risk threshold (typically 85%+ used).</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.rmmDiskHighTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.rmmDiskHighTotal ?? 0}
                   </p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Cove devices whose last backup failed or has no success in 72 hours.">Backup Failed</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Cove devices whose last backup failed or has no success in 72 hours.">Backup Failed</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Failed: Cove devices whose last backup failed or has no success in 72 hours.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.coveFailedTotal ?? 0) > 0 ? "text-rag-red" : "text-fg")}>
                     {exco.coveFailedTotal ?? 0}
                   </p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Cove devices whose last successful backup is older than 36 hours.">Backup Stale</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Cove devices whose last successful backup is older than 36 hours.">Backup Stale</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Stale: Cove devices whose last successful backup is older than 36 hours.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.coveStaleTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.coveStaleTotal ?? 0}
                   </p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Bitdefender endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Bitdefender endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">EPP Unmanaged: Bitdefender endpoints not under a managed policy, versus all mapped endpoints.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.eppUnmanagedTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.eppUnmanagedTotal ?? 0}
                     <span className="ml-1 text-[10px] font-semibold text-muted">/ {exco.eppEndpointTotal ?? 0}</span>
                   </p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Customers whose last SYSPRO / agent collect is within 24 hours.">Collect Fresh</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Customers whose last SYSPRO / agent collect is within 24 hours.">Collect Fresh</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Collect Fresh: Customers whose last SYSPRO / agent collect is within 24 hours.</span>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{exco.collectFreshCount}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Customers whose last collect is older than 24 hours. Check the edge agent.">Collect Stale</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Customers whose last collect is older than 24 hours. Check the edge agent.">Collect Stale</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Collect Stale: Customers whose last collect is older than 24 hours. Check the edge agent.</span>
                   <p className={cn("font-mono text-[15px] font-bold", exco.collectStaleCount > 0 ? "text-rag-amber" : "text-fg")}>{exco.collectStaleCount}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="SYSPRO companies with no FinSight out-of-balance lines on the latest close.">FinSight Clear</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="SYSPRO companies with no FinSight out-of-balance lines on the latest close.">FinSight Clear</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">FinSight Clear: SYSPRO companies with no FinSight out-of-balance lines on the latest close.</span>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{finsightEstate.clearCustomers}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Total out-of-balance FinSight control lines across the estate. Each line needs a finance owner.">OOB Lines</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Total out-of-balance FinSight control lines across the estate. Each line needs a finance owner.">OOB Lines</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">OOB Lines: Total out-of-balance FinSight control lines across the estate. Each line needs a finance owner.</span>
                   <p className={cn("font-mono text-[15px] font-bold", finsightEstate.totalOobLines > 0 ? "text-rag-amber" : "text-fg")}>{finsightEstate.totalOobLines}</p>
                 </div>
               </div>
             </section>
 
-            <section className="rpma-pane" {...wgt("matrix")}>
-              <PaneHead tip="Impact versus likelihood for every customer. Click a cell to list those tenants. High/High is the first conversation this week.">
+            <section className={cn("rpma-pane is-tile", (matrixCells.get("High|High") ?? []).length ? "is-red" : (matrixCells.get("High|Medium") ?? []).length || (matrixCells.get("Medium|High") ?? []).length ? "is-amber" : "is-green")} {...wgt("matrix")}>
+              <PaneHead tip="Impact versus likelihood. Click a cell. Amber/red cells with one customer open that tenant's issues.">
                 Risk Matrix
               </PaneHead>
               <div className="rpma-pane-body">
@@ -1297,10 +1364,14 @@ function ExcoInsightPage() {
                             key={key}
                             type="button"
                             onClick={() => toggleDrill(key)}
-                            title={`Impact ${impact} · Likelihood ${likelihood}: ${pts.length}`}
-                            className={cn("rpma-heat-cell", `is-${tone}`, drill === key && "is-on")}
+                            className={cn("rpma-heat-cell rpma-hovertip", `is-${tone}`, drill === key && "is-on")}
                           >
                             <span className="rpma-heat-n">{pts.length}</span>
+                            <span role="tooltip" className="rpma-help-bubble is-top">
+                              Impact {impact} · Likelihood {likelihood}: {pts.length} customer{pts.length === 1 ? "" : "s"}
+                              {pts.length ? ` — ${pts.slice(0, 3).map((x) => x.displayName).join(", ")}` : ""}.
+                              {tone !== "green" && pts.length === 1 ? " Click opens that customer's issues." : ""}
+                            </span>
                           </button>
                         );
                       })}
@@ -1311,8 +1382,8 @@ function ExcoInsightPage() {
               </div>
             </section>
 
-            <section className="rpma-pane" {...wgt("impact")}>
-              <PaneHead tip="Customers ranked by impact score (health, cover gaps, incidents and SLA). Longer bar = more executive attention.">
+            <section className={cn("rpma-pane is-tile", riskPoints.some((p) => p.healthRag === "Red") ? "is-red" : riskPoints.some((p) => p.healthRag === "Amber") ? "is-amber" : "is-green")} {...wgt("impact")}>
+              <PaneHead tip="Customers ranked by impact. Click an amber/red name to open that customer's issues.">
                 Impact
               </PaneHead>
               <ol className="rpma-impact rpma-pane-body">
@@ -1324,7 +1395,7 @@ function ExcoInsightPage() {
                     const pct = Math.round((p.impactScore / max) * 100);
                     return (
                       <li key={p.customerCode}>
-                        <Link to="/customers/$code" params={{ code: p.customerCode }} className="rpma-impact-row">
+                        <SpaLink href={customerIssueTo(p.customerCode, p.healthRag)} className="rpma-impact-row rpma-hovertip">
                           <span className="rpma-impact-name">{p.displayName}</span>
                           <span className="rpma-impact-track">
                             <span className={cn("rpma-impact-bar",
@@ -1334,33 +1405,41 @@ function ExcoInsightPage() {
                               style={{ width: `${Math.max(8, pct)}%` }} />
                           </span>
                           <span className="rpma-impact-score">{p.impactScore}</span>
-                        </Link>
+                          <span role="tooltip" className="rpma-help-bubble is-top">
+                            {p.displayName} is {p.healthRag}. Impact {p.impactScore}. {p.drivers.slice(0, 3).join(" · ") || "No drivers"}.
+                            {p.healthRag !== "Green" ? " Click to open amber/red issues." : ""}
+                          </span>
+                        </SpaLink>
                       </li>
                     );
                   })}
               </ol>
             </section>
 
-            <section className="rpma-pane" {...wgt("m365")}>
-              <PaneHead tip="Microsoft 365 CSP estate: tenants on cover, average Secure Score, users without MFA, and tenants with too many Global Admins.">
+            <section className={cn("rpma-pane is-tile", m365Estate.mfaGap > 0 || m365Estate.highGa > 0 ? "is-amber" : "is-green")} {...wgt("m365")}>
+              <PaneHead tip="Microsoft 365 CSP estate posture. Amber means MFA gaps or too many Global Admins.">
                 Microsoft 365 CSP
               </PaneHead>
               <div className="rpma-pane-body">
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Customers with an active Microsoft 365 CSP tenant mapped in Assure.">Tenants</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Customers with an active Microsoft 365 CSP tenant mapped in Assure.">Tenants</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Tenants: Customers with an active Microsoft 365 CSP tenant mapped in Assure.</span>
                   <p className="font-mono text-[15px] font-bold">{m365Estate.tenants}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Average Microsoft Secure Score across mapped tenants. Higher is better.">Secure Score</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Average Microsoft Secure Score across mapped tenants. Higher is better.">Secure Score</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Secure Score: Average Microsoft Secure Score across mapped tenants. Higher is better.</span>
                   <p className="font-mono text-[15px] font-bold">{m365Estate.avgScore == null ? "—" : `${m365Estate.avgScore}%`}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Licensed users who are not registered for MFA. Each one is a credential-risk conversation.">MFA Gaps</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Licensed users who are not registered for MFA. Each one is a credential-risk conversation.">MFA Gaps</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">MFA Gaps: Licensed users who are not registered for MFA. Each one is a credential-risk conversation.</span>
                   <p className={cn("font-mono text-[15px] font-bold", m365Estate.mfaGap > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.mfaGap}</p>
                 </div>
-                <div className="rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel tip="Tenants with more Global Admins than the agreed control (typically more than 4).">High GA Count</MetricLabel>
+                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
+                  <MetricLabel showIcon={false} tip="Tenants with more Global Admins than the agreed control (typically more than 4).">High GA Count</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">High GA Count: Tenants with more Global Admins than the agreed control (typically more than 4).</span>
                   <p className={cn("font-mono text-[15px] font-bold", m365Estate.highGa > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.highGa}</p>
                 </div>
               </div>
@@ -1370,8 +1449,8 @@ function ExcoInsightPage() {
               </div>
             </section>
 
-            <section className="rpma-pane" {...wgt("decisions")}>
-              <PaneHead tip="Customers that need an owner this week: red/amber health, SLA miss, stale collect, or open incidents. Click a KPI above to filter this list.">
+            <section className={cn("rpma-pane is-tile", (drill ? drillRows : attention).some((b) => b.healthRag === "Red") ? "is-red" : (drill ? drillRows : attention).length ? "is-amber" : "is-green")} {...wgt("decisions")}>
+              <PaneHead tip="Who needs a decision. Click an amber customer to go straight to their amber issues.">
                 {drill ? drillTitle : "Who Needs A Decision"}
               </PaneHead>
               <div className="rpma-pane-body">
@@ -1383,14 +1462,14 @@ function ExcoInsightPage() {
                 <ul className="space-y-1">
                   {(drill ? drillRows : attention).slice(0, 8).map((b) => (
                     <li key={b.customerCode}>
-                      <Link to="/customers/$code" params={{ code: b.customerCode }} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
+                      <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
                         <RagBadge rag={b.healthRag} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[12px] font-semibold text-fg">{b.displayName}</span>
                           <span className="line-clamp-1 text-[10px] text-muted">{b.attentionReasons.slice(0, 2).join(" · ")}</span>
                         </span>
                         <span className="font-mono text-[10px] text-muted">{b.slaOverallPct != null ? `${b.slaOverallPct}%` : "—"}</span>
-                      </Link>
+                      </SpaLink>
                     </li>
                   ))}
                 </ul>
@@ -1398,7 +1477,7 @@ function ExcoInsightPage() {
               </div>
             </section>
 
-            <section className="rpma-pane" {...wgt("incidents")}>
+            <section className={cn("rpma-pane is-tile", incidents.some((i) => i.severity === "Red") ? "is-red" : incidents.length ? "is-amber" : "is-green")} {...wgt("incidents")}>
               <div className="rpma-pane-head-row">
                 <h2 className="rpma-pane-head">
                   <span className="rpma-pane-head-inner">
@@ -1433,10 +1512,10 @@ function ExcoInsightPage() {
                 <ul className="max-h-56 space-y-1 overflow-y-auto">
                   {drillRows.map((b) => (
                     <li key={b.customerCode}>
-                      <Link to="/customers/$code" params={{ code: b.customerCode }} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
+                      <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
                         <RagBadge rag={b.healthRag} />
                         <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{b.displayName}</span>
-                      </Link>
+                      </SpaLink>
                     </li>
                   ))}
                 </ul>
@@ -1444,15 +1523,15 @@ function ExcoInsightPage() {
               </div>
             </section>
 
-            <section className="rpma-pane" {...wgt("finsight")}>
-              <PaneHead tip="FinSight out-of-balance control lines across SYSPRO companies. Clear = period close is clean. OOB lines need a finance owner.">
+            <section className={cn("rpma-pane is-tile is-click", finsightEstate.oobCustomers ? "is-amber" : "is-green")} {...wgt("finsight")} onClick={() => openTile(finsightEstate.oobCustomers ? "amber" : "green", "finsight")}>
+              <PaneHead tip="FinSight close. Amber tile opens the customer with out-of-balance lines (or the list if several).">
                 FinSight Close
               </PaneHead>
               <div className="rpma-pane-body">
               {finsightEstate.worst.length === 0 ? (
                 <p className="text-[12px] text-muted">Control accounts clear on covered SYSPRO tenants.</p>
               ) : (
-                <ul className="space-y-1">
+                <ul className="space-y-1" onClick={(e) => e.stopPropagation()}>
                   {finsightEstate.worst.map((b) => (
                     <li key={b.customerCode}>
                       <Link to="/customers/$code/syspro/dtr" params={{ code: b.customerCode }} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] hover:bg-surface-2">

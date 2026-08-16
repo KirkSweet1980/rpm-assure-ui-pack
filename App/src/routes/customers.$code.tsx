@@ -11,6 +11,7 @@ import { CustomerPillarRail, CustomerPathTrail, customerPathParts } from "@/comp
 import { useSpaNavigate } from "@/components/nav/spa-link";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
+import { customerLiveStatus } from "@/lib/data/live-status";
 import type { CustomerDetailPayload, HealthRag } from "@/lib/data/types";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
 import { useRouterState } from "@tanstack/react-router";
@@ -309,6 +310,12 @@ function CustomerLayout() {
           <CustomerPillarRail
             code={customer.customerCode}
             cover={data.cover ?? customer.cover}
+            live={customerLiveStatus(
+              customer.customerCode,
+              customer,
+              data.cover ?? customer.cover,
+              data,
+            )}
           />
 
           <div className="rpma-d3-detail min-w-0">

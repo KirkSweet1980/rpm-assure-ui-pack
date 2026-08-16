@@ -1103,6 +1103,179 @@ html[data-density="comfortable"] .rpma-xls th {
   color: var(--color-muted);
 }
 
+/* Insight RAG tiles + tenant live-status robot */
+.rpma-pane.is-tile { cursor: default; }
+.rpma-pane.is-tile.is-click { cursor: pointer; }
+.rpma-pane.is-tile.is-click:hover { transform: translateY(-1px); }
+.rpma-pane.is-tile {
+  border-radius: 12px;
+  transition: box-shadow 180ms ease, border-color 180ms ease, transform 160ms ease;
+}
+.rpma-pane.is-green {
+  border-color: color-mix(in srgb, var(--color-rag-green) 55%, var(--color-border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-rag-green) 28%, transparent),
+    0 10px 28px color-mix(in srgb, var(--color-rag-green) 14%, transparent);
+}
+.rpma-pane.is-amber {
+  border-color: color-mix(in srgb, var(--color-rag-amber) 60%, var(--color-border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-rag-amber) 32%, transparent),
+    0 10px 28px color-mix(in srgb, var(--color-rag-amber) 16%, transparent);
+}
+.rpma-pane.is-red {
+  border-color: color-mix(in srgb, var(--color-rag-red) 60%, var(--color-border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-rag-red) 32%, transparent),
+    0 10px 28px color-mix(in srgb, var(--color-rag-red) 16%, transparent);
+}
+.rpma-pane.is-green .rpma-pane-head,
+.rpma-pane.is-green .rpma-pane-head-row {
+  background: color-mix(in srgb, var(--color-rag-green) 14%, var(--color-surface));
+}
+.rpma-pane.is-amber .rpma-pane-head,
+.rpma-pane.is-amber .rpma-pane-head-row {
+  background: color-mix(in srgb, var(--color-rag-amber) 16%, var(--color-surface));
+}
+.rpma-pane.is-red .rpma-pane-head,
+.rpma-pane.is-red .rpma-pane-head-row {
+  background: color-mix(in srgb, var(--color-rag-red) 16%, var(--color-surface));
+}
+.rpma-kpi-tile {
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--color-surface-2);
+  border: 1px solid transparent;
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+.rpma-kpi-tile.is-green {
+  border-color: color-mix(in srgb, var(--color-rag-green) 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-rag-green) 18%, transparent), 0 0 18px color-mix(in srgb, var(--color-rag-green) 18%, transparent);
+}
+.rpma-kpi-tile.is-amber {
+  border-color: color-mix(in srgb, var(--color-rag-amber) 50%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-rag-amber) 22%, transparent), 0 0 18px color-mix(in srgb, var(--color-rag-amber) 22%, transparent);
+}
+.rpma-kpi-tile.is-red {
+  border-color: color-mix(in srgb, var(--color-rag-red) 50%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-rag-red) 22%, transparent), 0 0 18px color-mix(in srgb, var(--color-rag-red) 22%, transparent);
+}
+.rpma-kpi-tile.is-on { outline: 2px solid var(--color-nav); outline-offset: 1px; }
 
+.rpma-bot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 0;
+}
+.rpma-bot-head { fill: color-mix(in srgb, var(--color-fg) 14%, var(--color-surface-2)); stroke: color-mix(in srgb, var(--color-fg) 28%, var(--color-border)); stroke-width: 0.7; }
+.rpma-bot-ant { fill: color-mix(in srgb, var(--color-fg) 40%, var(--color-border)); }
+.rpma-bot-ant-tip { fill: color-mix(in srgb, var(--color-fg) 35%, var(--color-border)); }
+.rpma-bot-visor { fill: color-mix(in srgb, var(--color-fg) 22%, var(--color-border)); }
+.rpma-bot-dot { fill: color-mix(in srgb, var(--color-fg) 28%, var(--color-border)); }
+.rpma-bot.is-green .rpma-bot-visor { fill: var(--color-rag-green); }
+.rpma-bot.is-green .rpma-bot-ant-tip { fill: var(--color-rag-green); }
+.rpma-bot.is-green { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-rag-green) 70%, transparent)); }
+.rpma-bot.is-amber .rpma-bot-visor { fill: var(--color-rag-amber); }
+.rpma-bot.is-amber .rpma-bot-ant-tip { fill: var(--color-rag-amber); }
+.rpma-bot.is-amber { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-rag-amber) 75%, transparent)); }
+.rpma-bot.is-red .rpma-bot-visor { fill: var(--color-rag-red); }
+.rpma-bot.is-red .rpma-bot-ant-tip { fill: var(--color-rag-red); }
+.rpma-bot.is-red { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-rag-red) 75%, transparent)); }
+.rpma-bot.is-off { opacity: 0.45; }
 
+.rpma-cover-tag {
+  flex: 0 0 auto;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  padding: 2px 5px;
+  border-radius: 3px;
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpma-cover-tag.is-on {
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+}
+.rpma-cover-tag.is-off {
+  color: color-mix(in srgb, var(--color-muted) 70%, #8b95a3);
+  border: 1px dashed var(--color-border);
+  background: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpma-pane.is-tile, .rpma-kpi-tile { transition: none; }
+}
 
+.rpma-hovertip { position: relative; display: inline-flex; align-items: center; min-width: 0; }
+.rpma-hovertip:hover, .rpma-hovertip:focus-within { z-index: 30; }
+.rpma-heat-cell.rpma-hovertip, .rpma-impact-row.rpma-hovertip { overflow: visible; }
+button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hovertip { display: block; width: 100%; }
+.rpma-hovertip:hover > .rpma-help-bubble,
+.rpma-hovertip:focus-within > .rpma-help-bubble,
+.rpma-hovertip:focus-visible > .rpma-help-bubble { opacity: 1; }
+.rpma-pane.is-tile { overflow: visible; }
+.rpma-kpi-tile { position: relative; overflow: visible; }
+
+@keyframes rpma-bot-breathe {
+  0%, 100% { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--color-rag-green) 55%, transparent)); }
+  50% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--color-rag-green) 90%, transparent)); }
+}
+@keyframes rpma-bot-amber-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--color-rag-amber) 55%, transparent)); }
+  50% { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-rag-amber) 95%, transparent)); }
+}
+@keyframes rpma-bot-alert {
+  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px color-mix(in srgb, var(--color-rag-red) 60%, transparent)); }
+  35% { transform: translateY(-1px); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-rag-red) 95%, transparent)); }
+}
+@keyframes rpma-bot-ant-nod {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-14deg); }
+}
+@keyframes rpma-bot-ant-shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(16deg); }
+  75% { transform: rotate(-16deg); }
+}
+@keyframes rpma-bot-visor-scan {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.35; }
+  60% { opacity: 1; }
+}
+@keyframes rpma-bot-gleam {
+  0%, 100% { transform: translateX(0); opacity: 0.55; }
+  50% { transform: translateX(4px); opacity: 0.95; }
+}
+@keyframes rpma-bot-idle {
+  0%, 88%, 100% { opacity: 0.42; }
+  92% { opacity: 0.18; }
+  95% { opacity: 0.42; }
+}
+
+.rpma-bot { position: relative; }
+.rpma-bot-ant-g { transform-origin: 8px 3.2px; transform-box: fill-box; }
+.rpma-bot-gleam { fill: color-mix(in srgb, #fff 55%, transparent); opacity: 0.4; }
+.rpma-bot.is-green { animation: rpma-bot-breathe 2.8s ease-in-out infinite; }
+.rpma-bot.is-green .rpma-bot-ant-g { animation: rpma-bot-ant-nod 2.8s ease-in-out infinite; }
+.rpma-bot.is-green .rpma-bot-gleam { animation: rpma-bot-gleam 2.8s ease-in-out infinite; }
+.rpma-bot.is-amber { animation: rpma-bot-amber-pulse 1.5s ease-in-out infinite; }
+.rpma-bot.is-amber .rpma-bot-visor { animation: rpma-bot-visor-scan 1.35s ease-in-out infinite; }
+.rpma-bot.is-amber .rpma-bot-ant-g { animation: rpma-bot-ant-nod 1.5s ease-in-out infinite; }
+.rpma-bot.is-red { animation: rpma-bot-alert 0.65s ease-in-out infinite; }
+.rpma-bot.is-red .rpma-bot-ant-g { animation: rpma-bot-ant-shake 0.4s ease-in-out infinite; }
+.rpma-bot.is-red .rpma-bot-visor { animation: rpma-bot-visor-scan 0.65s ease-in-out infinite; }
+.rpma-bot.is-off { animation: rpma-bot-idle 5s ease-in-out infinite; }
+.rpma-bot:hover { transform: scale(1.18); z-index: 8; }
+.rpma-bot .rpma-help-bubble { min-width: 11rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rpma-bot, .rpma-bot .rpma-bot-ant-g, .rpma-bot .rpma-bot-visor, .rpma-bot .rpma-bot-gleam { animation: none !important; }
+}
