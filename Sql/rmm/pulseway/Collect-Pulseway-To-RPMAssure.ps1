@@ -1845,7 +1845,7 @@ if ($diskSb -and $diskSb.Length -gt 0) {
   if ($script:DiskIopsTried) { $tried = [int]$script:DiskIopsTried }
   Write-Log ("disk IOPS from API: rowsWithIops=$hits / $tried (Pulseway v3 Disks = Name,System,FreePercentage,TotalValue only)")
   if ($hits -eq 0) {
-    Write-Log 'IOPS not published by Pulseway REST v3. Capacity pack shows Not reported. Do not invent values.'
+    Write-Log 'IOPS not published by Pulseway REST v3. Run Pulseway-Collect-DiskIops.ps1 via Automation — it POSTs counters to /api/iops. Do not invent values.'
   }
   $dm = [regex]::Match($diskSb.ToString(), 'INSERT INTO dbo\.Pulseway_Disks[^;]+;')
   if ($dm.Success) {

@@ -584,7 +584,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
         </div>
         {estateIops.length === 0 ? (
           <p className="px-3 py-3 text-[12px] text-muted">
-            No live IOPS yet. Pulseway cannot supply IOPS. Each Windows host needs an Assure agent (IOPS-only is fine if there is no SYSPRO). Recheck queues every installed agent.
+            No live IOPS yet. Pulseway REST v3 cannot return IOPS. Schedule Pulseway-Collect-DiskIops.ps1 in Pulseway Automation (POSTs to Assure), or install the Assure agent. Recheck does not invent IOPS.
           </p>
         ) : (
           <table className="rpma-xls text-left">

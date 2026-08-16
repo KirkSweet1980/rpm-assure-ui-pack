@@ -1,0 +1,27 @@
+Pulseway executes IOPS. Assure stores it. Pulseway REST v3 cannot return it.
+
+Why
+  Pulseway Automation can run PowerShell on every managed Windows device.
+  Pulseway REST v3 does not publish IOPS, script output, or custom-field values.
+  So: Pulseway runs the script → the script POSTs to Assure → Disk IOPS window.
+
+Setup (once)
+  1. On Assure, set PULSEWAY_WEBHOOK_SECRET or RPM_ASSURE_IOPS_SECRET
+     (same string you will put on the Pulseway script).
+  2. Pulseway → Automation → Scripts → New → PowerShell
+     Paste: C:\RPM-Assure\Sql\rmm\pulseway\Pulseway-Collect-DiskIops.ps1
+     Inputs:
+       AssureUrl    = https://assure.rpmresources.co.za/api/iops
+       AssureSecret = <that same secret>
+  3. Schedule every 15 minutes on Windows servers
+     (add workstations if you want them on Disk IOPS).
+  4. Pulseway org / device must already map to a CustomerCode
+     (same map as RMM). Unmapped hosts are rejected.
+
+What you should see
+  Pulseway script history: OK 200 {"ok":true,"customerCode":"AHIC",...}
+  Assure → customer → RMM → Disk IOPS: that host's volumes.
+
+Do not
+  Expect Recheck / Pulseway collect to invent IOPS from the API.
+  Recheck still pulls devices, disks (size), alerts. IOPS arrives via POST.
