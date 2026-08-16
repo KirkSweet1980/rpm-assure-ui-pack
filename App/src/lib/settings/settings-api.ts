@@ -1585,7 +1585,7 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
   try {
     const ag = await pool.request().query(`
 SELECT
-  SUM(CASE WHEN LastHeartbeatUtc >= DATEADD(minute, -20, SYSUTCDATETIME()) THEN 1 ELSE 0 END) AS OnlineCnt,
+  SUM(CASE WHEN LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME()) THEN 1 ELSE 0 END) AS OnlineCnt,
   COUNT(*) AS TotalCnt,
   MAX(LastHeartbeatUtc) AS t
 FROM dbo.Agent_Registry WITH (NOLOCK)`);
@@ -1647,7 +1647,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
   };
 });
 
-export const SHIPPED_AGENT_VERSION = "2.2.0";
+export const SHIPPED_AGENT_VERSION = "2.3.1";
 
 export type AgentStatusRow = {
   customerCode: string;
@@ -1722,17 +1722,18 @@ export const fetchAgentStatus = createServerFn({ method: "GET" }).handler(async 
   }
   try {
     await ensureAgentSyncColumn(pool);
+    // Unstick agents the UI previously auto-queued for update. A fresh
+    // heartbeat means the Windows service is up — do not paint it offline.
     try {
-      await pool.request().input("v", sqlTypes.NVarChar(32), SHIPPED_AGENT_VERSION).query(`
+      await pool.request().query(`
 UPDATE dbo.Agent_Registry
-SET LastStatus = N'UPDATE',
-    LastMessage = N'update requested ' + @v
-WHERE LastHeartbeatUtc >= DATEADD(minute, -60, SYSUTCDATETIME())
-  AND (AgentVersion IS NULL OR AgentVersion <> @v)
-  AND ISNULL(LastStatus, N'') NOT IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING');
+SET LastStatus = N'ONLINE',
+    LastMessage = N'heartbeat ok'
+WHERE LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME())
+  AND ISNULL(LastStatus, N'') IN (N'UPDATE', N'UPDATING');
 `);
     } catch {
-      /* best-effort auto queue */
+      /* best-effort */
     }
     const hasSync = await agentHasSyncColumn(pool);
     const syncCol = hasSync ? "r.RequestSyncUtc" : "CAST(NULL AS datetime2) AS RequestSyncUtc";
@@ -1763,9 +1764,9 @@ FROM (
     r.LastMessage,
     ${syncCol},
     CASE
-      WHEN r.LastStatus IN (N'UPDATE', N'UPDATING') THEN r.LastStatus
       WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
-      WHEN r.LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
+      WHEN r.LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
+      WHEN r.LastStatus IN (N'QUEUED', N'SYNCING') THEN r.LastStatus
       ELSE N'ONLINE'
     END AS HealthStatus,
     DATEDIFF(minute, r.LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat
@@ -1804,7 +1805,8 @@ SELECT CustomerCode, HostName, InstanceName, AgentVersion,
        LastHeartbeatUtc, LastJobUtc, LastStatus, LastMessage,
        CASE
          WHEN LastHeartbeatUtc IS NULL THEN N'NEVER'
-         WHEN LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
+         WHEN LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
+         WHEN LastStatus IN (N'QUEUED', N'SYNCING') THEN LastStatus
          ELSE N'ONLINE'
        END AS HealthStatus,
        DATEDIFF(minute, LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat

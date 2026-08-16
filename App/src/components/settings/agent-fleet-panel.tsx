@@ -12,18 +12,18 @@ import { cn } from "@/lib/utils";
 
 type SyncState = { phase: "queued" | "running" | "done" | "error"; pct: number; note: string };
 
-function toneOf(row: AgentStatusRow, st?: SyncState): "green" | "amber" | "red" {
+function toneOf(row: AgentStatusRow, st?: SyncState): "green" | "amber" | "red" | "muted" {
   if (st?.phase === "queued" || st?.phase === "running") return "amber";
-  if (row.lastStatus === "UPDATE" || row.lastStatus === "UPDATING" || row.lastStatus === "QUEUED" || row.lastStatus === "SYNCING") {
-    return "amber";
-  }
+  if (row.lastStatus === "QUEUED" || row.lastStatus === "SYNCING") return "amber";
   if (row.healthStatus === "ONLINE") return "green";
+  if (row.healthStatus === "NOT_INSTALLED" || !row.hostName) return "muted";
   return "red";
 }
 
-function labelOf(tone: "green" | "amber" | "red") {
+function labelOf(tone: "green" | "amber" | "red" | "muted") {
   if (tone === "green") return "Connected";
   if (tone === "amber") return "Busy";
+  if (tone === "muted") return "Not installed";
   return "Disconnected";
 }
 
@@ -112,7 +112,6 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
 
   const sel = rows.find((r) => r.agentId === selected);
   const selSt = sel ? sync[sel.agentId] : undefined;
-  void compact;
 
   return (
     <div className="rpma-panel space-y-3 p-4">
@@ -157,7 +156,7 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
               <button
                 key={r.agentId}
                 type="button"
-                title={`${r.displayName} \u00b7 ${r.agentId} \u00b7 ${labelOf(tone)}`}
+                title={`${r.displayName} · ${r.agentId} · ${labelOf(tone)}`}
                 onClick={() => setSelected(r.agentId)}
                 className={cn(
                   "inline-flex min-h-12 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
@@ -170,6 +169,7 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
                     tone === "green" && "text-emerald-500",
                     tone === "amber" && "text-amber-400",
                     tone === "red" && "text-red-500",
+                    tone === "muted" && "text-muted",
                   )}
                   strokeWidth={2.25}
                 />
@@ -183,10 +183,11 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
                       tone === "green" && "text-emerald-500",
                       tone === "amber" && "text-amber-500",
                       tone === "red" && "text-red-500",
+                      tone === "muted" && "text-muted",
                     )}
                   >
                     {labelOf(tone)}
-                    {r.agentVersion ? ` \u00b7 v${r.agentVersion}` : ""}
+                    {r.agentVersion ? ` · v${r.agentVersion}` : ""}
                   </span>
                 </span>
               </button>

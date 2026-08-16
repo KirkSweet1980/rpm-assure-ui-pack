@@ -328,8 +328,7 @@ UPDATE dbo.Agent_Registry
 SET LastStatus = N'ONLINE', LastMessage = N'updated $newVer', AgentVersion = $(Sql-Lit $newVer)
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
-      W "UPDATE applied $newVer - next loop uses new files"
-      exit 0
+      W "UPDATE applied $newVer - next cycle uses new files"
     }
     W "WARN update files missing on this host"
   }

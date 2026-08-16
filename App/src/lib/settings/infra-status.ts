@@ -48,9 +48,9 @@ SELECT
   r.LastStatus,
   CASE
     WHEN r.CustomerCode IS NULL THEN N'NOT_INSTALLED'
-    WHEN r.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED', N'SYNCING') THEN r.LastStatus
     WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
-    WHEN r.LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
+    WHEN r.LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
+    WHEN r.LastStatus IN (N'QUEUED', N'SYNCING') THEN r.LastStatus
     ELSE N'ONLINE'
   END AS HealthStatus
 FROM dbo.Dim_Customer c WITH (NOLOCK)
@@ -109,7 +109,8 @@ SELECT
   CASE
     WHEN r.CustomerCode IS NULL THEN N'NOT_INSTALLED'
     WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
-    WHEN r.LastHeartbeatUtc < DATEADD(minute, -20, SYSUTCDATETIME()) THEN N'STALE'
+    WHEN r.LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
+    WHEN r.LastStatus IN (N'QUEUED', N'SYNCING') THEN r.LastStatus
     ELSE N'ONLINE'
   END AS HealthStatus
 FROM dbo.Dim_Customer c WITH (NOLOCK)
