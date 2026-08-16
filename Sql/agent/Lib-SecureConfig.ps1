@@ -15,8 +15,25 @@ function Get-RpmaSettingsPath { Join-Path (Get-RpmaAgentRoot) 'Agent.Settings.js
 function Protect-RpmaFolder {
   param([string]$Path = (Get-RpmaAgentRoot))
   if (-not (Test-Path $Path)) { return }
-  icacls $Path /inheritance:r | Out-Null
-  icacls $Path /grant:r "SYSTEM:(OI)(CI)(F)" "Administrators:(OI)(CI)(F)" | Out-Null
+  $old = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  # Drop inherited ACLs so Users / Everyone cannot read secrets or change binaries.
+  & icacls $Path /inheritance:r | Out-Null
+  & icacls $Path /grant:r "NT AUTHORITY\SYSTEM:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" | Out-Null
+  $secrets = Join-Path $Path 'Agent.Secrets.bin'
+  if (Test-Path $secrets) {
+    & attrib +H +S $secrets | Out-Null
+    & icacls $secrets /inheritance:r | Out-Null
+    & icacls $secrets /grant:r "NT AUTHORITY\SYSTEM:F" "BUILTIN\Administrators:F" | Out-Null
+  }
+  foreach ($name in @('Agent.Config.ps1', 'Agent.Settings.json')) {
+    $p = Join-Path $Path $name
+    if (Test-Path $p) {
+      & icacls $p /inheritance:r | Out-Null
+      & icacls $p /grant:r "NT AUTHORITY\SYSTEM:F" "BUILTIN\Administrators:F" | Out-Null
+    }
+  }
+  $ErrorActionPreference = $old
 }
 
 function ConvertTo-RpmaSecureBytes([string]$plain) {
