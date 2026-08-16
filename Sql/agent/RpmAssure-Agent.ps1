@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.5.2"
+$AgentVersion = "2.5.3"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -477,13 +477,16 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
     $RoleTags = ($tags -join ',')
     W ("cover $code syspro=$sysOn rmm=$rmmOn cove=$coveOn epp=$eppOn csp=$cspOn")
 
-    $light = 30
+    $check = 2
+    $sysproLight = 30
     $full = 1440
     if (Get-Command Get-RpmaAgentSettings -EA SilentlyContinue) {
       $st = Get-RpmaAgentSettings
-      if ($st.collectIntervalMin) { $light = [int]$st.collectIntervalMin }
+      if ($st.collectIntervalMin) { $check = [int]$st.collectIntervalMin }
       if ($st.jobsIntervalMin) { $full = [int]$st.jobsIntervalMin }
+      if ($st.sysproIntervalMin) { $sysproLight = [int]$st.sysproIntervalMin }
     }
+    if ($check -lt 1) { $check = 2 }
 
     if (-not $sysOn) {
       W ("SKIP SYSPRO scripts for $code - no SYSPRO cover")
@@ -492,7 +495,7 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
         $jobs += @{
           Name = "syspro-core-$code"
           Customer = $code
-          IntervalMin = $light
+          IntervalMin = $sysproLight
           Script = $sysproRunner
           Args = @("-ConfigPath", $cfg.FullName, "-JobsErrorsOnly")
         }
@@ -508,7 +511,7 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
         $jobs += @{
           Name = "syspro-native-$code"
           Customer = $code
-          IntervalMin = $light
+          IntervalMin = $sysproLight
           Script = $nativeRunner
           Args = @("-ConfigPath", $cfg.FullName)
         }
@@ -520,7 +523,7 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       $jobs += @{
         Name = "host-iops-$code"
         Customer = $code
-        IntervalMin = $light
+        IntervalMin = $check
         Script = $iopsRunner
         Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
       }
@@ -533,7 +536,7 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       $jobs += @{
         Name = "win-eventlog-$code"
         Customer = $code
-        IntervalMin = $light
+        IntervalMin = $check
         Script = $evtRunner
         Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
       }
@@ -552,7 +555,7 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       $jobs += @{
         Name = "assure-link-$code"
         Customer = $code
-        IntervalMin = 5
+        IntervalMin = $check
         Script = $linkRunner
         Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
       }
@@ -567,7 +570,7 @@ if (-not ($jobs | Where-Object { $_.Name -like 'host-iops-*' })) {
     $jobs += @{
       Name = "host-iops-$CustomerCode"
       Customer = $CustomerCode
-      IntervalMin = 30
+      IntervalMin = 2
       Script = $iopsRunner
       Args = @("-AgentRoot", $AgentRoot)
     }
@@ -580,7 +583,7 @@ if (-not ($jobs | Where-Object { $_.Name -like 'win-eventlog-*' })) {
     $jobs += @{
       Name = "win-eventlog-$CustomerCode"
       Customer = $CustomerCode
-      IntervalMin = 30
+      IntervalMin = 2
       Script = $evtRunner
       Args = @("-AgentRoot", $AgentRoot)
     }

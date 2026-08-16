@@ -2,7 +2,7 @@
 # Does NOT use Task Scheduler. NSSM / the service keeps this process alive.
 param(
   [string]$AgentRoot = "C:\RPM-Assure\Agent",
-  [int]$TickSeconds = 60
+  [int]$TickSeconds = 120
 )
 
 $ErrorActionPreference = "Continue"

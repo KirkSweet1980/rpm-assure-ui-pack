@@ -14,7 +14,7 @@ param(
   [string]$CentralSqlUser = "rpmassure",
   [string]$CentralSqlPassword = "",
   [string]$AdminPassword = "",
-  [int]$CollectIntervalMin = 30,
+  [int]$CollectIntervalMin = 2,
   [int]$JobsIntervalMin = 1440,
   [switch]$InstallTray,
   [switch]$StartService,

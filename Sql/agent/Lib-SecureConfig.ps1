@@ -41,9 +41,9 @@ function ConvertFrom-RpmaSecureBytes([byte[]]$blob) {
 function Get-RpmaAgentSettings {
   $p = Get-RpmaSettingsPath
   $def = [ordered]@{
-    collectIntervalMin = 30
+    collectIntervalMin = 2
     jobsIntervalMin    = 1440
-    tickSeconds        = 60
+    tickSeconds        = 120
     centralDataSource  = '102.222.21.220,14333'
     centralDatabase    = 'RPMAssure_App'
     centralSqlUser     = 'rpmassure'
@@ -56,6 +56,12 @@ function Get-RpmaAgentSettings {
     foreach ($k in $def.Keys) {
       if ($null -eq $j.$k) { $j | Add-Member -NotePropertyName $k -NotePropertyValue $def[$k] -Force }
     }
+    $migrated = $false
+    try {
+      if ([int]$j.collectIntervalMin -eq 30) { $j.collectIntervalMin = 2; $migrated = $true }
+      if ([int]$j.tickSeconds -eq 60) { $j.tickSeconds = 120; $migrated = $true }
+    } catch {}
+    if ($migrated) { try { Save-RpmaAgentSettings $j } catch {} }
     return $j
   } catch { return [pscustomobject]$def }
 }

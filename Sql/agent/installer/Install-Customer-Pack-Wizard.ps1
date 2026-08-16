@@ -667,7 +667,7 @@ function Start-InstallJob {
     CentralSqlUser     = $(if ($script:CentralUser) { $script:CentralUser } else { "rpmassure" })
     CentralSqlPassword = $(if ($script:CentralPwd) { $script:CentralPwd } else { "@ssuR3me!" })
     AdminPassword      = $txtAdmin1.Text
-    CollectIntervalMin = 30
+    CollectIntervalMin = 2
     JobsIntervalMin    = 1440
     InstallTray        = $true
     StartService       = $true
