@@ -62,6 +62,7 @@ import { buildExcoPillarSla, hasSlaCover } from "./exco-sla-stats";
 import { auditPortfolioRows } from "./pillar-audit";
 import { getPool, sql } from "./sql-pool";
 import { vendorNameHits } from "./vendor-name-match";
+import { getRagConfig } from "@/lib/settings/settings-store";
 
 type CustRow = {
   CustomerCode: string;
@@ -261,7 +262,7 @@ function mapCustomer(r: CustRow): PortfolioRow {
         jobErrorCount,
         dtrVariance,
         activeUserCount,
-      })
+      }, getRagConfig())
     : null;
   const provisional = finalizeEstateHealth({
     cover,
@@ -366,7 +367,7 @@ function recomputeRowHealth(row: PortfolioRow): void {
         jobErrorCount: row.sysproJobErrorCount,
         dtrVariance: row.sysproDtrVarianceLines,
         activeUserCount: row.activeUserCount,
-      })
+      }, getRagConfig())
     : null;
 
   // SLA / estate RMM health: SERVERS ONLY (workstations never enter SLA)
@@ -6767,7 +6768,7 @@ ORDER BY UserPrincipalName, DisplayName`);
           jobErrorCount: customer.sysproJobErrorCount,
           dtrVariance: customer.sysproDtrVarianceLines,
           activeUserCount: customer.activeUserCount,
-        })
+        }, getRagConfig())
       : null;
     const rmmH =
       cover.rmm && rmm.summary

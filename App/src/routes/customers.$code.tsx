@@ -294,6 +294,15 @@ function CustomerLayout() {
   }
 
   const missing = Boolean((data as { _missing?: boolean })?._missing);
+  const live = customerLiveStatus(
+    customer.customerCode,
+    customer,
+    data.cover ?? customer.cover,
+    data,
+  );
+  const tenantRag: HealthRag =
+    live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
+  const tenantHint = live.pillars.eco.hint || customer.healthSummary;
 
   return (
     <RequireAuth>
@@ -302,7 +311,7 @@ function CustomerLayout() {
         <div className="rpma-d3-workspace">
           <SyncRailHealth
             code={customer.customerCode}
-            healthRag={customer.healthRag}
+            healthRag={tenantRag}
             name={customer.displayName}
           />
           <CustomerMasterRail currentCode={customer.customerCode} />
@@ -310,12 +319,7 @@ function CustomerLayout() {
           <CustomerPillarRail
             code={customer.customerCode}
             cover={data.cover ?? customer.cover}
-            live={customerLiveStatus(
-              customer.customerCode,
-              customer,
-              data.cover ?? customer.cover,
-              data,
-            )}
+            live={live}
           />
 
           <div className="rpma-d3-detail min-w-0">
@@ -352,7 +356,7 @@ function CustomerLayout() {
               <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
                 {customer.displayName}
               </h2>
-              <RagBadge rag={customer.healthRag} title={customer.healthSummary} />
+              <RagBadge rag={tenantRag} title={tenantHint} />
               <Badge
                 variant={
                   data.dataMode === "demo" || missing ? "amber" : "green"

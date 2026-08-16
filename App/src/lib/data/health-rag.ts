@@ -89,16 +89,16 @@ export function rmmHealthFor(input: {
   if (devices <= 0) {
     return { rag: "Green", summary: "No RMM devices mapped." };
   }
-  if (critical > 0 || offline >= 5) {
+  if (critical > 0) {
     return {
       rag: "Red",
-      summary: `RMM: ${offline} offline, ${critical} critical of ${devices} device(s).`,
+      summary: `RMM: ${critical} critical alert(s) on ${devices} server(s).`,
     };
   }
   if (offline > 0 || elevated > 0) {
     return {
       rag: "Amber",
-      summary: `RMM: ${offline} offline, ${elevated} elevated of ${devices} device(s).`,
+      summary: `RMM: ${offline} server(s) offline, ${elevated} elevated of ${devices}.`,
     };
   }
   return {

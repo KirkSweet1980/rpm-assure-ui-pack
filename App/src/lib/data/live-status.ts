@@ -145,7 +145,7 @@ export function customerLiveStatus(
   const alertsRag: LiveTone = !c.rmm ? "Off" : crit > 0 ? "Red" : "Green";
   const wsRag: LiveTone = !c.rmm ? "Off" : wsOff > 0 ? "Amber" : "Green";
   const patchRag: LiveTone = !c.rmm ? "Off" : patchMiss > 0 ? "Amber" : "Green";
-  const rmmRag = [devicesRag, alertsRag].reduce(worse, c.rmm ? "Green" : "Off");
+  const rmmRag = [devicesRag, alertsRag, wsRag, patchRag].reduce(worse, c.rmm ? "Green" : "Off");
 
   const coveDevRag: LiveTone = !c.cove ? "Off" : coveFail > 0 ? "Red" : coveStale > 0 ? "Amber" : "Green";
   const coveRag = coveDevRag;
