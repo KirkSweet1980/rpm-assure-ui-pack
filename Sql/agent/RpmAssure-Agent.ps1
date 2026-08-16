@@ -18,7 +18,7 @@ if (Test-Path $lib) {
   Import-RpmaAgentSecrets
 }
 
-$AgentVersion = "2.4.0"
+$AgentVersion = "2.5.0"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -144,6 +144,54 @@ function Invoke-CentralSql {
     else { $env:SQLCMDPASSWORD = $prev }
     Remove-Item $tmp -Force -EA SilentlyContinue
   }
+}
+
+function Get-RpmaServiceCover([string]$Code) {
+  $cover = [ordered]@{
+    syspro = $null
+    rmm    = $null
+    cove   = $null
+    epp    = $null
+    csp    = $null
+    instance = ""
+  }
+  $q = @"
+SET NOCOUNT ON;
+SELECT
+  ISNULL(CAST(a.PillarSyspro AS int), -1),
+  ISNULL(CAST(a.PillarPulseway AS int), -1),
+  ISNULL(CAST(a.PillarCove AS int), -1),
+  ISNULL(CAST(a.PillarBitdefender AS int), -1),
+  ISNULL(CAST(ISNULL(a.PillarCsp, 0) AS int), -1),
+  ISNULL(c.SqlInstanceName, N'')
+FROM dbo.Dim_Customer c WITH (NOLOCK)
+LEFT JOIN dbo.Dim_Customer_AmsConfig a WITH (NOLOCK) ON a.CustomerCode = c.CustomerCode
+WHERE c.CustomerCode = $(Sql-Lit $Code);
+"@
+  $r = Invoke-CentralSql -SqlText $q -Tsv
+  if ($r.ExitCode -eq 0 -and $r.Text) {
+    foreach ($line in ($r.Text -split "`r?`n")) {
+      $t = $line.Trim()
+      if (-not $t -or $t -match 'Pillar|SqlInstance|---') { continue }
+      $p = $t.Split('|')
+      if ($p.Count -lt 5) { continue }
+      $cover.syspro = $(if ($p[0] -eq '0') { $false } elseif ($p[0] -eq '1') { $true } else { $null })
+      $cover.rmm    = $(if ($p[1] -eq '0') { $false } elseif ($p[1] -eq '1') { $true } else { $null })
+      $cover.cove   = $(if ($p[2] -eq '0') { $false } elseif ($p[2] -eq '1') { $true } else { $null })
+      $cover.epp    = $(if ($p[3] -eq '0') { $false } elseif ($p[3] -eq '1') { $true } else { $null })
+      $cover.csp    = $(if ($p[4] -eq '0') { $false } elseif ($p[4] -eq '1') { $true } else { $null })
+      if ($p.Count -gt 5) { $cover.instance = $p[5] }
+      break
+    }
+  }
+  return $cover
+}
+
+function Test-RpmaServiceOnCover($flag, [string]$service, [string]$instanceName) {
+  if ($flag -eq $false) { return $false }
+  if ($flag -eq $true) { return $true }
+  if ($service -eq 'syspro' -and $instanceName) { return $true }
+  return $false
 }
 
 function Get-RpmaHostCustomers {
@@ -394,6 +442,24 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
   if ($configs.Count -eq 0) { W "WARN no host-matched Customer.Config.ps1" }
   foreach ($cfg in $configs) {
     $code = $cfg.Directory.Name
+    $cover = Get-RpmaServiceCover $code
+    $inst = $cover.instance
+    if (-not $inst) { $inst = $InstanceName }
+    $sysOn = Test-RpmaServiceOnCover $cover.syspro 'syspro' $inst
+    $rmmOn = Test-RpmaServiceOnCover $cover.rmm 'rmm' ''
+    $coveOn = Test-RpmaServiceOnCover $cover.cove 'cove' ''
+    $eppOn = Test-RpmaServiceOnCover $cover.epp 'epp' ''
+    $cspOn = Test-RpmaServiceOnCover $cover.csp 'csp' ''
+    $tags = @()
+    if ($sysOn) { $tags += 'syspro' }
+    if ($rmmOn) { $tags += 'rmm' }
+    if ($coveOn) { $tags += 'cove' }
+    if ($eppOn) { $tags += 'epp' }
+    if ($cspOn) { $tags += 'csp' }
+    if (-not $tags.Count) { $tags = @('agent') }
+    $RoleTags = ($tags -join ',')
+    W ("cover $code syspro=$sysOn rmm=$rmmOn cove=$coveOn epp=$eppOn csp=$cspOn")
+
     $light = 30
     $full = 1440
     if (Get-Command Get-RpmaAgentSettings -EA SilentlyContinue) {
@@ -401,53 +467,64 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       if ($st.collectIntervalMin) { $light = [int]$st.collectIntervalMin }
       if ($st.jobsIntervalMin) { $full = [int]$st.jobsIntervalMin }
     }
-    if (Test-Path $sysproRunner) {
-      $jobs += @{
-        Name = "syspro-core-$code"
-        Customer = $code
-        IntervalMin = $light
-        Script = $sysproRunner
-        Args = @("-ConfigPath", $cfg.FullName, "-JobsErrorsOnly")
+
+    if (-not $sysOn) {
+      W ("SKIP SYSPRO scripts for $code - no SYSPRO cover")
+    } else {
+      if (Test-Path $sysproRunner) {
+        $jobs += @{
+          Name = "syspro-core-$code"
+          Customer = $code
+          IntervalMin = $light
+          Script = $sysproRunner
+          Args = @("-ConfigPath", $cfg.FullName, "-JobsErrorsOnly")
+        }
+        $jobs += @{
+          Name = "syspro-jobs-$code"
+          Customer = $code
+          IntervalMin = $full
+          Script = $sysproRunner
+          Args = @("-ConfigPath", $cfg.FullName, "-IncludeJobs")
+        }
       }
-      $jobs += @{
-        Name = "syspro-jobs-$code"
-        Customer = $code
-        IntervalMin = $full
-        Script = $sysproRunner
-        Args = @("-ConfigPath", $cfg.FullName, "-IncludeJobs")
+      if (Test-Path $nativeRunner) {
+        $jobs += @{
+          Name = "syspro-native-$code"
+          Customer = $code
+          IntervalMin = $light
+          Script = $nativeRunner
+          Args = @("-ConfigPath", $cfg.FullName)
+        }
+      }
+      $iopsRunner = Join-Path $AgentRoot "Collect-Host-Iops.ps1"
+      if (-not (Test-Path $iopsRunner)) { $iopsRunner = Join-Path $SqlRoot "agent\Collect-Host-Iops.ps1" }
+      if (Test-Path $iopsRunner) {
+        $jobs += @{
+          Name = "host-iops-$code"
+          Customer = $code
+          IntervalMin = $light
+          Script = $iopsRunner
+          Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
+        }
+      }
+      $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
+      if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
+      if (Test-Path $evtRunner) {
+        $jobs += @{
+          Name = "win-eventlog-$code"
+          Customer = $code
+          IntervalMin = $light
+          Script = $evtRunner
+          Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
+        }
       }
     }
-    if (Test-Path $nativeRunner) {
-      $jobs += @{
-        Name = "syspro-native-$code"
-        Customer = $code
-        IntervalMin = $light
-        Script = $nativeRunner
-        Args = @("-ConfigPath", $cfg.FullName)
-      }
-    }
-    $iopsRunner = Join-Path $AgentRoot "Collect-Host-Iops.ps1"
-    if (-not (Test-Path $iopsRunner)) { $iopsRunner = Join-Path $SqlRoot "agent\Collect-Host-Iops.ps1" }
-    if (Test-Path $iopsRunner) {
-      $jobs += @{
-        Name = "host-iops-$code"
-        Customer = $code
-        IntervalMin = $light
-        Script = $iopsRunner
-        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
-      }
-    }
-    $evtRunner = Join-Path $AgentRoot "Collect-Windows-EventLog.ps1"
-    if (-not (Test-Path $evtRunner)) { $evtRunner = Join-Path $SqlRoot "agent\Collect-Windows-EventLog.ps1" }
-    if (Test-Path $evtRunner) {
-      $jobs += @{
-        Name = "win-eventlog-$code"
-        Customer = $code
-        IntervalMin = $light
-        Script = $evtRunner
-        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
-      }
-    }
+
+    if (-not $rmmOn) { W ("SKIP RMM scripts for $code - no RMM cover") }
+    if (-not $coveOn) { W ("SKIP Cove scripts for $code - no Cove cover") }
+    if (-not $eppOn) { W ("SKIP EPP scripts for $code - no EPP cover") }
+    if (-not $cspOn) { W ("SKIP CSP scripts for $code - no CSP cover") }
+
     $linkRunner = Join-Path $AgentRoot "Probe-Assure-Link.ps1"
     if (-not (Test-Path $linkRunner)) { $linkRunner = Join-Path $SqlRoot "agent\Probe-Assure-Link.ps1" }
     if (Test-Path $linkRunner) {

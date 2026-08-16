@@ -156,6 +156,58 @@ if (-not (Test-Path -LiteralPath (Join-Path $pack "Sql\agent\RpmAssure-Agent.ps1
   throw "Pack missing $pack\Sql\agent. Update the pack on this host first."
 }
 W "Using local pack (no git during install)."
+
+function Get-InstallCover([string]$Code) {
+  $out = @{ syspro = $true; rmm = $false; cove = $false; epp = $false; csp = $false }
+  try {
+    $n = $CentralDataSource
+    if ($n -match ':(\d+)$' -and $n -notmatch '\\') { $n = $n -replace ':(\d+)$', ',$1' }
+    $cs = "Data Source=$n;Initial Catalog=$CentralDatabase;User ID=$CentralSqlUser;Password=$CentralSqlPassword;Connect Timeout=8;Encrypt=True;TrustServerCertificate=True;"
+    $cn = New-Object System.Data.SqlClient.SqlConnection $cs
+    $cn.Open()
+    $cmd = $cn.CreateCommand()
+    $cmd.CommandTimeout = 15
+    $safe = $Code.Replace("'", "''")
+    $cmd.CommandText = @"
+SELECT
+  ISNULL(CAST(a.PillarSyspro AS int), -1) AS S,
+  ISNULL(CAST(a.PillarPulseway AS int), -1) AS R,
+  ISNULL(CAST(a.PillarCove AS int), -1) AS C,
+  ISNULL(CAST(a.PillarBitdefender AS int), -1) AS E,
+  ISNULL(CAST(a.PillarCsp AS int), -1) AS M,
+  ISNULL(c.SqlInstanceName, N'') AS Inst
+FROM dbo.Dim_Customer c WITH (NOLOCK)
+LEFT JOIN dbo.Dim_Customer_AmsConfig a WITH (NOLOCK) ON a.CustomerCode = c.CustomerCode
+WHERE c.CustomerCode = N'$safe'
+"@
+    $rd = $cmd.ExecuteReader()
+    if ($rd.Read()) {
+      $s = [int]$rd.GetValue(0)
+      $out.syspro = $(if ($s -eq 0) { $false } elseif ($s -eq 1) { $true } else { [bool]$InstanceName })
+      $out.rmm = ([int]$rd.GetValue(1) -eq 1)
+      $out.cove = ([int]$rd.GetValue(2) -eq 1)
+      $out.epp = ([int]$rd.GetValue(3) -eq 1)
+      $out.csp = ([int]$rd.GetValue(4) -eq 1)
+    }
+    $rd.Close(); $cn.Close(); $cn.Dispose()
+  } catch {
+    W ("Cover lookup failed (assume SYSPRO if instance set): " + $_.Exception.Message)
+    $out.syspro = [bool]$InstanceName
+  }
+  return $out
+}
+
+$cover = Get-InstallCover $CustomerCode
+$tags = @()
+if ($cover.syspro) { $tags += "syspro" }
+if ($cover.rmm) { $tags += "rmm" }
+if ($cover.cove) { $tags += "cove" }
+if ($cover.epp) { $tags += "epp" }
+if ($cover.csp) { $tags += "csp" }
+if (-not $tags.Count) { $tags = @("agent") }
+$RoleTags = ($tags -join ",")
+W ("Cover syspro=$($cover.syspro) rmm=$($cover.rmm) cove=$($cover.cove) epp=$($cover.epp) csp=$($cover.csp) roles=$RoleTags")
+
 $from = Join-Path $pack "Sql\agent"
 $agentRoot = Join-Path $Root "Agent"
 $sqlRoot = Join-Path $Root "Sql"
@@ -175,9 +227,17 @@ robocopy $from $agentRoot /E /XO /R:1 /W:1 /XF Agent.Secrets.bin Agent.Config.ps
 W "Copying sql agent files..."
 robocopy $from (Join-Path $sqlRoot "agent") /E /XO /R:1 /W:1 /XF Update-Agent-From-Central.ps1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 $baseSrc = Join-Path $pack "Sql\base\syspro-direct"
-if (Test-Path $baseSrc) {
-  W "Copying SYSPRO collect scripts..."
+if ($cover.syspro -and (Test-Path $baseSrc)) {
+  W "SYSPRO on cover - copying collect scripts..."
   robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+} else {
+  W "No SYSPRO cover - not deploying SYSPRO collect scripts."
+  $skipDir = Join-Path $sqlRoot "base\syspro-direct"
+  if (Test-Path $skipDir) {
+    Get-ChildItem $skipDir -Filter "*.ps1" -EA SilentlyContinue | ForEach-Object {
+      W ("Leaving existing " + $_.Name + " unused (no cover)")
+    }
+  }
 }
 W "Copies done."
 
@@ -205,7 +265,7 @@ $cfgBody = @"
 `$CustomerCode = '$CustomerCode'
 `$DisplayName = '$($DisplayName.Replace("'", "''"))'
 `$InstanceName = '$($InstanceName.Replace("'", "''"))'
-`$RoleTags = 'syspro'
+`$RoleTags = '$RoleTags'
 `$CentralDataSource = '$($CentralDataSource.Replace("'", "''"))'
 `$CentralDatabase = '$($CentralDatabase.Replace("'", "''"))'
 `$CentralSqlUser = '$($CentralSqlUser.Replace("'", "''"))'
