@@ -696,4 +696,20 @@ if (Test-Path -LiteralPath $autoMap) {
 
 Write-Log '=== Cove collect done ==='
 Write-Log ("log=" + $log)
+try {
+  Invoke-SqlFile -SqlText @"
+SET NOCOUNT ON;
+IF OBJECT_ID(N'dbo.Dim_Connection', N'U') IS NULL RETURN;
+UPDATE dbo.Dim_Connection
+SET LastSyncAt = SYSUTCDATETIME(),
+    Status = N'Active',
+    Notes = N'Cove collect OK',
+    UpdatedAt = SYSUTCDATETIME()
+WHERE ConnectionCode IN (N'COVE', N'NABLE_COVE', N'BACKUP');
+"@ -Label 'cove_stamp_conn'
+  Write-Log 'Dim_Connection COVE stamped Active'
+} catch {
+  Write-Log ('stamp Dim_Connection skip: ' + $_.Exception.Message)
+}
+
 

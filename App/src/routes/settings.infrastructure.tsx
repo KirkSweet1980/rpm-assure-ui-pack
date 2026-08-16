@@ -85,12 +85,21 @@ function kindToHealthId(raw: string) {
   return "";
 }
 
+function newerIso(a: string | null | undefined, b: string | null | undefined): string | null {
+  const ta = a ? new Date(a).getTime() : NaN;
+  const tb = b ? new Date(b).getTime() : NaN;
+  if (Number.isFinite(ta) && Number.isFinite(tb)) return ta >= tb ? (a as string) : (b as string);
+  if (Number.isFinite(ta)) return a as string;
+  if (Number.isFinite(tb)) return b as string;
+  return null;
+}
+
 function feedTone(iso: string | null): { tone: "green" | "amber" | "red"; result: string } {
   if (!iso) return { tone: "red", result: "Never" };
   const m = (Date.now() - new Date(iso).getTime()) / 60000;
   if (!Number.isFinite(m) || m < 0) return { tone: "red", result: "Never" };
-  if (m <= 25) return { tone: "green", result: "OK" };
-  if (m <= 120) return { tone: "amber", result: "Due" };
+  if (m <= 45) return { tone: "green", result: "OK" };
+  if (m <= 360) return { tone: "amber", result: "Due" };
   return { tone: "red", result: "Stale" };
 }
 
@@ -364,7 +373,7 @@ function InfrastructureStatusPage() {
                 connRows.map((r) => {
                   const hid = kindToHealthId(r.sourceKind);
                   const live = items.find((h) => h.id === hid);
-                  const lastAt = r.lastSyncAt || live?.lastAt || null;
+                  const lastAt = newerIso(r.lastSyncAt, live?.lastAt);
                   const { tone, result } = feedTone(lastAt);
                   const leg = (feed?.legs ?? []).find(
                     (l) =>

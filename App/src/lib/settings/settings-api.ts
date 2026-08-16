@@ -1192,6 +1192,43 @@ BEGIN
   SELECT CAST(NULL AS nvarchar(40)) AS ConnectionCode WHERE 1 = 0;
   RETURN;
 END
+
+DECLARE @cove datetime2(3), @csp datetime2(3), @rmm datetime2(3), @epp datetime2(3);
+
+IF OBJECT_ID(N'dbo.Cove_DeviceStatistics', N'U') IS NOT NULL
+  SELECT @cove = (SELECT MAX(t) FROM (
+    SELECT MAX(ImportedAt) t FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)
+    UNION ALL SELECT MAX(LastSuccessTime) FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)
+  ) z);
+IF OBJECT_ID(N'dbo.Csp_Licenses', N'U') IS NOT NULL
+  SELECT @csp = MAX(ImportedAt) FROM dbo.Csp_Licenses WITH (NOLOCK);
+IF OBJECT_ID(N'dbo.Csp_Users', N'U') IS NOT NULL
+  SELECT @csp = CASE WHEN MAX(ImportedAt) > ISNULL(@csp, CONVERT(datetime2(3), '19000101')) THEN MAX(ImportedAt) ELSE @csp END
+  FROM dbo.Csp_Users WITH (NOLOCK);
+IF OBJECT_ID(N'dbo.Csp_Posture', N'U') IS NOT NULL
+  SELECT @csp = CASE WHEN MAX(ImportedAt) > ISNULL(@csp, CONVERT(datetime2(3), '19000101')) THEN MAX(ImportedAt) ELSE @csp END
+  FROM dbo.Csp_Posture WITH (NOLOCK);
+IF OBJECT_ID(N'dbo.Pulseway_Devices', N'U') IS NOT NULL
+  SELECT @rmm = MAX(ImportedAt) FROM dbo.Pulseway_Devices WITH (NOLOCK);
+IF OBJECT_ID(N'dbo.Bitdefender_Endpoints', N'U') IS NOT NULL
+  SELECT @epp = MAX(ImportedAt) FROM dbo.Bitdefender_Endpoints WITH (NOLOCK);
+
+UPDATE dbo.Dim_Connection
+SET LastSyncAt = CASE ConnectionCode
+      WHEN N'COVE' THEN COALESCE(@cove, LastSyncAt)
+      WHEN N'MS_CSP' THEN COALESCE(@csp, LastSyncAt)
+      WHEN N'PULSEWAY' THEN COALESCE(@rmm, LastSyncAt)
+      WHEN N'BITDEFENDER' THEN COALESCE(@epp, LastSyncAt)
+      ELSE LastSyncAt END,
+    Status = CASE
+      WHEN ConnectionCode = N'COVE' AND @cove >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
+      WHEN ConnectionCode = N'MS_CSP' AND @csp >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
+      WHEN ConnectionCode = N'PULSEWAY' AND @rmm >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
+      WHEN ConnectionCode = N'BITDEFENDER' AND @epp >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
+      ELSE Status END,
+    UpdatedAt = SYSUTCDATETIME()
+WHERE ConnectionCode IN (N'COVE', N'MS_CSP', N'PULSEWAY', N'BITDEFENDER');
+
 SELECT ConnectionCode, DisplayName, SourceKind, Status, Notes, LastSyncAt
 FROM dbo.Dim_Connection WITH (NOLOCK)
 ORDER BY
@@ -1622,6 +1659,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
     "SELECT MAX(LastImportAt) AS t FROM dbo.vw_Kpi_Cove_Summary WITH (NOLOCK)",
     "SELECT MAX(ImportedAt) AS t FROM dbo.Cove_BackupSessions WITH (NOLOCK)",
     "SELECT MAX(LastSuccessTime) AS t FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)",
+    "SELECT MAX(LastSyncAt) AS t FROM dbo.Dim_Connection WITH (NOLOCK) WHERE ConnectionCode IN (N'COVE', N'NABLE_COVE')",
   ]);
   const eppAt = await probeIso(pool, [
     "SELECT MAX(ImportedAt) AS t FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)",
@@ -1629,6 +1667,10 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
   const cspAt = await probeIso(pool, [
     "SELECT MAX(ImportedAt) AS t FROM dbo.Csp_Licenses WITH (NOLOCK)",
     "SELECT MAX(ImportedAt) AS t FROM dbo.Csp_Users WITH (NOLOCK)",
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Csp_Posture WITH (NOLOCK)",
+    "SELECT MAX(ImportedAt) AS t FROM dbo.Csp_TenantHealth WITH (NOLOCK)",
+    "SELECT MAX(UpdatedAtUtc) AS t FROM dbo.Dim_Csp_TenantMap WITH (NOLOCK)",
+    "SELECT MAX(LastSyncAt) AS t FROM dbo.Dim_Connection WITH (NOLOCK) WHERE ConnectionCode IN (N'MS_CSP', N'CSP', N'M365')",
   ]);
   const times: Record<string, string | null> = {
     rmm: rmmAt,

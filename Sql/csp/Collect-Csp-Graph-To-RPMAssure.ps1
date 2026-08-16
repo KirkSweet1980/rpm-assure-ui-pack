@@ -15,10 +15,10 @@ param(
   [string]$ConfigPath = "",
   [string]$CustomerCode = $(if ($env:CSP_CUSTOMER_CODE) { $env:CSP_CUSTOMER_CODE } else { "RPMINT" }),
   [string]$PrimaryDomain = $(if ($env:CSP_PRIMARY_DOMAIN) { $env:CSP_PRIMARY_DOMAIN } else { "rpmresources.co.za" }),
-  [string]$SqlServer = $(if ($env:RPM_ASSURE_SQL_SERVER) { $env:RPM_ASSURE_SQL_SERVER } else { ".\RPMREPORTS" }),
+  [string]$SqlServer = $(if ($env:RPM_ASSURE_SQL_SERVER) { $env:RPM_ASSURE_SQL_SERVER } else { "102.222.21.220,14333" }),
   [string]$SqlDatabase = $(if ($env:RPM_ASSURE_SQL_DATABASE) { $env:RPM_ASSURE_SQL_DATABASE } else { "RPMAssure_App" }),
   [string]$SqlUser = $(if ($env:RPM_ASSURE_SQL_USER) { $env:RPM_ASSURE_SQL_USER } else { "Rpm_collect" }),
-  [string]$SqlPassword = $(if ($env:RPM_ASSURE_SQL_PASSWORD) { $env:RPM_ASSURE_SQL_PASSWORD } else { "" }),
+  [string]$SqlPassword = $(if ($env:RPM_ASSURE_SQL_PASSWORD) { $env:RPM_ASSURE_SQL_PASSWORD } else { "RpmCollect#AHIC2026" }),
   [switch]$WindowsAuth,
   [switch]$SeedOnly,
   [switch]$SkipSchema
@@ -145,12 +145,21 @@ if (Get-Variable -Name CspClientSecret -EA SilentlyContinue) {
 # (param defaults already applied; config overrides if present and non-empty)
 # Note: after . Csp.Config.ps1, $CustomerCode / $SqlServer etc. are already updated if defined there.
 
+# After config overlay, never keep a local-instance default that fails on the scheduled task.
+if ([string]::IsNullOrWhiteSpace($SqlServer) -or $SqlServer -match '^\.\\RPMREPORTS$|^\(local\)\\RPMREPORTS$|^localhost\\RPMREPORTS$') {
+  $SqlServer = "102.222.21.220,14333"
+}
+if ([string]::IsNullOrWhiteSpace($SqlPassword) -and -not $WindowsAuth) {
+  $SqlUser = "Rpm_collect"
+  $SqlPassword = "RpmCollect#AHIC2026"
+}
+
 $script:UseWinAuth = $false
 if ($WindowsAuth) { $script:UseWinAuth = $true }
 if (-not [string]::IsNullOrWhiteSpace($SqlPassword) -and -not [string]::IsNullOrWhiteSpace($SqlUser)) {
   $script:UseWinAuth = $false
 }
-if ([string]::IsNullOrWhiteSpace($SqlPassword) -and -not $WindowsAuth) {
+if ([string]::IsNullOrWhiteSpace($SqlPassword) -and $WindowsAuth) {
   $script:UseWinAuth = $true
 }
 
@@ -661,6 +670,21 @@ IF OBJECT_ID(N'dbo.Csp_GlobalAdmins', N'U') IS NOT NULL
 
 Write-Log "=== CSP Graph collect done CustomerCode=$CustomerCode ==="
 Write-Log "log=$log"
+try {
+  Invoke-SqlText @"
+SET NOCOUNT ON;
+IF OBJECT_ID(N'dbo.Dim_Connection', N'U') IS NULL RETURN;
+UPDATE dbo.Dim_Connection
+SET LastSyncAt = SYSUTCDATETIME(),
+    Status = N'Active',
+    Notes = N'Graph collect OK',
+    UpdatedAt = SYSUTCDATETIME()
+WHERE ConnectionCode IN (N'MS_CSP', N'CSP', N'M365', N'GRAPH');
+"@ "csp_stamp_conn"
+  Write-Log "Dim_Connection MS_CSP stamped Active"
+} catch {
+  Write-Log ("stamp Dim_Connection skip: " + $_.Exception.Message)
+}
 
 $proof = @"
 SET NOCOUNT ON;
