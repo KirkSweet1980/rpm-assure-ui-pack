@@ -1,6 +1,5 @@
 # Enable-Cover-From-Local.ps1
-# After Detect-Local-Services, push cover=1 to central for products found on this host.
-# Only ENABLES. Never clears a pillar (central evidence / EXCO owns off).
+# Push cover=1 to central for products found on this host. Only ENABLES. Never clears.
 param(
   [Parameter(Mandatory)][string]$CustomerCode,
   [Parameter(Mandatory)][string]$CentralDataSource,
@@ -14,7 +13,7 @@ param(
   [string]$AgentRoot = 'C:\RPM-Assure\Agent'
 )
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 $CustomerCode = $CustomerCode.Trim().ToUpperInvariant()
 if (-not ($Syspro -or $Pulseway -or $Bitdefender -or $Cove)) {
   Write-Host 'No local products to enable on cover.'

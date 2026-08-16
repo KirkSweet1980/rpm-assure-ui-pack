@@ -1,80 +1,109 @@
 # Detect-Local-Services.ps1
 # Local product discovery on the customer host.
-# Used at agent install (and optionally each cycle) to enable cover when products are present.
-# Policy: only ENABLE cover when found. Never clear cover from the agent (central evidence owns off).
+# Policy: only ENABLE cover when found. Never clear cover from the agent.
 #
 # Returns hashtable:
-#   Syspro      = $true|$false
+#   SqlPresent  = $true|$false   (SQL Server engine on this machine)
+#   Syspro      = $true|$false   (always false when SqlPresent is false)
 #   Pulseway    = $true|$false
 #   Bitdefender = $true|$false
 #   Cove        = $true|$false
-#   Details     = string[] of what matched
+#   Details     = string[]
 
 function Test-RpmaPath([string]$Path) {
   if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
-  return (Test-Path -LiteralPath $Path -EA SilentlyContinue)
+  try { return (Test-Path -LiteralPath $Path -EA SilentlyContinue) } catch { return $false }
 }
 
 function Test-RpmaService([string[]]$Names) {
-  foreach ($n in $Names) {
-    $s = Get-Service -Name $n -EA SilentlyContinue
-    if ($s) { return $true }
-  }
-  $all = Get-Service -EA SilentlyContinue
-  foreach ($n in $Names) {
-    if ($n -match '[\*\?]') {
-      $hit = $all | Where-Object { $_.Name -like $n }
-      if ($hit) { return $true }
+  try {
+    foreach ($n in $Names) {
+      if ($n -match '[\*\?]') {
+        $hit = Get-Service -EA SilentlyContinue | Where-Object { $_.Name -like $n }
+        if ($hit) { return $true }
+      } else {
+        $s = Get-Service -Name $n -EA SilentlyContinue
+        if ($s) { return $true }
+      }
     }
-  }
+  } catch {}
   return $false
 }
 
 function Test-RpmaReg([string[]]$Paths) {
   foreach ($p in $Paths) {
-    if (Test-Path -LiteralPath $p -EA SilentlyContinue) { return $true }
+    try { if (Test-Path -LiteralPath $p -EA SilentlyContinue) { return $true } } catch {}
   }
   return $false
 }
 
+function Test-RpmaSqlPresent {
+  # SQL Server engine on this host (not just client tools)
+  $details = New-Object System.Collections.Generic.List[string]
+  $present = $false
+  try {
+    # Default instance + any MSSQL$ named instances
+    $svc = Get-Service -EA SilentlyContinue | Where-Object {
+      $_.Name -eq 'MSSQLSERVER' -or $_.Name -like 'MSSQL$*'
+    }
+    if ($svc) {
+      $present = $true
+      [void]$details.Add('SQL: service ' + (($svc | Select-Object -ExpandProperty Name) -join ','))
+    }
+  } catch {}
+  if (-not $present) {
+    foreach ($p in @(
+      (Join-Path $env:ProgramFiles 'Microsoft SQL Server'),
+      (Join-Path ${env:ProgramFiles(x86)} 'Microsoft SQL Server')
+    )) {
+      if (Test-RpmaPath $p) {
+        # Prefer evidence of engine binaries, not only client tools
+        $engine = Get-ChildItem -Path $p -Filter 'sqlservr.exe' -Recurse -EA SilentlyContinue | Select-Object -First 1
+        if ($engine) {
+          $present = $true
+          [void]$details.Add('SQL: sqlservr.exe under ' + $p)
+          break
+        }
+      }
+    }
+  }
+  if (-not $present) {
+    if (Test-RpmaReg @(
+      'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL',
+      'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Microsoft SQL Server\Instance Names\SQL'
+    )) {
+      $present = $true
+      [void]$details.Add('SQL: instance registry present')
+    }
+  }
+  return @{ Present = $present; Details = $details.ToArray() }
+}
+
 function Test-RpmaSysproDatabases {
-  # Strong signal on the customer SQL host: Syspro* databases exist
-  try {
-    $cs = 'Data Source=.;Initial Catalog=master;Integrated Security=True;Connect Timeout=4;Encrypt=False;TrustServerCertificate=True;'
-    $cn = New-Object System.Data.SqlClient.SqlConnection $cs
-    $cn.Open()
-    $cmd = $cn.CreateCommand()
-    $cmd.CommandTimeout = 8
-    $cmd.CommandText = @"
-SELECT TOP 1 name
-FROM sys.databases WITH (NOLOCK)
-WHERE name LIKE N'Syspro%'
-   OR name LIKE N'SYSPRO%'
-ORDER BY name;
-"@
-    $name = [string]$cmd.ExecuteScalar()
-    $cn.Close(); $cn.Dispose()
-    if ($name) { return $name }
-  } catch {}
-  # Fallback: named instances common on SYSPRO hosts
-  try {
-    $inst = $env:COMPUTERNAME
-    $cs = "Data Source=$inst;Initial Catalog=master;Integrated Security=True;Connect Timeout=4;Encrypt=False;TrustServerCertificate=True;"
-    $cn = New-Object System.Data.SqlClient.SqlConnection $cs
-    $cn.Open()
-    $cmd = $cn.CreateCommand()
-    $cmd.CommandTimeout = 8
-    $cmd.CommandText = "SELECT TOP 1 name FROM sys.databases WITH (NOLOCK) WHERE name LIKE N'Syspro%' OR name LIKE N'SYSPRO%' ORDER BY name;"
-    $name = [string]$cmd.ExecuteScalar()
-    $cn.Close(); $cn.Dispose()
-    if ($name) { return $name }
-  } catch {}
+  # Only called when SQL is present. Best-effort; never throws.
+  $attempts = @('.', $env:COMPUTERNAME, '(local)', 'localhost')
+  foreach ($ds in $attempts) {
+    try {
+      $cs = "Data Source=$ds;Initial Catalog=master;Integrated Security=True;Connect Timeout=3;Encrypt=False;TrustServerCertificate=True;"
+      $cn = New-Object System.Data.SqlClient.SqlConnection $cs
+      $cn.Open()
+      $cmd = $cn.CreateCommand()
+      $cmd.CommandTimeout = 6
+      $cmd.CommandText = "SELECT TOP 1 name FROM sys.databases WITH (NOLOCK) WHERE name LIKE N'Syspro%' OR name LIKE N'SYSPRO%' ORDER BY name;"
+      $name = [string]$cmd.ExecuteScalar()
+      $cn.Close(); $cn.Dispose()
+      if ($name) { return $name }
+    } catch {
+      # try next data source
+    }
+  }
   return $null
 }
 
 function Get-RpmaLocalServices {
   $details = New-Object System.Collections.Generic.List[string]
   $out = [ordered]@{
+    SqlPresent   = $false
     Syspro       = $false
     Pulseway     = $false
     Bitdefender  = $false
@@ -82,45 +111,44 @@ function Get-RpmaLocalServices {
     Details      = @()
   }
 
-  # ---- SYSPRO ERP ----
-  $sySvc = @(
-    'SYSPRO*', 'Syspro*', 'SYSPROServer', 'SYSPRO Service',
-    'SYSPRO WCF', 'SYSPRO Reporting'
-  )
-  $syPaths = @(
-    'C:\SYSPRO',
-    'C:\SYSPRO7',
-    'C:\SYSPRO8',
-    'C:\SYSPRO9',
-    'C:\Syspro',
-    'D:\SYSPRO',
-    'D:\SYSPRO8',
-    'E:\SYSPRO',
-    (Join-Path $env:ProgramFiles 'SYSPRO'),
-    (Join-Path ${env:ProgramFiles(x86)} 'SYSPRO'),
-    (Join-Path $env:ProgramFiles 'Syspro'),
-    (Join-Path ${env:ProgramFiles(x86)} 'Syspro')
-  )
-  $syReg = @(
-    'HKLM:\SOFTWARE\SYSPRO',
-    'HKLM:\SOFTWARE\WOW6432Node\SYSPRO',
-    'HKLM:\SOFTWARE\Syspro',
-    'HKLM:\SOFTWARE\WOW6432Node\Syspro'
-  )
-  if (Test-RpmaService $sySvc) {
-    $out.Syspro = $true
-    [void]$details.Add('SYSPRO: service present')
-  } elseif ($syPaths | Where-Object { Test-RpmaPath $_ }) {
-    $out.Syspro = $true
-    [void]$details.Add('SYSPRO: install folder present')
-  } elseif (Test-RpmaReg $syReg) {
-    $out.Syspro = $true
-    [void]$details.Add('SYSPRO: registry present')
-  } else {
-    $db = Test-RpmaSysproDatabases
-    if ($db) {
+  # ---- SQL Server presence (gates SYSPRO) ----
+  $sqlInfo = Test-RpmaSqlPresent
+  $out.SqlPresent = [bool]$sqlInfo.Present
+  foreach ($d in $sqlInfo.Details) { [void]$details.Add($d) }
+  if (-not $out.SqlPresent) {
+    [void]$details.Add('SQL: not detected on this host - SYSPRO assumed absent')
+  }
+
+  # ---- SYSPRO ERP (requires SQL on this machine) ----
+  if ($out.SqlPresent) {
+    $sySvc = @('SYSPRO*', 'Syspro*', 'SYSPROServer', 'SYSPRO Service', 'SYSPRO WCF', 'SYSPRO Reporting')
+    $syPaths = @(
+      'C:\SYSPRO', 'C:\SYSPRO7', 'C:\SYSPRO8', 'C:\SYSPRO9', 'C:\Syspro',
+      'D:\SYSPRO', 'D:\SYSPRO8', 'E:\SYSPRO',
+      (Join-Path $env:ProgramFiles 'SYSPRO'),
+      (Join-Path ${env:ProgramFiles(x86)} 'SYSPRO'),
+      (Join-Path $env:ProgramFiles 'Syspro'),
+      (Join-Path ${env:ProgramFiles(x86)} 'Syspro')
+    )
+    $syReg = @(
+      'HKLM:\SOFTWARE\SYSPRO', 'HKLM:\SOFTWARE\WOW6432Node\SYSPRO',
+      'HKLM:\SOFTWARE\Syspro', 'HKLM:\SOFTWARE\WOW6432Node\Syspro'
+    )
+    if (Test-RpmaService $sySvc) {
       $out.Syspro = $true
-      [void]$details.Add("SYSPRO: database present ($db)")
+      [void]$details.Add('SYSPRO: service present')
+    } elseif ($syPaths | Where-Object { Test-RpmaPath $_ }) {
+      $out.Syspro = $true
+      [void]$details.Add('SYSPRO: install folder present')
+    } elseif (Test-RpmaReg $syReg) {
+      $out.Syspro = $true
+      [void]$details.Add('SYSPRO: registry present')
+    } else {
+      $db = Test-RpmaSysproDatabases
+      if ($db) {
+        $out.Syspro = $true
+        [void]$details.Add("SYSPRO: database present ($db)")
+      }
     }
   }
 
@@ -163,10 +191,7 @@ function Get-RpmaLocalServices {
     (Join-Path ${env:ProgramFiles(x86)} 'Bitdefender Agent'),
     (Join-Path $env:ProgramFiles 'Bitdefender\Endpoint Security')
   )
-  $bdReg = @(
-    'HKLM:\SOFTWARE\Bitdefender',
-    'HKLM:\SOFTWARE\WOW6432Node\Bitdefender'
-  )
+  $bdReg = @('HKLM:\SOFTWARE\Bitdefender', 'HKLM:\SOFTWARE\WOW6432Node\Bitdefender')
   if (Test-RpmaService $bdSvc) {
     $out.Bitdefender = $true
     [void]$details.Add('Bitdefender: service present')
@@ -179,10 +204,7 @@ function Get-RpmaLocalServices {
   }
 
   # ---- Cove Data Protection / N-able Backup Manager ----
-  $coveSvc = @(
-    'Backup Service Controller', 'BackupFP', 'CoveDataProtection',
-    'Backup Manager', 'ProcessController'
-  )
+  $coveSvc = @('Backup Service Controller', 'BackupFP', 'CoveDataProtection', 'Backup Manager', 'ProcessController')
   $covePaths = @(
     (Join-Path $env:ProgramFiles 'Backup Manager'),
     (Join-Path ${env:ProgramFiles(x86)} 'Backup Manager'),
@@ -214,6 +236,7 @@ function Get-RpmaLocalServices {
 
 if ($MyInvocation.InvocationName -ne '.') {
   $r = Get-RpmaLocalServices
+  Write-Host ("SQL present  : " + $r.SqlPresent)
   Write-Host ("SYSPRO       : " + $r.Syspro)
   Write-Host ("Pulseway     : " + $r.Pulseway)
   Write-Host ("Bitdefender  : " + $r.Bitdefender)
