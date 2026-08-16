@@ -68,7 +68,16 @@ if (-not $ConfigFile) {
   if (-not $PSBoundParameters.ContainsKey("LockFiles")) { $LockFiles = $true }
 }
 
-function W([string]$m) { Write-Host $m }
+function W([string]$m) {
+  Write-Host $m
+  try { [Console]::Out.Flush() } catch {}
+  try {
+    $pf = "C:\RPM-Assure\Agent\logs\wizard-install.log"
+    $dir = Split-Path $pf
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    Add-Content -LiteralPath $pf -Value $m -Encoding ASCII
+  } catch {}
+}
 
 function Find-Git {
   $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
@@ -131,6 +140,12 @@ function Ensure-Pack([string]$git) {
   return [string]$pack
 }
 
+try {
+  $pf0 = "C:\RPM-Assure\Agent\logs\wizard-install.log"
+  New-Item -ItemType Directory -Force -Path (Split-Path $pf0) | Out-Null
+  Set-Content -LiteralPath $pf0 -Value "" -Encoding ASCII
+} catch {}
+
 W "========================================"
 W " RPM Assure Edge Agent  |  $CustomerCode"
 W "========================================"
@@ -150,12 +165,16 @@ $sqlRoot = Join-Path $Root "Sql"
 $custDir = Join-Path $sqlRoot ("customers\" + $CustomerCode)
 New-Item -ItemType Directory -Force -Path $agentRoot, (Join-Path $agentRoot "logs"), (Join-Path $agentRoot "tools"), (Join-Path $agentRoot "tray"), $custDir, (Join-Path $sqlRoot "base\syspro-direct") | Out-Null
 
+W "Copying agent files..."
 robocopy $from $agentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+W "Copying sql agent files..."
 robocopy $from (Join-Path $sqlRoot "agent") /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 $baseSrc = Join-Path $pack "Sql\base\syspro-direct"
 if (Test-Path $baseSrc) {
+  W "Copying SYSPRO collect scripts..."
   robocopy $baseSrc (Join-Path $sqlRoot "base\syspro-direct") /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
+W "Copies done."
 
 $custCfg = Join-Path $custDir "Customer.Config.ps1"
 $custBody = @"
@@ -195,6 +214,7 @@ W "Wrote $cfgPath"
 $lib = Join-Path $agentRoot "Lib-SecureConfig.ps1"
 . $lib
 $script:RpmaAgentRoot = $agentRoot
+W "Saving encrypted settings..."
 Initialize-RpmaSecureStore -AdminPassword $AdminPassword -CentralSqlPassword $CentralSqlPassword -LocalSqlPassword $LocalSqlPassword -CentralDataSource $CentralDataSource -CentralDatabase $CentralDatabase -CentralSqlUser $CentralSqlUser
 $set = Get-RpmaAgentSettings
 $set.collectIntervalMin = [int]$CollectIntervalMin
@@ -203,26 +223,27 @@ $set.centralDataSource = $CentralDataSource
 $set.centralDatabase = $CentralDatabase
 $set.centralSqlUser = $CentralSqlUser
 Save-RpmaAgentSettings $set
-if ($LockFiles) { Protect-RpmaFolder -Path $agentRoot }
-W "Secrets encrypted (DPAPI, this machine only). Folder locked to SYSTEM + Administrators."
+W "Secrets saved (folder not locked during install)."
 
 $install = Join-Path $agentRoot "Install-Agent-Service.ps1"
 if (-not (Test-Path $install)) { throw "Missing $install" }
 $svcArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $install, "-AgentRoot", $agentRoot, "-SqlRoot", $sqlRoot)
 if ($RunOnce) { $svcArgs += "-RunOnce" }
+W "Installing Windows service..."
 & powershell.exe @svcArgs
+W "Service installer returned."
 if (-not $StartService) {
   Stop-Service RPMAssure-Edge -Force -EA SilentlyContinue
 }
 
 if ($InstallTray) {
+  W "Installing tray icon..."
   $tray = Join-Path $agentRoot "Install-Agent-Tray.ps1"
   if (Test-Path $tray) {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $tray -AgentRoot $agentRoot
   }
+  W "Tray done."
 }
-
-if ($LockFiles) { Protect-RpmaFolder -Path $agentRoot }
 
 $svc = Get-Service RPMAssure-Edge -EA SilentlyContinue
 W "========================================"

@@ -138,7 +138,7 @@ function New-Box([int]$x, [int]$y, [int]$w = 360, [switch]$Password) {
 }
 
 $form = New-Object Windows.Forms.Form
-$form.Text = "RPM Assure Agent 2.5"
+$form.Text = "RPM Assure Agent 2.6"
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
@@ -300,8 +300,7 @@ function Show-Page {
   elseif ($script:Page -eq 2) { $btnNext.Text = "Next"; $btnNext.Enabled = $script:AssureOk }
   elseif ($script:Page -eq 3) { $btnNext.Text = "Install" }
   else {
-    $btnNext.Text = "Finish"
-    $btnNext.Enabled = [bool]$script:InstallDone
+    Set-FinishLook ([bool]$script:InstallDone)
     $btnCancel.Text = $(if ($script:InstallBusy) { "Cancel" } else { "Close" })
   }
 
@@ -545,6 +544,19 @@ $script:InstallCfg = ""
 $script:InstallSeen = 0
 $script:InstallBusy = $false
 $script:InstallDone = $false
+$script:InstallSeenMap = @{}
+
+function Set-FinishLook([bool]$on) {
+  $btnNext.Text = "Finish"
+  $btnNext.Enabled = $on
+  if ($on) {
+    $btnNext.BackColor = $Teal
+    $btnNext.ForeColor = [Drawing.Color]::White
+  } else {
+    $btnNext.BackColor = [Drawing.Color]::FromArgb(200, 208, 212)
+    $btnNext.ForeColor = [Drawing.Color]::FromArgb(110, 120, 126)
+  }
+}
 
 function Log-Install([string]$m) {
   if (-not $m) { return }
@@ -569,31 +581,27 @@ function Finish-InstallUi([string]$msg, [int]$code) {
   if ($msg) { Log-Install $msg }
   if ($code -eq 0) { Log-Install "INSTALL COMPLETE  collect login = rpmassure" }
   else { Log-Install ("FAILED exit " + $code) }
-  $btnNext.Text = "Finish"
-  $btnNext.Enabled = $true
+  Set-FinishLook $true
   $btnCancel.Text = "Close"
   $btnCancel.Enabled = $true
 }
 
 function Tick-Install {
   if (-not $script:InstallBusy) { return }
-  if ($script:InstallLog -and (Test-Path -LiteralPath $script:InstallLog)) {
-    $lines = @(Get-Content -LiteralPath $script:InstallLog -EA SilentlyContinue)
-    while ($script:InstallSeen -lt $lines.Count) {
-      Log-Install $lines[$script:InstallSeen]
-      $script:InstallSeen++
-    }
+  $files = @($script:InstallLog, $script:InstallErr, "C:\RPM-Assure\Agent\logs\wizard-install.log")
+  foreach ($f in $files) {
+    if (-not $f -or -not (Test-Path -LiteralPath $f)) { continue }
+    $lines = @(Get-Content -LiteralPath $f -EA SilentlyContinue)
+    $key = "seen:" + $f
+    if (-not $script:InstallSeenMap.ContainsKey($key)) { $script:InstallSeenMap[$key] = 0 }
+    $n = [int]$script:InstallSeenMap[$key]
+    while ($n -lt $lines.Count) { Log-Install $lines[$n]; $n++ }
+    $script:InstallSeenMap[$key] = $n
   }
   $alive = $false
   try { if ($script:InstallProc -and -not $script:InstallProc.HasExited) { $alive = $true } } catch {}
   if ($alive) { return }
-  if ($script:InstallErr -and (Test-Path -LiteralPath $script:InstallErr)) {
-    $el = Get-Content -LiteralPath $script:InstallErr -Raw -EA SilentlyContinue
-    if ($el) { Log-Install $el }
-  }
-  $code = 1
-  try { $code = [int]$script:InstallProc.ExitCode } catch {}
-  Finish-InstallUi "" $code
+  Finish-InstallUi "" $(try { [int]$script:InstallProc.ExitCode } catch { 1 })
 }
 
 $tm = New-Object Windows.Forms.Timer
@@ -605,7 +613,11 @@ function Start-InstallJob {
   $txtLog.Text = ""
   $script:InstallBusy = $true
   $script:InstallDone = $false
-  $script:InstallSeen = 0
+  $script:InstallSeenMap = @{}
+  Set-FinishLook $false
+  $btnBack.Enabled = $false
+  $btnCancel.Enabled = $true
+  $btnCancel.Text = "Cancel"
   $btnNext.Enabled = $false
   $btnBack.Enabled = $false
   $btnCancel.Enabled = $true
@@ -631,7 +643,7 @@ function Start-InstallJob {
     InstallTray        = $true
     StartService       = $true
     RunOnce            = $false
-    LockFiles          = $true
+    LockFiles          = $false
   }
   ($obj | ConvertTo-Json) | Set-Content -LiteralPath $cfg -Encoding UTF8
   $engine = "C:\RPM-Assure\deploy\ui-pack\Sql\agent\installer\Install-Assure-Agent.ps1"
