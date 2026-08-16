@@ -321,7 +321,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           </div>
         </Pane>
 
-        <Pane title="SLA by service" tip="Covered pillars only. No Cover is not scored." {...wgt("sla")}>
+        <Pane title="SLA by service" tip="SYSPRO, RMM, Backup and EPP only. Microsoft CSP is posture — never scored." {...wgt("sla")}>
           <ul className="space-y-2">
             {sla.pillars.length ? (
               sla.pillars.map((p) => (

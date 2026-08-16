@@ -157,14 +157,14 @@ export function customerLiveStatus(
   const mfaRag: LiveTone = !c.csp ? "Off" : mfa != null && mfa < 80 ? "Red" : mfa != null && mfa < 90 ? "Amber" : "Green";
   const gaRag: LiveTone = !c.csp ? "Off" : ga != null && ga > 5 ? "Red" : ga != null && ga > 2 ? "Amber" : "Green";
   const scoreRag: LiveTone = !c.csp ? "Off" : score != null && score < 50 ? "Amber" : "Green";
-  const cspRag = [mfaRag, gaRag, scoreRag].reduce(worse, c.csp ? "Green" : "Off");
 
   const incRag: LiveTone = trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : "Green";
   const riskRag: LiveTone = openRisk.length > 0 ? "Amber" : "Green";
   const issueRag: LiveTone = openIssue.length > 0 ? "Amber" : "Green";
   const amsSlaRag = slaTone(extra?.amsSlaSummary?.resolvePct ?? extra?.amsSlaSummary?.responsePct, 80);
   const amsRag = [incRag, riskRag, issueRag].reduce(worse, "Green");
-  const ecoRag = [sysproRag, rmmRag, coveRag, eppRag, cspRag, amsRag].reduce(worse, "Green");
+  // Microsoft 365 is posture only — never rolls into tenant RAG, assurance, or SLA.
+  const ecoRag = [sysproRag, rmmRag, coveRag, eppRag, amsRag].reduce(worse, "Green");
 
   const off = (on: boolean): LiveTone => (on ? "Green" : "Off");
 
@@ -226,10 +226,12 @@ export function customerLiveStatus(
             : "EPP live Green",
     },
     csp: {
-      rag: cspRag,
+      rag: off(Boolean(c.csp)),
       cover: Boolean(c.csp),
-      href: mfa != null && mfa < 90 ? `${base}/csp/mfa` : ga != null && ga > 2 ? `${base}/csp/global-admins` : `${base}/csp`,
-      hint: !c.csp ? "Microsoft 365 not on cover" : "Microsoft 365 live status",
+      href: `${base}/csp`,
+      hint: !c.csp
+        ? "Microsoft 365 not on cover"
+        : "Microsoft 365 posture (not scored in assurance / SLA)",
     },
     ams: {
       rag: amsRag,
