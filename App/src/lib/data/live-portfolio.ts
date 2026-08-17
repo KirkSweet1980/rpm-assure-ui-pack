@@ -4994,13 +4994,31 @@ WHERE d.CustomerCode = @code`);
         });
         rmm.patches = items;
         const byDev = new Map<string, typeof items>();
+        const byName = new Map<string, typeof items>();
+        const normH = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
         for (const it of items) {
           const list = byDev.get(it.deviceId) ?? [];
           list.push(it);
           byDev.set(it.deviceId, list);
+          const nm = normH(it.deviceName || "");
+          if (nm) {
+            const nl = byName.get(nm) ?? [];
+            nl.push(it);
+            byName.set(nm, nl);
+          }
         }
         for (const d of rmm.devices) {
-          d.patches = byDev.get(d.deviceId) ?? [];
+          const fromId = byDev.get(d.deviceId) ?? [];
+          const fromName = byName.get(normH(d.name || "")) ?? [];
+          const seen = new Set<string>();
+          const merged = [];
+          for (const p of fromId.concat(fromName)) {
+            const k = `${p.title}|${p.status}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            merged.push(p);
+          }
+          d.patches = merged;
         }
         const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
         const recent = items.filter(

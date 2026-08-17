@@ -20,6 +20,7 @@ import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as UiLabRouteImport } from './routes/ui-lab'
 import { Route as ApiBootstrapAdminRouteImport } from './routes/api/bootstrap-admin'
 import { Route as ApiIopsRouteImport } from './routes/api/iops'
+import { Route as ApiPatchesRouteImport } from './routes/api/patches'
 import { Route as ApiPortfolioRefreshRouteImport } from './routes/api/portfolio-refresh'
 import { Route as ApiReportPreviewRouteImport } from './routes/api/report-preview'
 import { Route as CustomersCodeRouteImport } from './routes/customers.$code'
@@ -45,6 +46,8 @@ import { Route as SettingsSslRouteImport } from './routes/settings.ssl'
 import { Route as SettingsThemeRouteImport } from './routes/settings.theme'
 import { Route as SettingsUsersRouteImport } from './routes/settings.users'
 import { Route as ApiAgentPackCodeRouteImport } from './routes/api/agent-pack.$code'
+import { Route as ApiAgentHeartbeatRouteImport } from './routes/api/agent/heartbeat'
+import { Route as ApiAgentSyncRouteImport } from './routes/api/agent/sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCronWeeklyReportRouteImport } from './routes/api/cron/weekly-report'
 import { Route as ApiPulsewayWebhookRouteImport } from './routes/api/pulseway.webhook'
@@ -154,6 +157,11 @@ const ApiBootstrapAdminRoute = ApiBootstrapAdminRouteImport.update({
 const ApiIopsRoute = ApiIopsRouteImport.update({
   id: '/api/iops',
   path: '/api/iops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPatchesRoute = ApiPatchesRouteImport.update({
+  id: '/api/patches',
+  path: '/api/patches',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPortfolioRefreshRoute = ApiPortfolioRefreshRouteImport.update({
@@ -279,6 +287,16 @@ const SettingsUsersRoute = SettingsUsersRouteImport.update({
 const ApiAgentPackCodeRoute = ApiAgentPackCodeRouteImport.update({
   id: '/api/agent-pack/$code',
   path: '/api/agent-pack/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentHeartbeatRoute = ApiAgentHeartbeatRouteImport.update({
+  id: '/api/agent/heartbeat',
+  path: '/api/agent/heartbeat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentSyncRoute = ApiAgentSyncRouteImport.update({
+  id: '/api/agent/sync',
+  path: '/api/agent/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -590,6 +608,7 @@ export interface FileRoutesByFullPath {
   '/ui-lab': typeof UiLabRoute
   '/api/bootstrap-admin': typeof ApiBootstrapAdminRoute
   '/api/iops': typeof ApiIopsRoute
+  '/api/patches': typeof ApiPatchesRoute
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/customers/$code': typeof CustomersCodeRouteWithChildren
@@ -615,6 +634,8 @@ export interface FileRoutesByFullPath {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/': typeof SettingsIndexRoute
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
+  '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
+  '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -682,6 +703,7 @@ export interface FileRoutesByTo {
   '/ui-lab': typeof UiLabRoute
   '/api/bootstrap-admin': typeof ApiBootstrapAdminRoute
   '/api/iops': typeof ApiIopsRoute
+  '/api/patches': typeof ApiPatchesRoute
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/settings/about': typeof SettingsAboutRoute
@@ -706,6 +728,8 @@ export interface FileRoutesByTo {
   '/settings/users': typeof SettingsUsersRoute
   '/settings': typeof SettingsIndexRoute
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
+  '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
+  '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -769,6 +793,7 @@ export interface FileRoutesById {
   '/ui-lab': typeof UiLabRoute
   '/api/bootstrap-admin': typeof ApiBootstrapAdminRoute
   '/api/iops': typeof ApiIopsRoute
+  '/api/patches': typeof ApiPatchesRoute
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/customers/$code': typeof CustomersCodeRouteWithChildren
@@ -794,6 +819,8 @@ export interface FileRoutesById {
   '/settings/users': typeof SettingsUsersRoute
   '/settings/': typeof SettingsIndexRoute
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
+  '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
+  '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -864,6 +891,7 @@ export interface FileRouteTypes {
     | '/ui-lab'
     | '/api/bootstrap-admin'
     | '/api/iops'
+    | '/api/patches'
     | '/api/portfolio-refresh'
     | '/api/report-preview'
     | '/customers/$code'
@@ -889,6 +917,8 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/'
     | '/api/agent-pack/$code'
+    | '/api/agent/heartbeat'
+    | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
     | '/api/pulseway/webhook'
@@ -956,6 +986,7 @@ export interface FileRouteTypes {
     | '/ui-lab'
     | '/api/bootstrap-admin'
     | '/api/iops'
+    | '/api/patches'
     | '/api/portfolio-refresh'
     | '/api/report-preview'
     | '/settings/about'
@@ -980,6 +1011,8 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings'
     | '/api/agent-pack/$code'
+    | '/api/agent/heartbeat'
+    | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
     | '/api/pulseway/webhook'
@@ -1042,6 +1075,7 @@ export interface FileRouteTypes {
     | '/ui-lab'
     | '/api/bootstrap-admin'
     | '/api/iops'
+    | '/api/patches'
     | '/api/portfolio-refresh'
     | '/api/report-preview'
     | '/customers/$code'
@@ -1067,6 +1101,8 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/'
     | '/api/agent-pack/$code'
+    | '/api/agent/heartbeat'
+    | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
     | '/api/pulseway/webhook'
@@ -1136,10 +1172,13 @@ export interface RootRouteChildren {
   UiLabRoute: typeof UiLabRoute
   ApiBootstrapAdminRoute: typeof ApiBootstrapAdminRoute
   ApiIopsRoute: typeof ApiIopsRoute
+  ApiPatchesRoute: typeof ApiPatchesRoute
   ApiPortfolioRefreshRoute: typeof ApiPortfolioRefreshRoute
   ApiReportPreviewRoute: typeof ApiReportPreviewRoute
   CustomersCodeRoute: typeof CustomersCodeRouteWithChildren
   ApiAgentPackCodeRoute: typeof ApiAgentPackCodeRoute
+  ApiAgentHeartbeatRoute: typeof ApiAgentHeartbeatRoute
+  ApiAgentSyncRoute: typeof ApiAgentSyncRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronWeeklyReportRoute: typeof ApiCronWeeklyReportRoute
   ApiPulsewayWebhookRoute: typeof ApiPulsewayWebhookRoute
@@ -1223,6 +1262,13 @@ declare module '@tanstack/react-router' {
       path: '/api/iops'
       fullPath: '/api/iops'
       preLoaderRoute: typeof ApiIopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/patches': {
+      id: '/api/patches'
+      path: '/api/patches'
+      fullPath: '/api/patches'
+      preLoaderRoute: typeof ApiPatchesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/portfolio-refresh': {
@@ -1398,6 +1444,20 @@ declare module '@tanstack/react-router' {
       path: '/api/agent-pack/$code'
       fullPath: '/api/agent-pack/$code'
       preLoaderRoute: typeof ApiAgentPackCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/heartbeat': {
+      id: '/api/agent/heartbeat'
+      path: '/api/agent/heartbeat'
+      fullPath: '/api/agent/heartbeat'
+      preLoaderRoute: typeof ApiAgentHeartbeatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/sync': {
+      id: '/api/agent/sync'
+      path: '/api/agent/sync'
+      fullPath: '/api/agent/sync'
+      preLoaderRoute: typeof ApiAgentSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -2018,10 +2078,13 @@ const rootRouteChildren: RootRouteChildren = {
   UiLabRoute: UiLabRoute,
   ApiBootstrapAdminRoute: ApiBootstrapAdminRoute,
   ApiIopsRoute: ApiIopsRoute,
+  ApiPatchesRoute: ApiPatchesRoute,
   ApiPortfolioRefreshRoute: ApiPortfolioRefreshRoute,
   ApiReportPreviewRoute: ApiReportPreviewRoute,
   CustomersCodeRoute: CustomersCodeRouteWithChildren,
   ApiAgentPackCodeRoute: ApiAgentPackCodeRoute,
+  ApiAgentHeartbeatRoute: ApiAgentHeartbeatRoute,
+  ApiAgentSyncRoute: ApiAgentSyncRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronWeeklyReportRoute: ApiCronWeeklyReportRoute,
   ApiPulsewayWebhookRoute: ApiPulsewayWebhookRoute,
