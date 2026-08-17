@@ -18,6 +18,7 @@ export function ServicesOnCoverStrip({
     cove: false,
     epp: false,
     csp: false,
+    tickets: false,
   };
 
   return (
@@ -72,6 +73,16 @@ export function ServicesOnCoverStrip({
         noCover={labels.noCover}
         coverOn={labels.coverOn}
         tip={`${labels.csp} not in scope for this customer`}
+      />
+      <span className="hidden text-subtle sm:inline" aria-hidden>
+        ·
+      </span>
+      <CoverChip
+        on={Boolean(c.tickets)}
+        label={labels.tickets}
+        noCover={labels.noCover}
+        coverOn={labels.coverOn}
+        tip={`${labels.tickets} not in scope for this customer`}
       />
     </div>
   );

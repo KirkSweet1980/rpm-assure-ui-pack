@@ -34,6 +34,8 @@ import {
   type EcoWidgetLayout,
 } from "@/lib/eco-widgets";
 import type { CustomerDetailPayload } from "@/lib/data/types";
+import { ticketStats } from "@/lib/data/ticket-feed";
+import { TicketStrip } from "@/components/customer/customer-sections";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
 function axisLabel(v: unknown, max = 14) {
@@ -99,6 +101,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const openIssues = issues.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const openIncidents = incidents.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const major = openIncidents.filter((i) => i.isMajor);
+  const tix = ticketStats(incidents);
 
   const lastCollect = [
     customer.lastImportAt,
@@ -118,18 +121,19 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { name: "Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
     { name: "RPM EPP", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft CSP", on: Boolean(cover.csp), href: `${base}/csp` },
+    { name: "Tickets", on: Boolean(cover.tickets) || tix.total > 0, href: `${base}/tickets` },
   ];
   const coverCount = serviceBars.filter((s) => s.on).length;
   const coverPie = [
     { name: "On cover", value: coverCount, fill: "#17c666" },
-    { name: "No cover", value: Math.max(0, 5 - coverCount), fill: "#5c6570" },
+    { name: "No cover", value: Math.max(0, serviceBars.length - coverCount), fill: "#5c6570" },
   ];
 
   const signalBars = [
     { name: "Jobs", value: customer.sysproJobErrorCount, fill: CHART.jobs },
     { name: "FinSight", value: customer.sysproDtrVarianceLines, fill: CHART.dtr },
     { name: "Risks", value: openRisks.length, fill: CHART.amber },
-    { name: "Incidents", value: major.length || openIncidents.length, fill: CHART.red },
+    { name: "Incidents", value: tix.total, fill: CHART.red },
   ];
 
   const rmmSum = data.rmm?.summary;
@@ -232,6 +236,8 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         />
       ) : null}
 
+      <TicketStrip data={data} pillar="eco" />
+
       <div className="rpma-eco-board">
         <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3" {...wgt("hero")}>
           <RagBadge rag={tenantRag} title={live.pillars.eco.hint || customer.healthSummary} />
@@ -249,7 +255,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             />
             <StatCard
               label="Services on cover"
-              value={`${coverCount}/5`}
+              value={`${coverCount}/${serviceBars.length}`}
               tone={coverCount >= 4 ? "green" : coverCount >= 2 ? "amber" : "red"}
             />
             <StatCard
@@ -439,6 +445,18 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
+        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={Boolean(cover.tickets) || tix.total > 0} data-span={4}>
+          {tix.total > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              <StatCard label="Open" value={tix.open} tone={tix.open > 0 ? "amber" : "green"} />
+              <StatCard label="Resolved" value={tix.resolved} />
+              <StatCard label="Closed" value={tix.closed} />
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted">No Freshdesk tickets mapped for this customer yet.</p>
+          )}
+        </Pane>
+
         {dtrBars.length > 0 ? (
           <Pane title="FinSight · out of balance" {...wgt("finsight")}>
             <div className="h-56">
@@ -469,7 +487,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" {...wgt("jumps")}>
           {[
-            { label: "Incidents", href: `${base}/ams/incidents`, n: major.length || openIncidents.length, hint: "Assure register" },
+            { label: "Incidents", href: `${base}/tickets/open`, n: tix.total, hint: `${tix.open} open · Freshdesk` },
             { label: "Risks", href: `${base}/ams/risks`, n: openRisks.length, hint: "Open items" },
             { label: "SLA", href: `${base}/ams/sla`, n: `${score}%`, hint: "Assurance" },
             { label: "Customer Assurance", href: `${base}/ams`, n: openIssues.length, hint: "Issues" },
@@ -489,14 +507,17 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           ))}
         </div>
 
-        <Pane title="Open incidents" {...wgt("incidents")}>
-          {openIncidents.length === 0 ? (
-            <p className="text-[12px] text-muted">No open incidents.</p>
+        <Pane title="Tickets (30d)" {...wgt("incidents")}>
+          {incidents.length === 0 ? (
+            <p className="text-[12px] text-muted">No Freshdesk tickets mapped to this customer yet.</p>
           ) : (
             <ul className="space-y-1.5">
-              {openIncidents.slice(0, 6).map((i, idx) => (
+              {incidents.slice(0, 8).map((i, idx) => (
                 <li key={String(i.incidentId ?? i.title ?? idx)} className="flex justify-between gap-2 text-[12px]">
-                  <span className="truncate text-fg">{i.title || "Untitled"}</span>
+                  <span className="truncate text-fg">
+                    {i.externalRef ? `${i.externalRef} · ` : ""}
+                    {i.title || "Untitled"}
+                  </span>
                   <span className="shrink-0 text-muted">{i.status}</span>
                 </li>
               ))}
@@ -561,7 +582,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         <Pane title="Server patch" {...wgt("patch")}>
           {isPillarCovered(cover, "rmm") ? (
-            <SpaLink to={`${base}/rmm/patch`} className="block">
+            <SpaLink href={`${base}/rmm/patch`} className="block">
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Servers checked" value={customer.pulsewayPatchDevices ?? 0} hint="Open patch list" />
               <StatCard

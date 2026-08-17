@@ -202,6 +202,8 @@ export type UiLabelsConfig = {
   eppShort: string;
   csp: string;
   cspShort: string;
+  tickets: string;
+  ticketsShort: string;
   /** Service pack (was AMS) */
   assurePack: string;
   assurePackShort: string;
@@ -227,6 +229,8 @@ export const DEFAULT_UI_LABELS: UiLabelsConfig = {
   eppShort: "RPM EPP",
   csp: "Microsoft CSP",
   cspShort: "M365",
+  tickets: "Customer Tickets",
+  ticketsShort: "Tickets",
   assurePack: "Customer Assurance",
   assurePackShort: "Assurance",
   excoTitle: "Customer Eco-System",
@@ -258,6 +262,8 @@ export const UI_LABEL_FIELDS: {
   { key: "eppShort", label: "RPM EPP (Short)", help: "Compact service label.", group: "Customer Services" },
   { key: "csp", label: "Microsoft CSP", help: "Microsoft 365 / CSP service name.", group: "Customer Services" },
   { key: "cspShort", label: "Microsoft CSP (Short)", help: "Compact service label.", group: "Customer Services" },
+  { key: "tickets", label: "Customer Tickets", help: "Freshdesk ticket service name.", group: "Customer Services" },
+  { key: "ticketsShort", label: "Customer Tickets (Short)", help: "Compact service label.", group: "Customer Services" },
   { key: "assurePack", label: "Customer Assurance", help: "Incidents, SLA, and risks pack.", group: "Customer Services" },
   { key: "assurePackShort", label: "Customer Assurance (Short)", help: "Compact service label.", group: "Customer Services" },
 ];

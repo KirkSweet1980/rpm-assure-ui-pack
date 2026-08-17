@@ -19,6 +19,7 @@ function linksForPage(ctx: AssistantContext): AssistantLink[] {
   }
   return [
     { label: "Tenant Overview", href: base },
+    { label: "Customer Tickets", href: `${base}/tickets` },
     { label: "Customer Assurance", href: `${base}/ams` },
     { label: "SYSPRO", href: `${base}/syspro` },
     { label: "RPM Remote Management", href: `${base}/rmm` },

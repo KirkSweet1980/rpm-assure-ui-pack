@@ -12,7 +12,7 @@
  * Uncovered legs stay in the menu and show "No Cover". They do not drive estate health / SLA.
  */
 
-export type PillarId = "syspro" | "rmm" | "cove" | "epp" | "csp";
+export type PillarId = "syspro" | "rmm" | "cove" | "epp" | "csp" | "tickets";
 
 export type CustomerCover = {
   syspro: boolean;
@@ -20,6 +20,7 @@ export type CustomerCover = {
   cove: boolean;
   epp?: boolean;
   csp?: boolean;
+  tickets?: boolean;
 };
 
 export const NO_COVER = "No Cover";
@@ -80,6 +81,8 @@ export type CoverInput = {
   cspUserCount?: number | null;
   cspLicenseCount?: number | null;
   cspMapped?: boolean | null;
+  ticketCount?: number | null;
+  ticketsMapped?: boolean | null;
 };
 
 /**
@@ -110,6 +113,7 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     cove: resolveVendor(coveEvidence, input.coveMapped, input.pillarCove),
     epp: resolveVendor(eppEvidence, input.eppMapped, input.pillarEpp),
     csp: resolveVendor(cspEvidence, input.cspMapped, input.pillarCsp),
+    tickets: (Number(input.ticketCount) || 0) > 0 || input.ticketsMapped === true,
   };
 }
 
@@ -137,6 +141,8 @@ export function coverFromRow(row: {
   cspLicenseSkuCount?: number | null;
   cspLicenseCount?: number | null;
   cspMapped?: boolean | null;
+  ticketCount?: number | null;
+  ticketsMapped?: boolean | null;
 }): CustomerCover {
   return inferCustomerCover({
     pillarSyspro: row.pillarSyspro,
@@ -160,6 +166,8 @@ export function coverFromRow(row: {
     cspUserCount: row.cspUserCount,
     cspLicenseCount: row.cspLicenseSkuCount ?? row.cspLicenseCount,
     cspMapped: row.cspMapped,
+    ticketCount: row.ticketCount,
+    ticketsMapped: row.ticketsMapped,
   });
 }
 
@@ -214,6 +222,7 @@ export function coverFromDetail(data: {
     licenses?: unknown[] | null;
     enabled?: boolean | null;
   } | null;
+  incidents?: unknown[] | null;
 }): CustomerCover {
   const c = data.customer;
   const rmmCount = firstPositive(
@@ -262,6 +271,8 @@ export function coverFromDetail(data: {
     cspUserCount: cspUsers,
     cspLicenseCount: data.csp?.licenses?.length ?? c?.cspLicenseSkuCount ?? c?.cspLicenseCount ?? 0,
     cspMapped: Boolean(c?.cspMapped) || data.csp?.enabled === true,
+    ticketCount: data.incidents?.length ?? 0,
+    ticketsMapped: (data.incidents?.length ?? 0) > 0,
   });
 }
 
@@ -292,6 +303,7 @@ export function coverSummary(c: CustomerCover): string {
   if (c.cove) on.push("Backup");
   if (c.epp) on.push("EPP");
   if (c.csp) on.push("M365");
+  if (c.tickets) on.push("Tickets");
   if (on.length === 0) return "No service cover configured";
   return `Cover: ${on.join(" · ")}`;
 }

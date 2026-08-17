@@ -8,6 +8,7 @@ import {
   Monitor,
   Shield,
   ShieldCheck,
+  Ticket,
 } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { warmHrefsIdle } from "@/lib/nav/preload";
@@ -85,6 +86,15 @@ const domains: DomainDef[] = [
     Icon: LayoutDashboard,
   },
   {
+    id: "tickets",
+    match: (p, base) => p.startsWith(`${base}/tickets`),
+    href: (base) => `${base}/tickets`,
+    pillar: "tickets",
+    labelOf: (L) => L.tickets,
+    shortOf: (L) => L.ticketsShort,
+    Icon: Ticket,
+  },
+  {
     id: "ams",
     match: (p, base) => p.startsWith(`${base}/ams`),
     href: (base) => `${base}/ams`,
@@ -138,6 +148,13 @@ const cspLeaves = [
   { label: "Licences", path: "licenses" },
 ];
 
+const ticketsLeaves = [
+  { label: "Overview", path: "" },
+  { label: "Open Tickets", path: "open" },
+  { label: "Resolved Tickets", path: "resolved" },
+  { label: "Closed Tickets", path: "closed" },
+];
+
 const amsLeaves = [
   { label: "Overview", path: "" },
   { label: "Incidents", path: "incidents" },
@@ -151,6 +168,7 @@ function leavesFor(id: string) {
   if (id === "cove") return coveLeaves;
   if (id === "epp") return eppLeaves;
   if (id === "csp") return cspLeaves;
+  if (id === "tickets") return ticketsLeaves;
   if (id === "ams") return amsLeaves;
   return [];
 }
@@ -202,7 +220,7 @@ export function CustomerWorkspaceNav({
   const moduleBase = active
     ? active.id === "exec"
       ? base
-      : `${base}/${active.id === "syspro" ? "syspro" : active.id === "rmm" ? "rmm" : active.id === "cove" ? "cove" : active.id === "epp" ? "epp" : active.id === "csp" ? "csp" : active.id === "ams" ? "ams" : ""}`
+      : `${base}/${active.id}`
     : base;
 
   useEffect(() => {
