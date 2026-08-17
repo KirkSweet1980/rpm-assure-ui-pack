@@ -86,11 +86,12 @@ function Find-Sqlcmd {
 function Invoke-SqlFile([string]$SqlText, [string]$Label) {
   $sqlcmd = Find-Sqlcmd
   $f = Join-Path $logDir ("{0}_{1:yyyyMMdd_HHmmss}.sql" -f $Label, (Get-Date))
+  $out = Join-Path $logDir ("{0}_{1:yyyyMMdd_HHmmss}.out.txt" -f $Label, (Get-Date))
   [System.IO.File]::WriteAllText($f, $SqlText, [System.Text.UTF8Encoding]::new($false))
   Write-Log ("SQL " + $Label + " -> " + $f)
   $tries = @(
-    @{ Mode = 'sql'; Args = @('-S', $SqlServer, '-d', $SqlDatabase, '-U', $SqlUser, '-P', $SqlPassword, '-C', '-b', '-i', $f) }
-    @{ Mode = 'win'; Args = @('-S', $SqlServer, '-d', $SqlDatabase, '-E', '-C', '-b', '-i', $f) }
+    @{ Mode = 'sql'; Args = @('-S', $SqlServer, '-d', $SqlDatabase, '-U', $SqlUser, '-P', $SqlPassword, '-C', '-b', '-I', '-i', $f) }
+    @{ Mode = 'win'; Args = @('-S', $SqlServer, '-d', $SqlDatabase, '-E', '-C', '-b', '-I', '-i', $f) }
   )
   if ([string]::IsNullOrWhiteSpace($SqlUser) -or [string]::IsNullOrWhiteSpace($SqlPassword)) {
     $tries = @($tries[1])
@@ -98,9 +99,23 @@ function Invoke-SqlFile([string]$SqlText, [string]$Label) {
   $last = ''
   foreach ($t in $tries) {
     Write-Log ("sqlcmd " + $t.Mode + " " + $Label)
-    & $sqlcmd @($t.Args)
-    if ($LASTEXITCODE -eq 0) { return }
-    $last = "sqlcmd " + $t.Mode + " failed " + $LASTEXITCODE + " on " + $Label
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    & $sqlcmd @($t.Args) 1> $out 2>&1
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = $prev
+    if ($code -eq 0) { return }
+    $tail = ''
+    if (Test-Path -LiteralPath $out) {
+      $lines = @(Get-Content -LiteralPath $out -ErrorAction SilentlyContinue)
+      if ($lines.Count -gt 0) {
+        $from = [Math]::Max(0, $lines.Count - 12)
+        $tail = ($lines[$from..($lines.Count - 1)] -join ' | ')
+        Write-Log ("sqlcmd out: " + $tail)
+      }
+    }
+    $last = "sqlcmd " + $t.Mode + " failed " + $code + " on " + $Label
+    if ($tail) { $last = $last + " :: " + $tail }
     Write-Log $last
   }
   throw $last
@@ -578,10 +593,11 @@ foreach ($row in $allRows) {
 }
 
 
-$loadSql = @"
+$colList = 'SnapshotDate, AccountId, PartnerId, PartnerName, DeviceName, MachineName, UsedBytes, SelectedBytes, LastSuccessTime, LastBackupStatus, RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus, Physicality, LastRecoveryTestAt, RetentionPolicy, ProfileName, RetentionFiles, RetentionSystemState, RetentionHyperV, RetentionSql, RetentionVmware, RetentionNetwork, LastBackupDurationSec'
+
+$ddl = @"
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
-
 IF OBJECT_ID('tempdb..#cove') IS NOT NULL DROP TABLE #cove;
 IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'RecoveryPlanType') IS NULL
   ALTER TABLE dbo.Cove_DeviceStatistics ADD RecoveryPlanType int NULL;
@@ -595,7 +611,6 @@ IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'Physicality') IS NULL
   ALTER TABLE dbo.Cove_DeviceStatistics ADD Physicality nvarchar(40) NULL;
 IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'LastRecoveryTestAt') IS NULL
   ALTER TABLE dbo.Cove_DeviceStatistics ADD LastRecoveryTestAt datetime2(3) NULL;
-
 IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'RetentionPolicy') IS NULL
   ALTER TABLE dbo.Cove_DeviceStatistics ADD RetentionPolicy nvarchar(200) NULL;
 IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'ProfileName') IS NULL
@@ -614,7 +629,7 @@ IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'RetentionNetwork') IS NULL
   ALTER TABLE dbo.Cove_DeviceStatistics ADD RetentionNetwork nvarchar(80) NULL;
 IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'LastBackupDurationSec') IS NULL
   ALTER TABLE dbo.Cove_DeviceStatistics ADD LastBackupDurationSec int NULL;
-
+GO
 CREATE TABLE #cove (
   SnapshotDate date NOT NULL,
   AccountId bigint NOT NULL,
@@ -642,11 +657,18 @@ CREATE TABLE #cove (
   RetentionNetwork nvarchar(80) NULL,
   LastBackupDurationSec int NULL
 );
+"@
 
-INSERT INTO #cove (SnapshotDate, AccountId, PartnerId, PartnerName, DeviceName, MachineName, UsedBytes, SelectedBytes, LastSuccessTime, LastBackupStatus, RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus, Physicality, LastRecoveryTestAt, RetentionPolicy, ProfileName, RetentionFiles, RetentionSystemState, RetentionHyperV, RetentionSql, RetentionVmware, RetentionNetwork, LastBackupDurationSec)
-VALUES
-$($values -join ",`n");
+$batchSize = 400
+$insertParts = New-Object System.Collections.Generic.List[string]
+for ($i = 0; $i -lt $values.Count; $i += $batchSize) {
+  $end = [Math]::Min($i + $batchSize - 1, $values.Count - 1)
+  $chunk = $values[$i..$end]
+  $insertParts.Add(("INSERT INTO #cove ({0}) VALUES`n{1};" -f $colList, ($chunk -join ",`n")))
+}
+Write-Log ("cove_load batches=" + $insertParts.Count + " rows=" + $values.Count)
 
+$tail = @"
 IF OBJECT_ID('tempdb..#mapped') IS NOT NULL DROP TABLE #mapped;
 SELECT c.*, m.CustomerCode
 INTO #mapped
@@ -682,6 +704,8 @@ FROM #mapped
 GROUP BY PartnerName, CustomerCode
 ORDER BY Cnt DESC;
 "@
+
+$loadSql = $ddl + "`r`n" + ($insertParts -join "`r`n") + "`r`n" + $tail
 
 Invoke-SqlFile -SqlText $loadSql -Label 'cove_load'
 # Auto-map unmapped partners + re-stamp CustomerCode
