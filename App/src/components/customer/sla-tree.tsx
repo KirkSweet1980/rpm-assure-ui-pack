@@ -70,7 +70,7 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
   const ticketMeasured = source === "live-incident" || source === "sla-period" || source === "snapshot";
 
   const items = [
-    { id: "contract", label: "Signed SLA", meta: "Import / KPIs", tone: "amber" as const },
+    { id: "contract", label: "Signed SLA", meta: "Import / Custom", tone: "amber" as const },
     { id: "clocks", label: "Ticket clocks", meta: "P1–P4", tone: "green" as const },
     { id: "security", label: "Security admin", meta: "Clause 7.4", tone: "off" as const },
     {

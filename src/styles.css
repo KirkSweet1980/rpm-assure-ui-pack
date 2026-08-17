@@ -3177,3 +3177,26 @@ html.snow .rpma-vision input { background: #f4f6f8; color: #1d2630; border-color
 
 
 
+
+
+.rpma-sla-viewer {
+  width: min(1100px, 96vw);
+  height: min(82vh, 860px);
+  display: flex;
+  flex-direction: column;
+  background: #07141e;
+  border: 1px solid #1a3a50;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.rpma-sla-viewer header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #143044;
+}
+.rpma-sla-viewer header strong { font-size: 13px; }
+.rpma-sla-viewer iframe { flex: 1; width: 100%; border: 0; background: #fff; }
+.rpma-sla-viewer p { padding: 24px; color: #8aa0b0; }
