@@ -267,7 +267,9 @@ foreach ($name in @(
     'Diagnose-SSL.ps1',
     'Start-RpmAssure-App.ps1',
     'Renew-Assure-Https.ps1',
-    'Install-Https-Renew-Task.ps1'
+    'Install-Https-Renew-Task.ps1',
+    'Harden-Production-Now.ps1',
+    'Harden-Https-Only.ps1'
   )) {
   $from = Join-Path $Pack ('deploy\' + $name)
   if (-not (Test-Path -LiteralPath $from)) { $from = Join-Path $Pack $name }

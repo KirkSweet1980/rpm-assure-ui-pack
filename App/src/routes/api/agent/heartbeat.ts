@@ -1,25 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import sql from "mssql";
 import { getPool } from "@/lib/data/sql-pool";
-
-function pickSecret(request: Request): string {
-  return (
-    request.headers.get("x-assure-secret") ||
-    request.headers.get("x-agent-secret") ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
-    ""
-  );
-}
-
-function expectedSecret(): string {
-  return (
-    process.env.RPM_ASSURE_AGENT_SECRET ||
-    process.env.RPM_ASSURE_IOPS_SECRET ||
-    process.env.RPM_ASSURE_INGEST_SECRET ||
-    process.env.PULSEWAY_WEBHOOK_SECRET ||
-    ""
-  );
-}
+import { authorizeIngest, ingestConfigured } from "@/lib/security/ingest-secret";
 
 function str(v: unknown, max = 128): string {
   return String(v ?? "").trim().slice(0, max);
@@ -41,11 +23,10 @@ export const Route = createFileRoute("/api/agent/heartbeat")({
           path: "/api/agent/heartbeat",
         }),
       POST: async ({ request }) => {
-        const want = expectedSecret();
-        if (!want) {
+        if (!ingestConfigured("agent")) {
           return Response.json({ ok: false, error: "Agent secret not configured (RPM_ASSURE_AGENT_SECRET or RPM_ASSURE_IOPS_SECRET)." }, { status: 503 });
         }
-        if (pickSecret(request).trim() !== want) {
+        if (!authorizeIngest(request, "agent")) {
           return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
         }
         let body: Record<string, unknown> = {};

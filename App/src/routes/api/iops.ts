@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import sql from "mssql";
 import { getPool } from "@/lib/data/sql-pool";
+import { authorizeIngest, ingestConfigured } from "@/lib/security/ingest-secret";
 
 /**
  * Pulseway Automation (and Edge Agent) POST disk performance counters here.
@@ -26,24 +27,6 @@ type VolumeIn = {
   writeLatencyMs?: number | null;
 };
 
-function pickSecret(request: Request): string {
-  return (
-    request.headers.get("x-assure-secret") ||
-    request.headers.get("x-pulseway-secret") ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
-    ""
-  );
-}
-
-function expectedSecret(): string {
-  return (
-    process.env.RPM_ASSURE_IOPS_SECRET ||
-    process.env.PULSEWAY_WEBHOOK_SECRET ||
-    process.env.RPM_ASSURE_INGEST_SECRET ||
-    ""
-  );
-}
-
 function num(v: unknown): number | null {
   if (v == null || v === "") return null;
   const n = Number(v);
@@ -64,14 +47,13 @@ export const Route = createFileRoute("/api/iops")({
           path: "/api/iops",
         }),
       POST: async ({ request }) => {
-        const want = expectedSecret();
-        if (!want) {
+        if (!ingestConfigured("iops")) {
           return Response.json(
             { ok: false, error: "Ingest secret not configured on Assure (RPM_ASSURE_IOPS_SECRET or PULSEWAY_WEBHOOK_SECRET)." },
             { status: 503 },
           );
         }
-        if (pickSecret(request).trim() !== want) {
+        if (!authorizeIngest(request, "iops")) {
           return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
         }
         let body: Record<string, unknown> = {};
