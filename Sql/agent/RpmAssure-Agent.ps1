@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.7.0"
+$AgentVersion = "2.7.1"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -715,7 +715,8 @@ foreach ($j in $jobs) {
   W "DONE $name exit=$code"
   Report-JobRun -Name $name -Started $started -Finished $finished -ExitCode $code -Message ("exit=" + $code) -LogTail $tail -Code $(if ($j.Customer) { $j.Customer } else { $CustomerCode })
   if ($code -eq 0) { Set-JobRan -Name $name }
-  else { $script:RpmaJobFailed = $true }
+  elseif ($name -like 'syspro-*') { $script:RpmaJobFailed = $true }
+  else { W ("WARN $name exit=$code (soft - does not trip tray)") }
 }
 
 if ($forceCodes.Count) {

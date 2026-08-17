@@ -56,7 +56,8 @@ function Read-RpmaStatus {
       $msg = [string]$j.lastMessage
       $online = [bool]$j.online
       $err = [bool]$j.error
-      if ($msg -match 'fail|error|JOB_FAIL') { $err = $true }
+      if ($msg -match 'JOB_FAIL|syspro.*(fail|error)') { $err = $true }
+      if ($msg -match 'job error' -and $msg -notmatch 'iops|eventlog|soft') { $err = $true }
       if ($hb) {
         $ageMin = ((Get-Date).ToUniversalTime() - [datetime]$hb).TotalMinutes
         if ($ageMin -gt 45) { $online = $false }
@@ -66,7 +67,7 @@ function Read-RpmaStatus {
   if (-not $svcUp) { $online = $false; $err = $false }
   $kind = 'red'
   $state = 'DISCONNECTED'
-  if ($online -and $err) { $kind = 'amber'; $state = 'ERROR' }
+  if ($online -and $err) { $kind = 'amber'; $state = 'WATCH' }
   elseif ($online) { $kind = 'green'; $state = 'CONNECTED' }
   return [pscustomobject]@{
     kind  = $kind
