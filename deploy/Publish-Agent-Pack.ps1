@@ -1,5 +1,4 @@
-# Run on the Assure app server only. Writes C:\RPM-Assure\downloads\*
-# Windows paths are case-insensitive — copy each physical folder once.
+# Publish agent files to C:\RPM-Assure\downloads. No Temp copy of .ps1 (Defender locks those).
 
 param(
   [string]$Root = 'C:\RPM-Assure',
@@ -7,48 +6,45 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-New-Item -ItemType Directory -Force -Path (Join-Path $Root 'downloads') | Out-Null
 $dl = Join-Path $Root 'downloads'
+New-Item -ItemType Directory -Force -Path $dl | Out-Null
 
 $ver = '2.8.0'
-foreach ($vf in @((Join-Path $Pack 'Sql\agent\VERSION'), (Join-Path $Pack 'sql\agent\VERSION'))) {
-  if (Test-Path $vf) { $ver = (Get-Content $vf -Raw).Trim(); break }
-}
-Set-Content -LiteralPath (Join-Path $dl 'VERSION') -Value $ver -Encoding ASCII
+$vf = Join-Path $Pack 'Sql\agent\VERSION'
+if (-not (Test-Path $vf)) { $vf = Join-Path $Pack 'sql\agent\VERSION' }
+if (Test-Path $vf) { $ver = ((Get-Content $vf -Raw) -replace '\s', '') }
+if (-not $ver) { $ver = '2.8.0' }
+[IO.File]::WriteAllText((Join-Path $dl 'VERSION'), $ver)
 
-foreach ($name in @('Deploy-Assure-Agent.ps1', 'Onboard-IB-Syspro.ps1')) {
-  $src = @(
-    (Join-Path $Pack ('Sql\agent\' + $name)),
-    (Join-Path $Pack ('sql\agent\' + $name)),
-    (Join-Path $Pack ('Sql\customers\IB\' + $name)),
-    (Join-Path $Pack ('sql\customers\IB\' + $name))
-  ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-  if ($src) { Copy-Item -Force -LiteralPath $src (Join-Path $dl $name) }
-}
-
-$seen = @{}
-$stage = Join-Path $env:TEMP ('rpma-pack-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-New-Item -ItemType Directory -Force -Path $stage | Out-Null
-Set-Content -LiteralPath (Join-Path $stage 'VERSION') -Value $ver -Encoding ASCII
-
-foreach ($rel in @('Sql\agent', 'Sql\base\syspro-direct', 'Sql\customers')) {
-  $from = Join-Path $Pack $rel
-  if (-not (Test-Path $from)) { $from = Join-Path $Pack ($rel.ToLower()) }
-  if (-not (Test-Path $from)) { continue }
-  $key = (Resolve-Path $from).Path.ToLowerInvariant()
-  if ($seen.ContainsKey($key)) { continue }
-  $seen[$key] = $true
-  $to = Join-Path $stage $rel
-  New-Item -ItemType Directory -Force -Path $to | Out-Null
-  robocopy $from $to /E /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np /XF *.log Agent.Secrets.bin status.json | Out-Null
+foreach ($pair in @(
+    @('Sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
+    @('sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
+    @('Sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1'),
+    @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1')
+  )) {
+  $src = Join-Path $Pack $pair[0]
+  if (Test-Path $src) { Copy-Item -Force -LiteralPath $src (Join-Path $dl $pair[1]) }
 }
 
 $zip = Join-Path $dl 'rpm-assure-agent.zip'
 if (Test-Path $zip) { Remove-Item $zip -Force }
-Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force
-Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+
+$tar = Join-Path $env:WINDIR 'System32\tar.exe'
+if (-not (Test-Path $tar)) { $tar = 'tar' }
+$here = Get-Location
+Set-Location $Pack
+try {
+  $parts = @()
+  foreach ($rel in @('Sql\agent', 'Sql\base\syspro-direct', 'Sql\customers')) {
+    if (Test-Path (Join-Path $Pack $rel)) { $parts += $rel }
+  }
+  if ($parts.Count -eq 0) { throw "No Sql\\agent under $Pack" }
+  & $tar -a -c -f $zip @parts
+  if ($LASTEXITCODE -ne 0) { throw "tar zip failed $LASTEXITCODE" }
+} finally {
+  Set-Location $here
+}
 
 $len = (Get-Item $zip).Length
-Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len + ' bytes -> ' + $dl)
+Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len)
 Get-ChildItem $dl | Select-Object Name, Length | Format-Table -AutoSize
-if ($len -lt 20000) { Write-Host 'WARN zip still small' }
