@@ -54,7 +54,9 @@ export const Route = createFileRoute("/customers/$code")({
   shouldReload: true,
   loader: async ({ params }) => {
     const code = decodeCode(params.code);
-    const detail = await fetchCustomerDetail({ data: { code, legs: ["shell"] } });
+    const detail = await fetchCustomerDetail({
+      data: { code, legs: ["shell", "syspro", "ams", "rmm", "cove", "epp", "csp"] },
+    });
     // Soft-fail: never throw notFound — that nests a second AppShell under RMM/Cove tabs
     if (!detail) {
       const soft: CustomerDetailPayload & { _missing: true; code: string } = {
@@ -239,6 +241,7 @@ function CustomerLayout() {
           <EmpChrome
             customerCode={customer.customerCode}
             customerName={customer.displayName}
+            live={live}
           >
             {missing ? (
               <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">

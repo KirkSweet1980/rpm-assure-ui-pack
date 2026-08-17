@@ -2016,46 +2016,75 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 .rpma-emp-menu a.is-on { color: #fff; background: color-mix(in srgb, #14b8a6 18%, transparent); }
 .rpma-emp-ribbon {
   display: flex;
+  width: 100%;
   gap: 0;
-  overflow-x: auto;
+  overflow: hidden;
   background: #0a1c2a;
   border-bottom: 1px solid #14344a;
 }
 .rpma-emp-group {
-  flex: 0 0 auto;
-  padding: 6px 8px 4px;
-  border-right: 1px solid #14344a;
+  flex: 1 1 0;
   min-width: 0;
+  padding: 5px 4px 3px;
+  border-right: 1px solid #14344a;
 }
 .rpma-emp-group.is-on { background: color-mix(in srgb, #14b8a6 8%, transparent); }
-.rpma-emp-tools { display: flex; gap: 2px; }
+.rpma-emp-tools { display: flex; justify-content: space-evenly; gap: 0; }
 .rpma-emp-tool {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 3px;
-  min-width: 58px;
-  padding: 4px 5px 3px;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 3px 1px 2px;
   border-radius: 6px;
   color: #c9d6e0;
   text-decoration: none;
-  font-size: 10px;
-  font-weight: 650;
-  line-height: 1.15;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
   text-align: center;
+}
+.rpma-emp-tool span:last-child {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rpma-emp-tool:hover,
 .rpma-emp-tool.is-on { background: color-mix(in srgb, #14b8a6 22%, transparent); color: #fff; }
-.rpma-emp-tool.is-accent { color: #5eead4; }
+.rpma-emp-ico {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+.rpma-emp-tool[data-rag="Green"] .rpma-emp-ico {
+  color: #34d399;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #34d399 55%, transparent), 0 0 10px #34d399aa;
+}
+.rpma-emp-tool[data-rag="Amber"] .rpma-emp-ico {
+  color: #fbbf24;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #fbbf24 60%, transparent), 0 0 10px #fbbf24aa;
+}
+.rpma-emp-tool[data-rag="Red"] .rpma-emp-ico {
+  color: #f87171;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #f87171 60%, transparent), 0 0 10px #f87171aa;
+}
+.rpma-emp-tool[data-rag="Off"] {
+  opacity: 0.48;
+}
 .rpma-emp-gtitle {
-  margin-top: 4px;
+  margin-top: 5px;
   text-align: center;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6f8796;
+  color: #d7e4ee;
 }
 .rpma-emp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #07141e; }
 

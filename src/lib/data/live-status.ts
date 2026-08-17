@@ -291,10 +291,6 @@ export function customerLiveStatus(
           ? `${extra.incidents.length} ticket(s) on feed`
           : "No tickets for this customer",
     },
-        : extra?.incidents?.length
-          ? `${extra.incidents.length} ticket(s) on feed`
-          : "No tickets for this customer",
-    },
     ams: {
       rag: amsRag,
       cover: true,

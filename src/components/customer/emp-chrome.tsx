@@ -1,21 +1,18 @@
 import type { ReactNode } from "react";
 import {
+  Activity,
   AlertTriangle,
   Archive,
   Ban,
   Bell,
-  Building2,
   ClipboardList,
   Cloud,
-  FileText,
   Gauge,
   HardDrive,
-  Home,
   KeyRound,
   LayoutDashboard,
   Monitor,
   Package,
-  Plus,
   RotateCcw,
   Scale,
   Server,
@@ -23,113 +20,122 @@ import {
   ShieldCheck,
   Siren,
   Ticket,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CustomerSwitcher } from "@/components/nav/customer-switcher";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
+import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
 import { cn } from "@/lib/utils";
 
-type RibbonItem = { label: string; path: string; icon: LucideIcon; accent?: boolean };
-type RibbonGroup = { id: string; title: string; items: RibbonItem[] };
+type RibbonItem = { label: string; rel: string; icon: LucideIcon };
+type RibbonGroup = { id: string; title: string; match: string; items: RibbonItem[] };
 
-function groups(base: string): RibbonGroup[] {
-  return [
-    {
-      id: "estate",
-      title: "Estate",
-      items: [
-        { label: "Dashboard", path: base, icon: LayoutDashboard },
-        { label: "Organizations", path: `${base}/ams`, icon: Building2 },
-        { label: "Sites", path: `${base}/rmm`, icon: Home },
-        { label: "Devices", path: `${base}/rmm/devices`, icon: Server },
-        { label: "Users", path: `${base}/syspro/operators`, icon: Users },
-      ],
-    },
-    {
-      id: "syspro",
-      title: "SYSPRO",
-      items: [
-        { label: "Financials", path: `${base}/syspro/dtr`, icon: Scale },
-        { label: "Sales", path: `${base}/syspro`, icon: ClipboardList },
-        { label: "Purchasing", path: `${base}/syspro/jobs`, icon: Package },
-        { label: "Inventory", path: `${base}/syspro/health`, icon: HardDrive },
-        { label: "Reporting", path: `${base}/syspro/sla`, icon: FileText },
-      ],
-    },
-    {
-      id: "rmm",
-      title: "RMM",
-      items: [
-        { label: "Devices", path: `${base}/rmm/devices`, icon: Monitor },
-        { label: "Alerts", path: `${base}/rmm/alerts`, icon: Bell },
-        { label: "Policies", path: `${base}/rmm/patch`, icon: ShieldCheck },
-        { label: "Tasks", path: `${base}/rmm`, icon: ClipboardList },
-        { label: "Remote Access", path: `${base}/rmm/events`, icon: Server },
-      ],
-    },
-    {
-      id: "backup",
-      title: "Backup",
-      items: [
-        { label: "Jobs", path: `${base}/cove`, icon: Cloud },
-        { label: "Vaults", path: `${base}/cove/devices`, icon: HardDrive },
-        { label: "Policies", path: `${base}/cove/retention`, icon: Archive },
-        { label: "Recovery", path: `${base}/cove/recovery`, icon: RotateCcw },
-        { label: "Reports", path: `${base}/cove/sla`, icon: FileText },
-      ],
-    },
-    {
-      id: "epp",
-      title: "EPP",
-      items: [
-        { label: "Endpoints", path: `${base}/epp/endpoints`, icon: Monitor },
-        { label: "Threats", path: `${base}/epp/incidents`, icon: Siren },
-        { label: "Quarantine", path: `${base}/epp/quarantine`, icon: Ban },
-        { label: "Policies", path: `${base}/epp/modules`, icon: KeyRound },
-        { label: "Policy Scan", path: `${base}/epp`, icon: Shield },
-      ],
-    },
-    {
-      id: "tickets",
-      title: "Tickets",
-      items: [
-        { label: "All Tickets", path: `${base}/tickets`, icon: Ticket },
-        { label: "Open", path: `${base}/tickets/open`, icon: AlertTriangle },
-        { label: "Unassigned", path: `${base}/tickets/resolved`, icon: ClipboardList },
-        { label: "SLA", path: `${base}/tickets/sla`, icon: Gauge },
-        { label: "New Ticket", path: `${base}/tickets`, icon: Plus, accent: true },
-      ],
-    },
-  ];
+const RIBBON: RibbonGroup[] = [
+  {
+    id: "estate",
+    title: "Estate",
+    match: "",
+    items: [
+      { label: "Overview", rel: "", icon: LayoutDashboard },
+      { label: "Assurance", rel: "/ams", icon: ShieldCheck },
+      { label: "Incidents", rel: "/ams/incidents", icon: AlertTriangle },
+      { label: "Risks", rel: "/ams/risks", icon: Activity },
+      { label: "SLA", rel: "/ams/sla", icon: Gauge },
+    ],
+  },
+  {
+    id: "syspro",
+    title: "SYSPRO",
+    match: "/syspro",
+    items: [
+      { label: "Overview", rel: "/syspro", icon: LayoutDashboard },
+      { label: "FinSight", rel: "/syspro/dtr", icon: Scale },
+      { label: "Licence", rel: "/syspro/license", icon: KeyRound },
+      { label: "Jobs", rel: "/syspro/jobs", icon: ClipboardList },
+      { label: "Health", rel: "/syspro/health", icon: Activity },
+    ],
+  },
+  {
+    id: "rmm",
+    title: "RMM",
+    match: "/rmm",
+    items: [
+      { label: "Overview", rel: "/rmm", icon: Server },
+      { label: "Servers", rel: "/rmm/devices", icon: Server },
+      { label: "Workstations", rel: "/rmm/workstations", icon: Monitor },
+      { label: "Patch", rel: "/rmm/patch", icon: Package },
+      { label: "Alerts", rel: "/rmm/alerts", icon: Bell },
+    ],
+  },
+  {
+    id: "backup",
+    title: "Backup",
+    match: "/cove",
+    items: [
+      { label: "Overview", rel: "/cove", icon: Cloud },
+      { label: "Devices", rel: "/cove/devices", icon: HardDrive },
+      { label: "Recovery", rel: "/cove/recovery", icon: RotateCcw },
+      { label: "Retention", rel: "/cove/retention", icon: Archive },
+      { label: "SLA", rel: "/cove/sla", icon: Gauge },
+    ],
+  },
+  {
+    id: "epp",
+    title: "EPP",
+    match: "/epp",
+    items: [
+      { label: "Overview", rel: "/epp", icon: Shield },
+      { label: "Endpoints", rel: "/epp/endpoints", icon: Monitor },
+      { label: "Policies", rel: "/epp/modules", icon: KeyRound },
+      { label: "Incidents", rel: "/epp/incidents", icon: Siren },
+      { label: "Quarantine", rel: "/epp/quarantine", icon: Ban },
+    ],
+  },
+  {
+    id: "tickets",
+    title: "Tickets",
+    match: "/tickets",
+    items: [
+      { label: "Overview", rel: "/tickets", icon: Ticket },
+      { label: "Open", rel: "/tickets/open", icon: AlertTriangle },
+      { label: "Resolved", rel: "/tickets/resolved", icon: ClipboardList },
+      { label: "Closed", rel: "/tickets/closed", icon: Archive },
+      { label: "SLA", rel: "/tickets/sla", icon: Gauge },
+    ],
+  },
+];
+
+function ragOf(
+  rel: string,
+  live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
+): LiveTone {
+  const m = live?.modules[rel];
+  if (m?.rag) return m.rag;
+  if (rel.startsWith("/syspro")) return live?.pillars.syspro?.rag ?? "Off";
+  if (rel.startsWith("/rmm")) return live?.pillars.rmm?.rag ?? "Off";
+  if (rel.startsWith("/cove")) return live?.pillars.cove?.rag ?? "Off";
+  if (rel.startsWith("/epp")) return live?.pillars.epp?.rag ?? "Off";
+  if (rel.startsWith("/tickets") || rel.startsWith("/ams")) return live?.pillars.tickets?.rag ?? live?.pillars.ams?.rag ?? "Off";
+  return live?.pillars.eco?.rag ?? "Off";
 }
 
 export function EmpChrome({
   customerCode,
   customerName,
+  live,
   children,
 }: {
   customerCode: string;
   customerName: string;
+  live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> };
   children: ReactNode;
 }) {
   const { customers } = useCustomerList();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const base = `/customers/${encodeURIComponent(customerCode)}`;
-  const ribbon = groups(base);
-  const rest = pathname.replace(base, "") || "/";
-
-  function groupOn(g: RibbonGroup) {
-    if (g.id === "estate") return rest === "/" || rest === "";
-    if (g.id === "syspro") return rest.startsWith("/syspro") || rest.startsWith("/ams");
-    if (g.id === "rmm") return rest.startsWith("/rmm");
-    if (g.id === "backup") return rest.startsWith("/cove");
-    if (g.id === "epp") return rest.startsWith("/epp");
-    if (g.id === "tickets") return rest.startsWith("/tickets");
-    return false;
-  }
+  const rest = pathname.replace(base, "") || "";
 
   return (
     <div className="rpma-emp">
@@ -152,40 +158,48 @@ export function EmpChrome({
       </div>
       <nav className="rpma-emp-menu" aria-label="Application">
         <SpaLink href="/">File</SpaLink>
-        <SpaLink href={base} className={rest === "/" || rest === "" ? "is-on" : undefined}>
+        <SpaLink href={base} className={!rest ? "is-on" : undefined}>
           Home
         </SpaLink>
-        <SpaLink
-          href={`${base}/tickets`}
-          className={rest.startsWith("/tickets") ? "is-on" : undefined}
-        >
+        <SpaLink href={`${base}/tickets`} className={rest.startsWith("/tickets") ? "is-on" : undefined}>
           Customer Service
         </SpaLink>
         <SpaLink href={`${base}/ams/sla`}>View</SpaLink>
       </nav>
       <div className="rpma-emp-ribbon" role="toolbar">
-        {ribbon.map((g) => (
-          <div key={g.id} className={cn("rpma-emp-group", groupOn(g) && "is-on")}>
-            <div className="rpma-emp-tools">
-              {g.items.map((it) => {
-                const Icon = it.icon;
-                const on = pathname === it.path || pathname === `${it.path}/`;
-                return (
-                  <SpaLink
-                    key={it.label}
-                    href={it.path}
-                    className={cn("rpma-emp-tool", on && "is-on", it.accent && "is-accent")}
-                    title={it.label}
-                  >
-                    <Icon className="size-4" />
-                    <span>{it.label}</span>
-                  </SpaLink>
-                );
-              })}
+        {RIBBON.map((g) => {
+          const on =
+            g.match === ""
+              ? rest === "" || rest.startsWith("/ams")
+              : rest === g.match || rest.startsWith(`${g.match}/`);
+          return (
+            <div key={g.id} className={cn("rpma-emp-group", on && "is-on")}>
+              <div className="rpma-emp-tools">
+                {g.items.map((it) => {
+                  const Icon = it.icon;
+                  const href = `${base}${it.rel}`;
+                  const active = (it.rel === "" && rest === "") || rest === it.rel;
+                  const rag = ragOf(it.rel, live);
+                  return (
+                    <SpaLink
+                      key={it.rel || "home"}
+                      href={href}
+                      className={cn("rpma-emp-tool", active && "is-on")}
+                      data-rag={rag}
+                      title={`${it.label} · ${rag}`}
+                    >
+                      <span className="rpma-emp-ico">
+                        <Icon className="size-4" />
+                      </span>
+                      <span>{it.label}</span>
+                    </SpaLink>
+                  );
+                })}
+              </div>
+              <div className="rpma-emp-gtitle">{g.title}</div>
             </div>
-            <div className="rpma-emp-gtitle">{g.title}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="rpma-emp-body">{children}</div>
     </div>
