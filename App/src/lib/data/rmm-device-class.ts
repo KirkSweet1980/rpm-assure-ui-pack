@@ -14,7 +14,18 @@ export function classifyRmmDevice(d: {
   const name = (d.name || "").toLowerCase();
   const blob = `${type} ${os} ${name}`;
 
-  // Explicit Pulseway types win
+  // Named boxes we run as servers even when Pulseway tags them Workstation
+  if (
+    /rpm[-_\s]?unify|unify os server/.test(name) ||
+    /rpm-?ai1\b/.test(name) ||
+    /rpm-?pet\b/.test(name) ||
+    /rpmwhm|rpm[-_\s]?whm/.test(name) ||
+    /\bserver\b/.test(name)
+  ) {
+    return "server";
+  }
+
+  // Explicit Pulseway types win after the name override
   if (type === "server" || type.includes("server") || type.includes("domain controller")) {
     return "server";
   }
