@@ -10,24 +10,24 @@ import {
 } from "@/lib/data/ticket-feed";
 import { NoCoverPanel } from "@/components/ui/no-cover";
 
-function slaChip(met: boolean | null | undefined, label: string) {
+function slaChip(met: boolean | null | undefined) {
   if (met === true) {
     return (
-      <span className="rounded bg-rag-green-bg px-1.5 py-0.5 text-[10px] font-bold text-rag-green">
-        {label} met
+      <span className="inline-block rounded bg-rag-green-bg px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rag-green">
+        Met
       </span>
     );
   }
   if (met === false) {
     return (
-      <span className="rounded bg-rag-red-bg px-1.5 py-0.5 text-[10px] font-bold text-rag-red">
-        {label} breach
+      <span className="inline-block rounded bg-rag-red-bg px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rag-red">
+        Breach
       </span>
     );
   }
   return (
-    <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-muted">
-      {label} open
+    <span className="inline-block rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
+      Open
     </span>
   );
 }
@@ -46,7 +46,8 @@ function TicketTable({ rows, empty }: { rows: FactIncidentRow[]; empty: string }
             <th className="px-2 py-1.5">Priority</th>
             <th className="px-2 py-1.5">Status</th>
             <th className="px-2 py-1.5">Opened</th>
-            <th className="px-2 py-1.5">SLA</th>
+            <th className="px-2 py-1.5">Response</th>
+            <th className="px-2 py-1.5">Resolve</th>
           </tr>
         </thead>
         <tbody>
@@ -73,12 +74,8 @@ function TicketTable({ rows, empty }: { rows: FactIncidentRow[]; empty: string }
                 <td className="px-2 py-1.5">{i.priority || i.severity || "—"}</td>
                 <td className="px-2 py-1.5">{i.status}</td>
                 <td className="whitespace-nowrap px-2 py-1.5 text-muted">{formatSastDateTime(i.openedAt)}</td>
-                <td className="px-2 py-1.5">
-                  <span className="inline-flex flex-wrap gap-1">
-                    {slaChip(i.responseSlaMet, "Resp")}
-                    {slaChip(i.resolveSlaMet, "Res")}
-                  </span>
-                </td>
+                <td className="px-2 py-1.5">{slaChip(i.responseSlaMet)}</td>
+                <td className="px-2 py-1.5">{slaChip(i.resolveSlaMet)}</td>
               </tr>
             );
           })}
