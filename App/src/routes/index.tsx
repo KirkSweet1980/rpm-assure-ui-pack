@@ -1203,7 +1203,7 @@ function ExcoInsightPage() {
                   ["SYSPRO", coverStats.syspro],
                   ["Remote Management", coverStats.rmm],
                   ["Cloud Backup", coverStats.cove],
-                  ["RPM EPP", coverStats.epp],
+                  ["RPM EndPoint Protection", coverStats.epp],
                   ["Microsoft 365 CSP", coverStats.csp],
                 ].map(([name, n]) => (
                   <li key={String(name)}>
@@ -1231,11 +1231,11 @@ function ExcoInsightPage() {
                   ["SYSPRO", slaByService.syspro],
                   ["Remote Management", slaByService.rmm],
                   ["Cloud Backup", slaByService.cove],
-                  ["RPM EPP", slaByService.epp],
+                  ["RPM EndPoint Protection", slaByService.epp],
                 ].map(([name, pct]) => {
                   const n = pct as number | null;
                   const target =
-                    name === "Remote Management" ? 99.9 : name === "Cloud Backup" ? 99.5 : name === "RPM EPP" ? 98 : 90;
+                    name === "Remote Management" ? 99.9 : name === "Cloud Backup" ? 99.5 : name === "RPM EndPoint Protection" ? 98 : 90;
                   const tone = n == null ? "" : n >= target ? "text-rag-green" : n >= target - 5 ? "text-rag-amber" : "text-rag-red";
                   const bar = n == null ? "" : n >= target ? "is-green" : n >= target - 5 ? "is-amber" : "is-red";
                   return (

@@ -169,7 +169,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
     [/patch/, "Patch Compliance", (b) => `${b}/rmm/patch`],
     [/alert/, "Alerts", (b) => `${b}/rmm/alerts`],
     [/backup|cove/, "RPM Cloud Backup", (b) => `${b}/cove`],
-    [/endpoint|bitdefender|epp|gravity/, "RPM EPP", (b) => `${b}/epp`],
+    [/endpoint|bitdefender|epp|gravity/, "RPM EndPoint Protection", (b) => `${b}/epp`],
     [/secure score/, "Secure Score", (b) => `${b}/csp/secure-score`],
     [/mfa/, "MFA", (b) => `${b}/csp/mfa`],
     [/incident/, "Incidents", (b) => `${b}/ams/incidents`],

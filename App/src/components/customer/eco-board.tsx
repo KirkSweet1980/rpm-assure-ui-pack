@@ -119,7 +119,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { name: "SYSPRO", on: cover.syspro, href: `${base}/syspro` },
     { name: "RPM RMM", on: Boolean(cover.rmm), href: `${base}/rmm` },
     { name: "Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
-    { name: "RPM EPP", on: Boolean(cover.epp), href: `${base}/epp` },
+    { name: "RPM EndPoint Protection", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft CSP", on: Boolean(cover.csp), href: `${base}/csp` },
     { name: "Tickets", on: Boolean(cover.tickets) || tix.total > 0, href: `${base}/tickets` },
   ];
@@ -405,7 +405,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
-        <Pane title="RPM EPP" tip="Protected endpoints, incidents, and quarantine." covered={isPillarCovered(cover, "epp")} {...wgt("epp")}>
+        <Pane title="RPM EndPoint Protection" tip="Protected endpoints, incidents, and quarantine." covered={isPillarCovered(cover, "epp")} {...wgt("epp")}>
           {isPillarCovered(cover, "epp") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Endpoints" value={eppDevices} />
@@ -416,7 +416,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
               />
             </div>
           ) : (
-            <p className="text-[12px] text-muted">No cover — RPM EPP is not in scope.</p>
+            <p className="text-[12px] text-muted">No cover — RPM EndPoint Protection is not in scope.</p>
           )}
         </Pane>
 

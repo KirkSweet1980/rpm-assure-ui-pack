@@ -20,7 +20,7 @@ export const Route = createFileRoute("/customers/$code/epp")({
   loader: async ({ params }) => {
     const code = decodeCode(params.code);
     const detail = await fetchCustomerDetail({
-      data: { code, legs: ["shell", "epp"] },
+      data: { code, legs: ["shell", "epp", "ams"] },
     });
     return detail ?? softMissingCustomer(code);
   },
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/customers/$code/epp")({
       <PillarCoverGate
         cover={data?.cover}
         pillar="epp"
-        service="RPM EPP"
+        service="RPM EndPoint Protection"
       />
     );
   },

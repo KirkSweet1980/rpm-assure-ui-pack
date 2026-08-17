@@ -252,8 +252,8 @@ export function customerTree(code: string, displayName: string): NavNode {
 
       {
         id: `${code}-epp`,
-        label: "RPM EPP",
-        blurb: "RPM EPP — devices, incidents, quarantine",
+        label: "RPM EndPoint Protection",
+        blurb: "RPM EndPoint Protection — devices, incidents, quarantine",
         href: `${base}/epp`,
         match: "prefix",
         audience: "ops",

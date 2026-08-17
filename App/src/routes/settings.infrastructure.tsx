@@ -59,14 +59,14 @@ const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string; ico
   { key: "syspro", label: "SYSPRO", icon: Database },
   { key: "rmm", label: "RMM", icon: Server },
   { key: "cove", label: "Backup", icon: Cloud },
-  { key: "epp", label: "RPM EPP", icon: Shield },
+  { key: "epp", label: "RPM EndPoint Protection", icon: Shield },
   { key: "csp", label: "CSP", icon: Mail },
 ];
 
 const KIND_LABEL: Record<string, string> = {
   erp: "SYSPRO",
   rmm: "RMM",
-  epp: "RPM EPP",
+  epp: "RPM EndPoint Protection",
   backup: "BACKUP",
   licensing: "CSP",
 };
@@ -273,7 +273,7 @@ function InfrastructureStatusPage() {
             const defaultLegs = [
               { name: "Pulseway", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "" },
               { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "" },
-              { name: "RPM EPP", label: "RPM EPP", kind: "epp", status: "queued", pct: 0, message: "" },
+              { name: "RPM EndPoint Protection", label: "RPM EndPoint Protection", kind: "epp", status: "queued", pct: 0, message: "" },
               { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "" },
             ];
             const legs = (feed?.legs?.length ? feed.legs : defaultLegs).map((l) => ({
@@ -300,7 +300,7 @@ function InfrastructureStatusPage() {
                     <div key={leg.name}>
                       <div className="mb-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wide">
                         <span className="text-fg">
-                          {leg.label} · {leg.name === "Bitdefender" ? "RPM EPP" : leg.name}
+                          {leg.label} · {leg.name === "Bitdefender" ? "RPM EndPoint Protection" : leg.name}
                         </span>
                         <span
                           className={cn(

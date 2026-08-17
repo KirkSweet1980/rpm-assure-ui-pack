@@ -56,7 +56,7 @@ export const REPORT_FIELD_GROUPS: ReportFieldGroup[] = [
   },
   {
     id: "epp",
-    label: "RPM EPP",
+    label: "RPM EndPoint Protection",
     blurb: "Endpoints, managed status, license",
   },
   {

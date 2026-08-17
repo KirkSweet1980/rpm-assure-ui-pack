@@ -417,7 +417,7 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
     { name: "SYSPRO", on: cover.syspro, href: `${base}/syspro` },
     { name: "RPM Remote Management", on: Boolean(cover.rmm), href: `${base}/rmm` },
     { name: "RPM Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
-    { name: "RPM EPP", on: Boolean(cover.epp), href: `${base}/epp` },
+    { name: "RPM EndPoint Protection", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft 365 CSP", on: Boolean(cover.csp), href: `${base}/csp` },
   ];
   const coverCount = serviceBars.filter((s) => s.on).length;
@@ -4539,7 +4539,7 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
       </div>
 
       <ChartCaption
-        title="Service SLA — RMM · Cloud Backup · RPM EPP"
+        title="Service SLA — RMM · Cloud Backup · RPM EndPoint Protection"
         why={`${INDUSTRY_SLA_DOC}. Measured from live collect. Ticket MTTD/MTTR lines stay unmeasured until a helpdesk feed exists.`}
       />
       <ServiceSlaTable pack={buildRmmServiceSla(data)} />
@@ -4782,8 +4782,8 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   if (!cover.epp) {
     return (
       <NoCoverPanel
-        service="RPM EPP"
-        hint={epp?.message || "No cover — no RPM EPP endpoints mapped for this customer."}
+        service="RPM EndPoint Protection"
+        hint={epp?.message || "No cover — no RPM EndPoint Protection endpoints mapped for this customer."}
       />
     );
   }
@@ -4798,7 +4798,7 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-3">
       <TicketStrip data={data} pillar="epp" />
     <ServiceVisuals
-      title="RPM EPP"
+      title="RPM EndPoint Protection"
       subtitle={data.customer.displayName}
       kpis={[
         { label: "Endpoints", value: s?.deviceCount ?? devices.length },

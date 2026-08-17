@@ -24,7 +24,7 @@ export const Route = createFileRoute("/customers/$code/epp/quarantine")({
     if (!covered) {
       return (
         <NoCoverPanel
-          service="RPM EPP · Quarantine"
+          service="RPM EndPoint Protection · Quarantine"
           hint={
             epp?.message ||
             "No cover — no RPM EPP endpoints mapped to this customer."

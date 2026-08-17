@@ -2226,7 +2226,7 @@ async function startApiFeedSyncHandler() {
       legs: [
         { name: "Pulseway", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "Waiting" },
         { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "Waiting" },
-        { name: "RPM EPP", label: "RPM EPP", kind: "epp", status: "queued", pct: 0, message: "Waiting" },
+        { name: "RPM EndPoint Protection", label: "RPM EndPoint Protection", kind: "epp", status: "queued", pct: 0, message: "Waiting" },
         { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "Waiting" },
       ],
     };

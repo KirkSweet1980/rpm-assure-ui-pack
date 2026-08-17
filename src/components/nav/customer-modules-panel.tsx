@@ -125,7 +125,7 @@ export const CUSTOMER_PILLARS: {
   },
   {
     id: "epp",
-    title: "RPM EPP",
+    title: "RPM EndPoint Protection",
     modulesHeading: "EPP Service Modules",
     overview: "/epp",
     icon: Shield,

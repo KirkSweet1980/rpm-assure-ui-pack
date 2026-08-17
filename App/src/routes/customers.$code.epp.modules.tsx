@@ -15,7 +15,7 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
     if (!covered) {
       return (
         <NoCoverPanel
-          service="RPM EPP · Policies"
+          service="RPM EndPoint Protection · Policies"
           hint={
             epp?.message ||
             "No cover — enable RPM EPP for this customer to collect this module."
