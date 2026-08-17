@@ -31,7 +31,7 @@ export function kpisOnCover(
     cove: Boolean(cover.cove),
     epp: Boolean(cover.epp),
     csp: Boolean(cover.csp),
-    tickets: true,
+    tickets: Boolean(cover.syspro || cover.rmm || cover.cove || cover.epp),
   };
   for (const k of Object.keys(on) as IndustryPillarKey[]) {
     if (!on[k]) continue;

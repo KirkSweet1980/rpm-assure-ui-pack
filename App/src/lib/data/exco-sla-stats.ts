@@ -285,7 +285,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
   }
 
   // Customer Tickets (Layer A — Freshdesk clocks)
-  if (cov.tickets) {
+  if (cov.tickets && (cov.syspro || cov.rmm || cov.cove || cov.epp)) {
     const s = scoreTickets(input);
     pillars.push({
       pillar: "tickets",
@@ -324,7 +324,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
 /** True if any non-M365 pillar is on cover (SLA can be computed). */
 export function hasSlaCover(c: CustomerCover | null | undefined): boolean {
   if (!c) return false;
-  return Boolean(c.syspro || c.rmm || c.cove || c.epp || c.tickets);
+  return Boolean(c.syspro || c.rmm || c.cove || c.epp);
 }
 
 export function slaInputFromDetail(

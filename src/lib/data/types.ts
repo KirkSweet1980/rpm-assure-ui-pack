@@ -1,4 +1,4 @@
-export type HealthRag = "Red" | "Amber" | "Green";
+export type HealthRag = "Red" | "Amber" | "Green" | "Off";
 
 /** Which managed services are in scope for this customer */
 export type CustomerCover = {

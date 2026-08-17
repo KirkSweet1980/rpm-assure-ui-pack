@@ -6,6 +6,7 @@ import {
   countRmmServers,
   countRmmWorkstations,
 } from "./device-cover";
+import { isDormantCover } from "./cover";
 import type { CustomerCover, CustomerDetailPayload, HealthRag, PortfolioRow } from "./types";
 
 export type LiveTone = HealthRag | "Off";
@@ -190,9 +191,10 @@ export function customerLiveStatus(
   const gaRag: LiveTone = !c.csp ? "Off" : ga != null && ga > 5 ? "Red" : ga != null && ga > 2 ? "Amber" : "Green";
   const scoreRag: LiveTone = !c.csp ? "Off" : score != null && score < 50 ? "Amber" : "Green";
 
-  const incRag: LiveTone = trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : "Green";
-  const riskRag: LiveTone = openRisk.length > 0 ? "Amber" : "Green";
-  const issueRag: LiveTone = openIssue.length > 0 ? "Amber" : "Green";
+  const dormant = isDormantCover(c);
+  const incRag: LiveTone = dormant ? "Off" : trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : "Green";
+  const riskRag: LiveTone = dormant ? "Off" : openRisk.length > 0 ? "Amber" : "Green";
+  const issueRag: LiveTone = dormant ? "Off" : openIssue.length > 0 ? "Amber" : "Green";
   const ticketResp =
     extra?.amsSlaSummary?.responsePct ??
     (row as { ticketResponsePct?: number | null } | null | undefined)?.ticketResponsePct ??
@@ -205,21 +207,25 @@ export function customerLiveStatus(
     ticketResp != null && ticketReso != null
       ? Math.min(Number(ticketResp), Number(ticketReso))
       : ticketReso ?? ticketResp;
-  const ticketSlaRag = slaTone(ticketPct, 90);
-  const amsSlaRag = slaTone(ticketPct, 90);
-  const amsRag = [incRag, riskRag, issueRag, amsSlaRag].reduce(worse, "Green");
-  const ticketRag = [incRag, ticketSlaRag].reduce(worse, "Green");
+  const ticketSlaRag = dormant ? "Off" : slaTone(ticketPct, 90);
+  const amsSlaRag = dormant ? "Off" : slaTone(ticketPct, 90);
+  const amsRag = dormant ? "Off" : [incRag, riskRag, issueRag, amsSlaRag].reduce(worse, "Green");
+  const ticketRag = dormant ? "Off" : [incRag, ticketSlaRag].reduce(worse, "Green");
   // Microsoft 365 is posture only — never rolls into tenant RAG, assurance, or SLA.
-  const ecoRag = [sysproRag, rmmRag, coveRag, eppRag, amsRag, ticketRag].reduce(worse, "Green");
+  const ecoRag = dormant
+    ? "Off"
+    : [sysproRag, rmmRag, coveRag, eppRag, amsRag, ticketRag].reduce(worse, "Green");
 
   const off = (on: boolean): LiveTone => (on ? "Green" : "Off");
 
   const pillars: Record<string, LiveFlag> = {
     eco: {
-      rag: ecoRag === "Off" ? "Green" : ecoRag,
-      cover: true,
+      rag: dormant ? "Off" : ecoRag === "Off" ? "Green" : ecoRag,
+      cover: !dormant,
       href: `${base}/ams`,
-      hint: `Tenant live ${ecoRag === "Off" ? "Green" : ecoRag}`,
+      hint: dormant
+        ? "Dormant — Freshdesk only. No agent / no service cover. Not scored."
+        : `Tenant live ${ecoRag === "Off" ? "Green" : ecoRag}`,
     },
     syspro: {
       rag: sysproRag,
@@ -281,9 +287,11 @@ export function customerLiveStatus(
     },
     tickets: {
       rag: ticketRag,
-      cover: true,
+      cover: !dormant && Boolean(c.tickets),
       href: trueOpenInc > 0 ? `${base}/tickets/open` : `${base}/tickets`,
-      hint: ticketSlaRag === "Red"
+      hint: dormant
+        ? "Dormant — tickets on file, not on SLA until an agent or service is on cover"
+        : ticketSlaRag === "Red"
         ? "Ticket SLA miss"
         : trueOpenInc
         ? `${trueOpenInc} open ticket(s)`
@@ -293,9 +301,11 @@ export function customerLiveStatus(
     },
     ams: {
       rag: amsRag,
-      cover: true,
+      cover: !dormant,
       href: trueOpenInc > 0 ? `${base}/ams/incidents` : openRisk.length > 0 ? `${base}/ams/risks` : `${base}/ams`,
-      hint: trueOpenInc
+      hint: dormant
+        ? "Dormant — assurance not scored"
+        : trueOpenInc
         ? `${trueOpenInc} open incident(s)`
         : openRisk.length
           ? `${openRisk.length} open risk(s)`
@@ -502,6 +512,7 @@ export function worstLiveRag(
   const r = customerLiveStatus(code, row, cover, extra).pillars.eco.rag;
   if (r === "Red") return "Red";
   if (r === "Amber") return "Amber";
+  if (r === "Off") return "Off";
   return "Green";
 }
 

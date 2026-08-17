@@ -1977,6 +1977,17 @@ function buildOperationalAssurance(args: {
     cove: coveScore,
     epp: eppScore,
   });
+  if (!anyCover(cover)) {
+    return {
+      collectAgeHours: null,
+      collectFresh: false,
+      jobErrorCount: 0,
+      activeUserRatioPct: null,
+      dtrOutOfBalance: 0,
+      scorePct: null,
+      summary: "Dormant — tickets only. No agent / no service cover. Not scored in SLA.",
+    };
+  }
   let score =
     base != null
       ? Math.max(0, Math.min(100, Math.round(base)))

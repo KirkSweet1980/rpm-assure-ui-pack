@@ -117,14 +117,16 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     (Number(input.cspUserCount) || 0) > 0 ||
     (Number(input.cspLicenseCount) || 0) > 0;
 
-  return {
+  const out: CustomerCover = {
     syspro: input.pillarSyspro === false ? false : sysproEvidence || input.pillarSyspro === true,
     rmm: resolveVendor(rmmEvidence, input.pulsewayMapped, input.pillarPulseway),
     cove: resolveVendor(coveEvidence, input.coveMapped, input.pillarCove),
     epp: resolveVendor(eppEvidence, input.eppMapped, input.pillarEpp),
     csp: resolveVendor(cspEvidence, input.cspMapped, input.pillarCsp),
-    tickets: true,
+    tickets: false,
   };
+  out.tickets = !isDormantCover(out);
+  return out;
 }
 
 /** Portfolio / list row → same cover rule as the customer page. */
@@ -298,6 +300,11 @@ export function isPillarCovered(
 ): boolean {
   if (!cover) return false;
   return cover[pillar] === true;
+}
+
+export function isDormantCover(c: CustomerCover | null | undefined): boolean {
+  if (!c) return true;
+  return !anyCover(c);
 }
 
 export function anyCover(c: CustomerCover): boolean {

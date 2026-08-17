@@ -2,7 +2,7 @@
  * Score RMM / Cove / EPP against the 14 Aug 2026 industry SLA guide.
  * Only lines we can compute from live collect are scored.
  */
-import { coverFromDetail } from "./cover";
+import { coverFromDetail, isDormantCover } from "./cover";
 import { scoreTicketSet } from "./ticket-sla";
 import { isRmmServer } from "./rmm-device-class";
 import {
@@ -370,7 +370,8 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
 
 export function buildTicketsServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
   const rows = data.incidents ?? [];
-  const cover = rows.length > 0 || Boolean(coverFromDetail(data).tickets);
+  const ops = coverFromDetail(data);
+  const cover = !isDormantCover(ops) && (rows.length > 0 || Boolean(ops.tickets));
   const pack = scoreTicketSet(rows);
   const openPct = cover ? clamp(Math.max(40, 100 - pack.open * 5)) : null;
   const lines: ServiceSlaLine[] = [

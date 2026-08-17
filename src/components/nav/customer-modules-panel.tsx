@@ -37,6 +37,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { CoverTag, StatusRobot } from "@/components/ui/status-robot";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+import { isDormantCover } from "@/lib/data/cover";
 import type { CustomerCover } from "@/lib/data/types";
 import type { LiveFlag } from "@/lib/data/live-status";
 
@@ -165,7 +166,7 @@ export const CUSTOMER_PILLARS: {
     overview: "/tickets",
     icon: Ticket,
     color: "#0f766e",
-    covered: () => true,
+    covered: (c) => Boolean(c?.tickets),
     modules: [
       { label: "Overview", path: "/tickets", icon: LayoutDashboard, color: "#0f766e" },
       { label: "Open Tickets", path: "/tickets/open", icon: AlertTriangle, color: "#d97706" },
@@ -227,8 +228,8 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
       href: base,
       Icon: ECO_PILLAR.icon,
       color: ECO_PILLAR.color,
-      on: true,
-      rag: live?.pillars.eco?.rag ?? "Green",
+      on: !isDormantCover(cover),
+      rag: live?.pillars.eco?.rag ?? (isDormantCover(cover) ? "Off" : "Green"),
       hint: live?.pillars.eco?.hint,
     },
     ...CUSTOMER_PILLARS.map((p) => {

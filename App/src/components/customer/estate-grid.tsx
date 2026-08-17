@@ -257,7 +257,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
       ],
     },
     {
-      on: true,
+      on: Boolean(cover.tickets),
       name: "RPM Service Desk",
       href: `${base}/tickets`,
       bits: [`${tix.open} open`, `${tix.total} total`, tix.breaches ? `${tix.breaches} clock miss` : "clocks ok"],
