@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
@@ -43,6 +44,8 @@ const SHORT: Record<string, string> = {
 function shortLabel(label: string) {
   return SHORT[label] ?? label;
 }
+
+const ALWAYS_ON = new Set(["", "/ams", "/ams/sla", "/ams/incidents", "/ams/risks", "/tickets", "/tickets/open", "/tickets/resolved", "/tickets/closed", "/tickets/sla"]);
 
 const RIBBON: RibbonGroup[] = [
   {
@@ -100,6 +103,26 @@ function worstRag(
   return "Off";
 }
 
+function pillarCovered(
+  id: string,
+  live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
+) {
+  if (id === "estate" || id === "tickets") return true;
+  return live?.pillars[id]?.cover === true;
+}
+
+function itemVisible(
+  it: RibbonItem,
+  rest: string,
+  live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
+) {
+  if (ALWAYS_ON.has(it.rel)) return true;
+  if ((it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel) return true;
+  const flag = live?.modules[it.rel];
+  if (flag) return flag.cover;
+  return ragOf(it.rel, live) !== "Off";
+}
+
 export function EmpChrome({
   customerCode,
   customerName,
@@ -131,6 +154,15 @@ export function EmpChrome({
     slaHref: `${base}${group.match || "/ams"}/sla`.replace("//", "/"),
   };
 
+  const [open, setOpen] = useState<string>(group.id);
+  const ready = Boolean(live);
+  const tree = useMemo(() => {
+    return RIBBON.filter((g) => g.id === group.id || pillarCovered(g.id, live)).map((g) => ({
+      ...g,
+      items: g.items.filter((it) => itemVisible(it, rest, live)),
+    }));
+  }, [live, group.id, rest]);
+
   return (
     <div className="rpma-emp">
       <div className="rpma-emp-title">
@@ -144,7 +176,7 @@ export function EmpChrome({
       </div>
       <div className="rpma-emp-ribbon is-opt6" role="toolbar">
         <div className="rpma-emp-titles">
-          {RIBBON.map((g) => {
+          {RIBBON.filter((g) => g.id === "estate" || g.id === group.id || pillarCovered(g.id, live)).map((g) => {
             const on =
               g.match === ""
                 ? rest === "" || rest.startsWith("/ams")
@@ -164,7 +196,7 @@ export function EmpChrome({
           })}
         </div>
         <div className="rpma-emp-tools">
-          {group.items.map((it) => {
+          {group.items.filter((it) => itemVisible(it, rest, live)).map((it) => {
             const Icon = it.icon;
             const href = `${base}${it.rel}`;
             const active = (it.rel === "" && rest === "") || rest === it.rel;
@@ -187,25 +219,44 @@ export function EmpChrome({
         </div>
       </div>
       <div className="rpma-emp-work is-tree">
-        <aside className="rpma-ttree-nav rpma-emp-tree" aria-label={`${group.title} modules`}>
-          <h2>{group.title}</h2>
+        <aside className="rpma-ttree-nav rpma-emp-tree" aria-label="Live modules">
+          <h2>Live tree</h2>
+          {!ready ? <p className="rpma-tree-wait">Loading cover…</p> : null}
           <ul>
-            {group.items.map((it) => {
-              const href = `${base}${it.rel}`;
-              const active = (it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel;
-              const rag = ragOf(it.rel, live);
+            {tree.map((g) => {
+              const expanded = open === g.id || g.id === group.id;
               return (
-                <li key={it.rel || "home"}>
-                  <SpaLink
-                    href={href}
-                    className={cn("rpma-ttree-item", active && "is-on")}
-                    data-rag={rag}
+                <li key={g.id} className="rpma-tree-group">
+                  <button
+                    type="button"
+                    className={cn("rpma-tree-ghead", g.id === group.id && "is-on")}
+                    onClick={() => setOpen(expanded && g.id !== group.id ? group.id : g.id)}
                   >
-                    <i data-tone={rag.toLowerCase()} />
-                    <span>
-                      <strong>{it.full}</strong>
-                    </span>
-                  </SpaLink>
+                    {g.title}
+                    <em>{g.items.length}</em>
+                  </button>
+                  {expanded
+                    ? g.items.map((it) => {
+                        const href = `${base}${it.rel}`;
+                        const active = (it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel;
+                        const rag = ragOf(it.rel, live);
+                        const hint = live?.modules[it.rel]?.hint;
+                        return (
+                          <SpaLink
+                            key={it.rel || "home"}
+                            href={href}
+                            className={cn("rpma-ttree-item", active && "is-on")}
+                            data-rag={rag}
+                          >
+                            <i data-tone={rag.toLowerCase()} />
+                            <span>
+                              <strong>{it.full}</strong>
+                              {hint ? <em>{hint}</em> : null}
+                            </span>
+                          </SpaLink>
+                        );
+                      })
+                    : null}
                 </li>
               );
             })}
