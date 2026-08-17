@@ -139,6 +139,24 @@ export function customerLiveStatus(
   const crit = c.rmm ? row?.pulsewayCriticalAlerts ?? 0 : 0;
   const wsOff = wsCover ? row?.pulsewayWorkstationOffline ?? 0 : 0;
   const patchMiss = c.rmm ? row?.pulsewayPatchMissing ?? 0 : 0;
+  const patchDevices =
+    Number(
+      row?.pulsewayPatchDevices ??
+        extra?.rmm?.summary?.patchDevices ??
+        extra?.rmm?.summary?.patchDevicesReporting ??
+        extra?.customer?.pulsewayPatchDevices ??
+        0,
+    ) || 0;
+  const hasPatchSnap = patchDevices > 0 || patchMiss > 0;
+  const evRows = extra?.rmm?.windowsEvents ?? [];
+  const evN = evRows.length;
+  const evCrit = evRows.some((e) => /crit/i.test(String(e.levelName ?? "")));
+  const iopsN = extra?.rmm?.agentIops?.length ?? 0;
+  const rmmAlerts = extra?.rmm?.alerts ?? [];
+  const alertCrit =
+    crit > 0 ||
+    rmmAlerts.some((a) => /crit/i.test(String(a.severity ?? "")));
+  const alertN = rmmAlerts.length || crit;
   const coveFail = c.cove
     ? extra?.cove?.summary?.failedCount ?? row?.coveFailedDeviceCount ?? 0
     : 0;
@@ -175,9 +193,12 @@ export function customerLiveStatus(
   const sysproRag = [jobsRag, dtrRag, healthRag, dayRag, hfRag].reduce(worse, c.syspro ? "Green" : "Off");
 
   const devicesRag: LiveTone = !srvCover ? "Off" : srvOff > 0 ? "Amber" : "Green";
-  const alertsRag: LiveTone = !c.rmm ? "Off" : crit > 0 ? "Red" : "Green";
+  const alertsRag: LiveTone = !c.rmm ? "Off" : alertCrit ? "Red" : "Off";
   const wsRag: LiveTone = !wsCover ? "Off" : wsOff > 0 ? "Amber" : "Green";
-  const patchRag: LiveTone = !c.rmm || srvN <= 0 ? "Off" : patchMiss > 0 ? "Amber" : "Green";
+  const patchRag: LiveTone =
+    !c.rmm || srvN <= 0 || !hasPatchSnap ? "Off" : patchMiss > 0 ? "Amber" : "Green";
+  const iopsRag: LiveTone = iopsN > 0 ? "Green" : "Off";
+  const eventsRag: LiveTone = evN <= 0 ? "Off" : evCrit ? "Red" : "Green";
   const rmmRag = [devicesRag, alertsRag, patchRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
 
   const coveDevRag: LiveTone = !coveDevCover ? "Off" : coveFail > 0 ? "Red" : coveStale > 0 ? "Amber" : "Green";
@@ -412,42 +433,30 @@ export function customerLiveStatus(
       rag: patchRag,
       cover: Boolean(c.rmm) && srvN > 0,
       href: `${base}/rmm/patch`,
-      hint: srvN <= 0 ? "No Cover for Devices" : patchMiss ? `${patchMiss} missing patch(es)` : "Patch compliance",
+      hint: !hasPatchSnap
+        ? "No patch snapshot — not scored"
+        : patchMiss
+          ? `${patchMiss} missing patch(es)`
+          : "Patch compliance",
     },
     "/rmm/alerts": {
       rag: alertsRag,
       cover: Boolean(c.rmm),
       href: `${base}/rmm/alerts`,
-      hint: crit ? `${crit} critical` : "No critical alerts",
+      hint: alertCrit ? `${crit || alertN} critical` : "No alerts on file",
     },
     "/rmm/sla": { rag: off(Boolean(c.rmm)), cover: Boolean(c.rmm), href: `${base}/rmm/sla`, hint: "RMM SLA" },
     "/rmm/iops": {
-      rag: !c.rmm ? "Off" : (extra?.rmm?.agentIops?.length ?? 0) > 0 ? "Green" : "Amber",
-      cover: Boolean(c.rmm) || (extra?.rmm?.agentIops?.length ?? 0) > 0,
+      rag: iopsRag,
+      cover: Boolean(c.rmm) || iopsN > 0,
       href: `${base}/rmm/iops`,
-      hint:
-        (extra?.rmm?.agentIops?.length ?? 0) > 0
-          ? `${extra?.rmm?.agentIops?.length} IOPS volume(s)`
-          : "IOPS arrives from Pulseway script or agent",
+      hint: iopsN > 0 ? `${iopsN} IOPS volume(s)` : "No IOPS on file",
     },
     "/rmm/events": {
-      rag: !c.rmm
-        ? "Off"
-        : (extra?.rmm?.windowsEvents ?? []).some((e) => /crit/i.test(String(e.levelName ?? "")))
-          || (extra?.rmm?.alerts ?? []).some((a) => a.source !== "agent" && /crit/i.test(String(a.severity ?? "")))
-          ? "Red"
-          : (extra?.rmm?.windowsEvents?.length ?? 0) > 0
-            || (extra?.rmm?.alerts ?? []).some((a) => a.source !== "agent")
-            ? "Green"
-            : "Amber",
-      cover: Boolean(c.rmm) || (extra?.rmm?.windowsEvents?.length ?? 0) > 0,
+      rag: eventsRag,
+      cover: Boolean(c.rmm) || evN > 0,
       href: `${base}/rmm/events`,
-      hint:
-        (extra?.rmm?.windowsEvents?.length ?? 0) > 0
-          ? `${extra?.rmm?.windowsEvents?.length} Windows event(s)`
-          : (extra?.rmm?.alerts ?? []).filter((a) => a.source !== "agent").length
-            ? `${(extra?.rmm?.alerts ?? []).filter((a) => a.source !== "agent").length} RMM alert(s)`
-            : "No events on file",
+      hint: evN > 0 ? `${evN} event(s)` : "No events on file",
     },
     "/cove": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove`, hint: c.cove ? "Backup overview" : "Backup not on cover" },
     "/cove/devices": {
