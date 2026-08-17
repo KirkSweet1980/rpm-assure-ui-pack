@@ -5,7 +5,7 @@ import { NoCoverPanel } from "@/components/ui/no-cover";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { buildServiceSla, type ServiceSlaPack } from "@/lib/data/service-sla";
 import { fetchCustomerSlaContract } from "@/lib/data/customer-sla-contract";
-import { kpisOnCover, withSlaKpis, type SlaKpiOverrides } from "@/lib/data/sla-kpis";
+import { kpisOnCover, withSlaKpis, type SlaKpiOverrides } from "@/lib/data/apply-sla-kpis";
 import { coverFromDetail } from "@/lib/data/cover";
 import { INDUSTRY_SLA_DOC } from "@/lib/data/sla-metrics";
 import { TenantTree } from "@/components/customer/tenant-tree";

@@ -62,7 +62,7 @@ import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } f
 import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfEvidence } from "./cover";
 import { buildExcoPillarSla, hasSlaCover } from "./exco-sla-stats";
 import { loadSlaKpiMap } from "./customer-sla-contract";
-import { kpisOnCover } from "./sla-kpis";
+import { kpisOnCover } from "./apply-sla-kpis";
 import { scoreTicketSet } from "./ticket-sla";
 import { auditPortfolioRows } from "./pillar-audit";
 import { getPool, sql } from "./sql-pool";

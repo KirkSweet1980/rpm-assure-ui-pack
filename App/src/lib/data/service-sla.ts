@@ -13,8 +13,8 @@ import {
   type IndustryPillarKey,
 } from "./sla-metrics";
 import type { CustomerDetailPayload } from "./types";
-import { slaKpiFor } from "./sla-kpis";
-export { withSlaKpis, type SlaKpiOverrides } from "./sla-kpis";
+import { slaKpiFor } from "./apply-sla-kpis";
+export { withSlaKpis, type SlaKpiOverrides } from "./apply-sla-kpis";
 
 export type ServiceSlaLine = {
   id: string;
