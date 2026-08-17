@@ -114,7 +114,7 @@ function scoreCove(i: ExcoSlaInput): { pct: number | null; note: string } {
     return { pct: 35, note: "Backup failed or stale vs 24h RPO" };
   }
   if (devices > 0) {
-    return { pct: 70, note: `${devices} device(s) · status unknown` };
+    return { pct: null, note: `${devices} device(s) mapped · job outcome not collected (not scored)` };
   }
   return { pct: null, note: "No backup devices (not scored)" };
 }
