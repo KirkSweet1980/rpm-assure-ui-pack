@@ -879,7 +879,7 @@ html.dark .rpma-pane-head-row {
   display: inline-flex;
   align-items: baseline;
   font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #2ee6a6;
@@ -887,8 +887,17 @@ html.dark .rpma-pane-head-row {
   background: #061018;
   border: 1px solid #1a4a4a;
   border-radius: 6px;
-  padding: 3px 9px 2px;
+  padding: 4px 10px 3px;
   line-height: 1.15;
+  white-space: nowrap;
+}
+.rpma-sql-digits b {
+  font-weight: 700;
+  margin-right: 2px;
+}
+.rpma-sql-digits em {
+  display: inline-block;
+  width: 8px;
 }
 .rpma-sql-digits i {
   font-style: normal;
