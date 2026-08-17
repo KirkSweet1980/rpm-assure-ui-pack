@@ -268,7 +268,7 @@ const REPORT_SERVICES: CorpService[] = [
     modules: [
       { label: "Assure Eco-System Overview", path: "/reports?format=estate", icon: Layers, color: "#7c3aed" },
       { label: "Services On Cover", path: "/reports?format=services-cover", icon: ShieldCheck, color: "#0d9488" },
-      { label: "Custom Pack", path: "/reports?format=custom-pack", icon: FileStack, color: "#334155" },
+      { label: "ExCo one-pager", path: "/downloads/RPM-Exco-Brief.html", icon: Printer, color: "#0b1a3a" },
     ],
   },
 ];

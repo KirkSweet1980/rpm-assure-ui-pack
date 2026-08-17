@@ -20,7 +20,9 @@ foreach ($pair in @(
     @('Sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
     @('sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
     @('Sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1'),
-    @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1')
+    @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1'),
+    @('public\downloads\RPM-Exco-Brief.html', 'RPM-Exco-Brief.html'),
+    @('App\public\downloads\RPM-Exco-Brief.html', 'RPM-Exco-Brief.html')
   )) {
   $src = Join-Path $Pack $pair[0]
   if (Test-Path $src) { Copy-Item -Force -LiteralPath $src (Join-Path $dl $pair[1]) }

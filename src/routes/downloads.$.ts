@@ -7,6 +7,7 @@ const ALLOW = new Set([
   "rpm-assure-agent.zip",
   "Deploy-Assure-Agent.ps1",
   "Onboard-IB-Syspro.ps1",
+  "RPM-Exco-Brief.html",
 ]);
 
 const ROOTS = [
@@ -17,7 +18,7 @@ const ROOTS = [
 
 function mimeOf(name: string): string {
   if (name.endsWith(".zip")) return "application/zip";
-  if (name.endsWith(".ps1")) return "text/plain; charset=utf-8";
+  if (name.endsWith(".html")) return "text/html; charset=utf-8";
   return "text/plain; charset=utf-8";
 }
 

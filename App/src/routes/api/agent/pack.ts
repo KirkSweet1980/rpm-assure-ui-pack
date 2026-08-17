@@ -8,6 +8,7 @@ const ALLOW = new Set([
   "rpm-assure-agent.zip",
   "Deploy-Assure-Agent.ps1",
   "Onboard-IB-Syspro.ps1",
+  "RPM-Exco-Brief.html",
 ]);
 
 const ROOTS = [
