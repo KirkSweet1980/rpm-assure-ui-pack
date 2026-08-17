@@ -3557,3 +3557,39 @@ html.snow .rpma-epp-mod.is-off .rpma-epp-state { color: #b91c1c; }
 @media (max-width: 640px) {
   .rpma-iops-matrix-rows article dl { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+
+.rpma-drive-legend {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none;
+}
+.rpma-drive-legend li {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  border: 1px solid var(--color-border); border-radius: 999px; padding: 2px 8px;
+  font-size: 10px;
+}
+.rpma-drive-legend li b { font-weight: 800; }
+.rpma-drive-legend li span { color: var(--color-muted); }
+.rpma-drive-chip {
+  display: inline-flex; align-items: center;
+  border-radius: 999px; padding: 1px 8px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  border: 1px solid var(--color-border);
+}
+.rpma-drive-chip[data-kind="nvme"],
+.rpma-drive-legend li[data-kind="nvme"] b { color: #7c3aed; }
+.rpma-drive-chip[data-kind="sata-ssd"],
+.rpma-drive-legend li[data-kind="sata-ssd"] b { color: #0d9488; }
+.rpma-drive-chip[data-kind="sas-ssd"],
+.rpma-drive-legend li[data-kind="sas-ssd"] b { color: #2563eb; }
+.rpma-drive-chip[data-kind="sata-hdd"],
+.rpma-drive-legend li[data-kind="sata-hdd"] b { color: #b45309; }
+.rpma-drive-chip[data-kind="sas-hdd"],
+.rpma-drive-legend li[data-kind="sas-hdd"] b { color: #c2410c; }
+.rpma-drive-chip[data-kind="virtual"],
+.rpma-drive-legend li[data-kind="virtual"] b { color: #475569; }
+.rpma-iops-matrix-rows article[data-kind="nvme"] .rpma-iops-track > i { background: linear-gradient(90deg, #7c3aed, #c4b5fd); }
+.rpma-iops-matrix-rows article[data-kind="sata-ssd"] .rpma-iops-track > i { background: linear-gradient(90deg, #0d9488, #5eead4); }
+.rpma-iops-matrix-rows article[data-kind="sas-ssd"] .rpma-iops-track > i { background: linear-gradient(90deg, #2563eb, #93c5fd); }
+.rpma-iops-matrix-rows article[data-kind="sata-hdd"] .rpma-iops-track > i { background: linear-gradient(90deg, #b45309, #fbbf24); }
+.rpma-iops-matrix-rows article[data-kind="sas-hdd"] .rpma-iops-track > i { background: linear-gradient(90deg, #c2410c, #fdba74); }
+.rpma-iops-matrix-rows article[data-kind="virtual"] .rpma-iops-track > i { background: linear-gradient(90deg, #475569, #94a3b8); }

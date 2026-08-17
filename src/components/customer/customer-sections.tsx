@@ -20,7 +20,7 @@ import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type 
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { SpaLink } from "@/components/nav/spa-link";
-import { keepLiveIops, expectedIopsForMedia, expectedLatencyMsForMedia, iopsBand } from "@/lib/data/agent-iops";
+import { keepLiveIops, iopsBand, classifyDrive, DRIVE_STATS } from "@/lib/data/agent-iops";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
   Bar,
@@ -2211,18 +2211,30 @@ function IopsPerfMatrix({
       <header>
         <h3>Performance vs expected</h3>
         <p>
-          {host} — live sample vs media baseline (IOPS and latency). Not a signed SLA.
+          {host} — graph is scaled to the identified drive type (NVMe / SATA / SAS × SSD or HDD, or Virtual).
         </p>
+        <ul className="rpma-drive-legend">
+          {(Object.keys(DRIVE_STATS) as (keyof typeof DRIVE_STATS)[])
+            .filter((k) => k !== "unknown")
+            .map((k) => (
+              <li key={k} data-kind={k}>
+                <b>{DRIVE_STATS[k].label}</b>
+                <span>{DRIVE_STATS[k].iops.toLocaleString("en-ZA")} IOPS · {DRIVE_STATS[k].latencyMs} ms</span>
+              </li>
+            ))}
+        </ul>
       </header>
       <div className="rpma-iops-matrix-rows">
         {list.map((r, i) => {
           const actual = Number(r.totalIops) || 0;
-          const expected = expectedIopsForMedia(r.mediaType);
+          const kind = classifyDrive(r.mediaType);
+          const stat = DRIVE_STATS[kind];
+          const expected = stat.iops;
+          const expectedLat = stat.latencyMs;
           const band = iopsBand(actual, expected, r.queueLen);
           const scale = Math.max(expected * 1.4, actual, 1);
           const actPct = Math.min(100, (actual / scale) * 100);
           const expPct = Math.min(100, (expected / scale) * 100);
-          const expectedLat = expectedLatencyMsForMedia(r.mediaType);
           const fmtMs = (n: number | null | undefined) => {
             if (n == null || !Number.isFinite(n)) return "—";
             return n < 1 ? `${n.toFixed(2)} ms` : `${n.toFixed(1)} ms`;
@@ -2231,10 +2243,12 @@ function IopsPerfMatrix({
             (r.readLatencyMs != null && r.readLatencyMs > expectedLat * 2) ||
             (r.writeLatencyMs != null && r.writeLatencyMs > expectedLat * 2);
           return (
-            <article key={`${r.driveLetter}-${i}`} data-band={band}>
+            <article key={`${r.driveLetter}-${i}`} data-band={band} data-kind={kind}>
               <div className="rpma-iops-k">
                 <strong>{r.driveLetter || "?"}</strong>
-                <span>{r.mediaType || "Unknown media"}</span>
+                <span className="rpma-drive-chip" data-kind={kind}>
+                  {stat.label}
+                </span>
               </div>
               <div className="rpma-iops-track" title={`${Math.round(actual)} of ${expected} expected IOPS`}>
                 <i style={{ width: `${actPct}%` }} />

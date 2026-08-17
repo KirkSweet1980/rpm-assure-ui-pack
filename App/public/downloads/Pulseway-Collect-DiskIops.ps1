@@ -103,6 +103,65 @@ try {
   }
 } catch {}
 
+function Normalize-Media([string]$raw, [string]$bus, [string]$model) {
+  $blob = (($raw + " " + $bus + " " + $model) | Out-String).ToUpperInvariant()
+  $isNvme = $blob -match "NVME|NVM EXPRESS" -or $bus -eq "17" -or $bus -match "NVMe"
+  $isSas  = $blob -match "\bSAS\b" -or $bus -eq "10"
+  $isSata = $blob -match "\bSATA\b|\bATA\b" -or $bus -eq "11" -or $bus -eq "3"
+  $isVirt = $blob -match "VIRTUAL|VHD|MSFT VIRTUAL|HYPER-V" -or $bus -eq "14" -or $bus -eq "15"
+  $isSsd  = $blob -match "SSD|SOLID" -or $raw -eq "4" -or $raw -eq "SSD"
+  $isHdd  = $blob -match "HDD|ROTAT|HARD DISK|SPIN" -or $raw -eq "3" -or $raw -eq "HDD"
+  if ($isNvme) { return "NVMe" }
+  if ($isVirt) { return "Virtual" }
+  if ($isSas -and $isSsd) { return "SAS SSD" }
+  if ($isSas) { return "SAS HDD" }
+  if ($isSata -and $isSsd) { return "SATA SSD" }
+  if ($isSata -and $isHdd) { return "SATA HDD" }
+  if ($isSsd) { return "SATA SSD" }
+  if ($isHdd) { return "SATA HDD" }
+  if ($model -and $model.Trim() -ne "") { return $model.Trim() }
+  return $null
+}
+
+try {
+  $pdByNum = @{}
+  foreach ($pd in @(Get-PhysicalDisk -ErrorAction SilentlyContinue)) {
+    $id = $null
+    try { $id = [string]$pd.DeviceId } catch {}
+    $media = Normalize-Media ([string]$pd.MediaType) ([string]$pd.BusType) ([string]$pd.FriendlyName)
+    if ($id) { $pdByNum[$id] = $media }
+  }
+  foreach ($part in @(Get-Partition -ErrorAction SilentlyContinue)) {
+    $let = $null
+    try { if ($part.DriveLetter) { $let = ([string]$part.DriveLetter).ToUpper() + ":" } } catch {}
+    if (-not $let) { continue }
+    $num = $null
+    try { $num = [string]$part.DiskNumber } catch {}
+    if ($num -and $pdByNum.ContainsKey($num) -and $by.ContainsKey($let)) {
+      $by[$let].media = $pdByNum[$num]
+    }
+  }
+} catch {}
+
+if (@($by.Values | Where-Object { $_.media }).Count -eq 0) {
+  try {
+    $drives = @(Get-CimInstance Win32_DiskDrive -ErrorAction SilentlyContinue)
+    $parts = @(Get-CimInstance Win32_DiskDriveToDiskPartition -ErrorAction SilentlyContinue)
+    $logs = @(Get-CimInstance Win32_LogicalDiskToPartition -ErrorAction SilentlyContinue)
+    foreach ($log in $logs) {
+      $let = $null
+      if ($log.Dependent -match 'DeviceID="([A-Z]:)"') { $let = $Matches[1] }
+      if (-not $let -or -not $by.ContainsKey($let)) { continue }
+      $partPath = [string]$log.Antecedent
+      $drv = $parts | Where-Object { [string]$_.Dependent -eq $partPath } | Select-Object -First 1
+      if (-not $drv) { continue }
+      $disk = $drives | Where-Object { [string]$_.Path -eq [string]$drv.Antecedent } | Select-Object -First 1
+      if (-not $disk) { $disk = $drives | Where-Object { $drv.Antecedent -match [regex]::Escape([string]$_.DeviceID) } | Select-Object -First 1 }
+      if ($disk) { $by[$let].media = Normalize-Media ([string]$disk.MediaType) ([string]$disk.InterfaceType) ([string]$disk.Model) }
+    }
+  } catch {}
+}
+
 $volumes = @()
 foreach ($k in @($by.Keys | Sort-Object)) {
   $b = $by[$k]

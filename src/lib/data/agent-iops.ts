@@ -9,23 +9,45 @@ export function keepLiveIops<T extends { hostName?: string | null }>(rows: T[] |
   return (rows ?? []).filter((r) => !isSampleIopsHost(r.hostName));
 }
 
-/** Media baseline IOPS for a single volume — planning guide, not a signed SLA. */
-export function expectedIopsForMedia(media: string | null | undefined): number {
+export type DriveKind = "nvme" | "sata-ssd" | "sata-hdd" | "sas-ssd" | "sas-hdd" | "virtual" | "unknown";
+
+export const DRIVE_STATS: Record<
+  DriveKind,
+  { label: string; iops: number; latencyMs: number }
+> = {
+  nvme: { label: "NVMe", iops: 20000, latencyMs: 0.2 },
+  "sata-ssd": { label: "SATA SSD", iops: 4000, latencyMs: 0.8 },
+  "sata-hdd": { label: "SATA HDD", iops: 120, latencyMs: 12 },
+  "sas-ssd": { label: "SAS SSD", iops: 8000, latencyMs: 0.4 },
+  "sas-hdd": { label: "SAS HDD", iops: 200, latencyMs: 8 },
+  virtual: { label: "Virtual", iops: 800, latencyMs: 5 },
+  unknown: { label: "Unknown", iops: 800, latencyMs: 5 },
+};
+
+export function classifyDrive(media: string | null | undefined): DriveKind {
   const m = String(media ?? "").toLowerCase();
-  if (/nvme|optane/.test(m)) return 20000;
-  if (/ssd|flash|solid/.test(m)) return 5000;
-  if (/virtual|vhd|vhdx|msft virtual|hyper-v/.test(m)) return 800;
-  if (/hdd|spin|mechanical|sata|sas/.test(m)) return 150;
-  return 800;
+  if (/nvme|nvm express|optane/.test(m)) return "nvme";
+  if (/virtual|vhd|vhdx|msft virtual|hyper-v|file.?back/.test(m)) return "virtual";
+  const sas = /\bsas\b|scsi/.test(m);
+  const sata = /\bsata\b|\bata\b/.test(m);
+  const ssd = /ssd|flash|solid/.test(m);
+  const hdd = /hdd|spin|mechanical|rotat|hard disk/.test(m);
+  if (sas && ssd) return "sas-ssd";
+  if (sas) return "sas-hdd";
+  if (sata && ssd) return "sata-ssd";
+  if (sata && hdd) return "sata-hdd";
+  if (ssd) return "sata-ssd";
+  if (hdd) return "sata-hdd";
+  if (sata) return "sata-hdd";
+  return "unknown";
+}
+
+export function expectedIopsForMedia(media: string | null | undefined): number {
+  return DRIVE_STATS[classifyDrive(media)].iops;
 }
 
 export function expectedLatencyMsForMedia(media: string | null | undefined): number {
-  const m = String(media ?? "").toLowerCase();
-  if (/nvme|optane/.test(m)) return 0.2;
-  if (/ssd|flash|solid/.test(m)) return 1;
-  if (/virtual|vhd|vhdx|msft virtual|hyper-v/.test(m)) return 5;
-  if (/hdd|spin|mechanical|sata|sas/.test(m)) return 12;
-  return 5;
+  return DRIVE_STATS[classifyDrive(media)].latencyMs;
 }
 
 export type IopsBand = "idle" | "healthy" | "busy" | "hot";
