@@ -59,6 +59,7 @@ import { Route as CustomersCodeCspRouteImport } from './routes/customers.$code.c
 import { Route as CustomersCodeEppRouteImport } from './routes/customers.$code.epp'
 import { Route as CustomersCodeRmmRouteImport } from './routes/customers.$code.rmm'
 import { Route as CustomersCodeSysproRouteImport } from './routes/customers.$code.syspro'
+import { Route as CustomersCodeTicketsRouteImport } from './routes/customers.$code.tickets'
 import { Route as CustomersCodeAmsIndexRouteImport } from './routes/customers.$code.ams.index'
 import { Route as CustomersCodeAmsChangeRouteImport } from './routes/customers.$code.ams.change'
 import { Route as CustomersCodeAmsIncidentsRouteImport } from './routes/customers.$code.ams.incidents'
@@ -103,6 +104,10 @@ import { Route as CustomersCodeSysproLicenseRouteImport } from './routes/custome
 import { Route as CustomersCodeSysproOperatorsRouteImport } from './routes/customers.$code.syspro.operators'
 import { Route as CustomersCodeSysproSecurityRouteImport } from './routes/customers.$code.syspro.security'
 import { Route as CustomersCodeSysproSqlRouteImport } from './routes/customers.$code.syspro.sql'
+import { Route as CustomersCodeTicketsIndexRouteImport } from './routes/customers.$code.tickets.index'
+import { Route as CustomersCodeTicketsClosedRouteImport } from './routes/customers.$code.tickets.closed'
+import { Route as CustomersCodeTicketsOpenRouteImport } from './routes/customers.$code.tickets.open'
+import { Route as CustomersCodeTicketsResolvedRouteImport } from './routes/customers.$code.tickets.resolved'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -354,6 +359,11 @@ const CustomersCodeSysproRoute = CustomersCodeSysproRouteImport.update({
   path: '/syspro',
   getParentRoute: () => CustomersCodeRoute,
 } as any)
+const CustomersCodeTicketsRoute = CustomersCodeTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => CustomersCodeRoute,
+} as any)
 const CustomersCodeAmsIndexRoute = CustomersCodeAmsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -595,6 +605,30 @@ const CustomersCodeSysproSqlRoute = CustomersCodeSysproSqlRouteImport.update({
   path: '/sql',
   getParentRoute: () => CustomersCodeSysproRoute,
 } as any)
+const CustomersCodeTicketsIndexRoute =
+  CustomersCodeTicketsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => CustomersCodeTicketsRoute,
+  } as any)
+const CustomersCodeTicketsClosedRoute =
+  CustomersCodeTicketsClosedRouteImport.update({
+    id: '/closed',
+    path: '/closed',
+    getParentRoute: () => CustomersCodeTicketsRoute,
+  } as any)
+const CustomersCodeTicketsOpenRoute =
+  CustomersCodeTicketsOpenRouteImport.update({
+    id: '/open',
+    path: '/open',
+    getParentRoute: () => CustomersCodeTicketsRoute,
+  } as any)
+const CustomersCodeTicketsResolvedRoute =
+  CustomersCodeTicketsResolvedRouteImport.update({
+    id: '/resolved',
+    path: '/resolved',
+    getParentRoute: () => CustomersCodeTicketsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -646,6 +680,7 @@ export interface FileRoutesByFullPath {
   '/customers/$code/epp': typeof CustomersCodeEppRouteWithChildren
   '/customers/$code/rmm': typeof CustomersCodeRmmRouteWithChildren
   '/customers/$code/syspro': typeof CustomersCodeSysproRouteWithChildren
+  '/customers/$code/tickets': typeof CustomersCodeTicketsRouteWithChildren
   '/customers/$code/': typeof CustomersCodeIndexRoute
   '/customers/$code/ams/change': typeof CustomersCodeAmsChangeRoute
   '/customers/$code/ams/incidents': typeof CustomersCodeAmsIncidentsRoute
@@ -685,12 +720,16 @@ export interface FileRoutesByFullPath {
   '/customers/$code/syspro/operators': typeof CustomersCodeSysproOperatorsRoute
   '/customers/$code/syspro/security': typeof CustomersCodeSysproSecurityRoute
   '/customers/$code/syspro/sql': typeof CustomersCodeSysproSqlRoute
+  '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
+  '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
+  '/customers/$code/tickets/resolved': typeof CustomersCodeTicketsResolvedRoute
   '/customers/$code/ams/': typeof CustomersCodeAmsIndexRoute
   '/customers/$code/cove/': typeof CustomersCodeCoveIndexRoute
   '/customers/$code/csp/': typeof CustomersCodeCspIndexRoute
   '/customers/$code/epp/': typeof CustomersCodeEppIndexRoute
   '/customers/$code/rmm/': typeof CustomersCodeRmmIndexRoute
   '/customers/$code/syspro/': typeof CustomersCodeSysproIndexRoute
+  '/customers/$code/tickets/': typeof CustomersCodeTicketsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -773,12 +812,16 @@ export interface FileRoutesByTo {
   '/customers/$code/syspro/operators': typeof CustomersCodeSysproOperatorsRoute
   '/customers/$code/syspro/security': typeof CustomersCodeSysproSecurityRoute
   '/customers/$code/syspro/sql': typeof CustomersCodeSysproSqlRoute
+  '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
+  '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
+  '/customers/$code/tickets/resolved': typeof CustomersCodeTicketsResolvedRoute
   '/customers/$code/ams': typeof CustomersCodeAmsIndexRoute
   '/customers/$code/cove': typeof CustomersCodeCoveIndexRoute
   '/customers/$code/csp': typeof CustomersCodeCspIndexRoute
   '/customers/$code/epp': typeof CustomersCodeEppIndexRoute
   '/customers/$code/rmm': typeof CustomersCodeRmmIndexRoute
   '/customers/$code/syspro': typeof CustomersCodeSysproIndexRoute
+  '/customers/$code/tickets': typeof CustomersCodeTicketsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -831,6 +874,7 @@ export interface FileRoutesById {
   '/customers/$code/epp': typeof CustomersCodeEppRouteWithChildren
   '/customers/$code/rmm': typeof CustomersCodeRmmRouteWithChildren
   '/customers/$code/syspro': typeof CustomersCodeSysproRouteWithChildren
+  '/customers/$code/tickets': typeof CustomersCodeTicketsRouteWithChildren
   '/customers/$code/': typeof CustomersCodeIndexRoute
   '/customers/$code/ams/change': typeof CustomersCodeAmsChangeRoute
   '/customers/$code/ams/incidents': typeof CustomersCodeAmsIncidentsRoute
@@ -870,12 +914,16 @@ export interface FileRoutesById {
   '/customers/$code/syspro/operators': typeof CustomersCodeSysproOperatorsRoute
   '/customers/$code/syspro/security': typeof CustomersCodeSysproSecurityRoute
   '/customers/$code/syspro/sql': typeof CustomersCodeSysproSqlRoute
+  '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
+  '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
+  '/customers/$code/tickets/resolved': typeof CustomersCodeTicketsResolvedRoute
   '/customers/$code/ams/': typeof CustomersCodeAmsIndexRoute
   '/customers/$code/cove/': typeof CustomersCodeCoveIndexRoute
   '/customers/$code/csp/': typeof CustomersCodeCspIndexRoute
   '/customers/$code/epp/': typeof CustomersCodeEppIndexRoute
   '/customers/$code/rmm/': typeof CustomersCodeRmmIndexRoute
   '/customers/$code/syspro/': typeof CustomersCodeSysproIndexRoute
+  '/customers/$code/tickets/': typeof CustomersCodeTicketsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -929,6 +977,7 @@ export interface FileRouteTypes {
     | '/customers/$code/epp'
     | '/customers/$code/rmm'
     | '/customers/$code/syspro'
+    | '/customers/$code/tickets'
     | '/customers/$code/'
     | '/customers/$code/ams/change'
     | '/customers/$code/ams/incidents'
@@ -968,12 +1017,16 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro/operators'
     | '/customers/$code/syspro/security'
     | '/customers/$code/syspro/sql'
+    | '/customers/$code/tickets/closed'
+    | '/customers/$code/tickets/open'
+    | '/customers/$code/tickets/resolved'
     | '/customers/$code/ams/'
     | '/customers/$code/cove/'
     | '/customers/$code/csp/'
     | '/customers/$code/epp/'
     | '/customers/$code/rmm/'
     | '/customers/$code/syspro/'
+    | '/customers/$code/tickets/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1056,12 +1109,16 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro/operators'
     | '/customers/$code/syspro/security'
     | '/customers/$code/syspro/sql'
+    | '/customers/$code/tickets/closed'
+    | '/customers/$code/tickets/open'
+    | '/customers/$code/tickets/resolved'
     | '/customers/$code/ams'
     | '/customers/$code/cove'
     | '/customers/$code/csp'
     | '/customers/$code/epp'
     | '/customers/$code/rmm'
     | '/customers/$code/syspro'
+    | '/customers/$code/tickets'
   id:
     | '__root__'
     | '/'
@@ -1113,6 +1170,7 @@ export interface FileRouteTypes {
     | '/customers/$code/epp'
     | '/customers/$code/rmm'
     | '/customers/$code/syspro'
+    | '/customers/$code/tickets'
     | '/customers/$code/'
     | '/customers/$code/ams/change'
     | '/customers/$code/ams/incidents'
@@ -1152,12 +1210,16 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro/operators'
     | '/customers/$code/syspro/security'
     | '/customers/$code/syspro/sql'
+    | '/customers/$code/tickets/closed'
+    | '/customers/$code/tickets/open'
+    | '/customers/$code/tickets/resolved'
     | '/customers/$code/ams/'
     | '/customers/$code/cove/'
     | '/customers/$code/csp/'
     | '/customers/$code/epp/'
     | '/customers/$code/rmm/'
     | '/customers/$code/syspro/'
+    | '/customers/$code/tickets/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1537,6 +1599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersCodeSysproRouteImport
       parentRoute: typeof CustomersCodeRoute
     }
+    '/customers/$code/tickets': {
+      id: '/customers/$code/tickets'
+      path: '/tickets'
+      fullPath: '/customers/$code/tickets'
+      preLoaderRoute: typeof CustomersCodeTicketsRouteImport
+      parentRoute: typeof CustomersCodeRoute
+    }
     '/customers/$code/ams/': {
       id: '/customers/$code/ams/'
       path: '/'
@@ -1845,6 +1914,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersCodeSysproSqlRouteImport
       parentRoute: typeof CustomersCodeSysproRoute
     }
+    '/customers/$code/tickets/': {
+      id: '/customers/$code/tickets/'
+      path: '/'
+      fullPath: '/customers/$code/tickets/'
+      preLoaderRoute: typeof CustomersCodeTicketsIndexRouteImport
+      parentRoute: typeof CustomersCodeTicketsRoute
+    }
+    '/customers/$code/tickets/closed': {
+      id: '/customers/$code/tickets/closed'
+      path: '/closed'
+      fullPath: '/customers/$code/tickets/closed'
+      preLoaderRoute: typeof CustomersCodeTicketsClosedRouteImport
+      parentRoute: typeof CustomersCodeTicketsRoute
+    }
+    '/customers/$code/tickets/open': {
+      id: '/customers/$code/tickets/open'
+      path: '/open'
+      fullPath: '/customers/$code/tickets/open'
+      preLoaderRoute: typeof CustomersCodeTicketsOpenRouteImport
+      parentRoute: typeof CustomersCodeTicketsRoute
+    }
+    '/customers/$code/tickets/resolved': {
+      id: '/customers/$code/tickets/resolved'
+      path: '/resolved'
+      fullPath: '/customers/$code/tickets/resolved'
+      preLoaderRoute: typeof CustomersCodeTicketsResolvedRouteImport
+      parentRoute: typeof CustomersCodeTicketsRoute
+    }
   }
 }
 
@@ -2042,6 +2139,23 @@ const CustomersCodeSysproRouteChildren: CustomersCodeSysproRouteChildren = {
 const CustomersCodeSysproRouteWithChildren =
   CustomersCodeSysproRoute._addFileChildren(CustomersCodeSysproRouteChildren)
 
+interface CustomersCodeTicketsRouteChildren {
+  CustomersCodeTicketsClosedRoute: typeof CustomersCodeTicketsClosedRoute
+  CustomersCodeTicketsOpenRoute: typeof CustomersCodeTicketsOpenRoute
+  CustomersCodeTicketsResolvedRoute: typeof CustomersCodeTicketsResolvedRoute
+  CustomersCodeTicketsIndexRoute: typeof CustomersCodeTicketsIndexRoute
+}
+
+const CustomersCodeTicketsRouteChildren: CustomersCodeTicketsRouteChildren = {
+  CustomersCodeTicketsClosedRoute: CustomersCodeTicketsClosedRoute,
+  CustomersCodeTicketsOpenRoute: CustomersCodeTicketsOpenRoute,
+  CustomersCodeTicketsResolvedRoute: CustomersCodeTicketsResolvedRoute,
+  CustomersCodeTicketsIndexRoute: CustomersCodeTicketsIndexRoute,
+}
+
+const CustomersCodeTicketsRouteWithChildren =
+  CustomersCodeTicketsRoute._addFileChildren(CustomersCodeTicketsRouteChildren)
+
 interface CustomersCodeRouteChildren {
   CustomersCodeAmsRoute: typeof CustomersCodeAmsRouteWithChildren
   CustomersCodeCoveRoute: typeof CustomersCodeCoveRouteWithChildren
@@ -2049,6 +2163,7 @@ interface CustomersCodeRouteChildren {
   CustomersCodeEppRoute: typeof CustomersCodeEppRouteWithChildren
   CustomersCodeRmmRoute: typeof CustomersCodeRmmRouteWithChildren
   CustomersCodeSysproRoute: typeof CustomersCodeSysproRouteWithChildren
+  CustomersCodeTicketsRoute: typeof CustomersCodeTicketsRouteWithChildren
   CustomersCodeIndexRoute: typeof CustomersCodeIndexRoute
 }
 
@@ -2059,6 +2174,7 @@ const CustomersCodeRouteChildren: CustomersCodeRouteChildren = {
   CustomersCodeEppRoute: CustomersCodeEppRouteWithChildren,
   CustomersCodeRmmRoute: CustomersCodeRmmRouteWithChildren,
   CustomersCodeSysproRoute: CustomersCodeSysproRouteWithChildren,
+  CustomersCodeTicketsRoute: CustomersCodeTicketsRouteWithChildren,
   CustomersCodeIndexRoute: CustomersCodeIndexRoute,
 }
 

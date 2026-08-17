@@ -1427,7 +1427,7 @@ ORDER BY TaskGroup, OperatorCode;
 `;
 
 const TASK_ITEM_SQL = `
-SELECT TOP 200
+SELECT TOP 400
   OperatorCode, TaskGroup, Description, ProgramName, TaskType, SequenceNumber
 FROM dbo.Syspro_TaskItem
 WHERE InstanceName = @instance
@@ -1514,7 +1514,7 @@ ORDER BY
 
 
 const FACT_INCIDENTS_SQL = `
-SELECT TOP 200
+SELECT TOP 400
   CAST(IncidentId AS nvarchar(36)) AS IncidentId,
   Title, Severity, Status, Priority,
   OpenedAt, FirstResponseAt, ResolvedAt,
@@ -1527,7 +1527,7 @@ FROM dbo.vw_Ams_IncidentLive
 WHERE CustomerCode = @code
   AND (
     Status NOT IN (N'Closed', N'Cancelled')
-    OR OpenedAt >= DATEADD(DAY, -30, SYSUTCDATETIME())
+    OR OpenedAt >= DATEADD(DAY, -90, SYSUTCDATETIME())
   )
 ORDER BY
   CASE WHEN Status IN (N'Closed', N'Cancelled', N'Resolved') THEN 1 ELSE 0 END,
@@ -1536,7 +1536,7 @@ ORDER BY
 
 /* Fallback if view not deployed yet */
 const FACT_INCIDENTS_FALLBACK_SQL = `
-SELECT TOP 200
+SELECT TOP 400
   CAST(IncidentId AS nvarchar(36)) AS IncidentId,
   Title, Severity, Status, Priority,
   OpenedAt, FirstResponseAt, ResolvedAt,
@@ -1550,7 +1550,7 @@ FROM dbo.Fact_Incident
 WHERE CustomerCode = @code
   AND (
     Status NOT IN (N'Closed', N'Cancelled')
-    OR OpenedAt >= DATEADD(DAY, -30, SYSUTCDATETIME())
+    OR OpenedAt >= DATEADD(DAY, -90, SYSUTCDATETIME())
   )
 ORDER BY OpenedAt DESC;
 `;
@@ -1651,7 +1651,7 @@ ORDER BY GroupCode, OperatorCode;
 `;
 
 const OPER_AMEND_SQL = `
-SELECT TOP 200 OperatorCode, AmendDate, AmendType, Detail, ChangedBy
+SELECT TOP 400 OperatorCode, AmendDate, AmendType, Detail, ChangedBy
 FROM dbo.Syspro_OperAmend
 WHERE InstanceName = @instance
   AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Syspro_OperAmend WHERE InstanceName = @instance)
@@ -4396,7 +4396,7 @@ WHERE CustomerCode = @code`);
   )
 )`;
       const deviceSelects = [
-        `SELECT TOP 2000
+        `SELECT TOP 4000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
@@ -4406,7 +4406,7 @@ WHERE CustomerCode = @code`);
 FROM dbo.vw_Kpi_Rmm_Devices_Latest WITH (NOLOCK)
 WHERE ${rmmOwner}
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 2000
+        `SELECT TOP 4000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
@@ -4417,7 +4417,7 @@ FROM dbo.Pulseway_Devices WITH (NOLOCK)
 WHERE ${rmmOwner}
   AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 2000
+        `SELECT TOP 4000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
@@ -4427,7 +4427,7 @@ FROM dbo.Pulseway_Devices WITH (NOLOCK)
 WHERE ${rmmOwner}
   AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 2000
+        `SELECT TOP 4000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
   SnapshotDate, ImportedAt
@@ -5049,7 +5049,7 @@ WHERE d.CustomerCode = @code`);
       const alertOwner = ownerBits.join(" OR ");
 
       const alertSelects = [
-        `SELECT TOP 2000
+        `SELECT TOP 4000
   NotificationId, DeviceId, DeviceName, Severity, Title, Message, RaisedAt, IsActive
 FROM dbo.vw_Kpi_Rmm_Notifications_Latest WITH (NOLOCK)
 WHERE ${alertOwner}
@@ -5057,7 +5057,7 @@ ORDER BY
   CASE UPPER(ISNULL(Severity,N''))
     WHEN N'CRITICAL' THEN 0 WHEN N'ELEVATED' THEN 1 ELSE 2 END,
   RaisedAt DESC`,
-        `SELECT TOP 2000
+        `SELECT TOP 4000
   NotificationId, DeviceId, DeviceName, Severity, Title, Message, RaisedAt, IsActive
 FROM dbo.Pulseway_Notifications WITH (NOLOCK)
 WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Notifications WITH (NOLOCK))
@@ -5156,7 +5156,7 @@ ORDER BY
 
     try {
       const evRes = await pool.request().input("code", sql.NVarChar(50), code).query(`
-SELECT TOP 2000
+SELECT TOP 4000
   HostName, TimeCreatedUtc, LogName, EventId, LevelName, ProviderName, MessageText
 FROM dbo.Agent_EventLog WITH (NOLOCK)
 WHERE CustomerCode = @code
@@ -5266,7 +5266,7 @@ WHERE CustomerCode = @code`);
 
     try {
       const um = await pool.request().query(`
-SELECT TOP 200 PartnerName, PartnerId, DeviceCount, LastSnapshotDate
+SELECT TOP 400 PartnerName, PartnerId, DeviceCount, LastSnapshotDate
 FROM dbo.vw_Cove_UnmappedPartners WITH (NOLOCK)
 ORDER BY DeviceCount DESC`);
       cove.unmapped = (um.recordset ?? []).map((r: any) => ({
@@ -6827,6 +6827,8 @@ ORDER BY UserPrincipalName, DisplayName`);
     cspUserCount: customer.cspUserCount ?? csp?.users?.length ?? 0,
     cspLicenseCount: customer.cspLicenseSkuCount ?? csp?.licenses?.length ?? 0,
     cspMapped: customer.pillarCsp === true || Boolean(csp?.tenant),
+    ticketCount: typeof incidents !== "undefined" ? incidents.length : 0,
+    ticketsMapped: typeof incidents !== "undefined" && incidents.length > 0,
   });
   // EPP cover from devices (and explicit AmsConfig.PillarBitdefender)
   const eppCount =
@@ -7075,6 +7077,8 @@ ORDER BY UserPrincipalName, DisplayName`);
         0,
       cspUserCount: customer.cspUserCount ?? csp?.users?.length ?? 0,
       cspLicenseCount: customer.cspLicenseSkuCount ?? csp?.licenses?.length ?? 0,
+      ticketCount: typeof incidents !== "undefined" ? incidents.length : 0,
+      ticketsMapped: typeof incidents !== "undefined" && incidents.length > 0,
     });
     if (
       (epp?.devices?.length ?? 0) > 0 ||

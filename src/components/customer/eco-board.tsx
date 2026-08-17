@@ -121,11 +121,12 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { name: "Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
     { name: "RPM EPP", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft CSP", on: Boolean(cover.csp), href: `${base}/csp` },
+    { name: "Tickets", on: Boolean(cover.tickets) || tix.total > 0, href: `${base}/tickets` },
   ];
   const coverCount = serviceBars.filter((s) => s.on).length;
   const coverPie = [
     { name: "On cover", value: coverCount, fill: "#17c666" },
-    { name: "No cover", value: Math.max(0, 5 - coverCount), fill: "#5c6570" },
+    { name: "No cover", value: Math.max(0, serviceBars.length - coverCount), fill: "#5c6570" },
   ];
 
   const signalBars = [
@@ -254,7 +255,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             />
             <StatCard
               label="Services on cover"
-              value={`${coverCount}/5`}
+              value={`${coverCount}/${serviceBars.length}`}
               tone={coverCount >= 4 ? "green" : coverCount >= 2 ? "amber" : "red"}
             />
             <StatCard
@@ -444,6 +445,18 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
+        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={Boolean(cover.tickets) || tix.total > 0} data-span={4}>
+          {tix.total > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              <StatCard label="Open" value={tix.open} tone={tix.open > 0 ? "amber" : "green"} />
+              <StatCard label="Resolved" value={tix.resolved} />
+              <StatCard label="Closed" value={tix.closed} />
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted">No Freshdesk tickets mapped for this customer yet.</p>
+          )}
+        </Pane>
+
         {dtrBars.length > 0 ? (
           <Pane title="FinSight · out of balance" {...wgt("finsight")}>
             <div className="h-56">
@@ -474,7 +487,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" {...wgt("jumps")}>
           {[
-            { label: "Incidents", href: `${base}/ams/incidents`, n: tix.total, hint: `${tix.open} open · Freshdesk` },
+            { label: "Incidents", href: `${base}/tickets/open`, n: tix.total, hint: `${tix.open} open · Freshdesk` },
             { label: "Risks", href: `${base}/ams/risks`, n: openRisks.length, hint: "Open items" },
             { label: "SLA", href: `${base}/ams/sla`, n: `${score}%`, hint: "Assurance" },
             { label: "Customer Assurance", href: `${base}/ams`, n: openIssues.length, hint: "Issues" },
@@ -569,7 +582,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         <Pane title="Server patch" {...wgt("patch")}>
           {isPillarCovered(cover, "rmm") ? (
-            <SpaLink to={`${base}/rmm/patch`} className="block">
+            <SpaLink href={`${base}/rmm/patch`} className="block">
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Servers checked" value={customer.pulsewayPatchDevices ?? 0} hint="Open patch list" />
               <StatCard

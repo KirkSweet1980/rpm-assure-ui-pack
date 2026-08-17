@@ -320,7 +320,7 @@ export function TicketStrip({
 }) {
   const rows = ticketsForPillar(data.incidents, pillar);
   const s = ticketStats(rows);
-  const href = `/customers/${data.customer.customerCode}/ams/incidents`;
+  const href = `/customers/${data.customer.customerCode}/tickets`;
   return (
     <div className="rpma-glass flex flex-wrap items-center gap-3 px-3 py-2">
       <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Freshdesk tickets</p>

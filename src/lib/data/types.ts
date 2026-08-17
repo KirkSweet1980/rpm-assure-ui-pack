@@ -9,6 +9,8 @@ export type CustomerCover = {
   epp?: boolean;
   /** Microsoft CSP / 365 licensing — future collect */
   csp?: boolean;
+  /** Freshdesk customer tickets */
+  tickets?: boolean;
 };
 
 

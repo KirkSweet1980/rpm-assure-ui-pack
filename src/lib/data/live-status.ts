@@ -265,6 +265,16 @@ export function customerLiveStatus(
         ? "Microsoft 365 not on cover"
         : "Microsoft 365 posture (not scored in assurance / SLA)",
     },
+    tickets: {
+      rag: trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : extra?.incidents?.length ? "Green" : "Off",
+      cover: (extra?.incidents?.length ?? 0) > 0 || Boolean((c as { tickets?: boolean }).tickets),
+      href: trueOpenInc > 0 ? `${base}/tickets/open` : `${base}/tickets`,
+      hint: trueOpenInc
+        ? `${trueOpenInc} open ticket(s)`
+        : extra?.incidents?.length
+          ? `${extra.incidents.length} ticket(s) on feed`
+          : "No Freshdesk tickets mapped",
+    },
     ams: {
       rag: amsRag,
       cover: true,
@@ -297,6 +307,30 @@ export function customerLiveStatus(
       cover: true,
       href: `${base}/ams/sla`,
       hint: "Customer SLA clocks only — not incidents",
+    },
+    "/tickets": {
+      rag: trueOpenInc > 0 ? "Amber" : extra?.incidents?.length ? "Green" : "Off",
+      cover: (extra?.incidents?.length ?? 0) > 0,
+      href: `${base}/tickets`,
+      hint: extra?.incidents?.length ? `${extra.incidents.length} ticket(s)` : "No tickets",
+    },
+    "/tickets/open": {
+      rag: trueOpenInc > 0 ? "Amber" : "Green",
+      cover: true,
+      href: `${base}/tickets/open`,
+      hint: trueOpenInc ? `${trueOpenInc} open ticket(s)` : "No open tickets",
+    },
+    "/tickets/resolved": {
+      rag: "Green",
+      cover: true,
+      href: `${base}/tickets/resolved`,
+      hint: "Resolved tickets",
+    },
+    "/tickets/closed": {
+      rag: "Green",
+      cover: true,
+      href: `${base}/tickets/closed`,
+      hint: "Closed tickets",
     },
     "/syspro": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro`, hint: "SYSPRO overview" },
     "/syspro/dtr": {
