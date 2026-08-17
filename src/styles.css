@@ -781,27 +781,51 @@ html.dark .rpma-pane-head-row {
   background: color-mix(in srgb, var(--color-nav) 45%, #10151c);
 }
 .rpma-hud {
-  position: sticky;
+  position: fixed;
   top: var(--pc-header-height);
+  left: 0;
+  right: 0;
   z-index: 36;
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  min-height: 3rem;
+  min-height: 3.25rem;
   margin: 0;
-  padding: 8px 24px;
+  padding: 0 24px;
   border: 0;
   border-radius: 0;
   background: var(--color-nav);
   color: #e8edf3;
-  box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
+}
+.rpma-hud-spacer { height: 3.25rem; flex: 0 0 auto; }
+.rpma-hud-mid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  justify-self: center;
+  grid-column: 1 / -1;
+  pointer-events: none;
+}
+.rpma-hud-mid .rpma-hud-cell,
+.rpma-hud-mid .rpma-hud-rev { pointer-events: auto; }
+.rpma-hud-rev {
+  display: grid;
+  place-items: center;
+  width: 118px;
+  margin: -22px 0;
+  z-index: 2;
+}
+.rpma-hud-rev-svg { width: 118px !important; height: 96px !important; display: block; overflow: visible; }
+.rpma-hud-sql {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  z-index: 3;
 }
 .rpma-hud-head { display: none; }
 .rpma-hud-head h2 { display: none; }
@@ -824,7 +848,12 @@ html.dark .rpma-pane-head-row {
   text-align: center;
   border: 0;
 }
-.rpma-hud-cell:last-child { border: 0; }
+.rpma-hud-mid .rpma-hud-cell {
+  border: 1px solid color-mix(in srgb, #1bb8a6 28%, #1a3040);
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, #071018 40%, transparent);
+}
 .rpma-hud-cell > div {
   min-width: 0;
   text-align: left;
@@ -855,9 +884,11 @@ html.dark .rpma-pane-head-row {
 .rpma-hud-v.is-live { color: #17c666; }
 .rpma-hud-v.is-demo { color: #ffa21d; }
 @media (max-width: 720px) {
-  .rpma-hud { flex-direction: column; gap: 6px; padding: 8px 12px; min-height: 0; }
-  .rpma-hud-grid { gap: 10px 18px; }
-  .rpma-hud-cell { border: 0; }
+  .rpma-hud { padding: 6px 12px; }
+  .rpma-hud-mid { gap: 8px; }
+  .rpma-hud-rev { width: 86px; margin: -12px 0; }
+  .rpma-hud-rev-svg { width: 86px !important; height: 70px !important; }
+  .rpma-hud-sql { display: none; }
 }
 html[data-theme="dark"] .rpma-hud-head,
 html.dark .rpma-hud-head,

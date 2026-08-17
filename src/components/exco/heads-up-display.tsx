@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Clock, Database } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 import { HelpTip } from "@/components/ui/help-tip";
+import { RpmRevCounter } from "@/components/brand/rpm-rev-counter";
 
 const TZ = "Africa/Johannesburg";
 
@@ -87,18 +88,26 @@ export function HeadsUpDisplay({
   const sqlWhen = formatSastDateTime(generatedAt);
 
   return (
-    <section className="rpma-hud" aria-label="System clock and SQL status">
-      <div className="rpma-hud-grid">
-        <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />
-        <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} tip="Live clock in SAST. Collect age and SLA windows are measured against this." />
-        <HudCell
-          icon={Database}
-          label={sqlLabel}
-          value={sqlWhen}
-          tone={liveSql ? "live" : "demo"}
-          tip={liveSql ? "Last successful read from the central Assure SQL. Live = not demo seed." : "Showing packaged demo data. Connect SQL in Configuration to go live."}
-        />
-      </div>
-    </section>
+    <>
+      <section className="rpma-hud" aria-label="System clock and SQL status">
+        <div className="rpma-hud-mid">
+          <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />
+          <div className="rpma-hud-rev" aria-hidden={false}>
+            <RpmRevCounter className="rpma-hud-rev-svg" />
+          </div>
+          <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} tip="Live clock in SAST. Collect age and SLA windows are measured against this." />
+        </div>
+        <div className="rpma-hud-sql">
+          <HudCell
+            icon={Database}
+            label={sqlLabel}
+            value={sqlWhen}
+            tone={liveSql ? "live" : "demo"}
+            tip={liveSql ? "Last successful read from the central Assure SQL. Live = not demo seed." : "Showing packaged demo data. Connect SQL in Configuration to go live."}
+          />
+        </div>
+      </section>
+      <div className="rpma-hud-spacer" aria-hidden />
+    </>
   );
 }
