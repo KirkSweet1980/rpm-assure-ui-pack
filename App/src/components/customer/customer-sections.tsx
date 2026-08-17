@@ -3517,14 +3517,14 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
   }
   const { license, sysproVersion } = data;
   const code = data.customer.customerCode;
-  const build =
-    (sysproVersion?.buildNumber && sysproVersion.buildNumber !== "0"
+  const buildRaw =
+    (sysproVersion?.buildNumber &&
+    sysproVersion.buildNumber !== "0" &&
+    sysproVersion.buildNumber.toLowerCase() !== "n/a"
       ? sysproVersion.buildNumber
       : null) ||
     data.customer.sysproBuild ||
-    license?.productVersion ||
-    sysproVersion?.productVersion ||
-    "—";
+    null;
   const companyDbs = new Set<string>();
   for (const r of data.sqlHealthRows ?? []) {
     if (r.companyDb) companyDbs.add(r.companyDb);
@@ -3538,6 +3538,8 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
       : null) ??
     (license?.companyCount && license.companyCount > 0 ? license.companyCount : null) ??
     (companyDbs.size > 0 ? companyDbs.size : null);
+  const build = buildRaw || "—";
+  const companiesLabel = companies != null ? String(companies) : "—";
 
   return (
     <div className="space-y-3">
@@ -3548,9 +3550,23 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         <StatCard label="Product" value={license?.productName ?? sysproVersion?.productName ?? "—"} />
         <StatCard label="Version" value={license?.productVersion ?? sysproVersion?.productVersion ?? "—"} />
-        <StatCard label="Build" value={build} />
+        <StatCard
+          label="Build"
+          value={build}
+          hint={buildRaw ? undefined : "Not in last license collect — re-run SYSPRO license on the agent"}
+        />
         <StatCard label="Users" value={license?.users ?? sysproVersion?.users ?? "—"} />
-        <StatCard label="Companies" value={companies ?? "—"} />
+        <StatCard
+          label="Companies"
+          value={companiesLabel}
+          hint={
+            companies != null
+              ? companyDbs.size > 0 && !(sysproVersion?.companyCount && sysproVersion.companyCount > 0)
+                ? "From company databases on last FinSight / SQL health collect"
+                : undefined
+              : "License CompanyCount is 0 — count comes from company DBs after collect"
+          }
+        />
       </div>
       {sysproVersion || license ? (
         <Card>
@@ -3580,7 +3596,7 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
             </p>
             <p>
               <span className="text-subtle">Companies </span>
-              {companies ?? "—"}
+              {companiesLabel}
             </p>
             <p>
               <span className="text-subtle">Server </span>

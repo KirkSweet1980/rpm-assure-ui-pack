@@ -1487,11 +1487,53 @@ ORDER BY t.SortOrder;
 const LICENSE_SQL = `
 SELECT TOP 1
   ProductName, ProductVersion, LicenseType, Users, CompanyCount,
-  LicenseExpiry, CustomerName, ImportDate
+  LicenseExpiry, CustomerName, ImportDate,
+  LEFT(CONVERT(nvarchar(max), RawXml), 8000) AS RawXml
 FROM dbo.Syspro_SystemLicense
 WHERE InstanceName = @instance
 ORDER BY SnapshotDate DESC, ImportDate DESC, RowId DESC;
 `;
+
+function parseSysproLicenseXml(xml: string | null | undefined): {
+  build: string | null;
+  companies: number | null;
+  version: string | null;
+} {
+  const out = { build: null as string | null, companies: null as number | null, version: null as string | null };
+  if (!xml) return out;
+  const pick = (re: RegExp): string => {
+    const m = xml.match(re);
+    return (m?.[1] || "").trim();
+  };
+  const build =
+    pick(/<(?:BuildNumber|ProductBuild|SystemBuild|PortBuild|Build)\b[^>]*>([^<]+)/i) ||
+    pick(/\b(?:BuildNumber|ProductBuild|SystemBuild)\s*=\s*"([^"]+)"/i);
+  const version =
+    pick(/<(?:ProductVersion|Version)\b[^>]*>([^<]+)/i) ||
+    pick(/\bProductVersion\s*=\s*"([^"]+)"/i);
+  const ccRaw =
+    pick(/<(?:CompanyCount|Companies|NumberOfCompanies|LicensedCompanies)\b[^>]*>([^<]+)/i);
+  let companies: number | null = null;
+  if (/^\d+$/.test(ccRaw) && Number(ccRaw) > 0) companies = Number(ccRaw);
+  if (companies == null) {
+    const tags = xml.match(/<Company\b[^>]*(?:Code|Id|Name)\s*=/gi);
+    if (tags && tags.length > 0) companies = tags.length;
+  }
+  out.build = build || null;
+  out.version = version || null;
+  out.companies = companies;
+  return out;
+}
+
+function buildFromVersionString(pv: string | null | undefined): string | null {
+  const v = (pv || "").trim();
+  if (!v) return null;
+  const m4 = v.match(/^\d+(?:\.\d+){2,}\.(\d+)$/);
+  if (m4) return m4[1];
+  const m3 = v.match(/^\d+\.\d+\.(\d+)$/);
+  if (m3) return m3[1];
+  return null;
+}
 
 const HEALTH_SQL = `
 SELECT TOP 20
@@ -3491,18 +3533,51 @@ ORDER BY
     try {
       const lr = licRes?.recordset?.[0];
       if (lr) {
+        const xmlBits = parseSysproLicenseXml(
+          lr.RawXml != null ? String(lr.RawXml) : null,
+        );
+        const pv = (lr.ProductVersion != null ? String(lr.ProductVersion).trim() : "") || xmlBits.version || "";
+        const ccLic = lr.CompanyCount != null ? Number(lr.CompanyCount) : null;
         license = {
           productName: lr.ProductName ?? lr.CustomerName ?? "SYSPRO",
-          productVersion: lr.ProductVersion ?? null,
+          productVersion: pv || null,
           licenseType: lr.LicenseType ?? null,
           users: lr.Users != null ? Number(lr.Users) : null,
-          companyCount: lr.CompanyCount != null ? Number(lr.CompanyCount) : null,
+          companyCount:
+            ccLic && ccLic > 0 ? ccLic : xmlBits.companies,
           licenseExpiry: toIso(lr.LicenseExpiry),
           customerName: lr.CustomerName ?? null,
           importDate: toIso(lr.ImportDate),
         };
+        if (!sysproVersion) {
+          sysproVersion = {
+            productName: license.productName,
+            productVersion: license.productVersion,
+            buildNumber: xmlBits.build || buildFromVersionString(pv),
+            licenseType: license.licenseType,
+            users: license.users,
+            companyCount: license.companyCount,
+            licenseExpiry: license.licenseExpiry,
+            customerName: license.customerName,
+            serverName: instanceName ?? null,
+            importDate: license.importDate,
+          };
+        } else {
+          if (!sysproVersion.buildNumber) {
+            sysproVersion = {
+              ...sysproVersion,
+              buildNumber: xmlBits.build || buildFromVersionString(sysproVersion.productVersion || pv),
+            };
+          }
+          if (!sysproVersion.companyCount || sysproVersion.companyCount <= 0) {
+            sysproVersion = {
+              ...sysproVersion,
+              companyCount: license.companyCount ?? xmlBits.companies ?? null,
+            };
+          }
+        }
       }
-    } catch { license = null; }
+    } catch { license = license ?? null; }
 
     healthLogs = ((hlRes?.recordset ?? []) as Array<{
       RunDateTime: Date | null;
@@ -3629,44 +3704,39 @@ ORDER BY
       if (row) {
         let build = row.BuildNumber != null ? String(row.BuildNumber).trim() : "";
         const pv = row.ProductVersion != null ? String(row.ProductVersion).trim() : "";
-        if (!build && pv) {
-          const m4 = pv.match(/^\d+(?:\.\d+){2,}\.(\d+)$/);
-          const m3 = pv.match(/^\d+\.\d+\.(\d+)$/);
-          if (m4) build = m4[1];
-          else if (m3) build = m3[1];
-        }
+        if (!build) build = buildFromVersionString(pv) || "";
+        const ccRow = row.CompanyCount != null ? Number(row.CompanyCount) : null;
+        const prev = sysproVersion;
         sysproVersion = {
-          productName: row.ProductName ?? null,
-          productVersion: pv || null,
-          buildNumber: build || null,
-          licenseType: row.LicenseType ?? null,
-          users: row.Users != null ? Number(row.Users) : null,
-          companyCount: row.CompanyCount != null ? Number(row.CompanyCount) : null,
-          licenseExpiry: toIso(row.LicenseExpiry),
-          customerName: row.CustomerName ?? null,
-          serverName: row.ServerName ?? null,
-          importDate: toIso(row.ImportDate),
+          productName: row.ProductName ?? prev?.productName ?? null,
+          productVersion: pv || prev?.productVersion || null,
+          buildNumber: build || prev?.buildNumber || null,
+          licenseType: row.LicenseType ?? prev?.licenseType ?? null,
+          users: row.Users != null ? Number(row.Users) : prev?.users ?? null,
+          companyCount:
+            ccRow && ccRow > 0 ? ccRow : prev?.companyCount ?? null,
+          licenseExpiry: toIso(row.LicenseExpiry) ?? prev?.licenseExpiry ?? null,
+          customerName: row.CustomerName ?? prev?.customerName ?? null,
+          serverName: row.ServerName ?? prev?.serverName ?? instanceName ?? null,
+          importDate: toIso(row.ImportDate) ?? prev?.importDate ?? null,
         };
       }
-    } catch { sysproVersion = null; }
+    } catch { /* keep license-derived version */ }
 
     if (license && (!sysproVersion || !sysproVersion.productVersion || !sysproVersion.buildNumber)) {
       const pv = license.productVersion?.trim() || "";
-      let build = sysproVersion?.buildNumber ?? null;
-      if (!build && pv) {
-        const m4 = pv.match(/^\d+(?:\.\d+){2,}\.(\d+)$/);
-        const m3 = pv.match(/^\d+\.\d+\.(\d+)$/);
-        if (m4) build = m4[1];
-        else if (m3) build = m3[1];
-        if (!build) build = pv;
-      }
+      let build = sysproVersion?.buildNumber ?? buildFromVersionString(pv);
       sysproVersion = {
         productName: sysproVersion?.productName ?? license.productName ?? null,
         productVersion: sysproVersion?.productVersion ?? (pv || null),
         buildNumber: build,
         licenseType: sysproVersion?.licenseType ?? license.licenseType ?? null,
         users: sysproVersion?.users ?? license.users ?? null,
-        companyCount: sysproVersion?.companyCount ?? license.companyCount ?? null,
+        companyCount:
+          (sysproVersion?.companyCount && sysproVersion.companyCount > 0
+            ? sysproVersion.companyCount
+            : null) ??
+          (license.companyCount && license.companyCount > 0 ? license.companyCount : null),
         licenseExpiry: sysproVersion?.licenseExpiry ?? license.licenseExpiry ?? null,
         customerName: sysproVersion?.customerName ?? license.customerName ?? null,
         serverName: sysproVersion?.serverName ?? instanceName ?? null,
@@ -3674,8 +3744,9 @@ ORDER BY
       };
     }
 
-    if (sysproVersion && !sysproVersion.buildNumber && sysproVersion.productVersion) {
-      sysproVersion = { ...sysproVersion, buildNumber: sysproVersion.productVersion };
+    if (sysproVersion && !sysproVersion.buildNumber) {
+      const fromPv = buildFromVersionString(sysproVersion.productVersion);
+      if (fromPv) sysproVersion = { ...sysproVersion, buildNumber: fromPv };
     }
 
     const companyDbs = new Set<string>();
@@ -7406,6 +7477,26 @@ ORDER BY UserPrincipalName, DisplayName`);
     }
   } catch (e) {
     console.warn("[rpm-assure] cover score rebuild:", e instanceof Error ? e.message : e);
+  }
+
+  const companyDbSet = new Set<string>();
+  for (const r of sqlHealthRows ?? []) {
+    if (r.companyDb) companyDbSet.add(r.companyDb.trim());
+  }
+  for (const r of dtrDetailLines ?? []) {
+    if (r.companyDb) companyDbSet.add(r.companyDb.trim());
+  }
+  if (companyDbSet.size > 0 && (!sysproVersion?.companyCount || sysproVersion.companyCount <= 0)) {
+    const n = companyDbSet.size;
+    if (sysproVersion) sysproVersion = { ...sysproVersion, companyCount: n };
+    if (license) license = { ...license, companyCount: n };
+  }
+  if (sysproVersion && !sysproVersion.buildNumber) {
+    const fromHf = (sysproHotfixes ?? [])
+      .map((h) => `${h.hotfixName || ""} ${h.description || ""} ${h.hotfixCode || ""}`)
+      .join(" ");
+    const hm = fromHf.match(/\b(\d+\.\d+\.\d+(?:\.\d+)?)\b/);
+    if (hm) sysproVersion = { ...sysproVersion, buildNumber: hm[1] };
   }
 
   const payload: CustomerDetailPayload = {
