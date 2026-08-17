@@ -1,16 +1,17 @@
-# Onboard Interbrand SYSPRO: agent + collect login + Customer.Config
-# Run as Administrator on the Interbrand SYSPRO SQL host.
-# Prefers git clone / Assure download — does not require raw.githubusercontent.com.
+# Onboard Interbrand SYSPRO. Administrator on the IB SYSPRO SQL host.
+# No Git. No GitHub. Pack comes from Assure HTTPS.
+#
+#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Onboard-IB-Syspro.ps1 `
+#     -BootstrapPassword 'P@ssw0rdF0rP0$'
 
 param(
   [string]$BootstrapUser = 'SysproLoginForPos',
-  [string]$BootstrapPassword = '',
+  [string]$BootstrapPassword = 'P@ssw0rdF0rP0$',
   [string]$CollectUser = 'rpmassure',
   [string]$CollectPassword = '@ssuR3me!',
   [string]$SqlInstance = '.',
   [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
-  [string]$RepoUrl = 'https://github.com/KirkSweet1980/rpm-assure-ui-pack.git',
   [string]$Root = 'C:\RPM-Assure'
 )
 
@@ -18,60 +19,131 @@ $ErrorActionPreference = 'Stop'
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
   [Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $IsAdmin) { throw 'Run as Administrator on the Interbrand SYSPRO server.' }
-if (-not $BootstrapPassword) {
-  $sec = Read-Host 'Password for SysproLoginForPos' -AsSecureString
-  $BootstrapPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-}
+if (-not $BootstrapPassword) { throw 'BootstrapPassword for SysproLoginForPos is required.' }
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$base = $AppHttpsUrl.TrimEnd('/')
 
-function Find-Git {
-  $g = Get-Command git -ErrorAction SilentlyContinue
-  if ($g) { return $g.Source }
-  foreach ($p in @('C:\Program Files\Git\cmd\git.exe', 'C:\Program Files (x86)\Git\cmd\git.exe')) {
-    if (Test-Path $p) { return $p }
+function Get-AssureFile([string]$Name, [string]$Dest) {
+  $urls = @(
+    ($base + '/downloads/' + $Name),
+    ($base + '/api/agent/pack?name=' + [uri]::EscapeDataString($Name))
+  )
+  $last = $null
+  foreach ($u in $urls) {
+    try {
+      Write-Host ('GET ' + $u)
+      Invoke-WebRequest -UseBasicParsing -TimeoutSec 180 -Uri $u -OutFile $Dest `
+        -Headers @{ 'X-Assure-Secret' = $AgentSecret }
+      if ((Test-Path -LiteralPath $Dest) -and (Get-Item -LiteralPath $Dest).Length -gt 200) {
+        Write-Host ('OK ' + $Name + ' ' + (Get-Item -LiteralPath $Dest).Length + ' bytes')
+        return $true
+      }
+    } catch {
+      $last = $_.Exception.Message
+      Write-Host ('MISS ' + $u + ' ' + $last)
+    }
   }
-  return $null
-}
-function Install-GitIfMissing {
-  $git = Find-Git
-  if ($git) { return $git }
-  Write-Host 'Installing Git for Windows (silent)...'
-  $tmp = Join-Path $env:TEMP 'Git-64-bit.exe'
-  Invoke-WebRequest -UseBasicParsing -TimeoutSec 180 `
-    -Uri 'https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe' `
-    -OutFile $tmp
-  $p = Start-Process -FilePath $tmp -ArgumentList '/VERYSILENT','/NORESTART','/NOCANCEL','/SP-' -Wait -PassThru
-  if ($p.ExitCode -ne 0) { throw ('Git installer exit ' + $p.ExitCode) }
-  $git = Find-Git
-  if (-not $git) { throw 'Git installed but git.exe not found' }
-  return $git
+  return $false
 }
 
-$git = Install-GitIfMissing
+Write-Host '========================================'
+Write-Host ' Interbrand SYSPRO onboard'
+Write-Host '========================================'
+Write-Host ('Host     ' + $env:COMPUTERNAME)
+Write-Host ('SQL      ' + $SqlInstance + ' as ' + $BootstrapUser)
+Write-Host ('HTTPS    ' + $base)
+
 $Pack = Join-Path $Root 'deploy\ui-pack'
-New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
-if (Test-Path (Join-Path $Pack '.git')) {
-  Write-Host ('git pull ' + $Pack)
-  & $git -C $Pack -c core.longpaths=true fetch --all --prune
-  if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
-  & $git -C $Pack -c core.longpaths=true reset --hard origin/main
-  if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
-} else {
+New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy'), (Join-Path $Root 'Agent\logs') | Out-Null
+
+$zip = Join-Path $env:TEMP 'rpm-assure-agent.zip'
+$gotZip = Get-AssureFile 'rpm-assure-agent.zip' $zip
+if ($gotZip) {
   if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
-  Write-Host ('git clone ' + $RepoUrl)
-  & $git -c core.longpaths=true clone --depth 1 --branch main $RepoUrl $Pack
-  if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }
+  New-Item -ItemType Directory -Force -Path $Pack | Out-Null
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  [IO.Compression.ZipFile]::ExtractToDirectory($zip, $Pack)
+  Write-Host ('Unpacked ' + $Pack)
+} else {
+  Write-Host 'WARN agent zip not on Assure yet. SQL grant + config will still run.'
+  Write-Host '     On the app server: Publish-Agent-Pack.ps1 then re-run this script.'
 }
 
-$deploy = Join-Path $Pack 'Sql\agent\Deploy-Assure-Agent.ps1'
-if (-not (Test-Path $deploy)) { $deploy = Join-Path $Pack 'sql\agent\Deploy-Assure-Agent.ps1' }
-if (-not (Test-Path $deploy)) { throw 'Pack missing Deploy-Assure-Agent.ps1 after git clone' }
-& $deploy -CustomerCode 'IB' -RoleTags 'syspro,sql' -AgentSecret $AgentSecret -AppHttpsUrl $AppHttpsUrl -Root $Root
+$src = Join-Path $Pack 'Sql\agent'
+if (-not (Test-Path (Join-Path $src 'RpmAssure-Agent.ps1'))) { $src = Join-Path $Pack 'sql\agent' }
+$AgentRoot = Join-Path $Root 'Agent'
+$SqlRoot = Join-Path $Root 'Sql'
+if (Test-Path (Join-Path $src 'RpmAssure-Agent.ps1')) {
+  New-Item -ItemType Directory -Force -Path $AgentRoot, (Join-Path $SqlRoot 'agent') | Out-Null
+  robocopy $src (Join-Path $SqlRoot 'agent') /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  robocopy $src $AgentRoot /E /XO /R:1 /W:1 /XF Agent.Config.ps1 Agent.Settings.json Agent.Secrets.bin status.json request-sync.flag /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  $baseSrc = Join-Path $Pack 'Sql\base\syspro-direct'
+  if (-not (Test-Path $baseSrc)) { $baseSrc = Join-Path $Pack 'sql\base\syspro-direct' }
+  if (Test-Path $baseSrc) {
+    $baseDest = Join-Path $SqlRoot 'base\syspro-direct'
+    New-Item -ItemType Directory -Force -Path $baseDest | Out-Null
+    robocopy $baseSrc $baseDest /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+  }
+  $cfgPath = Join-Path $AgentRoot 'Agent.Config.ps1'
+  if (-not (Test-Path $cfgPath)) {
+    @(
+      '# Interbrand agent. Passwords are not stored here.',
+      "`$CustomerCode = 'IB'",
+      "`$DisplayName = 'Interbrand'",
+      ("`$InstanceName = '" + $env:COMPUTERNAME + "'"),
+      "`$RoleTags = 'syspro,sql'",
+      "`$CentralDataSource = '102.222.21.220,14333'",
+      "`$CentralDatabase = 'RPMAssure_App'",
+      "`$CentralSqlUser = 'rpmassure'",
+      ("`$SqlRoot = '" + $SqlRoot + "'"),
+      ("`$AgentRoot = '" + $AgentRoot + "'"),
+      ("`$LogDir = '" + (Join-Path $AgentRoot 'logs') + "'")
+    ) | Set-Content -LiteralPath $cfgPath -Encoding ASCII
+  }
+  $setPath = Join-Path $AgentRoot 'Agent.Settings.json'
+  [ordered]@{
+    collectIntervalMin = 2
+    jobsIntervalMin    = 1440
+    tickSeconds        = 120
+    centralDataSource  = '102.222.21.220,14333'
+    centralDatabase    = 'RPMAssure_App'
+    centralSqlUser     = 'rpmassure'
+    encryptSql         = $true
+    trustSqlCert       = $true
+    appHttpsUrl        = $AppHttpsUrl
+    agentSecret        = $AgentSecret
+  } | ConvertTo-Json | Set-Content -LiteralPath $setPath -Encoding UTF8
+
+  $lib = Join-Path $AgentRoot 'Lib-SecureConfig.ps1'
+  if (Test-Path $lib) {
+    . $lib
+    $script:RpmaAgentRoot = $AgentRoot
+    if (-not (Test-Path (Get-RpmaSecretsPath))) {
+      $bytes = New-Object byte[] 18
+      [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+      $adminPw = [Convert]::ToBase64String($bytes)
+      Initialize-RpmaSecureStore -AdminPassword $adminPw -CentralSqlPassword $CollectPassword `
+        -LocalSqlPassword $CollectPassword -CentralDataSource '102.222.21.220,14333' `
+        -CentralDatabase 'RPMAssure_App' -CentralSqlUser 'rpmassure'
+    }
+    Protect-RpmaFolder
+  }
+
+  $install = Join-Path $AgentRoot 'Install-Agent-Service.ps1'
+  if (Test-Path $install) {
+    Write-Host 'Installing RPMAssure-Edge...'
+    & $install -AgentRoot $AgentRoot -SqlRoot $SqlRoot
+  }
+} else {
+  Write-Host 'Agent files not in pack - skip service install this pass.'
+}
 
 $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
-if (-not (Test-Path $sqlcmd)) { $sqlcmd = 'sqlcmd' }
+if (-not (Test-Path $sqlcmd)) {
+  $gc = Get-Command sqlcmd -ErrorAction SilentlyContinue
+  if ($gc) { $sqlcmd = $gc.Source } else { throw 'sqlcmd not found on this host.' }
+}
 
 $grantSql = @"
 SET NOCOUNT ON;
@@ -101,15 +173,18 @@ SELECT name FROM sys.databases WHERE state = 0 AND name LIKE N'SysproCompany%' O
 "@
 $grantFile = Join-Path $env:TEMP 'ib-grant-rpmassure.sql'
 [IO.File]::WriteAllText($grantFile, $grantSql)
-Write-Host "Creating $CollectUser on $SqlInstance using $BootstrapUser ..."
+Write-Host ("Creating $CollectUser on $SqlInstance using $BootstrapUser ...")
 & $sqlcmd -S $SqlInstance -U $BootstrapUser -P $BootstrapPassword -C -b -i $grantFile
-if ($LASTEXITCODE -ne 0) { throw "sqlcmd grant failed $LASTEXITCODE - check instance and SysproLoginForPos rights (needs CREATE LOGIN / user)." }
+if ($LASTEXITCODE -ne 0) {
+  throw "sqlcmd grant failed $LASTEXITCODE. SysproLoginForPos needs CREATE LOGIN / user on this instance."
+}
 
 $custDir = Join-Path $Root 'Sql\customers\IB'
 New-Item -ItemType Directory -Force -Path $custDir, (Join-Path $custDir 'logs') | Out-Null
-$packCust = Join-Path $Pack 'Sql\customers\IB'
-if (-not (Test-Path $packCust)) { $packCust = Join-Path $Pack 'sql\customers\IB' }
-if (Test-Path $packCust) { Copy-Item -Force (Join-Path $packCust '*') $custDir -Exclude 'logs' }
+foreach ($rel in @('Sql\customers\IB', 'sql\customers\IB')) {
+  $packCust = Join-Path $Pack $rel
+  if (Test-Path $packCust) { Copy-Item -Force (Join-Path $packCust '*') $custDir -Exclude 'logs' }
+}
 
 $dbsTxt = & $sqlcmd -S $SqlInstance -U $CollectUser -P $CollectPassword -C -h -1 -W -Q "SET NOCOUNT ON; SELECT name FROM sys.databases WHERE state=0 AND name LIKE 'SysproCompany%' ORDER BY 1;"
 $cos = @()
@@ -127,7 +202,7 @@ $cfg = @"
 `$LocalSqlUser = '$CollectUser'
 `$LocalSqlPassword = '$CollectPassword'
 `$CentralSqlUser = 'rpmassure'
-`$CentralSqlPassword = '@ssuR3me!'
+`$CentralSqlPassword = '$CollectPassword'
 `$CentralDataSource = '102.222.21.220,14333'
 `$CentralDatabase = 'RPMAssure_App'
 `$CollectDir = '$custDir'
@@ -135,19 +210,33 @@ $cfg = @"
 `$CompanyDatabases = @($cosLit)
 "@
 [IO.File]::WriteAllText((Join-Path $custDir 'Customer.Config.ps1'), $cfg)
-Write-Host ("Wrote Customer.Config company DBs: " + ($cos -join ', '))
+Write-Host ('Wrote Customer.Config company DBs: ' + ($(if ($cos.Count) { $cos -join ', ' } else { '(none)' })))
 
+$collect = Join-Path $Root 'Sql\base\syspro-direct\Run-Syspro-Collect-Direct.ps1'
 $native = Join-Path $Root 'Sql\base\syspro-direct\Collect-Dtr-Native-Fallback.ps1'
-if (Test-Path $native) {
+$config = Join-Path $custDir 'Customer.Config.ps1'
+if (Test-Path $collect) {
+  Write-Host 'First SYSPRO direct collect...'
+  & $collect -ConfigPath $config
+} elseif (Test-Path $native) {
   Write-Host 'First SYSPRO native collect...'
-  & $native -ConfigPath (Join-Path $custDir 'Customer.Config.ps1')
+  & $native -ConfigPath $config
+} else {
+  Write-Host 'WARN collect scripts not on disk yet. Re-run after the zip is published.'
+}
+
+if (Test-Path (Join-Path $AgentRoot 'RpmAssure-Agent.ps1')) {
+  Write-Host 'First HTTPS heartbeat...'
+  $env:RPM_ASSURE_IOPS_SECRET = $AgentSecret
+  $env:RPM_ASSURE_AGENT_SECRET = $AgentSecret
+  & (Join-Path $AgentRoot 'RpmAssure-Agent.ps1') -AgentRoot $AgentRoot -HeartbeatOnly
 }
 
 Write-Host '========================================'
 Write-Host ' IB SYSPRO ONBOARD COMPLETE'
-Write-Host (" Host     " + $env:COMPUTERNAME)
-Write-Host (" Collect  " + $CollectUser)
-Write-Host (" DBs      " + ($(if ($cos.Count) { $cos -join ', ' } else { '(none yet)' })))
-Write-Host ' On central: run 519_Enable_IB_Syspro_Cover.sql'
+Write-Host (' Host     ' + $env:COMPUTERNAME)
+Write-Host (' Collect  ' + $CollectUser)
+Write-Host (' DBs      ' + ($(if ($cos.Count) { $cos -join ', ' } else { '(none yet)' })))
+Write-Host ' Next     Hard-refresh Assure > Interbrand > SYSPRO'
 Write-Host '========================================'
 Get-Service RPMAssure-Edge -ErrorAction SilentlyContinue | Format-Table Name, Status -AutoSize
