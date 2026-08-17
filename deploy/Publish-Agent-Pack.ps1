@@ -43,7 +43,10 @@ function Copy-ShareRead([string]$From, [string]$To) {
 foreach ($pair in @(
     @('Sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
     @('sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
-    @('Sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1'),
+    @('Sql\agent\Update-From-Https.ps1', 'Update-From-Https.ps1'),
+    @('sql\agent\Update-From-Https.ps1', 'Update-From-Https.ps1'),
+    @('Sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
+    @('sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
     @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1')
   )) {
   $src = Join-Path $Pack $pair[0]

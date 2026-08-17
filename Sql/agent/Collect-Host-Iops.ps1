@@ -138,15 +138,16 @@ try {
   $src = $packAgent
   if (Test-Path (Join-Path $AgentRoot "_next\RpmAssure-Agent.ps1")) { $src = Join-Path $AgentRoot "_next" }
   if ($want -and $have -and $want -ne $have -and (Test-Path (Join-Path $src "RpmAssure-Agent.ps1"))) {
-    W ("APPLY pack $want over running $have from $src (delayed)")
-    $bat = Join-Path $env:TEMP "rpma-apply-agent.cmd"
-    @(
-      "@echo off",
-      "timeout /t 12 /nobreak >nul",
-      ("robocopy `"" + $src + "`" `"" + $AgentRoot + "`" /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json status.json request-sync.flag /XD logs _next /R:2 /W:2"),
-      ("findstr AgentVersion `"" + $AgentRoot + "\RpmAssure-Agent.ps1`"")
-    ) | Set-Content -LiteralPath $bat -Encoding ASCII
-    Start-Process -FilePath $env:ComSpec -ArgumentList @("/c", $bat) -WindowStyle Hidden | Out-Null
+    W ("APPLY pack $want over running $have from $src (staged, no hidden cmd)")
+    $stage = Join-Path $AgentRoot "_next"
+    New-Item -ItemType Directory -Force -Path $stage | Out-Null
+    robocopy $src $stage /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json /XD logs _next /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+    $applySrc = Join-Path $src "Apply-Staged-Pack.ps1"
+    $apply = Join-Path $AgentRoot "Apply-Staged-Pack.ps1"
+    if (Test-Path $applySrc) { Copy-Item -Force $applySrc $apply }
+    if (Test-Path $apply) {
+      schtasks /Create /TN "RPMAssure-ApplyPack" /SC MINUTE /MO 1 /RU SYSTEM /RL HIGHEST /F /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$apply`"" | Out-Null
+    }
   }
 } catch { W ("WARN apply-bridge " + $_.Exception.Message) }
 

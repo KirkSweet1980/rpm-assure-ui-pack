@@ -8,6 +8,8 @@ const ALLOW = new Set([
   "Deploy-Assure-Agent.ps1",
   "Onboard-IB-Syspro.ps1",
   "Pulseway-Collect-DiskIops.ps1",
+  "Update-From-Https.ps1",
+  "Apply-Staged-Pack.ps1",
   "RPM-Exco-Brief.html",
 ]);
 
@@ -46,7 +48,7 @@ export const Route = createFileRoute("/downloads/$")({
           }
         }
         if (name === "VERSION") {
-          return new Response("2.8.2\n", {
+          return new Response("2.8.5\n", {
             status: 200,
             headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
           });

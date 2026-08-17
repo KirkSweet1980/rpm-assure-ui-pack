@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.8.4"
+$AgentVersion = "2.8.5"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -437,13 +437,28 @@ WHERE HostName = $(Sql-Lit $HostName)
     W "pack fetch HTTPS (needUp=$needUp fetchDue=$fetchDue)"
     try {
       [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-      $zip = Join-Path $env:TEMP "rpm-assure-agent.zip"
-      Invoke-WebRequest -UseBasicParsing -TimeoutSec 180 -Uri ($httpsBase.TrimEnd('/') + "/downloads/rpm-assure-agent.zip") -OutFile $zip
+      $dlDir = "C:\RPM-Assure\downloads"
+      New-Item -ItemType Directory -Force -Path $dlDir | Out-Null
+      $zip = Join-Path $dlDir "rpm-assure-agent.zip"
+      $uri = $httpsBase.TrimEnd('/') + "/downloads/rpm-assure-agent.zip"
+      $got = $false
+      if (Get-Command Start-BitsTransfer -EA SilentlyContinue) {
+        try { Start-BitsTransfer -Source $uri -Destination $zip -ErrorAction Stop; $got = $true } catch { W ("WARN BITS " + $_.Exception.Message) }
+      }
+      if (-not $got) {
+        $wc = New-Object Net.WebClient
+        $wc.DownloadFile($uri, $zip)
+        $got = $true
+      }
       if ((Test-Path $zip) -and (Get-Item $zip).Length -gt 1000) {
-        if (Test-Path $pack) { Remove-Item $pack -Recurse -Force }
+        Get-ChildItem $pack -Force -EA SilentlyContinue | Where-Object { $_.Name -ne ".git" } | Remove-Item -Recurse -Force -EA SilentlyContinue
         New-Item -ItemType Directory -Force -Path $pack | Out-Null
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        [IO.Compression.ZipFile]::ExtractToDirectory($zip, $pack)
+        $tar = Join-Path $env:SystemRoot "System32\tar.exe"
+        if (Test-Path $tar) { & $tar -xf $zip -C $pack }
+        else {
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [IO.Compression.ZipFile]::ExtractToDirectory($zip, $pack)
+        }
         [IO.File]::WriteAllText($fetchStamp, (Get-Date).ToUniversalTime().ToString("o"))
         W "pack fetch HTTPS ok"
       } else {
@@ -483,17 +498,15 @@ WHERE HostName = $(Sql-Lit $HostName);
         New-Item -ItemType Directory -Force -Path $sysTo | Out-Null
         robocopy $sysFrom $sysTo "Collect-Dtr-Native-Fallback.ps1" "Lib-Sqlcmd.ps1" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
       }
-      # Running .ps1 files are locked by this cycle + the service loop. Copy after we exit.
-      $bat = Join-Path $env:TEMP "rpma-apply-agent.cmd"
-      $lines = @(
-        "@echo off",
-        "timeout /t 10 /nobreak >nul",
-        ("robocopy `"" + $stage + "`" `"" + $AgentRoot + "`" /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json status.json request-sync.flag /XD logs _next /NFL /NDL /NJH /NJS /nc /ns /np"),
-        ("if exist `"" + $AgentRoot + "\VERSION`" type `"" + $AgentRoot + "\VERSION`"")
-      )
-      [IO.File]::WriteAllLines($bat, $lines)
-      Start-Process -FilePath $env:ComSpec -ArgumentList @("/c", $bat) -WindowStyle Hidden | Out-Null
-      W "UPDATE staged - apply in 10s after this cycle exits"
+      robocopy $from $AgentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json status.json request-sync.flag RpmAssure-Agent.ps1 RpmAssure-Agent-Loop.ps1 /XD logs _next /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+      $apply = Join-Path $AgentRoot "Apply-Staged-Pack.ps1"
+      if (-not (Test-Path $apply)) { Copy-Item -Force (Join-Path $from "Apply-Staged-Pack.ps1") $apply -EA SilentlyContinue }
+      if (Test-Path $apply) {
+        schtasks /Create /TN "RPMAssure-ApplyPack" /SC MINUTE /MO 1 /RU SYSTEM /RL HIGHEST /F /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$apply`"" | Out-Null
+        W "UPDATE staged - RPMAssure-ApplyPack will copy after this cycle (no hidden cmd)"
+      } else {
+        W "WARN Apply-Staged-Pack.ps1 missing"
+      }
       $applied = $true
     }
     if (-not $applied) {
