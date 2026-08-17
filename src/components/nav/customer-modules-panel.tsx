@@ -228,7 +228,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
           <h2>RPM Services</h2>
-          <HelpTip text="Outline chip = Cover or No RPM Cloud Backupr (scope). Robot visor = live RAG for that service. Green clear, amber watch, red breach. Grey robot = not scored because No RPM Cloud Backupr." />
+          <HelpTip text="Outline chip = Cover or No Cover (scope). Robot visor = live RAG for that service. Green clear, amber watch, red breach. Grey robot = not scored because No Cover." />
         </div>
         <div className="rpma-svc-static" role="navigation" aria-label="RPM Services">
           {CUSTOMER_PILLARS.map((p) => {

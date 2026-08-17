@@ -5,7 +5,7 @@ import { NO_COVER } from "@/lib/data/cover";
 /** Estate / customer "not in scope" label */
 export function NoCover({
   className,
-  title = "No RPM Cloud Backupr — this service is not in scope for this customer",
+  title = "No Cover — this service is not in scope for this customer",
   text,
 }: {
   className?: string;

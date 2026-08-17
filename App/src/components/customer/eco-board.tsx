@@ -264,7 +264,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           </div>
         </div>
 
-        <Pane title="Service cover" tip="Green chip = live collect in scope. Grey = No RPM Cloud Backupr (not scored)." {...wgt("cover")}>
+        <Pane title="Service cover" tip="Green chip = live collect in scope. Grey = No Cover (not scored)." {...wgt("cover")}>
           <div className="flex flex-wrap gap-1.5">
             {serviceBars.map((s) => (
               <SpaLink

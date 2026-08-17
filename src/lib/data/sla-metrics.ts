@@ -306,19 +306,19 @@ export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
     "Force majeure, client-caused issues, power or ISP failures outside RPM control.",
     "Third-party cloud platform outages.",
     "Workstations are excluded from the uptime commitment.",
-    "No RPM Cloud Backupr for Devices: 0 servers or 0 workstations are not scored in SLA.",
+    "No Cover for Devices: 0 servers or 0 workstations are not scored in SLA.",
   ],
   cove: [
     "Long-term offline devices, full disks, and application locks not remediated by the client.",
     "Extreme bandwidth constraints outside RPM control.",
     "A job that fails then succeeds inside the RPO window is still compliant.",
-    "No RPM Cloud Backupr for Devices: customers with 0 backup devices are not scored in SLA.",
+    "No Cover for Devices: customers with 0 backup devices are not scored in SLA.",
   ],
   epp: [
     "Detection-efficacy percentages are not contractual (threat novelty).",
     "Unmanaged devices the client has not approved for deployment.",
     "Endpoints offline longer than the update window are excluded from update compliance.",
-    "No RPM Cloud Backupr for Devices: 0 endpoints are not scored in SLA.",
+    "No Cover for Devices: 0 endpoints are not scored in SLA.",
   ],
 };
 

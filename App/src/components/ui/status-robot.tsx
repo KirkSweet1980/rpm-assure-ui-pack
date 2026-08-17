@@ -5,7 +5,7 @@ const STATE_COPY: Record<"green" | "amber" | "red" | "off", string> = {
   green: "Live Green — service is clear on the latest collect.",
   amber: "Live Amber — watch item. Click to open the issue.",
   red: "Live Red — breach or critical. Click to open the issue.",
-  off: "No live status — service is No RPM Cloud Backupr, so it is not scored.",
+  off: "No live status — service is No Cover, so it is not scored.",
 };
 
 /** Compact robot glyph — visor is live RAG. Not used for Cover. */
@@ -48,7 +48,7 @@ export function StatusRobot({
 export function CoverTag({
   on,
   coverOn = "Cover",
-  noCover = "No RPM Cloud Backupr",
+  noCover = "No Cover",
 }: {
   on: boolean;
   coverOn?: string;

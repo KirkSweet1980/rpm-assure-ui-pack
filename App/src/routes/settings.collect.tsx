@@ -187,7 +187,7 @@ function CollectInventoryPage() {
                     </td>
                     <td className="px-4 py-2.5">
                       {!row.sysproCovered ? (
-                        <span className="text-muted">No RPM Cloud Backupr</span>
+                        <span className="text-muted">No Cover</span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5">
                           <span className={cn("font-semibold", ragClass(row.healthRag))}>{row.healthRag}</span>

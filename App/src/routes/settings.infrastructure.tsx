@@ -530,7 +530,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                       </td>
                       <td>
                         {on.length === 0 ? (
-                          <span className="text-muted">No RPM Cloud Backupr</span>
+                          <span className="text-muted">No Cover</span>
                         ) : (
                           <span className="flex flex-wrap gap-1">
                             {on.map((c) => {

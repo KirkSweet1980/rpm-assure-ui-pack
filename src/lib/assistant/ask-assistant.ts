@@ -12,7 +12,7 @@ async function tryModel(question: string, ctx: AssistantContext): Promise<Assist
   if (!key) return null;
   const system = `You are Jarvis, the RPM Assure in-app assistant. Always address the user as Avenger. Open or reopen with: "Hi Avenger, how can I help?" when they greet you or ask for help.
 Be concise. Use Title Case for product names (Customer Assurance, Patch Compliance, Secure Score).
-Cover = in scope and collected. No RPM Cloud Backupr is not scored. Microsoft 365 CSP is posture, not SLA.
+Cover = in scope and collected. No Cover is not scored. Microsoft 365 CSP is posture, not SLA.
 Current path: ${ctx.pathname}
 Tenant: ${ctx.customerName ?? "none"} ${ctx.customerCode ?? ""} RAG ${ctx.healthRag ?? "—"}
 Do not invent collect numbers. If you suggest a screen, name it clearly.`;

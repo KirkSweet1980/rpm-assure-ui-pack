@@ -551,7 +551,7 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="SYSPRO Deployment"
-        hint="No cover — no SYSPRO data for this customer (no instance map / operators / collect). Deferred customers stay No RPM Cloud Backupr until enabled."
+        hint="No cover — no SYSPRO data for this customer (no instance map / operators / collect). Deferred customers stay No Cover until enabled."
       />
     );
   }
@@ -4465,7 +4465,7 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
                 {p.label}
                 {!p.covered ? (
                   <Badge variant="amber" className="ml-2">
-                    No RPM Cloud Backupr
+                    No Cover
                   </Badge>
                 ) : null}
               </CardHead>

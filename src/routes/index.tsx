@@ -1190,7 +1190,7 @@ function ExcoInsightPage() {
           </section>
 
           <section className={cn("rpma-pane is-tile", coverStats.n && (coverStats.syspro + coverStats.rmm + coverStats.cove + coverStats.epp + coverStats.csp) / (coverStats.n * 5) < 0.4 ? "is-amber" : "is-green")} id="exco-cover" {...wgt("cover")}>
-              <PaneHead tip="Scope only — not live health. Chip on the tenant rail is Cover / No RPM Cloud Backupr. This tile lights amber if estate cover is thin.">
+              <PaneHead tip="Scope only — not live health. Chip on the tenant rail is Cover / No Cover. This tile lights amber if estate cover is thin.">
                 Services On Cover
               </PaneHead>
               <ul className="rpma-pane-body space-y-2">

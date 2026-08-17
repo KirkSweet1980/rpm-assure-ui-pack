@@ -209,7 +209,7 @@ export type UiLabelsConfig = {
   assurePackShort: string;
   /** Exco Insight default title (dashboard.estateTitle can override) */
   excoTitle: string;
-  /** Cover "No RPM Cloud Backupr" chip text */
+  /** Cover "No Cover" chip text */
   noCover: string;
   coverOn: string;
 };
@@ -234,7 +234,7 @@ export const DEFAULT_UI_LABELS: UiLabelsConfig = {
   assurePack: "Customer Assurance",
   assurePackShort: "Assurance",
   excoTitle: "Customer Eco-System",
-  noCover: "No RPM Cloud Backupr",
+  noCover: "No Cover",
   coverOn: "Covered",
 };
 
@@ -248,7 +248,7 @@ export const UI_LABEL_FIELDS: {
   { key: "productName", label: "Product Name", help: "Shown in About and browser chrome.", group: "Brand" },
   { key: "excoTitle", label: "Main Page Title", help: "Default heading on Customer Eco-System.", group: "Brand" },
   { key: "servicesOnCover", label: "Services Heading", help: "Heading above customer service modules.", group: "Brand" },
-  { key: "noCover", label: "No RPM Cloud Backupr Text", help: "Status when a service has no mapped data.", group: "Brand" },
+  { key: "noCover", label: "No Cover Text", help: "Status when a service has no mapped data.", group: "Brand" },
   { key: "coverOn", label: "Cover Text", help: "Status when a service is in scope.", group: "Brand" },
   { key: "ecosystem", label: "Customer Eco-System", help: "Customer landing page and first service.", group: "Customer Services" },
   { key: "ecosystemShort", label: "Customer Eco-System (Short)", help: "Compact nav on narrow screens.", group: "Customer Services" },
