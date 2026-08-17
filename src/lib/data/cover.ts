@@ -3,12 +3,10 @@
  * Legs: SYSPRO · RMM (Pulseway) · Cloud Backup (Cove) · EPP · M365.
  *
  * ONE RULE for list, rail, modules, reports, and Exco:
- *   live warehouse rows (devices / seats / SYSPRO evidence or mapped instance)
- *     → Covered (green)
- *   map-only or a pillar flag with zero rows → No Cover
- * Exceptions:
- *   SYSPRO: PillarSyspro = false is a hard deferred off.
- *   A mapped SqlInstanceName is SYSPRO evidence (collect can land).
+ *   live warehouse rows OR an active vendor map (partner / org / tenant)
+ *     → Covered
+ *   AmsConfig pillar = false is a hard off.
+ *   SYSPRO: mapped SqlInstanceName or live collect is evidence.
  *   M365 (CSP) is visibility only — not scored in assurance / SLA.
  *
  * Uncovered legs stay in the menu and show "No Cover". They do not drive estate health / SLA.
@@ -45,12 +43,14 @@ function firstPositive(
   return 0;
 }
 
-/** Vendor pillars: live rows only. A flag or map cannot invent cover. */
+/** Vendor pillars: live rows or an active map. Flag false is a hard off. */
 function resolveVendor(
   evidence: boolean,
-  _flag: boolean | null | undefined,
+  mapped: boolean | null | undefined,
+  flag: boolean | null | undefined,
 ): boolean {
-  return evidence;
+  if (flag === false) return false;
+  return evidence || mapped === true;
 }
 
 export type CoverInput = {
@@ -106,10 +106,10 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
 
   return {
     syspro: input.pillarSyspro === false ? false : sysproEvidence || input.pillarSyspro === true,
-    rmm: resolveVendor(rmmEvidence, input.pillarPulseway),
-    cove: resolveVendor(coveEvidence, input.pillarCove),
-    epp: eppEvidence,
-    csp: resolveVendor(cspEvidence, input.pillarCsp),
+    rmm: resolveVendor(rmmEvidence, input.pulsewayMapped, input.pillarPulseway),
+    cove: resolveVendor(coveEvidence, input.coveMapped, input.pillarCove),
+    epp: resolveVendor(eppEvidence, input.eppMapped, input.pillarEpp),
+    csp: resolveVendor(cspEvidence, input.cspMapped, input.pillarCsp),
   };
 }
 
@@ -258,7 +258,7 @@ export function coverFromDetail(data: {
     coveMapped: Boolean(c?.coveMapped) || (data.cove?.mapping?.length ?? 0) > 0,
     covePartnerName: c?.covePartnerName,
     eppDeviceCount: eppCount,
-    eppMapped: false,
+    eppMapped: Boolean(c?.eppMapped) || (data.epp?.devices?.length ?? 0) > 0,
     cspUserCount: cspUsers,
     cspLicenseCount: data.csp?.licenses?.length ?? c?.cspLicenseSkuCount ?? c?.cspLicenseCount ?? 0,
     cspMapped: Boolean(c?.cspMapped) || data.csp?.enabled === true,

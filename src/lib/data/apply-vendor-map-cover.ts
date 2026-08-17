@@ -1,6 +1,6 @@
 /**
- * After live SQL load: vendor maps never invent cover.
- * Cover = live rows only (same as cover.ts). Maps stay for join/ownership.
+ * After live SQL load: stamp map flags, then infer cover.
+ * Cover = live rows OR an active vendor map (same as cover.ts).
  */
 import { getPool } from "./sql-pool";
 import { coverFromDetail, coverFromRow, type CustomerCover } from "./cover";

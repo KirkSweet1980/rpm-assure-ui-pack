@@ -92,6 +92,17 @@ if (Test-Path $restamp) {
   if ($LASTEXITCODE -eq 0) { W Green 'Cove/EPP restamp OK' } else { W Yellow 'Cove/EPP restamp warned - UI will still try a live restamp.' }
 }
 
+$bhfCove = Join-Path $PSScriptRoot '..\cove\443_BHF_Cove_Restamp.sql'
+if (-not (Test-Path $bhfCove)) { $bhfCove = 'C:\RPM-Assure\Sql\cove\443_BHF_Cove_Restamp.sql' }
+if (Test-Path $bhfCove) {
+  W Cyan '--- BHF Cove map + restamp ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $bhfCove @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'BHF Cove restamp OK' } else { W Yellow 'BHF Cove restamp warned.' }
+}
+
 $coveRights = Join-Path $PSScriptRoot '..\cove\442_Cove_Collect_Rights.sql'
 if (-not (Test-Path $coveRights)) { $coveRights = 'C:\RPM-Assure\Sql\cove\442_Cove_Collect_Rights.sql' }
 if (Test-Path $coveRights) {

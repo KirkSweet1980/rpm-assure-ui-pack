@@ -208,7 +208,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   }
 
   const ragTone =
-    customer.healthRag === "Green" ? "green" : customer.healthRag === "Red" ? "red" : "amber";
+    tenantRag === "Green" ? "green" : tenantRag === "Red" ? "red" : "amber";
 
   return (
     <div className="rpma-eco-visuals space-y-3">
