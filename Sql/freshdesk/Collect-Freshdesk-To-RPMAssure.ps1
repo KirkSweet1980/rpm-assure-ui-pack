@@ -140,42 +140,54 @@ function Add-Tickets($items, [string]$src) {
   if ($n -gt 0) { Write-Log ('add ' + $src + ' +' + $n + ' total=' + $all.Count) }
 }
 
-# 1) Recent list (last ~30 days, default view) — extra safety net
+# 1) List pages + all_tickets + updated_since (desc). company_id search is NOT valid on this plan.
+try {
+  $page = 1
+  $sinceIso = [uri]::EscapeDataString($since.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"))
+  do {
+    $batch = @(Invoke-FdGet ("tickets?per_page=100&page=$page&order_by=updated_at&order_type=desc&updated_since=$sinceIso"))
+    if ($batch.Count -eq 0) { break }
+    Add-Tickets $batch ('list-since page=' + $page)
+    $page++
+    Start-Sleep -Milliseconds 200
+  } while ($page -le 50 -and $batch.Count -eq 100)
+} catch {
+  Write-Log ('list-since warn ' + $_.Exception.Message)
+}
 try {
   $page = 1
   do {
-    $batch = @(Invoke-FdGet ("tickets?per_page=100&page=$page&order_by=updated_at&order_type=desc"))
+    $batch = @(Invoke-FdGet ("tickets?per_page=100&page=$page&order_by=updated_at&order_type=desc&filter=all_tickets"))
     if ($batch.Count -eq 0) { break }
-    Add-Tickets $batch ('list page=' + $page)
+    Add-Tickets $batch ('list-all page=' + $page)
     $page++
     Start-Sleep -Milliseconds 200
-  } while ($page -le 10 -and $batch.Count -eq 100)
+  } while ($page -le 20 -and $batch.Count -eq 100)
 } catch {
-  Write-Log ('list tickets warn ' + $_.Exception.Message)
+  Write-Log ('list-all warn ' + $_.Exception.Message)
 }
 
-# 2) Search per mapped company (this is the real pull — list API is scoped)
-$idsTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT DISTINCT CompanyId, CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 AND CompanyId IS NOT NULL;"
+# 2) Search by company NAME (company_id is invalid_field on this account)
+$namesTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT CompanyName, CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 AND CompanyName IS NOT NULL;"
 $maps = @()
-foreach ($line in @($idsTxt)) {
+foreach ($line in @($namesTxt)) {
   if ([string]::IsNullOrWhiteSpace($line)) { continue }
   $p = $line.Split('|')
   if ($p.Length -lt 2) { continue }
-  $id = $p[0].Trim(); $code = $p[1].Trim()
-  if ($id -match '^\d+$') { $maps += [pscustomobject]@{ Id = $id; Code = $code } }
+  $nm = $p[0].Trim(); $code = $p[1].Trim()
+  if ($nm) { $maps += [pscustomobject]@{ Name = $nm; Code = $code } }
 }
-Write-Log ('mapped companies with id=' + $maps.Count)
+Write-Log ('mapped company names=' + $maps.Count)
 
 foreach ($m in $maps) {
-  # Same quoting style as the working scan: query="company_id:123"
   $page = 1
   do {
-    $q = '"company_id:' + $m.Id + '"'
+    $q = '"' + ("company:'{0}'" -f $m.Name) + '"'
     $url = "https://$FreshdeskDomain/api/v2/search/tickets?page=$page&query=" + [uri]::EscapeDataString($q)
     try {
       $sr = Invoke-FdGet $url
     } catch {
-      Write-Log ('search fail ' + $m.Code + ' page=' + $page + ' ' + $_.Exception.Message)
+      Write-Log ('search fail ' + $m.Code + ' "' + $m.Name + '" p' + $page + ' ' + $_.Exception.Message)
       break
     }
     $rows = @()
@@ -188,7 +200,7 @@ foreach ($m in $maps) {
       if ($u -and $u -lt $since) { continue }
       $keep += $t
     }
-    Add-Tickets $keep ('search ' + $m.Code + ' p' + $page + ' apiTotal=' + $sr.total + ' inWindow=' + $keep.Count)
+    Add-Tickets $keep ('search ' + $m.Code + ' "' + $m.Name + '" p' + $page + ' apiTotal=' + $sr.total)
     $page++
     Start-Sleep -Milliseconds 300
   } while ($page -le 10 -and $rows.Count -ge 30)
