@@ -1505,11 +1505,23 @@ function parseSysproLicenseXml(xml: string | null | undefined): {
     const m = xml.match(re);
     return (m?.[1] || "").trim();
   };
-  const build =
-    pick(/<(?:BuildNumber|ProductBuild|SystemBuild|PortBuild|Build)\b[^>]*>([^<]+)/i) ||
-    pick(/\b(?:BuildNumber|ProductBuild|SystemBuild)\s*=\s*"([^"]+)"/i);
+  const looksLikeBuild = (s: string): boolean => {
+    if (!s || s === "0" || /^n\/?a$/i.test(s) || s === "-") return false;
+    if (/^\d+$/.test(s) && s.length >= 2) return true;
+    if (/^\d+\.\d+\.\d+/.test(s)) return true;
+    if (/port\s*\d+/i.test(s)) return true;
+    return false;
+  };
+  const candidates = [
+    pick(/<(?:DatabaseVersion|SysproFullVersion|BuildNumber|ProductBuild|SystemBuild|PortBuild)\b[^>]*>([^<]+)/i),
+    pick(/<(?:PortNumber|Port)\b[^>]*>([^<]+)/i),
+    pick(/<(?:Build)\b[^>]*>([^<]+)/i),
+    pick(/\b(?:DatabaseVersion|SysproFullVersion|BuildNumber|ProductBuild)\s*=\s*"([^"]+)"/i),
+    pick(/\b(?:PortNumber|Port)\s*=\s*"([^"]+)"/i),
+  ].filter(looksLikeBuild);
+  const build = candidates[0] || "";
   const version =
-    pick(/<(?:ProductVersion|Version)\b[^>]*>([^<]+)/i) ||
+    pick(/<(?:ProductVersion|SysproFullVersion|Version)\b[^>]*>([^<]+)/i) ||
     pick(/\bProductVersion\s*=\s*"([^"]+)"/i);
   const ccRaw =
     pick(/<(?:CompanyCount|Companies|NumberOfCompanies|LicensedCompanies)\b[^>]*>([^<]+)/i);
@@ -1528,7 +1540,8 @@ function parseSysproLicenseXml(xml: string | null | undefined): {
 function buildFromVersionString(pv: string | null | undefined): string | null {
   const v = (pv || "").trim();
   if (!v) return null;
-  const m4 = v.match(/^\d+(?:\.\d+){2,}\.(\d+)$/);
+  if (/^\d+(?:\.\d+){2,}/.test(v)) return v;
+  const m4 = v.match(/^\d+(?:\.\d+){2,}\.(\d+[a-z]?)$/i);
   if (m4) return m4[1];
   const m3 = v.match(/^\d+\.\d+\.(\d+)$/);
   if (m3) return m3[1];
@@ -2050,12 +2063,24 @@ ORDER BY FailureAt DESC, RowId DESC;
 
 const VERSION_SQL = `
 SELECT TOP (1)
-  ProductName, ProductVersion, BuildNumber, LicenseType, Users, CompanyCount,
-  LicenseExpiry, CustomerName, ServerName,
-  COALESCE(ImportDate, ImportedAt) AS ImportDate
-FROM dbo.Syspro_VersionInfo WITH (NOLOCK)
-WHERE InstanceName = @instance
-ORDER BY SnapshotDate DESC;
+  v.ProductName, v.ProductVersion,
+  COALESCE(
+    NULLIF(LTRIM(RTRIM(v.BuildNumber)), N''),
+    (
+      SELECT TOP 1 NULLIF(LTRIM(RTRIM(v2.BuildNumber)), N'')
+      FROM dbo.Syspro_VersionInfo AS v2 WITH (NOLOCK)
+      WHERE v2.InstanceName = @instance
+        AND NULLIF(LTRIM(RTRIM(v2.BuildNumber)), N'') IS NOT NULL
+        AND LTRIM(RTRIM(v2.BuildNumber)) NOT IN (N'0', N'n/a', N'N/A', N'-')
+      ORDER BY v2.SnapshotDate DESC, v2.ImportedAt DESC
+    )
+  ) AS BuildNumber,
+  v.LicenseType, v.Users, v.CompanyCount,
+  v.LicenseExpiry, v.CustomerName, v.ServerName,
+  COALESCE(v.ImportDate, v.ImportedAt) AS ImportDate
+FROM dbo.Syspro_VersionInfo AS v WITH (NOLOCK)
+WHERE v.InstanceName = @instance
+ORDER BY v.SnapshotDate DESC;
 `;
 
 const HOTFIX_SQL = `
@@ -2311,13 +2336,23 @@ GROUP BY LTRIM(RTRIM(h.InstanceName));
 /** Version rows — base columns only (always present on Syspro_VersionInfo) */
 const EXCO_VERSION_BY_INSTANCE_SQL = `
 SELECT
-  LTRIM(RTRIM(InstanceName)) AS InstanceName,
-  ProductVersion,
-  BuildNumber,
-  ProductName,
-  SnapshotDate,
-  ImportedAt
-FROM dbo.Syspro_VersionInfo WITH (NOLOCK);
+  LTRIM(RTRIM(v.InstanceName)) AS InstanceName,
+  v.ProductVersion,
+  COALESCE(
+    NULLIF(LTRIM(RTRIM(v.BuildNumber)), N''),
+    (
+      SELECT TOP 1 NULLIF(LTRIM(RTRIM(v2.BuildNumber)), N'')
+      FROM dbo.Syspro_VersionInfo AS v2 WITH (NOLOCK)
+      WHERE LTRIM(RTRIM(v2.InstanceName)) = LTRIM(RTRIM(v.InstanceName))
+        AND NULLIF(LTRIM(RTRIM(v2.BuildNumber)), N'') IS NOT NULL
+        AND LTRIM(RTRIM(v2.BuildNumber)) NOT IN (N'0', N'n/a', N'N/A', N'-')
+      ORDER BY v2.SnapshotDate DESC, v2.ImportedAt DESC
+    )
+  ) AS BuildNumber,
+  v.ProductName,
+  v.SnapshotDate,
+  v.ImportedAt
+FROM dbo.Syspro_VersionInfo AS v WITH (NOLOCK);
 `;
 
 /** License fallback for version/product when VersionInfo empty */
@@ -3746,7 +3781,11 @@ ORDER BY
 
     if (sysproVersion && !sysproVersion.buildNumber) {
       const fromPv = buildFromVersionString(sysproVersion.productVersion);
-      if (fromPv) sysproVersion = { ...sysproVersion, buildNumber: fromPv };
+      if (fromPv && fromPv !== sysproVersion.productVersion) {
+        sysproVersion = { ...sysproVersion, buildNumber: fromPv };
+      } else if (fromPv && /\d+\.\d+\.\d+/.test(fromPv)) {
+        sysproVersion = { ...sysproVersion, buildNumber: fromPv };
+      }
     }
 
     const companyDbs = new Set<string>();

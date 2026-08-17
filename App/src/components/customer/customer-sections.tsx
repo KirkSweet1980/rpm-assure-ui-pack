@@ -3553,7 +3553,11 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
         <StatCard
           label="Build"
           value={build}
-          hint={buildRaw ? undefined : "Not in last license collect — re-run SYSPRO license on the agent"}
+          hint={
+            buildRaw
+              ? "Database / port from AdmSysVersion (or last known collect)"
+              : "License file is only the product (e.g. 8.0). Build comes from AdmSysVersion — re-run SYSPRO collect on the agent"
+          }
         />
         <StatCard label="Users" value={license?.users ?? sysproVersion?.users ?? "—"} />
         <StatCard
