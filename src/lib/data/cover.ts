@@ -113,7 +113,7 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     cove: resolveVendor(coveEvidence, input.coveMapped, input.pillarCove),
     epp: resolveVendor(eppEvidence, input.eppMapped, input.pillarEpp),
     csp: resolveVendor(cspEvidence, input.cspMapped, input.pillarCsp),
-    tickets: (Number(input.ticketCount) || 0) > 0,
+    tickets: true,
   };
 }
 

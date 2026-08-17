@@ -266,14 +266,14 @@ export function customerLiveStatus(
         : "Microsoft 365 posture (not scored in assurance / SLA)",
     },
     tickets: {
-      rag: trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : extra?.incidents?.length ? "Green" : "Off",
-      cover: (extra?.incidents?.length ?? 0) > 0 || Boolean((c as { tickets?: boolean }).tickets),
+      rag: trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : extra?.incidents?.length ? "Green" : "Green",
+      cover: true,
       href: trueOpenInc > 0 ? `${base}/tickets/open` : `${base}/tickets`,
       hint: trueOpenInc
         ? `${trueOpenInc} open ticket(s)`
         : extra?.incidents?.length
           ? `${extra.incidents.length} ticket(s) on feed`
-          : "No Freshdesk tickets mapped",
+          : "No tickets for this customer",
     },
     ams: {
       rag: amsRag,

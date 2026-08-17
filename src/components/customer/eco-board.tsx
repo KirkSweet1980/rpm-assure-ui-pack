@@ -121,7 +121,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { name: "Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
     { name: "RPM EndPoint Protection", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft CSP", on: Boolean(cover.csp), href: `${base}/csp` },
-    { name: "Tickets", on: Boolean(cover.tickets) || tix.total > 0, href: `${base}/tickets` },
+    { name: "Tickets", on: true, href: `${base}/tickets` },
   ];
   const coverCount = serviceBars.filter((s) => s.on).length;
   const coverPie = [
@@ -445,7 +445,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           )}
         </Pane>
 
-        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={Boolean(cover.tickets) || tix.total > 0} data-span={4}>
+        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={true} data-span={4}>
           {tix.total > 0 ? (
             <div className="grid grid-cols-3 gap-2">
               <StatCard label="Open" value={tix.open} tone={tix.open > 0 ? "amber" : "green"} />
@@ -453,7 +453,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
               <StatCard label="Closed" value={tix.closed} />
             </div>
           ) : (
-            <p className="text-[12px] text-muted">No Freshdesk tickets mapped for this customer yet.</p>
+            <p className="text-[12px] text-muted">No tickets exist for this customer.</p>
           )}
         </Pane>
 

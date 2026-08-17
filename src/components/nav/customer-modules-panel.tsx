@@ -164,7 +164,7 @@ export const CUSTOMER_PILLARS: {
     overview: "/tickets",
     icon: Ticket,
     color: "#0f766e",
-    covered: (c) => Boolean(c?.tickets),
+    covered: () => true,
     modules: [
       { label: "Overview", path: "/tickets", icon: LayoutDashboard, color: "#0f766e" },
       { label: "Open Tickets", path: "/tickets/open", icon: AlertTriangle, color: "#d97706" },

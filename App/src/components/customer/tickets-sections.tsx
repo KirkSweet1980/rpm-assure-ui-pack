@@ -8,7 +8,7 @@ import {
   ticketsInBucket,
   type TicketBucket,
 } from "@/lib/data/ticket-feed";
-import { NoCoverPanel } from "@/components/ui/no-cover";
+import { ticketStats, ticketsInBucket, type TicketBucket } from "@/lib/data/ticket-feed";
 import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
 import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
 
@@ -87,6 +87,21 @@ function TicketTable({ rows, empty }: { rows: FactIncidentRow[]; empty: string }
   );
 }
 
+function EmptyTickets({
+  title,
+  body,
+}: {
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="rpma-panel px-4 py-8 text-center">
+      <p className="text-sm font-bold text-fg">{title}</p>
+      <p className="mt-2 text-[13px] text-muted">{body}</p>
+    </div>
+  );
+}
+
 export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   const code = data.customer.customerCode;
   const rows = data.incidents ?? [];
@@ -94,9 +109,9 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   const sla = s.sla;
   if (s.total === 0) {
     return (
-      <NoCoverPanel
-        service="Customer Tickets"
-        hint="No Freshdesk tickets mapped to this customer yet. Map the Freshdesk company and run collect."
+      <EmptyTickets
+        title="Customer Tickets"
+        body="No tickets exist for this customer."
       />
     );
   }
@@ -156,7 +171,7 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
 
       <div className="rpma-glass">
         <p className="px-3 pt-3 text-[11px] font-bold uppercase tracking-wide text-muted">Latest tickets</p>
-        <TicketTable rows={rows.slice(0, 12)} empty="No tickets on the live feed." />
+        <TicketTable rows={rows.slice(0, 12)} empty="No tickets exist for this customer." />
       </div>
     </div>
   );
@@ -174,10 +189,10 @@ export function TicketsListSection({
     bucket === "open" ? "Open Tickets" : bucket === "resolved" ? "Resolved Tickets" : "Closed Tickets";
   const empty =
     bucket === "open"
-      ? "No open Freshdesk tickets for this customer."
+      ? "No tickets for this customer."
       : bucket === "resolved"
-        ? "No resolved tickets in the current window."
-        : "No closed tickets in the current window.";
+        ? "No tickets for this customer."
+        : "No tickets for this customer.";
   return (
     <div className="space-y-3">
       <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
@@ -206,9 +221,9 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
   const pack = scoreTicketSet(data.incidents);
   if (pack.total === 0) {
     return (
-      <NoCoverPanel
-        service="Customer Tickets · SLA"
-        hint="No Cover — SLA is not scored until this customer has live Freshdesk tickets."
+      <EmptyTickets
+        title="Customer Tickets · SLA"
+        body="No tickets exist for this customer. SLA clocks appear when tickets land."
       />
     );
   }
