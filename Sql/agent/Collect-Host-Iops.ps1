@@ -100,13 +100,18 @@ if (Test-Path $lib) {
     try { Import-RpmaAgentSecrets } catch {}
   }
 }
-if (-not $CentralDataSource) { throw "CentralDataSource missing - run from the Edge Agent or pass -ConfigPath Customer.Config.ps1" }
+$httpsLib = Join-Path $AgentRoot "Lib-RpmaHttps.ps1"
+if (Test-Path $httpsLib) { . $httpsLib }
+if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
-if (-not $CentralSqlUser) { throw "CentralSqlUser missing" }
-if (-not $CentralSqlPassword) { throw "CentralSqlPassword missing" }
 if (-not $CustomerCode) { $CustomerCode = $env:COMPUTERNAME }
 $HostName = $env:COMPUTERNAME
-W ("START iops host=$HostName customer=$CustomerCode sample=${SampleSec}s v2.6.0")
+if (-not $PreferHttps) {
+  if (-not $CentralDataSource) { throw "CentralDataSource missing - run from the Edge Agent or pass -ConfigPath Customer.Config.ps1" }
+  if (-not $CentralSqlUser) { throw "CentralSqlUser missing" }
+  if (-not $CentralSqlPassword) { throw "CentralSqlPassword missing" }
+}
+W ("START iops host=$HostName customer=$CustomerCode sample=${SampleSec}s https=$PreferHttps")
 
 # --- Windows disk performance counters (PowerShell) ---
 # Pulseway does not publish IOPS. This host must have:
@@ -381,6 +386,39 @@ if ($n -eq 0) {
 }
 
 $union = $rows -join "`nUNION ALL`n"
+
+$volObjs = @()
+foreach ($let in $letters) {
+  $c = $byInst[$let]
+  $sz = $ldisks[$let]
+  $volObjs += @{
+    driveLetter    = $let
+    totalGb        = $(if ($sz) { $sz.Total } else { $null })
+    freeGb         = $(if ($sz) { $sz.Free } else { $null })
+    usedPct        = $(if ($sz) { $sz.Used } else { $null })
+    mediaType      = $(if ($sz) { $sz.Media } else { $null })
+    readIops       = $(if ($c) { $c.Read } else { $null })
+    writeIops      = $(if ($c) { $c.Write } else { $null })
+    totalIops      = $(if ($c) { $c.Total } else { $null })
+    queueLen       = $(if ($c) { $c.Queue } else { $null })
+    readLatencyMs  = $(if ($c) { $c.LatR } else { $null })
+    writeLatencyMs = $(if ($c) { $c.LatW } else { $null })
+  }
+}
+if (Get-Command Send-RpmaHttpsIops -ErrorAction SilentlyContinue) {
+  try {
+    $ir = Send-RpmaHttpsIops -HostName $HostName -Volumes $volObjs -SampleSec $SampleSec
+    if ($ir.StatusCode -ge 200 -and $ir.StatusCode -lt 300) {
+      W ("DONE https rows=$n snap=$snap")
+      exit 0
+    }
+    W ("WARN https iops " + $ir.Text)
+  } catch { W ("WARN https iops " + $_.Exception.Message) }
+}
+if ($PreferHttps) {
+  W "FAIL https IOPS required (no SQL fallback)"
+  exit 1
+}
 $sql = @"
 SET NOCOUNT ON;
 IF OBJECT_ID(N'dbo.Agent_DiskIops', N'U') IS NULL

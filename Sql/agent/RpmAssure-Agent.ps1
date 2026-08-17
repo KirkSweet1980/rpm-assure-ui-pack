@@ -20,11 +20,12 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.8.0"
+$AgentVersion = "2.8.2"
 $HostName = $env:COMPUTERNAME
-if (-not $CentralDataSource) { throw "CentralDataSource missing" }
+if (-not $PreferHttps) { $PreferHttps = $true }
+if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
-if (-not $CentralSqlUser) { throw "CentralSqlUser missing" }
+if (-not $CentralSqlUser) { $CentralSqlUser = 'https' }
 if (-not $RoleTags) { $RoleTags = "syspro" }
 if (-not $SqlRoot) { $SqlRoot = "C:\RPM-Assure\Sql" }
 if (-not $LogDir) { $LogDir = Join-Path $AgentRoot "logs" }
@@ -178,6 +179,24 @@ FROM dbo.Dim_Customer c WITH (NOLOCK)
 LEFT JOIN dbo.Dim_Customer_AmsConfig a WITH (NOLOCK) ON a.CustomerCode = c.CustomerCode
 WHERE c.CustomerCode = $(Sql-Lit $Code);
 "@
+  if (Get-Command Send-RpmaHttpsCover -ErrorAction SilentlyContinue) {
+    try {
+      $cr = Send-RpmaHttpsCover -CustomerCode $Code
+      if ($cr.Json -and $cr.Json.ok) {
+        $j = $cr.Json
+        $cover.syspro = $j.syspro
+        $cover.rmm = $j.rmm
+        $cover.cove = $j.cove
+        $cover.epp = $j.epp
+        $cover.csp = $j.csp
+        if ($j.instanceName) { $cover.instance = [string]$j.instanceName }
+        return $cover
+      }
+    } catch {
+      W ("WARN https cover $Code : " + $_.Exception.Message)
+    }
+  }
+  if ($PreferHttps) { return $cover }
   $r = Invoke-CentralSql -SqlText $q -Tsv
   if ($r.ExitCode -eq 0 -and $r.Text) {
     foreach ($line in ($r.Text -split "`r?`n")) {
@@ -283,10 +302,11 @@ if ($hostCustomers.Count) {
 }
 
 # --- Heartbeat metrics (best effort) ---
-$os = $null; $cpu = $null; $mem = $null; $disk = $null
+$os = $null; $cpu = $null; $mem = $null; $disk = $null; $productType = $null
 try {
-  $os = (Get-CimInstance Win32_OperatingSystem -EA Stop).Caption
-  $osCim = Get-CimInstance Win32_OperatingSystem
+  $osCim = Get-CimInstance Win32_OperatingSystem -EA Stop
+  $os = $osCim.Caption
+  $productType = [int]$osCim.ProductType
   $mem = [int]($osCim.FreePhysicalMemory / 1024)
   $diskObj = Get-PSDrive -Name C -EA SilentlyContinue
   if ($diskObj) { $disk = [math]::Round($diskObj.Free / 1GB, 2) }
@@ -333,22 +353,28 @@ VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Li
     try {
       $hr = Send-RpmaHttpsHeartbeat -CustomerCode $cc -HostName $HostName -AgentVersion $AgentVersion `
         -RoleTags $RoleTags -InstanceName $hc.Instance -InstallPath $AgentRoot `
-        -OsCaption $os -MemFreeMb $mem -DiskFreeGb $disk -DetailJson $detail
+        -OsCaption $os -MemFreeMb $mem -DiskFreeGb $disk -DetailJson $detail -ProductType $productType
       if ($hr.StatusCode -ge 200 -and $hr.StatusCode -lt 300) {
         $httpsOk = $true
         W ("Heartbeat HTTPS $cc@$HostName")
       }
     } catch {
       W ("WARN https heartbeat $cc : " + $_.Exception.Message)
+      if ($PreferHttps) { $hbFailed = $true }
     }
   }
   if (-not $httpsOk) {
-    $r = Invoke-CentralSql -SqlText $hbSql
-    if ($r.ExitCode -ne 0) {
-      W ("WARN heartbeat $cc : " + $r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))
+    if ($PreferHttps) {
+      W "WARN heartbeat $cc skipped SQL (HTTPS only)"
       $hbFailed = $true
     } else {
-      W "Heartbeat SQL $cc@$HostName"
+      $r = Invoke-CentralSql -SqlText $hbSql
+      if ($r.ExitCode -ne 0) {
+        W ("WARN heartbeat $cc : " + $r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))
+        $hbFailed = $true
+      } else {
+        W "Heartbeat SQL $cc@$HostName"
+      }
     }
   }
 }
@@ -450,12 +476,16 @@ WHERE HostName = $(Sql-Lit $HostName);
       if (Test-Path (Join-Path $AgentRoot "VERSION")) {
         $newVer = (Get-Content (Join-Path $AgentRoot "VERSION") -Raw).Trim()
       }
+      if (Get-Command Send-RpmaHttpsStatus -ErrorAction SilentlyContinue) {
+        try { [void](Send-RpmaHttpsStatus -HostName $HostName -Status 'ONLINE' -Message ("updated " + $newVer)) } catch {}
+      } elseif (-not $PreferHttps) {
       [void](Invoke-CentralSql -SqlText @"
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
 SET LastStatus = N'ONLINE', LastMessage = N'updated $newVer', AgentVersion = $(Sql-Lit $newVer)
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
+      }
       W "UPDATE applied $newVer - next cycle uses new files"
     }
     W "WARN update files missing on this host"
@@ -484,7 +514,7 @@ try {
       }
     } catch { W ("WARN https sync " + $_.Exception.Message) }
   }
-  if (-not $httpsSync) {
+  if (-not $httpsSync -and -not $PreferHttps) {
     $qSync = @"
 SET NOCOUNT ON;
 SELECT CustomerCode

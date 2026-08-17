@@ -66,7 +66,8 @@ function Send-RpmaHttpsHeartbeat {
     [string]$OsCaption,
     $MemFreeMb,
     $DiskFreeGb,
-    [string]$DetailJson
+    [string]$DetailJson,
+    $ProductType
   )
   $body = @{
     customerCode = $CustomerCode
@@ -80,6 +81,7 @@ function Send-RpmaHttpsHeartbeat {
     diskFreeGb   = $DiskFreeGb
     detailJson   = $DetailJson
     source       = 'edge-https'
+    productType  = $ProductType
   }
   return Invoke-RpmaAssureHttps -Path '/api/agent/heartbeat' -Method POST -Body $body
 }
@@ -111,3 +113,30 @@ function Send-RpmaHttpsOnboard {
   }
   return Invoke-RpmaAssureHttps -Path '/api/agent/onboard' -Method POST -Body $body
 }
+
+function Send-RpmaHttpsCover {
+  param([string]$CustomerCode)
+  return Invoke-RpmaAssureHttps -Path ('/api/agent/ingest?kind=cover&customerCode=' + [uri]::EscapeDataString($CustomerCode)) -Method GET
+}
+
+function Send-RpmaHttpsStatus {
+  param([string]$HostName, [string]$CustomerCode = '', [string]$Status = 'ONLINE', [string]$Message = 'https')
+  return Invoke-RpmaAssureHttps -Path '/api/agent/ingest' -Method POST -Body @{
+    kind = 'status'; hostName = $HostName; customerCode = $CustomerCode; status = $Status; message = $Message
+  }
+}
+
+function Send-RpmaHttpsEvents {
+  param([string]$HostName, [string]$CustomerCode, $Events)
+  return Invoke-RpmaAssureHttps -Path '/api/agent/ingest' -Method POST -Body @{
+    kind = 'events'; hostName = $HostName; customerCode = $CustomerCode; events = @($Events)
+  } -TimeoutSec 60
+}
+
+function Send-RpmaHttpsIops {
+  param([string]$HostName, $Volumes, $SampleSec = 6, [string]$Source = 'agent')
+  return Invoke-RpmaAssureHttps -Path '/api/iops' -Method POST -Body @{
+    hostName = $HostName; source = $Source; sampleSec = $SampleSec; volumes = @($Volumes)
+  } -TimeoutSec 60
+}
+

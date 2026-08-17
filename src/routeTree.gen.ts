@@ -53,6 +53,7 @@ import { Route as ApiAgentHeartbeatRouteImport } from './routes/api/agent/heartb
 import { Route as ApiAgentOnboardRouteImport } from './routes/api/agent/onboard'
 import { Route as ApiAgentPackRouteImport } from './routes/api/agent/pack'
 import { Route as ApiAgentSyncRouteImport } from './routes/api/agent/sync'
+import { Route as ApiAgentIngestRouteImport } from './routes/api/agent/ingest'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCronWeeklyReportRouteImport } from './routes/api/cron/weekly-report'
 import { Route as ApiPulsewayWebhookRouteImport } from './routes/api/pulseway.webhook'
@@ -334,6 +335,11 @@ const ApiAgentPackRoute = ApiAgentPackRouteImport.update({
 const ApiAgentSyncRoute = ApiAgentSyncRouteImport.update({
   id: '/api/agent/sync',
   path: '/api/agent/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentIngestRoute = ApiAgentIngestRouteImport.update({
+  id: '/api/agent/ingest',
+  path: '/api/agent/ingest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -717,6 +723,7 @@ export interface FileRoutesByFullPath {
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
   '/api/agent/pack': typeof ApiAgentPackRoute
   '/api/agent/sync': typeof ApiAgentSyncRoute
+  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -823,6 +830,7 @@ export interface FileRoutesByTo {
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
   '/api/agent/pack': typeof ApiAgentPackRoute
   '/api/agent/sync': typeof ApiAgentSyncRoute
+  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -925,6 +933,7 @@ export interface FileRoutesById {
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
   '/api/agent/pack': typeof ApiAgentPackRoute
   '/api/agent/sync': typeof ApiAgentSyncRoute
+  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -1032,6 +1041,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
+    | '/api/agent/ingest'
     | '/api/agent/onboard'
     | '/api/agent/pack'
     | '/api/agent/sync'
@@ -1138,6 +1148,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
+    | '/api/agent/ingest'
     | '/api/agent/onboard'
     | '/api/agent/pack'
     | '/api/agent/sync'
@@ -1239,6 +1250,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
+    | '/api/agent/ingest'
     | '/api/agent/onboard'
     | '/api/agent/pack'
     | '/api/agent/sync'
@@ -1328,6 +1340,7 @@ export interface RootRouteChildren {
   ApiAgentOnboardRoute: typeof ApiAgentOnboardRoute
   ApiAgentPackRoute: typeof ApiAgentPackRoute
   ApiAgentSyncRoute: typeof ApiAgentSyncRoute
+  ApiAgentIngestRoute: typeof ApiAgentIngestRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronWeeklyReportRoute: typeof ApiCronWeeklyReportRoute
   ApiPulsewayWebhookRoute: typeof ApiPulsewayWebhookRoute
@@ -1642,6 +1655,13 @@ declare module '@tanstack/react-router' {
       path: '/api/agent/sync'
       fullPath: '/api/agent/sync'
       preLoaderRoute: typeof ApiAgentSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/ingest': {
+      id: '/api/agent/ingest'
+      path: '/api/agent/ingest'
+      fullPath: '/api/agent/ingest'
+      preLoaderRoute: typeof ApiAgentIngestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -2348,6 +2368,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAgentOnboardRoute: ApiAgentOnboardRoute,
   ApiAgentPackRoute: ApiAgentPackRoute,
   ApiAgentSyncRoute: ApiAgentSyncRoute,
+  ApiAgentIngestRoute: ApiAgentIngestRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronWeeklyReportRoute: ApiCronWeeklyReportRoute,
   ApiPulsewayWebhookRoute: ApiPulsewayWebhookRoute,

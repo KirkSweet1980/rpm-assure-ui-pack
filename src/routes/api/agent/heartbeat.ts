@@ -47,7 +47,9 @@ export const Route = createFileRoute("/api/agent/heartbeat")({
 IF COL_LENGTH(N'dbo.Agent_Registry', N'LastHttpsUtc') IS NULL
   ALTER TABLE dbo.Agent_Registry ADD LastHttpsUtc datetime2(0) NULL;
 IF COL_LENGTH(N'dbo.Agent_Registry', N'HeartbeatVia') IS NULL
-  ALTER TABLE dbo.Agent_Registry ADD HeartbeatVia nvarchar(16) NULL;`);
+  ALTER TABLE dbo.Agent_Registry ADD HeartbeatVia nvarchar(16) NULL;
+IF COL_LENGTH(N'dbo.Agent_Registry', N'ProductType') IS NULL
+  ALTER TABLE dbo.Agent_Registry ADD ProductType int NULL;`);
           const ver = str(body.agentVersion ?? body.AgentVersion, 32) || "https";
           const roles = str(body.roleTags ?? body.RoleTags, 256);
           const inst = str(body.instanceName ?? body.InstanceName, 128);
@@ -56,6 +58,7 @@ IF COL_LENGTH(N'dbo.Agent_Registry', N'HeartbeatVia') IS NULL
           const mem = num(body.memFreeMb ?? body.MemFreeMb);
           const disk = num(body.diskFreeGb ?? body.DiskFreeGb);
           const detail = str(body.detailJson ?? body.DetailJson, 4000) || "{}";
+          const productType = num(body.productType ?? body.ProductType);
           await pool
             .request()
             .input("c", sql.NVarChar(32), customerCode)
@@ -68,6 +71,7 @@ IF COL_LENGTH(N'dbo.Agent_Registry', N'HeartbeatVia') IS NULL
             .input("mem", sql.Int, mem)
             .input("disk", sql.Decimal(12, 2), disk)
             .input("d", sql.NVarChar(sql.MAX), detail)
+            .input("pt", sql.Int, productType)
             .query(`
 MERGE dbo.Agent_Registry AS t
 USING (SELECT @c CustomerCode, @h HostName) s
@@ -80,6 +84,7 @@ WHEN MATCHED THEN UPDATE SET
   RoleTags = COALESCE(@r, t.RoleTags),
   InstanceName = COALESCE(@i, t.InstanceName),
   InstallPath = COALESCE(@p, t.InstallPath),
+  ProductType = COALESCE(@pt, t.ProductType),
   LastStatus = CASE
     WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED') THEN t.LastStatus
     ELSE N'ONLINE'
@@ -89,10 +94,10 @@ WHEN MATCHED THEN UPDATE SET
     ELSE N'https heartbeat ok'
   END
 WHEN NOT MATCHED THEN INSERT (
-  CustomerCode, HostName, InstanceName, AgentVersion, RoleTags, InstallPath,
+  CustomerCode, HostName, InstanceName, AgentVersion, RoleTags, InstallPath, ProductType,
   LastHeartbeatUtc, LastHttpsUtc, HeartbeatVia, LastStatus, LastMessage
 ) VALUES (
-  @c, @h, @i, @v, @r, @p, SYSUTCDATETIME(), SYSUTCDATETIME(), N'https', N'ONLINE', N'https registered'
+  @c, @h, @i, @v, @r, @p, @pt, SYSUTCDATETIME(), SYSUTCDATETIME(), N'https', N'ONLINE', N'https registered'
 );
 
 INSERT INTO dbo.Agent_Heartbeat (CustomerCode, HostName, AgentVersion, OsCaption, MemFreeMb, DiskFreeGb, DetailJson)

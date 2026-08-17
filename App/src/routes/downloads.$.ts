@@ -7,6 +7,7 @@ const ALLOW = new Set([
   "rpm-assure-agent.zip",
   "Deploy-Assure-Agent.ps1",
   "Onboard-IB-Syspro.ps1",
+  "Pulseway-Collect-DiskIops.ps1",
   "RPM-Exco-Brief.html",
 ]);
 
@@ -14,6 +15,7 @@ const ROOTS = [
   "C:\\RPM-Assure\\downloads",
   "C:\\RPM-Assure\\App\\public\\downloads",
   "C:\\RPM-Assure\\deploy\\ui-pack\\public\\downloads",
+  path.join(process.cwd(), "public", "downloads"),
 ];
 
 function mimeOf(name: string): string {
@@ -42,6 +44,12 @@ export const Route = createFileRoute("/downloads/$")({
               },
             });
           }
+        }
+        if (name === "VERSION") {
+          return new Response("2.8.2\n", {
+            status: 200,
+            headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+          });
         }
         return new Response("not found", { status: 404 });
       },

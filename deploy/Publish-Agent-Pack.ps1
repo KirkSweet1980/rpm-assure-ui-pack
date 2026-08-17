@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 $dl = Join-Path $Root 'downloads'
 New-Item -ItemType Directory -Force -Path $dl | Out-Null
 
-$ver = '2.8.1'
+$ver = '2.8.2'
 foreach ($vf in @(
     (Join-Path $Pack 'Sql\agent\VERSION'),
     (Join-Path $Pack 'sql\agent\VERSION')
@@ -46,7 +46,9 @@ function Copy-Clean([string]$Rel) {
     $relFile = $_.FullName.Substring($from.Length).TrimStart('\')
     $dest = Join-Path (Join-Path $stage $Rel) $relFile
     New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
-    [IO.File]::Copy($_.FullName, $dest, $true)
+    try { [IO.File]::Copy($_.FullName, $dest, $true) } catch {
+      Write-Host ("SKIP locked " + $relFile)
+    }
   }
   return $true
 }
@@ -72,5 +74,15 @@ try {
 }
 
 $len = (Get-Item $zip).Length
-Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len + ' (no installer Git launchers)')
+foreach ($extra in @(
+    (Join-Path $Pack 'public\downloads\Pulseway-Collect-DiskIops.ps1'),
+    (Join-Path $Pack 'public\downloads\Deploy-Assure-Agent.ps1')
+  )) {
+  if (Test-Path $extra) { Copy-Item -Force $extra (Join-Path $dl (Split-Path $extra -Leaf)) }
+}
+$caddy = Join-Path $PSScriptRoot 'Ensure-Caddy-Downloads.ps1'
+if (Test-Path $caddy) {
+  try { & $caddy } catch { Write-Host ('WARN caddy downloads ' + $_.Exception.Message) }
+}
+Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len + ' (HTTPS pack, no Git)')
 Get-ChildItem $dl | Select-Object Name, Length | Format-Table -AutoSize
