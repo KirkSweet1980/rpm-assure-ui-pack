@@ -64,17 +64,19 @@ export function inferDriveBus(opts: {
     (n): n is number => n != null && Number.isFinite(n) && n > 0,
   );
   const lat = lats.length ? Math.min(...lats) : null;
+  const virtual = kind === "virtual" || kind === "unknown";
 
+  // Latency is the tell. IOPS on an idle volume must not become "SATA".
   if (lat != null) {
     if (lat <= 0.45) return "NVMe";
-    if (lat <= 2.2) return "SSD";
-    if (lat <= 6.5 && (iops >= 180 || lat <= 5)) return "SAS";
-    if (lat >= 7.5) return "SATA";
+    if (lat <= 2.5) return "SSD";
+    if (lat <= 5.5) return virtual ? "SSD" : "SAS";
+    if (lat >= 10) return "SATA";
+    return virtual ? "SSD" : "SAS";
   }
   if (iops >= 10000) return "NVMe";
   if (iops >= 2500) return "SSD";
-  if (iops >= 400) return "SAS";
-  if (iops >= 40) return "SATA";
+  if (iops >= 800) return virtual ? "SSD" : "SAS";
   return null;
 }
 
