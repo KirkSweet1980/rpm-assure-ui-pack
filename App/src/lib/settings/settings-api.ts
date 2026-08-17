@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import sql from "mssql";
 import { getPool, getLastPoolError, sql as sqlTypes } from "@/lib/data/sql-pool";
 import { getDataMode, hasSqlConfig, sqlConfigDebug } from "@/lib/data/sql-config";
+import { SHIPPED_AGENT_VERSION } from "./agent-version";
+export { SHIPPED_AGENT_VERSION };
 import {
   applyPasswordKeep,
   maskPassword,
@@ -1722,8 +1724,6 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
     items,
   };
 });
-
-export const SHIPPED_AGENT_VERSION = "2.8.4";
 
 export type AgentStatusRow = {
   customerCode: string;

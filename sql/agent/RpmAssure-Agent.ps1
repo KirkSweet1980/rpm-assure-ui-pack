@@ -469,15 +469,31 @@ SET LastStatus = N'UPDATING', LastMessage = N'applying pack'
 WHERE HostName = $(Sql-Lit $HostName);
 "@)
     $from = Join-Path $pack "Sql\agent"
+    if (-not (Test-Path (Join-Path $from "RpmAssure-Agent.ps1"))) { $from = Join-Path $pack "sql\agent" }
     $applied = $false
     if (Test-Path (Join-Path $from "RpmAssure-Agent.ps1")) {
-      robocopy $from $AgentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+      $stage = Join-Path $AgentRoot "_next"
+      if (Test-Path $stage) { Remove-Item $stage -Recurse -Force -EA SilentlyContinue }
+      New-Item -ItemType Directory -Force -Path $stage | Out-Null
+      robocopy $from $stage /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
       $sysFrom = Join-Path $pack "Sql\base\syspro-direct"
+      if (-not (Test-Path $sysFrom)) { $sysFrom = Join-Path $pack "sql\base\syspro-direct" }
       $sysTo = "C:\RPM-Assure\Sql\base\syspro-direct"
       if (Test-Path $sysFrom) {
         New-Item -ItemType Directory -Force -Path $sysTo | Out-Null
         robocopy $sysFrom $sysTo "Collect-Dtr-Native-Fallback.ps1" "Lib-Sqlcmd.ps1" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
       }
+      # Running .ps1 files are locked by this cycle + the service loop. Copy after we exit.
+      $bat = Join-Path $env:TEMP "rpma-apply-agent.cmd"
+      $lines = @(
+        "@echo off",
+        "timeout /t 10 /nobreak >nul",
+        ("robocopy `"" + $stage + "`" `"" + $AgentRoot + "`" /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json status.json request-sync.flag /XD logs _next /NFL /NDL /NJH /NJS /nc /ns /np"),
+        ("if exist `"" + $AgentRoot + "\VERSION`" type `"" + $AgentRoot + "\VERSION`"")
+      )
+      [IO.File]::WriteAllLines($bat, $lines)
+      Start-Process -FilePath $env:ComSpec -ArgumentList @("/c", $bat) -WindowStyle Hidden | Out-Null
+      W "UPDATE staged - apply in 10s after this cycle exits"
       $applied = $true
     }
     if (-not $applied) {

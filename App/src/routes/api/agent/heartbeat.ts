@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import sql from "mssql";
 import { getPool } from "@/lib/data/sql-pool";
 import { authorizeIngest, ingestConfigured } from "@/lib/security/ingest-secret";
+import { SHIPPED_AGENT_VERSION } from "@/lib/settings/agent-version";
 
 function str(v: unknown, max = 128): string {
   return String(v ?? "").trim().slice(0, max);
@@ -58,6 +59,7 @@ export const Route = createFileRoute("/api/agent/heartbeat")({
             .input("c", sql.NVarChar(32), customerCode)
             .input("h", sql.NVarChar(128), hostName)
             .input("v", sql.NVarChar(32), ver)
+            .input("ship", sql.NVarChar(32), SHIPPED_AGENT_VERSION)
             .input("r", sql.NVarChar(256), roles || null)
             .input("i", sql.NVarChar(128), inst || null)
             .input("p", sql.NVarChar(512), path || null)
@@ -76,10 +78,12 @@ WHEN MATCHED THEN UPDATE SET
   InstanceName = COALESCE(@i, t.InstanceName),
   InstallPath = COALESCE(@p, t.InstallPath),
   LastStatus = CASE
+    WHEN NULLIF(@v, N'') IS NOT NULL AND @v <> @ship THEN N'UPDATE'
     WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED') THEN t.LastStatus
     ELSE N'ONLINE'
   END,
   LastMessage = CASE
+    WHEN NULLIF(@v, N'') IS NOT NULL AND @v <> @ship THEN N'update requested ' + @ship
     WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED') THEN t.LastMessage
     ELSE N'https heartbeat ok'
   END
@@ -87,7 +91,9 @@ WHEN NOT MATCHED THEN INSERT (
   CustomerCode, HostName, InstanceName, AgentVersion, RoleTags, InstallPath,
   LastHeartbeatUtc, LastStatus, LastMessage
 ) VALUES (
-  @c, @h, @i, @v, @r, @p, SYSUTCDATETIME(), N'ONLINE', N'https registered'
+  @c, @h, @i, @v, @r, @p, SYSUTCDATETIME(),
+  CASE WHEN NULLIF(@v, N'') IS NOT NULL AND @v <> @ship THEN N'UPDATE' ELSE N'ONLINE' END,
+  CASE WHEN NULLIF(@v, N'') IS NOT NULL AND @v <> @ship THEN N'update requested ' + @ship ELSE N'https registered' END
 );
 
 INSERT INTO dbo.Agent_Heartbeat (CustomerCode, HostName, AgentVersion, OsCaption, MemFreeMb, DiskFreeGb, DetailJson)
