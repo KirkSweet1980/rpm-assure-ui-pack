@@ -528,14 +528,16 @@ Write-Log ("After host de-dupe=" + $deduped.Count + " (removed " + ($epBag.Count
 $epBag = $deduped
 
 # Enrich managed endpoints: last scan, malware, outdated (cap keeps collect under 15 min)
-$detailCap = 80
+# Parse JSON-RPC result (do NOT regex-match "error" — scan logs nest that word).
+$detailCap = 200
 $detailN = 0
 $detailOk = 0
 $detailErrLogged = 0
+$detailSkip = 0
 foreach ($eid in @($epBag.Keys)) {
   $bag = $epBag[$eid]
   $ep = $bag.Ep
-  if ($ep.isManaged -ne $true) { continue }
+  if ($ep.isManaged -ne $true) { $detailSkip++; continue }
   if ($detailN -ge $detailCap) { break }
   $detailN++
   try {
@@ -543,29 +545,56 @@ foreach ($eid in @($epBag.Keys)) {
       endpointId = [string]$eid
       options    = @{ includeScanLogs = $true }
     }
-    if ($rawD -match '"error"\s*:\s*\{') {
-      if ($detailErrLogged -lt 2) {
-        $pre = $rawD
-        if ($pre.Length -gt 180) { $pre = $pre.Substring(0, 180) }
-        Write-Log ("detail err id=$eid prefix=$pre")
+    $det = $null
+    try { $det = $rawD | ConvertFrom-Json } catch { $det = $null }
+    if ($det -and $det.error) {
+      $raw2 = Invoke-GzRpc -Service 'network' -Method 'getManagedEndpointDetails' -Params @{
+        endpointId = [string]$eid
+      }
+      try { $det = $raw2 | ConvertFrom-Json } catch { $det = $null }
+    }
+    if (-not $det -or $det.error) {
+      if ($detailErrLogged -lt 4) {
+        $em = ''
+        try { $em = [string]$det.error.message + ' ' + [string]$det.error.data.details } catch { $em = $rawD }
+        if ($em.Length -gt 220) { $em = $em.Substring(0, 220) }
+        Write-Log ("detail err id=$eid $em")
         $detailErrLogged++
       }
       continue
     }
-    $scanM = [regex]::Match($rawD, '"lastSuccessfulScan"\s*:\s*\{[^}]{0,400}?"date"\s*:\s*"([^"]+)"')
-    if ($scanM.Success) { $bag.LastScan = $scanM.Groups[1].Value }
-    $seenM = [regex]::Match($rawD, '"lastSeen"\s*:\s*"([^"]+)"')
-    if ($seenM.Success) { $bag.LastSeen = $seenM.Groups[1].Value }
-    if ($rawD -match '"detection"\s*:\s*true') { $bag.MalwareDetected = $true }
-    if ($rawD -match '"infected"\s*:\s*true') { $bag.Infected = $true }
-    if ($rawD -match '"productOutdated"\s*:\s*true') { $bag.ProductOutdated = $true }
-    if ($rawD -match '"signatureOutdated"\s*:\s*true') { $bag.SignatureOutdated = $true }
+    $res = $det.result
+    if (-not $res) { continue }
+    try {
+      if ($res.lastSuccessfulScan.date) { $bag.LastScan = [string]$res.lastSuccessfulScan.date }
+    } catch {}
+    try {
+      if ($res.lastSeen) { $bag.LastSeen = [string]$res.lastSeen }
+    } catch {}
+    try {
+      if ($null -ne $res.malwareStatus.detection) { $bag.MalwareDetected = [bool]$res.malwareStatus.detection }
+      elseif ($null -ne $res.detection) { $bag.MalwareDetected = [bool]$res.detection }
+    } catch {}
+    try {
+      if ($null -ne $res.malwareStatus.infected) { $bag.Infected = [bool]$res.malwareStatus.infected }
+      elseif ($null -ne $res.infected) { $bag.Infected = [bool]$res.infected }
+    } catch {}
+    try {
+      if ($null -ne $res.productOutdated) { $bag.ProductOutdated = [bool]$res.productOutdated }
+    } catch {}
+    try {
+      if ($null -ne $res.signatureOutdated) { $bag.SignatureOutdated = [bool]$res.signatureOutdated }
+    } catch {}
     $detailOk++
+    Start-Sleep -Milliseconds 60
   } catch {
     Write-Log ("detail skip id=$eid err=$($_.Exception.Message)")
   }
 }
-Write-Log ("Endpoint detail enrich tried=$detailN ok=$detailOk withScan=" + @($epBag.Values | Where-Object { $_.LastScan }).Count)
+Write-Log ("Endpoint detail enrich tried=$detailN ok=$detailOk skipUnmanaged=$detailSkip withScan=" + @($epBag.Values | Where-Object { $_.LastScan }).Count)
+if ($detailN -gt 0 -and $detailOk -eq 0) {
+  Write-Log 'HINT: GravityZone API key needs Network (Computers) rights. In GZ: My Account → API keys → edit key → enable Network.'
+}
 
 $hasCoCols = $false
 try {
