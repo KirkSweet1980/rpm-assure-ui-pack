@@ -561,7 +561,6 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
   const idleOps = Math.max(0, totalOps - activeOps);
   return (
     <div className="space-y-3">
-      <TicketStrip data={data} pillar="syspro" />
       <ServiceVisuals
       title="SYSPRO"
       subtitle={`${c.displayName} · last collect ${formatSastDateTime(c.lastImportAt)}`}
@@ -669,7 +668,6 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
   }
   return (
     <div className="space-y-4">
-      <TicketStrip data={data} pillar="rmm" />
       <ChartCaption
         title="RPM Remote Management overview"
         why="Day snapshot from Pulseway (RPM Remote Management). RAG: Red if critical alerts or 5+ offline; Amber if any offline / elevated / disk pressure."
@@ -2363,7 +2361,6 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <div className="rpma-eco-visuals space-y-3">
-      <TicketStrip data={data} pillar="ams" />
       <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
         <RagBadge rag={c.healthRag} title={c.healthSummary} />
         <div className="min-w-0">
@@ -4719,7 +4716,6 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
   }
   return (
     <div className="space-y-3">
-      <TicketStrip data={data} pillar="cove" />
       <CoveEsrPanel data={data} />
     </div>
   );
@@ -4760,7 +4756,6 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   const fdTickets = ticketStats(ticketsForPillar(data.incidents, "epp"));
   return (
     <div className="space-y-3">
-      <TicketStrip data={data} pillar="epp" />
     <ServiceVisuals
       title="RPM EndPoint Protection"
       subtitle={data.customer.displayName}
@@ -5368,7 +5363,6 @@ export function CspTenantHealthSection({ data }: { data: CustomerDetailPayload }
 
   return (
     <div className="space-y-4">
-      <TicketStrip data={data} pillar="csp" />
       <ServiceVisuals
         title="Microsoft 365 CSP"
         subtitle={t?.displayName || t?.primaryDomain || data.customer.displayName}

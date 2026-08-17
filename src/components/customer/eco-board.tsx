@@ -35,7 +35,6 @@ import {
 } from "@/lib/eco-widgets";
 import type { CustomerDetailPayload } from "@/lib/data/types";
 import { ticketStats } from "@/lib/data/ticket-feed";
-import { TicketStrip } from "@/components/customer/customer-sections";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
 function axisLabel(v: unknown, max = 14) {
@@ -236,7 +235,6 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         />
       ) : null}
 
-      <TicketStrip data={data} pillar="eco" />
 
       <div className="rpma-eco-board">
         <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3" {...wgt("hero")}>
