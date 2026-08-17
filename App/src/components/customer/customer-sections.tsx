@@ -20,7 +20,7 @@ import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type 
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { SpaLink } from "@/components/nav/spa-link";
-import { keepLiveIops, expectedIopsForMedia, iopsBand } from "@/lib/data/agent-iops";
+import { keepLiveIops, expectedIopsForMedia, expectedLatencyMsForMedia, iopsBand } from "@/lib/data/agent-iops";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
   Bar,
@@ -2211,7 +2211,7 @@ function IopsPerfMatrix({
       <header>
         <h3>Performance vs expected</h3>
         <p>
-          {host} — live sample against a media baseline (HDD 150 · Virtual 800 · SSD 5k · NVMe 20k). Not a signed SLA.
+          {host} — live sample vs media baseline (IOPS and latency). Not a signed SLA.
         </p>
       </header>
       <div className="rpma-iops-matrix-rows">
@@ -2222,7 +2222,14 @@ function IopsPerfMatrix({
           const scale = Math.max(expected * 1.4, actual, 1);
           const actPct = Math.min(100, (actual / scale) * 100);
           const expPct = Math.min(100, (expected / scale) * 100);
-          const ofExp = expected > 0 ? Math.round((actual / expected) * 100) : 0;
+          const expectedLat = expectedLatencyMsForMedia(r.mediaType);
+          const fmtMs = (n: number | null | undefined) => {
+            if (n == null || !Number.isFinite(n)) return "—";
+            return n < 1 ? `${n.toFixed(2)} ms` : `${n.toFixed(1)} ms`;
+          };
+          const latHot =
+            (r.readLatencyMs != null && r.readLatencyMs > expectedLat * 2) ||
+            (r.writeLatencyMs != null && r.writeLatencyMs > expectedLat * 2);
           return (
             <article key={`${r.driveLetter}-${i}`} data-band={band}>
               <div className="rpma-iops-k">
@@ -2251,8 +2258,24 @@ function IopsPerfMatrix({
                   <dd>{r.queueLen != null ? r.queueLen.toFixed(1) : "—"}</dd>
                 </div>
                 <div>
+                  <dt>Read lat</dt>
+                  <dd className={r.readLatencyMs != null && r.readLatencyMs > expectedLat * 2 ? "text-rag-red" : ""}>
+                    {fmtMs(r.readLatencyMs)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Write lat</dt>
+                  <dd className={r.writeLatencyMs != null && r.writeLatencyMs > expectedLat * 2 ? "text-rag-red" : ""}>
+                    {fmtMs(r.writeLatencyMs)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Exp lat</dt>
+                  <dd>{fmtMs(expectedLat)}</dd>
+                </div>
+                <div>
                   <dt>Band</dt>
-                  <dd className="rpma-iops-band">{band}</dd>
+                  <dd className="rpma-iops-band">{latHot && band === "healthy" ? "busy" : band}</dd>
                 </div>
               </dl>
             </article>

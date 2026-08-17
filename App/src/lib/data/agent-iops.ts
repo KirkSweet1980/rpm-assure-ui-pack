@@ -19,6 +19,15 @@ export function expectedIopsForMedia(media: string | null | undefined): number {
   return 800;
 }
 
+export function expectedLatencyMsForMedia(media: string | null | undefined): number {
+  const m = String(media ?? "").toLowerCase();
+  if (/nvme|optane/.test(m)) return 0.2;
+  if (/ssd|flash|solid/.test(m)) return 1;
+  if (/virtual|vhd|vhdx|msft virtual|hyper-v/.test(m)) return 5;
+  if (/hdd|spin|mechanical|sata|sas/.test(m)) return 12;
+  return 5;
+}
+
 export type IopsBand = "idle" | "healthy" | "busy" | "hot";
 
 export function iopsBand(actual: number, expected: number, queue: number | null): IopsBand {

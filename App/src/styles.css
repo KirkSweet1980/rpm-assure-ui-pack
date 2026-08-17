@@ -3544,7 +3544,7 @@ html.snow .rpma-epp-mod.is-off .rpma-epp-state { color: #b91c1c; }
   background: #e2e8f0; box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
 }
 .rpma-iops-matrix-rows article dl {
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0;
+  display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin: 0;
 }
 .rpma-iops-matrix-rows article dt {
   font-size: 9px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-muted);
