@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Ticket } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
+import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { formatSastDateTime } from "@/lib/utils";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
@@ -189,11 +191,16 @@ export function TicketsListSection({
   const title =
     bucket === "open" ? "Open Tickets" : bucket === "resolved" ? "Resolved Tickets" : "Closed Tickets";
   const empty =
-    bucket === "open"
-      ? "No tickets for this customer."
-      : bucket === "resolved"
-        ? "No tickets for this customer."
-        : "No tickets for this customer.";
+    "No tickets for this customer.";
+  const [sel, setSel] = useState(rows[0]?.incidentId ?? rows[0]?.externalRef ?? "");
+  const items = rows.map((r, i) => ({
+    id: String(r.incidentId ?? r.externalRef ?? i),
+    label: r.title || r.externalRef || `Ticket ${i + 1}`,
+    meta: r.status ?? r.priority ?? "",
+    tone: r.isMajor ? ("red" as const) : bucket === "open" ? ("amber" as const) : ("green" as const),
+  }));
+  const picked =
+    rows.find((r, i) => String(r.incidentId ?? r.externalRef ?? i) === sel) ?? rows[0] ?? null;
   return (
     <div className="space-y-3">
       <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
@@ -205,9 +212,13 @@ export function TicketsListSection({
         </div>
         <StatCard label={title} value={rows.length} tone={bucket === "open" && rows.length > 0 ? "amber" : "green"} />
       </div>
-      <div className="rpma-glass">
-        <TicketTable rows={rows} empty={empty} />
-      </div>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted">{empty}</p>
+      ) : (
+        <StickyPickSplit title={title} items={items} selected={items.some((i) => i.id === sel) ? sel : items[0].id} onSelect={setSel}>
+          {picked ? <TicketTable rows={[picked]} empty={empty} /> : null}
+        </StickyPickSplit>
+      )}
     </div>
   );
 }

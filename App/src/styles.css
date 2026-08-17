@@ -2359,7 +2359,13 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   padding: 0.55rem 0.7rem 0.7rem;
   overflow: auto;
 }
-.rpma-emp-inspector { align-self: start; }
+.rpma-emp-inspector {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: calc(100dvh - var(--pc-header-height) - 168px);
+  overflow: auto;
+}
 .rpma-emp-body .rpma-glass,
 .rpma-emp-body .rpma-pane,
 .rpma-emp-body .rpma-kpi-tile {

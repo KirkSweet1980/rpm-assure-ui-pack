@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ListPanel, ListRow } from "@/components/nav/list-row";
+import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { SpaLink } from "@/components/nav/spa-link";
 import { keepLiveIops } from "@/lib/data/agent-iops";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
@@ -2245,10 +2246,21 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
 
 export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
   const rows = keepLiveIops(data.rmm?.agentIops ?? []);
+  const hosts = [...new Set(rows.map((r) => r.hostName).filter(Boolean))];
+  const [sel, setSel] = useState(hosts[0] ?? "");
   if (!rows.length) {
     return <p className="text-sm text-muted">No IOPS samples for this customer.</p>;
   }
-  return <AgentHostTelemetry iops={rows} events={[]} />;
+  return (
+    <StickyPickSplit
+      title="Hosts"
+      items={hosts.map((h) => ({ id: h, label: h, meta: "IOPS", tone: "green" as const }))}
+      selected={sel || hosts[0]}
+      onSelect={setSel}
+    >
+      <AgentHostTelemetry iops={rows} events={[]} focusHost={sel || hosts[0]} />
+    </StickyPickSplit>
+  );
 }
 
 export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
@@ -2265,6 +2277,8 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
       message: [a.title, a.message].filter(Boolean).join(" — "),
     }));
   const events = agent.length ? agent : fromAlerts;
+  const hosts = [...new Set(events.map((e) => e.hostName).filter(Boolean))];
+  const [sel, setSel] = useState(hosts[0] ?? "");
   return (
     <div className="space-y-3">
       <ChartCaption
@@ -2274,7 +2288,14 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
       {events.length === 0 ? (
         <p className="text-sm text-muted">No event log rows for this customer yet.</p>
       ) : (
-        <AgentHostTelemetry iops={[]} events={events} />
+        <StickyPickSplit
+          title="Hosts"
+          items={hosts.map((h) => ({ id: h, label: h, tone: "amber" as const }))}
+          selected={sel || hosts[0]}
+          onSelect={setSel}
+        >
+          <AgentHostTelemetry iops={[]} events={events} focusHost={sel || hosts[0]} />
+        </StickyPickSplit>
       )}
     </div>
   );
@@ -4644,6 +4665,7 @@ function formatRecoveryTestStatus(
 
 export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
   const devices = data.cove?.devices ?? [];
+  const [sel, setSel] = useState(0);
   const totalUsed = devices.reduce(
     (sum, d) => {
       const n = d.usedBytes ?? d.selectedBytes;
@@ -4692,6 +4714,17 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
             "No Cloud Backup devices on latest snapshot. Map the N-Able partner to this CustomerCode and re-collect."}
         </p>
       ) : (
+        <StickyPickSplit
+          title="Devices"
+          items={devices.map((d, i) => ({
+            id: String(i),
+            label: d.deviceName ?? d.machineName ?? `Device ${i + 1}`,
+            meta: d.lastBackupStatus || "—",
+            tone: /fail|error|overdue/i.test(String(d.lastBackupStatus ?? "")) ? "red" : "green",
+          }))}
+          selected={String(Math.min(sel, Math.max(0, devices.length - 1)))}
+          onSelect={(id) => setSel(Number(id))}
+        >
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[960px] text-left text-sm">
             <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
@@ -4710,7 +4743,7 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
               </tr>
             </thead>
             <tbody>
-              {devices.map((d, i) => {
+              {devices.filter((_, i) => i === sel).map((d, i) => {
                 const st = (d.lastBackupStatus || "").toLowerCase();
                 let health: "ok" | "stale" | "failed" = "ok";
                 if (st.includes("fail") || st.includes("error") || st.includes("overdue") || st.includes("abort"))
@@ -4798,6 +4831,7 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
             </tbody>
           </table>
         </div>
+        </StickyPickSplit>
       )}
     </div>
   );
