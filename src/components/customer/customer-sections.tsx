@@ -45,6 +45,7 @@ import { ServerKindIcon } from "@/components/customer/server-kind-icon";
 import { assuranceTone } from "@/lib/data/rag-score";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { CHART } from "@/lib/brand-colors";
+import { SignedSlaPanel } from "@/components/customer/signed-sla-panel";
 import { formatProgramLabel } from "@/lib/data/syspro-programs";
 import type { CustomerDetailPayload } from "@/lib/data/types";
 import { coverFromDetail, isPillarCovered, type CustomerCover, type PillarId } from "@/lib/data/cover";
@@ -4351,6 +4352,7 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <div className="space-y-4">
+      <SignedSlaPanel code={data.customer.customerCode} />
       <ChartCaption
         title={`RPM SLA Rev ${RPM_SLA_REVISION} · operational posture`}
         why={`${RPM_SLA_TITLE} (${RPM_SLA_DATE}). Contract clocks are Business Hours only. Freshdesk tickets now score as the Tickets pillar (Layer A). RMM, Backup and EPP use industry measures — they are not in this contract.`}

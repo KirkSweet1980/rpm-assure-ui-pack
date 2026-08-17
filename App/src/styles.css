@@ -2556,5 +2556,53 @@ html.snow .rpma-brief-bar { background: #e2e8ee; }
   .rpma-emp-titles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+.rpma-sla-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.rpma-sla-banner strong { font-size: 13px; font-weight: 800; }
+.rpma-sla-banner.is-prov {
+  background: color-mix(in srgb, #ffa21d 16%, transparent);
+  border: 1px solid #ffa21d;
+  color: #ffb347;
+}
+.rpma-sla-banner.is-prov span { color: #ffb347; font-weight: 700; }
+.rpma-sla-banner.is-signed {
+  background: color-mix(in srgb, #8fce4a 16%, transparent);
+  border: 1px solid #8fce4a;
+  color: #8fce4a;
+}
+.rpma-sla-input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-fg);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.rpma-sla-btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rpma-sla-btn.is-sign {
+  background: color-mix(in srgb, #ffa21d 22%, transparent);
+  border-color: #ffa21d;
+  color: #ffb347;
+}
+
+
 
 

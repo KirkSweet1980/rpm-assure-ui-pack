@@ -199,6 +199,7 @@ export function EmpChrome({
         <div className="rpma-emp-body">{children}</div>
         <EmpInspector
           name={customerName}
+          customerCode={customerCode}
           service={ctx.service}
           module={ctx.module}
           cover={ctx.cover}
