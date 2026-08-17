@@ -58,20 +58,32 @@ function Invoke-FdGet([string]$PathQuery) {
   }
 }
 
-function Status-Name([int]$id) {
-  switch ($id) { 2 { 'Open' } 3 { 'Pending' } 4 { 'Resolved' } 5 { 'Closed' } default { "Status$id" } }
+function Status-Name($id) {
+  switch ([string]$id) { '2' { 'Open' } '3' { 'Pending' } '4' { 'Resolved' } '5' { 'Closed' } default { 'Status' + $id } }
 }
-function Priority-Name([int]$id) {
-  switch ($id) { 1 { 'Low' } 2 { 'Medium' } 3 { 'High' } 4 { 'Urgent' } default { "P$id" } }
+function Priority-Name($id) {
+  switch ([string]$id) { '1' { 'Low' } '2' { 'Medium' } '3' { 'High' } '4' { 'Urgent' } default { 'P' + $id } }
 }
 
-function Sql-Esc([string]$s) {
-  if ($null -eq $s) { return 'NULL' }
-  $t = $s -replace "'", "''"
+function One-Val($v) {
+  if ($null -eq $v) { return $null }
+  if ($v -is [System.Array]) {
+    if ($v.Length -eq 0) { return $null }
+    return $v[0]
+  }
+  return $v
+}
+
+function Sql-Esc($s) {
+  $v = One-Val $s
+  if ($null -eq $v) { return 'NULL' }
+  $t = [string]$v
+  $t = $t.Replace("'", "''")
   if ($t.Length -gt 4000) { $t = $t.Substring(0, 4000) }
   return "N'$t'"
 }
 function Sql-Dt($v) {
+  $v = One-Val $v
   if ($null -eq $v -or [string]::IsNullOrWhiteSpace([string]$v)) { return 'NULL' }
   try {
     $d = [datetime]::Parse([string]$v, [Globalization.CultureInfo]::InvariantCulture,
@@ -80,8 +92,19 @@ function Sql-Dt($v) {
   } catch { return 'NULL' }
 }
 function Sql-Num($v) {
+  $v = One-Val $v
   if ($null -eq $v -or [string]::IsNullOrWhiteSpace([string]$v)) { return 'NULL' }
-  return ([string]$v)
+  $t = [string]$v
+  if ($t -notmatch '^-?\d+(\.\d+)?$') { return 'NULL' }
+  return $t
+}
+function Sql-Json($obj) {
+  if ($null -eq $obj) { return 'NULL' }
+  try {
+    $j = $obj | ConvertTo-Json -Compress -Depth 5
+    if ($j -is [System.Array]) { $j = [string]::Join('', @($j)) }
+    return (Sql-Esc ([string]$j))
+  } catch { return 'NULL' }
 }
 
 $since = (Get-Date).ToUniversalTime().AddDays(-[int]$FreshdeskLookbackDays).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
@@ -129,69 +152,62 @@ foreach ($t in $all) {
   $tid = $t.id
   if (-not $tid) { continue }
 
-  $statusId = $t.status
-  $priId = $t.priority
+  $statusId = One-Val $t.status
+  $priId = One-Val $t.priority
   $reqEmail = $null
-  if ($t._requester -and $t._requester.email) { $reqEmail = [string]$t._requester.email }
-  elseif ($t.email) { $reqEmail = [string]$t.email }
+  if ($t._requester -and $t._requester.email) { $reqEmail = [string](One-Val $t._requester.email) }
+  elseif ($t.email) { $reqEmail = [string](One-Val $t.email) }
 
   $coId = $null; $coName = $null
   if ($t._company) {
-    if ($t._company.id) { $coId = $t._company.id }
-    if ($t._company.name) { $coName = [string]$t._company.name }
+    if ($t._company.id) { $coId = One-Val $t._company.id }
+    if ($t._company.name) { $coName = [string](One-Val $t._company.name) }
   }
-  if (-not $coId -and $t.company_id) { $coId = $t.company_id }
+  if (-not $coId -and $t.company_id) { $coId = One-Val $t.company_id }
 
   $firstR = $null; $resolved = $null; $closed = $null
   if ($t._stats) {
-    $firstR = $t._stats.first_responded_at
-    $resolved = $t._stats.resolved_at
-    $closed = $t._stats.closed_at
+    $firstR = One-Val $t._stats.first_responded_at
+    $resolved = One-Val $t._stats.resolved_at
+    $closed = One-Val $t._stats.closed_at
   }
 
-  $subj = [string]$t.subject
+  $subj = [string](One-Val $t.subject)
   if ($subj.Length -gt 480) { $subj = $subj.Substring(0, 480) }
 
-  $tagsJson = 'NULL'
-  if ($t.tags) {
-    try { $tagsJson = Sql-Esc ($t.tags | ConvertTo-Json -Compress -Depth 3) } catch {}
-  }
-  $cfJson = 'NULL'
-  if ($t.custom_fields) {
-    try { $cfJson = Sql-Esc ($t.custom_fields | ConvertTo-Json -Compress -Depth 5) } catch {}
-  }
+  $tagsJson = Sql-Json $t.tags
+  $cfJson = Sql-Json $t.custom_fields
 
   $codeExpr = 'NULL'
   if ($coName) {
-    $codeExpr = "(SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND LTRIM(RTRIM(CompanyName)) = LTRIM(RTRIM($(Sql-Esc $coName))) )"
+    $codeExpr = '(SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND LTRIM(RTRIM(CompanyName)) = LTRIM(RTRIM(' + (Sql-Esc $coName) + ')) )'
   }
 
-  [void]$sb.AppendLine((
-    "INSERT INTO dbo.Freshdesk_Tickets (SnapshotDate, TicketId, CustomerCode, Subject, StatusId, StatusName, PriorityId, PriorityName, SourceId, TypeName, RequesterId, RequesterEmail, ResponderId, GroupId, CompanyId, CompanyName, CreatedAtUtc, UpdatedAtUtc, DueByUtc, FirstRespondedAtUtc, ResolvedAtUtc, ClosedAtUtc, TagsJson, CustomFieldsJson, ImportedAt) VALUES (@Snap, {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, @Imp);" -f `
-      (Sql-Num $tid),
-      $codeExpr,
-      (Sql-Esc $subj),
-      (Sql-Num $statusId),
-      (Sql-Esc (Status-Name ([int]$statusId))),
-      (Sql-Num $priId),
-      (Sql-Esc (Priority-Name ([int]$priId))),
-      (Sql-Num $t.source),
-      (Sql-Esc ([string]$t.type)),
-      (Sql-Num $t.requester_id),
-      (Sql-Esc $reqEmail),
-      (Sql-Num $t.responder_id),
-      (Sql-Num $t.group_id),
-      (Sql-Num $coId),
-      (Sql-Esc $coName),
-      (Sql-Dt $t.created_at),
-      (Sql-Dt $t.updated_at),
-      (Sql-Dt $t.due_by),
-      (Sql-Dt $firstR),
-      (Sql-Dt $resolved),
-      (Sql-Dt $closed),
-      $tagsJson,
-      $cfJson
-  ))
+  $line = 'INSERT INTO dbo.Freshdesk_Tickets (SnapshotDate, TicketId, CustomerCode, Subject, StatusId, StatusName, PriorityId, PriorityName, SourceId, TypeName, RequesterId, RequesterEmail, ResponderId, GroupId, CompanyId, CompanyName, CreatedAtUtc, UpdatedAtUtc, DueByUtc, FirstRespondedAtUtc, ResolvedAtUtc, ClosedAtUtc, TagsJson, CustomFieldsJson, ImportedAt) VALUES (@Snap, ' +
+    (Sql-Num $tid) + ', ' +
+    $codeExpr + ', ' +
+    (Sql-Esc $subj) + ', ' +
+    (Sql-Num $statusId) + ', ' +
+    (Sql-Esc (Status-Name $statusId)) + ', ' +
+    (Sql-Num $priId) + ', ' +
+    (Sql-Esc (Priority-Name $priId)) + ', ' +
+    (Sql-Num (One-Val $t.source)) + ', ' +
+    (Sql-Esc ([string](One-Val $t.type))) + ', ' +
+    (Sql-Num (One-Val $t.requester_id)) + ', ' +
+    (Sql-Esc $reqEmail) + ', ' +
+    (Sql-Num (One-Val $t.responder_id)) + ', ' +
+    (Sql-Num (One-Val $t.group_id)) + ', ' +
+    (Sql-Num $coId) + ', ' +
+    (Sql-Esc $coName) + ', ' +
+    (Sql-Dt (One-Val $t.created_at)) + ', ' +
+    (Sql-Dt (One-Val $t.updated_at)) + ', ' +
+    (Sql-Dt (One-Val $t.due_by)) + ', ' +
+    (Sql-Dt $firstR) + ', ' +
+    (Sql-Dt $resolved) + ', ' +
+    (Sql-Dt $closed) + ', ' +
+    $tagsJson + ', ' +
+    $cfJson + ', @Imp);'
+  [void]$sb.AppendLine($line)
 }
 
 [void]$sb.AppendLine(@"
