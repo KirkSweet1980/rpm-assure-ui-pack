@@ -953,6 +953,20 @@ export type EppPayload = {
     incidentsCount?: number | null;
     quarantineCount?: number | null;
   } | null;
+  policies?: EppPolicyRow[];
+};
+
+export type EppPolicyModule = {
+  id: string;
+  label: string;
+  enabled: boolean;
+};
+
+export type EppPolicyRow = {
+  policyId: string;
+  policyName: string | null;
+  deviceCount: number;
+  modules: EppPolicyModule[];
 };
 
 

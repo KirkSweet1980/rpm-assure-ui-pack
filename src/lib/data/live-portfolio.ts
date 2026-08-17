@@ -6040,6 +6040,7 @@ ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
     incidents: [],
     quarantine: [],
     feedStatus: null,
+    policies: [],
   };
   if (want("epp")) try {
     // PolicyName is optional (added by 450); select only columns that exist
@@ -6170,6 +6171,42 @@ ORDER BY DeviceName`;
     }));
     // Collapse GZ clean-name + name-MAC duplicates (all customers)
     epp.devices = dedupeEppDevices(epp.devices);
+    try {
+      const polRes = await pool
+        .request()
+        .input("code", sql.NVarChar(50), code)
+        .query(`
+SELECT PolicyId, PolicyName, DeviceCount, ModulesJson
+FROM dbo.Bitdefender_Policies WITH (NOLOCK)
+WHERE UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+  AND SnapshotDate = (
+    SELECT MAX(SnapshotDate) FROM dbo.Bitdefender_Policies WITH (NOLOCK)
+    WHERE UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
+  )
+ORDER BY DeviceCount DESC, PolicyName`);
+      epp.policies = (polRes.recordset ?? []).map((r: any) => {
+        let modules: { id: string; label: string; enabled: boolean }[] = [];
+        try {
+          const raw = r.ModulesJson != null ? String(r.ModulesJson) : "[]";
+          const parsed = JSON.parse(raw);
+          modules = (Array.isArray(parsed) ? parsed : []).map((m: any) => ({
+            id: String(m.id ?? m.label ?? ""),
+            label: String(m.label ?? m.id ?? ""),
+            enabled: Boolean(m.enabled),
+          }));
+        } catch {
+          modules = [];
+        }
+        return {
+          policyId: String(r.PolicyId ?? ""),
+          policyName: r.PolicyName != null ? String(r.PolicyName) : null,
+          deviceCount: Number(r.DeviceCount) || 0,
+          modules,
+        };
+      });
+    } catch {
+      epp.policies = [];
+    }
     try {
       const sum = await pool
         .request()

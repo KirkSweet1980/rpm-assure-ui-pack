@@ -277,7 +277,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-epp-modules`,
             label: "Policies",
-            blurb: "Security policy assignment",
+            blurb: "Installed EPP modules and assigned policies",
             href: `${base}/epp/modules`,
             match: "exact",
             audience: "tech",
