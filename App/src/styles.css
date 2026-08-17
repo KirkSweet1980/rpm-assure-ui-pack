@@ -912,10 +912,12 @@ html.dark .rpma-pane-head-row {
   line-height: 1.15;
   white-space: nowrap;
 }
-.rpma-sql-digits i {
-  font-style: normal;
-  padding: 0 1px;
-  animation: rpma-sql-colon 1s steps(1) infinite;
+.rpma-sql-digits b {
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  margin-left: 6px;
+  opacity: 0.92;
 }
 .rpma-sql-digital.is-demo .rpma-sql-digits {
   color: #ffa21d;

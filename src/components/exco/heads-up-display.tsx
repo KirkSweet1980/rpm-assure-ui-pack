@@ -16,10 +16,12 @@ function partsOf(d: Date) {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false,
+    hour12: true,
+    hourCycle: "h12",
   }).formatToParts(d);
   const get = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((p) => p.type === type)?.value ?? "";
+  const period = (get("dayPeriod") || "AM").replace(/\./g, "").toUpperCase();
   return {
     weekday: get("weekday"),
     day: get("day"),
@@ -28,6 +30,7 @@ function partsOf(d: Date) {
     hour: get("hour"),
     minute: get("minute"),
     second: get("second"),
+    period,
   };
 }
 
@@ -79,9 +82,11 @@ function useClock() {
 
 function digitalOf(d: Date | string | null | undefined) {
   const date = d ? new Date(d) : null;
-  if (!date || Number.isNaN(date.getTime())) return "--:--:--";
+  if (!date || Number.isNaN(date.getTime())) {
+    return { hour: "--", minute: "--", second: "--", period: "" };
+  }
   const p = partsOf(date);
-  return `${p.hour}:${p.minute}:${p.second}`;
+  return { hour: p.hour, minute: p.minute, second: p.second, period: p.period };
 }
 
 export function HeadsUpDisplay({
@@ -95,7 +100,7 @@ export function HeadsUpDisplay({
 }) {
   const now = useClock();
   const dateStr = `${now.weekday} ${now.day} ${now.month} ${now.year}`;
-  const timeStr = `${now.hour}:${now.minute}:${now.second}`;
+  const timeStr = `${now.hour}:${now.minute}:${now.second} ${now.period}`;
   const sqlWhen = formatSastDateTime(generatedAt);
   const sqlDigits = digitalOf(generatedAt);
 
@@ -112,11 +117,12 @@ export function HeadsUpDisplay({
         <span className="rpma-sql-meta">
           <em>SQL Refresh</em>
           <span className="rpma-sql-digits">
-            {sqlDigits.slice(0, 2)}
+            {sqlDigits.hour}
             <i>:</i>
-            {sqlDigits.slice(3, 5)}
+            {sqlDigits.minute}
             <i>:</i>
-            {sqlDigits.slice(6, 8)}
+            {sqlDigits.second}
+            {sqlDigits.period ? <b>{sqlDigits.period}</b> : null}
           </span>
         </span>
       </div>
