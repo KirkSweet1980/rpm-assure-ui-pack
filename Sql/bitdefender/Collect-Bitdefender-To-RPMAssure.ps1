@@ -118,6 +118,16 @@ function Sql-Bit($v) {
   return '0'
 }
 
+function Sql-Int($v) {
+  if ($null -eq $v -or "$v" -eq '') { return 'NULL' }
+  try {
+    $n = [int64]$v
+    return [string]$n
+  } catch {
+    return 'NULL'
+  }
+}
+
 function Sql-Dt($v) {
   if ($null -eq $v -or "$v" -eq '') { return 'NULL' }
   try {
@@ -137,7 +147,7 @@ $seedMap = @'
 SET NOCOUNT ON;
 IF OBJECT_ID(N'dbo.Dim_Bitdefender_NameMap', N'U') IS NULL
 BEGIN
-  RAISERROR(N'Dim_Bitdefender_NameMap missing — run 450 as SQL admin first.', 16, 1);
+  RAISERROR(N'Dim_Bitdefender_NameMap missing - run 450 as SQL admin first.', 16, 1);
   RETURN;
 END
 -- Soft seed: insert missing patterns only (no MERGE multi-match)
