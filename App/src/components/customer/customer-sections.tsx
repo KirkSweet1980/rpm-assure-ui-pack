@@ -2345,14 +2345,18 @@ function IopsPerfMatrix({
 
 export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
   const rows = keepLiveIops(data.rmm?.agentIops ?? []);
-  const hosts = [...new Set(rows.map((r) => r.hostName).filter(Boolean))];
+  const devices = data.rmm?.devices ?? [];
+  const rmmHosts = devices
+    .filter((d) => classifyRmmDevice(d) === "server" || /server/i.test(`${d.osName || ""} ${d.deviceType || ""} ${d.name || ""}`))
+    .map((d) => String(d.name || "").trim())
+    .filter(Boolean);
+  const hosts = [...new Set([...rows.map((r) => r.hostName).filter(Boolean), ...rmmHosts])];
   const [sel, setSel] = useState(hosts[0] ?? "");
-  if (!rows.length) {
+  if (!hosts.length) {
     return <p className="text-sm text-muted">No IOPS samples for this customer.</p>;
   }
   const focus = sel || hosts[0];
   const hostRows = rows.filter((r) => (r.hostName || "").toLowerCase() === focus.toLowerCase());
-  const devices = data.rmm?.devices ?? [];
   const matchDev = devices.find((d) => (d.name || "").toLowerCase() === focus.toLowerCase())
     ?? devices.find((d) => {
       const a = (d.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -2368,12 +2372,25 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <StickyPickSplit
       title="Hosts"
-      items={hosts.map((h) => ({ id: h, label: h, meta: "IOPS", tone: "green" as const }))}
+      items={hosts.map((h) => ({
+        id: h,
+        label: h,
+        meta: rows.some((r) => (r.hostName || "").toLowerCase() === h.toLowerCase()) ? "IOPS" : "no sample",
+        tone: (rows.some((r) => (r.hostName || "").toLowerCase() === h.toLowerCase()) ? "green" : "amber") as const,
+      }))}
       selected={focus}
       onSelect={setSel}
     >
-      <IopsPerfMatrix rows={hostRows} host={focus} hostKind={hostKind} />
-      <AgentHostTelemetry iops={rows} events={[]} focusHost={focus} />
+      {hostRows.length ? (
+        <>
+          <IopsPerfMatrix rows={hostRows} host={focus} hostKind={hostKind} />
+          <AgentHostTelemetry iops={rows} events={[]} focusHost={focus} />
+        </>
+      ) : (
+        <p className="text-sm text-muted">
+          No IOPS sample yet for {focus}. Pulseway lists this server — the Assure agent or Pulseway IOPS script has not posted counters for it.
+        </p>
+      )}
     </StickyPickSplit>
   );
 }

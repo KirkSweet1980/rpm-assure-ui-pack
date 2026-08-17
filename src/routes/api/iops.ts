@@ -4,8 +4,8 @@ import { getPool } from "@/lib/data/sql-pool";
 import { authorizeIngest, ingestConfigured } from "@/lib/security/ingest-secret";
 
 /**
- * Pulseway Automation (and Edge Agent) POST disk performance counters here.
- * Pulseway REST v3 does not return script output or custom-field values —
+ * RPM RMM Automation (and Edge Agent) POST disk performance counters here.
+ * the RMM API does not return script output or custom-field values —
  * the script on the device must push.
  *
  *   POST https://assure.rpmresources.co.za/api/iops
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/iops")({
       GET: async () =>
         Response.json({
           ok: true,
-          accept: "POST disk performance counters from Pulseway Automation",
+          accept: "POST disk performance counters from RPM RMM Automation",
           path: "/api/iops",
         }),
       POST: async ({ request }) => {
@@ -94,8 +94,8 @@ IF CHARINDEX(N'.', @short) > 1 SET @short = LEFT(@short, CHARINDEX(N'.', @short)
 DECLARE @pfx nvarchar(32) = @short;
 IF CHARINDEX(N'-', @pfx) > 1 SET @pfx = LEFT(@pfx, CHARINDEX(N'-', @pfx) - 1);
 
-IF @org IS NOT NULL AND OBJECT_ID(N'dbo.Dim_Pulseway_OrgMap', N'U') IS NOT NULL
-  SELECT TOP 1 @code = CustomerCode FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)
+IF @org IS NOT NULL AND OBJECT_ID(N'dbo.RMM organisation map', N'U') IS NOT NULL
+  SELECT TOP 1 @code = CustomerCode FROM dbo.RMM organisation map WITH (NOLOCK)
   WHERE Active = 1 AND LTRIM(RTRIM(OrganizationName)) = LTRIM(RTRIM(@org));
 
 IF @code IS NULL AND OBJECT_ID(N'dbo.Pulseway_Devices', N'U') IS NOT NULL
@@ -129,11 +129,12 @@ IF @code IS NULL AND @pfx IS NOT NULL AND LEN(@pfx) BETWEEN 2 AND 16
 SELECT @code AS CustomerCode;`);
             customerCode = str((mapped.recordset?.[0] as { CustomerCode?: string } | undefined)?.CustomerCode, 32).toUpperCase();
           }
+          if (customerCode === "PCNS" || customerCode === "PNCS") customerCode = "BHF";
           if (!customerCode) {
             return Response.json(
               {
                 ok: false,
-                error: `No customer map for host ${hostName}. Map the Pulseway device / org first, then retry.`,
+                error: `No customer map for host ${hostName}. Map the RMM device / org first, then retry.`,
               },
               { status: 422 },
             );

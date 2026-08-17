@@ -5031,17 +5031,54 @@ SELECT d.HostName, d.DriveLetter, d.TotalGb, d.FreeGb, d.UsedPct, d.MediaType,
        d.ReadLatencyMs, d.WriteLatencyMs
 FROM dbo.Agent_DiskIops AS d WITH (NOLOCK)
 INNER JOIN (
-  SELECT CustomerCode, HostName, MAX(SnapshotUtc) AS mx
-          FROM dbo.Agent_DiskIops WITH (NOLOCK)
-          WHERE (
-              CustomerCode = @code
-              OR (@code = N'IB' AND HostName LIKE N'IB-%')
+  SELECT HostName, MAX(SnapshotUtc) AS mx
+  FROM dbo.Agent_DiskIops WITH (NOLOCK)
+  WHERE SnapshotUtc >= DATEADD(day, -7, SYSUTCDATETIME())
+    AND (
+      CustomerCode = @code
+      OR (@code = N'BHF' AND (
+            CustomerCode IN (N'PCNS', N'PNCS')
+            OR HostName LIKE N'PCNS%'
+            OR HostName LIKE N'PNCS%'
+            OR HostName LIKE N'BHF%'
+          ))
+      OR (@code = N'IB' AND (CustomerCode = N'IB' OR HostName LIKE N'IB-%'))
+      OR (
+        OBJECT_ID(N'dbo.Pulseway_Devices', N'U') IS NOT NULL
+        AND UPPER(LTRIM(RTRIM(HostName))) IN (
+        SELECT UPPER(LTRIM(RTRIM(Name)))
+        FROM dbo.Pulseway_Devices WITH (NOLOCK)
+        WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
+          AND (
+            (
+              OBJECT_ID(N'dbo.Dim_Pulseway_OrgMap', N'U') IS NOT NULL
+              AND LTRIM(RTRIM(OrganizationName)) IN (
+                SELECT LTRIM(RTRIM(OrganizationName)) FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)
+                WHERE CustomerCode = @code AND ISNULL(Active, 1) = 1
+                  AND NULLIF(LTRIM(RTRIM(OrganizationName)), N'') IS NOT NULL
+              )
             )
-            AND SnapshotUtc >= DATEADD(day, -7, SYSUTCDATETIME())
-          GROUP BY CustomerCode, HostName
-        ) m ON m.HostName = d.HostName AND m.mx = d.SnapshotUtc
-          AND (m.CustomerCode = d.CustomerCode OR (d.CustomerCode IS NULL AND m.CustomerCode IS NULL))
-        WHERE d.CustomerCode = @code OR (@code = N'IB' AND d.HostName LIKE N'IB-%')`);
+            OR (
+              OBJECT_ID(N'dbo.Dim_Pulseway_OrgAlias', N'U') IS NOT NULL
+              AND LTRIM(RTRIM(OrganizationName)) IN (
+                SELECT LTRIM(RTRIM(OrganizationName)) FROM dbo.Dim_Pulseway_OrgAlias WITH (NOLOCK)
+                WHERE CustomerCode = @code AND ISNULL(Active, 1) = 1
+                  AND NULLIF(LTRIM(RTRIM(OrganizationName)), N'') IS NOT NULL
+              )
+            )
+          )
+      )
+      )
+      OR (
+        OBJECT_ID(N'dbo.Agent_Registry', N'U') IS NOT NULL
+        AND UPPER(LTRIM(RTRIM(HostName))) IN (
+        SELECT UPPER(LTRIM(RTRIM(HostName))) FROM dbo.Agent_Registry WITH (NOLOCK)
+        WHERE CustomerCode = @code OR (@code = N'BHF' AND CustomerCode IN (N'PCNS', N'PNCS'))
+      )
+      )
+    )
+  GROUP BY HostName
+) m ON m.HostName = d.HostName AND m.mx = d.SnapshotUtc`);
             const iopsRows = (iopsRes.recordset ?? []) as Array<{
               HostName?: string;
               DriveLetter?: string;
