@@ -12,7 +12,6 @@ import {
 } from "./sla-metrics";
 import type { CustomerDetailPayload } from "./types";
 import { coverFromDetail } from "./cover";
-import { mapTicketPriority, businessMinutesBetween } from "./ticket-sla";
 
 export type ServiceSlaLine = {
   id: string;
@@ -264,71 +263,9 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   }
   const upd = scoredN > 0 ? clamp((current / scoredN) * 100) : null;
 
-  const scanAges = devices
-    .map((d) => hoursAgo(d.lastSuccessfulScanAt))
-    .filter((n): n is number => n != null)
-    .sort((a, b) => a - b);
-  const tickets = data.incidents ?? [];
-  const critTickets = tickets.filter((t) => mapTicketPriority(t) === "P1");
-  let mttdPct: number | null = null;
-  let mttdLabel = "No scan or P1 ticket clocks";
-  if (scanAges.length) {
-    const mid = scanAges[Math.floor(scanAges.length / 2)];
-    const targetH = 0.5;
-    mttdPct = clamp((targetH / Math.max(mid, 0.01)) * 100);
-    const mins = Math.round(mid * 60);
-    mttdLabel = `Median last scan ${mins < 90 ? `${mins} min` : `${mid.toFixed(1)} h`} · ${scanAges.length} endpoint(s)`;
-  } else if (critTickets.length) {
-    const times = critTickets
-      .map((t) => businessMinutesBetween(t.openedAt, t.firstResponseAt ?? t.resolvedAt))
-      .filter((n): n is number => n != null);
-    if (times.length) {
-      const avg = times.reduce((s, n) => s + n, 0) / times.length;
-      mttdPct = clamp((30 / Math.max(avg, 1)) * 100);
-      mttdLabel = `P1 first response avg ${Math.round(avg)} min (${times.length} ticket${times.length === 1 ? "" : "s"})`;
-    }
-  }
-
-  let respPct: number | null = null;
-  let respLabel = "No critical ticket clocks";
-  const clockSrc = critTickets.length ? critTickets : tickets;
-  if (clockSrc.length) {
-    let ackScored = 0;
-    let ackMet = 0;
-    let containScored = 0;
-    let containMet = 0;
-    for (const t of clockSrc) {
-      if (!t.openedAt) continue;
-      const ack = t.firstResponseAt
-        ? businessMinutesBetween(t.openedAt, t.firstResponseAt)
-        : null;
-      if (ack != null) {
-        ackScored += 1;
-        if (ack <= 15) ackMet += 1;
-      }
-      const done = t.resolvedAt || /closed|resolved/i.test(t.status || "") ? t.resolvedAt : null;
-      if (done) {
-        const contain = businessMinutesBetween(t.openedAt, done);
-        if (contain != null) {
-          containScored += 1;
-          if (contain <= 4 * 60) containMet += 1;
-        }
-      }
-    }
-    const parts: number[] = [];
-    if (ackScored) parts.push((ackMet / ackScored) * 100);
-    if (containScored) parts.push((containMet / containScored) * 100);
-    if (parts.length) {
-      respPct = clamp(parts.reduce((s, n) => s + n, 0) / parts.length);
-      respLabel = `Ack ${ackMet}/${ackScored || 0} ≤15m · contain ${containMet}/${containScored || 0} ≤4h`;
-    }
-  }
-
   const lines: ServiceSlaLine[] = [
     line("epp-coverage", "epp", cov, covLabel, slaCover && cov != null),
     line("epp-update", "epp", upd, updLabel, slaCover && upd != null),
-    line("epp-mttd", "epp", mttdPct, mttdLabel, slaCover && mttdPct != null),
-    line("epp-respond", "epp", respPct, respLabel, slaCover && respPct != null),
     line("epp-open", "epp", openPct, openLabel, slaCover && openPct != null),
   ];
 
