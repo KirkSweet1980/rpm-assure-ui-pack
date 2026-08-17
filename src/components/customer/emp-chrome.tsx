@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
-import { CustomerSwitcher } from "@/components/nav/customer-switcher";
-import { useCustomerList } from "@/lib/nav/customer-list-context";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
 import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
 import { EmpInspector } from "@/components/chrome/emp-inspector";
@@ -113,7 +111,6 @@ export function EmpChrome({
   lastImportAt?: string | null;
   children: ReactNode;
 }) {
-  const { customers } = useCustomerList();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const base = `/customers/${encodeURIComponent(customerCode)}`;
   const rest = pathname.replace(base, "") || "";
@@ -142,14 +139,6 @@ export function EmpChrome({
         </span>
         <strong>{customerName}</strong>
         <em>Enterprise Management Platform</em>
-        <div className="rpma-emp-win">
-          <CustomerSwitcher
-            customers={customers}
-            currentCode={customerCode}
-            variant="inline"
-            label={customerName}
-          />
-        </div>
       </div>
       <div className="rpma-emp-ribbon is-opt6" role="toolbar">
         <div className="rpma-emp-titles">
