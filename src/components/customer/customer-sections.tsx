@@ -20,7 +20,7 @@ import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type 
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { SpaLink } from "@/components/nav/spa-link";
-import { keepLiveIops } from "@/lib/data/agent-iops";
+import { keepLiveIops, expectedIopsForMedia, iopsBand } from "@/lib/data/agent-iops";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
   Bar,
@@ -2197,6 +2197,72 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
   );
 }
 
+function IopsPerfMatrix({
+  rows,
+  host,
+}: {
+  rows: NonNullable<CustomerDetailPayload["rmm"]>["agentIops"];
+  host: string;
+}) {
+  const list = rows ?? [];
+  if (!list.length) return null;
+  return (
+    <section className="rpma-iops-matrix">
+      <header>
+        <h3>Performance vs expected</h3>
+        <p>
+          {host} — live sample against a media baseline (HDD 150 · Virtual 800 · SSD 5k · NVMe 20k). Not a signed SLA.
+        </p>
+      </header>
+      <div className="rpma-iops-matrix-rows">
+        {list.map((r, i) => {
+          const actual = Number(r.totalIops) || 0;
+          const expected = expectedIopsForMedia(r.mediaType);
+          const band = iopsBand(actual, expected, r.queueLen);
+          const scale = Math.max(expected * 1.4, actual, 1);
+          const actPct = Math.min(100, (actual / scale) * 100);
+          const expPct = Math.min(100, (expected / scale) * 100);
+          const ofExp = expected > 0 ? Math.round((actual / expected) * 100) : 0;
+          return (
+            <article key={`${r.driveLetter}-${i}`} data-band={band}>
+              <div className="rpma-iops-k">
+                <strong>{r.driveLetter || "?"}</strong>
+                <span>{r.mediaType || "Unknown media"}</span>
+              </div>
+              <div className="rpma-iops-track" title={`${Math.round(actual)} of ${expected} expected IOPS`}>
+                <i style={{ width: `${actPct}%` }} />
+                <em style={{ left: `${expPct}%` }} />
+              </div>
+              <dl>
+                <div>
+                  <dt>Actual</dt>
+                  <dd>{actual < 0.5 ? "idle" : actual < 10 ? actual.toFixed(1) : Math.round(actual)}</dd>
+                </div>
+                <div>
+                  <dt>Expected</dt>
+                  <dd>{expected.toLocaleString("en-ZA")}</dd>
+                </div>
+                <div>
+                  <dt>vs expected</dt>
+                  <dd>{actual < 0.5 ? "—" : `${ofExp}%`}</dd>
+                </div>
+                <div>
+                  <dt>Queue</dt>
+                  <dd>{r.queueLen != null ? r.queueLen.toFixed(1) : "—"}</dd>
+                </div>
+                <div>
+                  <dt>Band</dt>
+                  <dd className="rpma-iops-band">{band}</dd>
+                </div>
+              </dl>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
   const rows = keepLiveIops(data.rmm?.agentIops ?? []);
   const hosts = [...new Set(rows.map((r) => r.hostName).filter(Boolean))];
@@ -2204,14 +2270,17 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
   if (!rows.length) {
     return <p className="text-sm text-muted">No IOPS samples for this customer.</p>;
   }
+  const focus = sel || hosts[0];
+  const hostRows = rows.filter((r) => (r.hostName || "").toLowerCase() === focus.toLowerCase());
   return (
     <StickyPickSplit
       title="Hosts"
       items={hosts.map((h) => ({ id: h, label: h, meta: "IOPS", tone: "green" as const }))}
-      selected={sel || hosts[0]}
+      selected={focus}
       onSelect={setSel}
     >
-      <AgentHostTelemetry iops={rows} events={[]} focusHost={sel || hosts[0]} />
+      <IopsPerfMatrix rows={hostRows} host={focus} />
+      <AgentHostTelemetry iops={rows} events={[]} focusHost={focus} />
     </StickyPickSplit>
   );
 }
