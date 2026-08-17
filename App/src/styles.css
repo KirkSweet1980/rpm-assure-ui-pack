@@ -2145,20 +2145,46 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 
 /* Enterprise Management Platform window */
 .rpma-amx-workspace { padding: 0.35rem; }
+.dk-shell.is-topnav .dk-content.rpma-topnav-main {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--pc-header-height));
+  max-height: calc(100dvh - var(--pc-header-height));
+  overflow: hidden;
+  padding: 8px 10px 10px;
+}
+.dk-shell.is-topnav .rpma-topnav-canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dk-shell.is-topnav .rpma-amx-workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.35rem;
+}
 .rpma-emp {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--pc-header-height, 56px) - 2.4rem);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
   border-radius: 10px;
-  overflow: visible;
+  overflow: hidden;
   background: #061018;
   border: 1px solid #143044;
   color: #dce6ee;
 }
 .rpma-emp-stick {
-  position: sticky;
-  top: var(--pc-header-height, 56px);
-  z-index: 14;
+  position: relative;
+  top: auto;
+  z-index: 6;
+  flex: 0 0 auto;
   background: #061018;
 }
 .rpma-emp-title {
@@ -2327,11 +2353,26 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  align-items: start;
-  gap: 1rem;
-  padding: 0.75rem 0.85rem 1rem;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem 0.7rem;
+  overflow: auto;
 }
+.rpma-emp-inspector { align-self: start; }
+.rpma-emp-body .rpma-glass,
+.rpma-emp-body .rpma-pane,
+.rpma-emp-body .rpma-kpi-tile {
+  padding: 8px 10px !important;
+}
+.rpma-emp-body .h-52,
+.rpma-emp-body .h-56,
+.rpma-emp-body .h-48,
+.rpma-emp-body .h-44 {
+  height: 7.5rem !important;
+}
+.rpma-emp-body .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.55rem; }
+.rpma-emp-body .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.45rem; }
 .rpma-emp-work.is-tree {
   grid-template-columns: 220px minmax(0, 1fr) 260px;
 }
