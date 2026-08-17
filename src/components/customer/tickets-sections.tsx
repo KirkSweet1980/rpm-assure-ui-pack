@@ -10,7 +10,7 @@ import {
 } from "@/lib/data/ticket-feed";
 import { SlaStrip } from "@/components/customer/service-sla-section";
 import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
-import { RPM_CONTRACT_CLOCKS } from "@/lib/data/sla-metrics";
+import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
 
 function slaChip(met: boolean | null | undefined) {
   if (met === true) {
