@@ -1,8 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useId } from "react";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { Route as PillarRoute } from "./customers.$code.epp";
 import { NoCoverPanel } from "@/components/ui/no-cover";
 import { cn } from "@/lib/utils";
+
+function EppLamp({ on, small }: { on: boolean; small?: boolean }) {
+  const uid = useId().replace(/:/g, "");
+  const gid = `epp-${uid}`;
+  const size = small ? 10 : 14;
+  return (
+    <svg
+      className={on ? "rpma-epp-lamp is-on" : "rpma-epp-lamp is-off"}
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      aria-hidden
+    >
+      <defs>
+        <radialGradient id={gid} cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stopColor={on ? "#d1fae5" : "#fecaca"} />
+          <stop offset="45%" stopColor={on ? "#22c55e" : "#ef4444"} />
+          <stop offset="100%" stopColor={on ? "#14532d" : "#7f1d1d"} />
+        </radialGradient>
+      </defs>
+      <circle cx="8" cy="8" r="6.2" fill={`url(#${gid})`} />
+      <ellipse cx="6.2" cy="5.6" rx="2.2" ry="1.4" fill="rgba(255,255,255,0.55)" />
+    </svg>
+  );
+}
 
 export const Route = createFileRoute("/customers/$code/epp/modules")({
   component: function CustomerChild() {
@@ -97,7 +123,7 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
               const on = m.onPolicies > 0;
               return (
                 <article key={m.label} className={cn("rpma-epp-mod", on ? "is-on" : "is-off")}>
-                  <span className="rpma-epp-lamp" data-on={on ? "1" : "0"} aria-hidden />
+                  <EppLamp on={on} />
                   <h3>{m.label}</h3>
                   <p className="rpma-epp-state">{on ? "On" : "Off"}</p>
                   <p className="rpma-epp-meta">
@@ -129,8 +155,8 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {mods.map((m) => (
                           <span key={m.id} className={cn("rpma-epp-chip", m.enabled ? "is-on" : "is-off")}>
-                            <i data-on={m.enabled ? "1" : "0"} />
-                            {m.label}
+                          <EppLamp on={m.enabled} small />
+                          {m.label}
                           </span>
                         ))}
                       </div>
