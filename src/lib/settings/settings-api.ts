@@ -1211,7 +1211,7 @@ BEGIN
   RETURN;
 END
 
-DECLARE @cove datetime2(3), @csp datetime2(3), @rmm datetime2(3), @epp datetime2(3);
+DECLARE @cove datetime2(3), @csp datetime2(3), @rmm datetime2(3), @epp datetime2(3), @ams datetime2(3);
 
 IF OBJECT_ID(N'dbo.Cove_DeviceStatistics', N'U') IS NOT NULL
   SELECT @cove = (SELECT MAX(t) FROM (
@@ -1230,6 +1230,8 @@ IF OBJECT_ID(N'dbo.Pulseway_Devices', N'U') IS NOT NULL
   SELECT @rmm = MAX(ImportedAt) FROM dbo.Pulseway_Devices WITH (NOLOCK);
 IF OBJECT_ID(N'dbo.Bitdefender_Endpoints', N'U') IS NOT NULL
   SELECT @epp = MAX(ImportedAt) FROM dbo.Bitdefender_Endpoints WITH (NOLOCK);
+IF OBJECT_ID(N'dbo.Freshdesk_Tickets', N'U') IS NOT NULL
+  SELECT @ams = MAX(ImportedAt) FROM dbo.Freshdesk_Tickets WITH (NOLOCK);
 
 UPDATE dbo.Dim_Connection
 SET LastSyncAt = CASE ConnectionCode
@@ -1237,12 +1239,14 @@ SET LastSyncAt = CASE ConnectionCode
       WHEN N'MS_CSP' THEN COALESCE(@csp, LastSyncAt)
       WHEN N'PULSEWAY' THEN COALESCE(@rmm, LastSyncAt)
       WHEN N'BITDEFENDER' THEN COALESCE(@epp, LastSyncAt)
+      WHEN N'FRESHDESK' THEN COALESCE(@ams, LastSyncAt)
       ELSE LastSyncAt END,
     Status = CASE
       WHEN ConnectionCode = N'COVE' AND @cove >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
       WHEN ConnectionCode = N'MS_CSP' AND @csp >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
       WHEN ConnectionCode = N'PULSEWAY' AND @rmm >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
       WHEN ConnectionCode = N'BITDEFENDER' AND @epp >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
+      WHEN ConnectionCode = N'FRESHDESK' AND @ams >= DATEADD(hour, -6, SYSUTCDATETIME()) THEN N'Active'
       ELSE Status END,
     UpdatedAt = SYSUTCDATETIME()
 WHERE ConnectionCode IN (N'COVE', N'MS_CSP', N'PULSEWAY', N'BITDEFENDER');
@@ -2261,6 +2265,7 @@ async function startApiFeedSyncHandler() {
         { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "Waiting" },
         { name: "RPM EndPoint Protection", label: "RPM EndPoint Protection", kind: "epp", status: "queued", pct: 0, message: "Waiting" },
         { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "Waiting" },
+        { name: "Freshdesk", label: "AMS", kind: "ams", status: "queued", pct: 0, message: "Waiting" },
       ],
     };
     fs.mkdirSync("C:\\RPM-Assure\\Sql\\ops", { recursive: true });

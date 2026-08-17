@@ -14,6 +14,14 @@ function Write-Log([string]$m) {
   Write-Host $line
 }
 
+function Invoke-FdSql([string]$File) {
+  if ($FreshdeskSqlUser -and $FreshdeskSqlPassword) {
+    & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -U $FreshdeskSqlUser -P $FreshdeskSqlPassword -C -I -b -i $File
+  } else {
+    & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -I -b -i $File
+  }
+}
+
 $cfg = Join-Path $here 'Freshdesk.Config.ps1'
 if (-not (Test-Path -LiteralPath $cfg)) {
   Write-Host 'SKIP Freshdesk - missing Freshdesk.Config.ps1'
@@ -24,9 +32,14 @@ if (-not (Test-Path -LiteralPath $cfg)) {
 if ([string]::IsNullOrWhiteSpace($FreshdeskDomain)) { Write-Host 'SKIP Freshdesk - domain not set'; exit 2 }
 if ([string]::IsNullOrWhiteSpace($FreshdeskApiKey)) { Write-Host 'SKIP Freshdesk - api key not set'; exit 2 }
 $FreshdeskDomain = $FreshdeskDomain.Trim() -replace '^https?://', '' -replace '/$', ''
+if (-not $FreshdeskSqlServer -or $FreshdeskSqlServer -match '14333|102\.222\.21\.220') { $FreshdeskSqlServer = '.\RPMREPORTS' }
 if (-not $FreshdeskSqlServer) { $FreshdeskSqlServer = '.\RPMREPORTS' }
 if (-not $FreshdeskSqlDatabase) { $FreshdeskSqlDatabase = 'RPMAssure_App' }
-if (-not $FreshdeskLookbackDays) { $FreshdeskLookbackDays = 30 }
+if (-not $FreshdeskLookbackDays) { $FreshdeskLookbackDays = 90 }
+if (-not $FreshdeskSqlUser -and $SqlUser) { $FreshdeskSqlUser = $SqlUser }
+if (-not $FreshdeskSqlPassword -and $SqlPassword) { $FreshdeskSqlPassword = $SqlPassword }
+if (-not $FreshdeskSqlUser) { $FreshdeskSqlUser = 'Rpm_collect' }
+if (-not $FreshdeskSqlPassword) { $FreshdeskSqlPassword = 'RpmCollect#AHIC2026' }
 
 Write-Log '=== Freshdesk collect start ==='
 Write-Log ('domain=' + $FreshdeskDomain + ' lookbackDays=' + $FreshdeskLookbackDays)
@@ -394,7 +407,7 @@ $sqlFile = Join-Path $logDir ("freshdesk_load_{0}.sql" -f $stamp)
 [IO.File]::WriteAllText($sqlFile, $sb.ToString())
 Write-Log ('SQL written ' + $sqlFile)
 
-& $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $sqlFile
+Invoke-FdSql $sqlFile
 if ($LASTEXITCODE -ne 0) {
   Write-Log ('sqlcmd failed exit=' + $LASTEXITCODE)
   throw ('sqlcmd failed ' + $LASTEXITCODE)
@@ -406,7 +419,7 @@ foreach ($sqlName in @('514_Fuzzy_Map_Freshdesk_Companies.sql', '513_Sync_Freshd
   $sync = Join-Path $here $sqlName
   if (-not (Test-Path -LiteralPath $sync)) { continue }
   Write-Log ('SQL ' + $sqlName)
-  & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -I -b -i $sync
+  Invoke-FdSql $sync
   if ($LASTEXITCODE -ne 0) { Write-Log ($sqlName + ' warned exit=' + $LASTEXITCODE) }
   else { Write-Log ($sqlName + ' OK') }
 }
@@ -426,6 +439,6 @@ END
 "@
 $stampFile = Join-Path $logDir ("fd_stamp_" + $stamp + ".sql")
 [IO.File]::WriteAllText($stampFile, $stampSql)
-& $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $stampFile
+Invoke-FdSql $stampFile
 Write-Log 'Dim_Connection FRESHDESK stamped Active'
 
