@@ -4,7 +4,8 @@ import { ThemeToggle } from "@/components/portfolio/theme-toggle";
 import { DensityToggle } from "@/components/portfolio/density-toggle";
 import { DkSidebarNav } from "@/components/nav/dk-sidebar-nav";
 import { UserButton } from "@/lib/auth/gates";
-import { fetchPortfolio } from "@/lib/data/portfolio";
+import { fetchDataSourceStatus, fetchPortfolio } from "@/lib/data/portfolio";
+import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
 import {
   readClientPortfolioCache,
   writeClientPortfolioCache,
@@ -38,6 +39,8 @@ export function AppShell({
 }) {
   const [masterCustomers, setMasterCustomers] = useState<MasterCustomer[]>([]);
   const [listLoading, setListLoading] = useState(true);
+  const [hudLive, setHudLive] = useState(false);
+  const [hudAt, setHudAt] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { profile } = useStaffProfile();
   useIdleLogout();
@@ -129,6 +132,7 @@ export function AppShell({
     const cached = readClientPortfolioCache();
     if (cached) {
       setMasterCustomers(mapRows(cached));
+      setHudAt(cached.exco?.generatedAt || cached.summary?.generatedAt || null);
       setListLoading(false);
     }
 
@@ -137,10 +141,18 @@ export function AppShell({
         if (cancelled) return;
         writeClientPortfolioCache(p);
         setMasterCustomers(mapRows(p));
+        setHudAt(p.exco?.generatedAt || p.summary?.generatedAt || null);
         setListLoading(false);
       })
       .catch(() => {
         if (!cancelled) setListLoading(false);
+      });
+    void fetchDataSourceStatus()
+      .then((s) => {
+        if (!cancelled) setHudLive(Boolean(s.liveOk));
+      })
+      .catch(() => {
+        /* keep demo */
       });
 
     return () => {
@@ -217,6 +229,7 @@ export function AppShell({
             </div>
           </div>
         </header>
+        <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} />
         <div className="dk-main">
           <main className="dk-content rpma-topnav-main">
             {title ? (

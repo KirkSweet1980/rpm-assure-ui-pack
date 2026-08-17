@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { ChevronRight, RefreshCw } from "lucide-react";
 import { HelpTip, HoverTip, MetricLabel, PaneHead } from "@/components/ui/help-tip";
 import { SpaLink } from "@/components/nav/spa-link";
-import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
 import { ExcoWorkspaceRail } from "@/components/exco/exco-workspace-rail";
 import { CustomizeWidgetsButton, CustomizeWidgetsPanel } from "@/components/exco/customize-widgets";
 import {
@@ -1111,10 +1110,6 @@ function ExcoInsightPage() {
             </div>
             <div className="rpma-d3-detail-body">
         <div className="rpma-exco space-y-4">
-          <HeadsUpDisplay
-            liveSql={source.liveOk || summary.dataMode === "live"}
-            generatedAt={exco.generatedAt || summary.generatedAt}
-          />
           {customizeOpen ? (
             <CustomizeWidgetsPanel
               layout={widgetLayout}
