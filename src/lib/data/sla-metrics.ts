@@ -244,24 +244,6 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       measurable: true,
       how: "Devices whose last successful backup is within 24 hours. Stale devices miss RPO.",
     },
-    {
-      id: "cove-restore",
-      metric: "Restore / recoverability success",
-      targetPct: 95,
-      targetLabel: "≥ 95–99% of test restores",
-      contractual: true,
-      measurable: true,
-      how: "Recovery Testing / Standby Image counts from last collect. Pass rate scores when a last-test time is stored.",
-    },
-    {
-      id: "cove-test-freq",
-      metric: "Test restore frequency",
-      targetPct: 100,
-      targetLabel: "Monthly (critical) / quarterly (others)",
-      contractual: true,
-      measurable: true,
-      how: "Days since last stored recovery test. Biweekly target: green ≤ 21 days. Plan on with no stored date shows as In plan.",
-    },
   ],
   epp: [
     {

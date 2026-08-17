@@ -170,7 +170,6 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
 export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
   const cover = coverFromDetail(data).cove;
   const s = data.cove?.summary;
-  const rec = s?.recovery ?? data.cove?.recovery;
   const ok = s?.okCount ?? 0;
   const failed = s?.failedCount ?? 0;
   const stale = s?.staleCount ?? 0;
@@ -194,72 +193,9 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
         ? "No stale flag · RPO assumed met"
         : "No devices";
 
-  const tOk = rec?.testSuccessCount ?? 0;
-  const tFail = rec?.testFailedCount ?? 0;
-  const tDen = tOk + tFail;
-  const devices = data.cove?.devices ?? [];
-  const rt =
-    rec?.recoveryTestingCount ??
-    devices.filter((d) => (d.recoveryPlanType ?? 0) === 1).length;
-  const si =
-    rec?.standbyImageCount ??
-    devices.filter((d) => (d.recoveryPlanType ?? 0) === 2).length;
-  const inPlan = rt + si;
-  const lastTest = rec?.lastRecoveryTestAt ?? s?.recovery?.lastRecoveryTestAt ?? null;
-  const lastLbl = lastTest
-    ? `last test ${new Date(lastTest).toISOString().slice(0, 10)}`
-    : "last test not on last collect";
-  const planStats = `${rt} Recovery Testing · ${si} Standby Image · ${lastLbl}`;
-
-  let restore: number | null = null;
-  let restoreLabel = "No Recovery Testing on this tenant";
-  let restoreExcluded = false;
-  let restoreMeasured = false;
-  let restoreBadge: string | undefined;
-  if (tDen > 0) {
-    restore = clamp((tOk / tDen) * 100);
-    restoreLabel = `${tOk}/${tDen} tests passed · ${planStats}`;
-    restoreMeasured = slaCover;
-  } else if (inPlan > 0) {
-    restoreLabel = planStats;
-    restoreExcluded = slaCover;
-    restoreBadge = "In plan";
-  } else {
-    restoreExcluded = slaCover;
-    restoreBadge = "No plan";
-  }
-
-  const ageH = hoursAgo(lastTest);
-  let freq: number | null = null;
-  let freqLabel = "No Recovery Testing on this tenant";
-  let freqExcluded = false;
-  let freqMeasured = false;
-  let freqBadge: string | undefined;
-  if (ageH != null) {
-    const days = ageH / 24;
-    freq = days <= 21 ? 100 : days <= 31 ? 70 : 35;
-    freqLabel = `Last test ${Math.round(days)} day(s) ago · biweekly target`;
-    freqMeasured = slaCover;
-  } else if (inPlan > 0) {
-    freqLabel = planStats;
-    freqExcluded = slaCover;
-    freqBadge = "In plan";
-  } else {
-    freqExcluded = slaCover;
-    freqBadge = "No plan";
-  }
-
   const lines: ServiceSlaLine[] = [
     line("cove-success", "cove", success, successLabel, slaCover && success != null),
     line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
-    line("cove-restore", "cove", restore, restoreLabel, restoreMeasured, {
-      excluded: restoreExcluded,
-      badge: restoreBadge,
-    }),
-    line("cove-test-freq", "cove", freq, freqLabel, freqMeasured, {
-      excluded: freqExcluded,
-      badge: freqBadge,
-    }),
   ];
 
   return {
