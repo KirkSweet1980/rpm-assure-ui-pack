@@ -265,7 +265,9 @@ foreach ($name in @(
     'Start-Caddy-Https-443.ps1',
     'Fix-Https-443.ps1',
     'Diagnose-SSL.ps1',
-    'Start-RpmAssure-App.ps1'
+    'Start-RpmAssure-App.ps1',
+    'Renew-Assure-Https.ps1',
+    'Install-Https-Renew-Task.ps1'
   )) {
   $from = Join-Path $Pack ('deploy\' + $name)
   if (-not (Test-Path -LiteralPath $from)) { $from = Join-Path $Pack $name }
@@ -290,6 +292,12 @@ if (Test-Path -LiteralPath $ens) {
   } else {
     W Yellow 'Port 443 not LISTENING. Run C:\RPM-Assure\deploy\Start-Caddy-Https-443.ps1 as Administrator.'
   }
+}
+
+$ren = Join-Path $Root 'deploy\Install-Https-Renew-Task.ps1'
+if (Test-Path -LiteralPath $ren) {
+  W Cyan '--- Let''s Encrypt renew watchdog (daily 04:15) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ren
 }
 
 Write-Host '========================================' -ForegroundColor Cyan
