@@ -171,7 +171,11 @@ $wanted = @(
   @{ q = 'YLJ Health'; c = 'YLJ' },
   @{ q = 'ORATouch'; c = 'YLJ' },
   @{ q = 'Vault-Tech'; c = 'VAULT' },
-  @{ q = 'Simply Bright Solutions'; c = 'SBS' }
+  @{ q = 'Simply Bright Solutions'; c = 'SBS' },
+  @{ q = 'Simply Bright'; c = 'SBS' },
+  @{ q = 'BHF'; c = 'BHF' },
+  @{ q = 'PCNS'; c = 'BHF' },
+  @{ q = 'Board of Healthcare'; c = 'BHF' }
 )
 foreach ($w in $wanted) {
   $already = @($mapped | Where-Object { $_.CustomerCode -eq $w.c })
