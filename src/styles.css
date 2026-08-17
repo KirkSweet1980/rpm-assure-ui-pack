@@ -1584,9 +1584,19 @@ a.rpma-glass:hover,
   border-color: var(--color-brand-teal);
   box-shadow: 0 3px 10px color-mix(in srgb, var(--color-nav) 12%, transparent);
 }
-.rpma-modbtn.is-cover:hover {
-  filter: brightness(1.06);
+.rpma-srv-kind {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-nav) 8%, #fff);
+  line-height: 0;
 }
+.rpma-srv-kind.is-virtual { background: color-mix(in srgb, var(--color-brand-teal) 18%, #fff); }
+.rpma-srv-kind.is-physical { background: color-mix(in srgb, var(--color-nav) 12%, #fff); }
+html[data-theme="dark"] .rpma-srv-kind,
+html.dark .rpma-srv-kind { background: #1a212c; }
 .rpma-modbtn.is-nocover:hover {
   border-color: #9aa6b4;
 }

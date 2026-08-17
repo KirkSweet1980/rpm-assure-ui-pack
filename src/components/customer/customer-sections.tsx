@@ -40,7 +40,8 @@ import { StatCard } from "@/components/portfolio/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { NoCover, NoCoverPanel } from "@/components/ui/no-cover";
 import { HelpTip, MetricLabel } from "@/components/ui/help-tip";
-import { classifyRmmDevice, isRmmServer, isRmmWorkstation } from "@/lib/data/rmm-device-class";
+import { classifyRmmDevice, classifyServerHardware, isRmmServer, isRmmWorkstation } from "@/lib/data/rmm-device-class";
+import { ServerKindIcon } from "@/components/customer/server-kind-icon";
 import { assuranceTone } from "@/lib/data/rag-score";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { CHART } from "@/lib/brand-colors";
@@ -1676,8 +1677,11 @@ export function RmmDevicesSection({
                       }
                     >
                       <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-semibold text-fg">
-                          {d.name ?? d.deviceId}
+                        <span className="flex min-w-0 items-center gap-2">
+                          {mode === "servers" ? <ServerKindIcon device={d} size={26} /> : null}
+                          <span className="truncate text-sm font-semibold text-fg">
+                            {d.name ?? d.deviceId}
+                          </span>
                         </span>
                         {d.isOnline == null ? null : d.isOnline ? (
                           <Badge variant="online" className="shrink-0">
@@ -1719,8 +1723,10 @@ export function RmmDevicesSection({
             ) : (
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-lg font-bold tracking-tight text-fg">
+                  <div className="flex items-start gap-2">
+                    {mode === "servers" ? <ServerKindIcon device={selected} size={36} /> : null}
+                    <div>
+                    <h3 className="text-lg font-extrabold tracking-tight text-fg">
                       {selected.name ?? selected.deviceId}
                     </h3>
                     <p className="mt-0.5 font-mono text-[11px] text-muted">
@@ -1729,6 +1735,7 @@ export function RmmDevicesSection({
                         ? ` · ${selected.organizationName}`
                         : ""}
                     </p>
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {selected.isOnline == null ? null : selected.isOnline ? (
@@ -1737,6 +1744,15 @@ export function RmmDevicesSection({
                       <Badge variant="amber">Offline</Badge>
                     )}
                     <Badge variant="muted">{selected.deviceType ?? "Device"}</Badge>
+                    {mode === "servers" ? (
+                      <Badge variant="muted">
+                        {classifyServerHardware(selected) === "virtual"
+                          ? "Virtual"
+                          : classifyServerHardware(selected) === "physical"
+                            ? "Physical"
+                            : "Type unknown"}
+                      </Badge>
+                    ) : null}
                   </div>
                 </div>
 
