@@ -242,28 +242,36 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const openLabel = slaCover ? `${openCrit} open critical / high incident(s)` : "No Cover for Devices";
 
   const devices = data.epp?.devices ?? [];
-  const flagged = devices.filter((d) => d.productOutdated != null || d.signatureOutdated != null);
-  const scanned = devices.filter((d) => Boolean(d.lastSuccessfulScanAt));
   let current = 0;
   let scoredN = 0;
   let updLabel = "No endpoints to score";
-  if (flagged.length) {
-    scoredN = flagged.length;
-    current = flagged.filter((d) => !d.productOutdated && !d.signatureOutdated).length;
-    updLabel = `${current}/${scoredN} endpoints current (product + signatures)`;
-  } else if (scanned.length) {
-    scoredN = scanned.length;
-    current = scanned.filter((d) => {
-      const age = hoursAgo(d.lastSuccessfulScanAt);
-      return age != null && age <= 24;
-    }).length;
-    updLabel = `${current}/${scoredN} scanned in last 24h`;
-  } else if (slaCover && devices.length) {
+  let updMeasurable = false;
+  const withScan = devices.filter((d) => Boolean(d.lastSuccessfulScanAt));
+  const withFlags = devices.filter((d) => d.productOutdated != null || d.signatureOutdated != null);
+  if (withScan.length) {
     scoredN = devices.length;
-    current = devices.length;
-    updLabel = `${devices.length} managed endpoints · no outdated flags on collect (treated current)`;
+    current = devices.filter((d) => {
+      if (d.productOutdated || d.signatureOutdated) return false;
+      const age = hoursAgo(d.lastSuccessfulScanAt);
+      if (age != null) return age <= 24;
+      return !d.productOutdated && !d.signatureOutdated && withFlags.includes(d);
+    }).length;
+    const stale = devices.filter((d) => {
+      const age = hoursAgo(d.lastSuccessfulScanAt);
+      return age != null && age > 24;
+    }).length;
+    updLabel = `${current}/${scoredN} current · ${withScan.length} with last scan · ${stale} scan >24h`;
+    updMeasurable = true;
+  } else if (withFlags.length) {
+    scoredN = withFlags.length;
+    current = withFlags.filter((d) => !d.productOutdated && !d.signatureOutdated).length;
+    updLabel = `${current}/${scoredN} product + signatures current (GravityZone detail)`;
+    updMeasurable = true;
+  } else if (slaCover && devices.length) {
+    updLabel = `${devices.length} managed endpoints · GravityZone did not return last scan or outdated flags on last collect. Not scored as a miss.`;
+    updMeasurable = false;
   }
-  const upd = scoredN > 0 ? clamp((current / scoredN) * 100) : null;
+  const upd = updMeasurable && scoredN > 0 ? clamp((current / scoredN) * 100) : null;
 
   const lines: ServiceSlaLine[] = [
     line("epp-coverage", "epp", cov, covLabel, slaCover && cov != null),
