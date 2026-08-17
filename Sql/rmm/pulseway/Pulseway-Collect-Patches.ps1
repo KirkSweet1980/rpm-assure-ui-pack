@@ -1,26 +1,30 @@
-# Pulseway Automation body. No file path. Same secret as Assure IOPS.
+# Pulseway Automation body. PowerShell 5.1 safe. No ConvertTo-Json.
 $ErrorActionPreference = 'Continue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $AssureUrl = 'https://assure.rpmresources.co.za/api/patches'
 $AssureSecret = 'PUT-SAME-SECRET-AS-IOPS'
 Write-Host ('PATCH start host=' + $env:COMPUTERNAME + ' ps=' + $PSVersionTable.PSVersion)
 
-$patches = New-Object System.Collections.Generic.List[object]
+function J-Esc([string]$s) {
+  if ($null -eq $s) { return '' }
+  $t = [string]$s
+  $t = $t.Replace('\', '\\').Replace('"', '\"').Replace("`r", ' ').Replace("`n", ' ').Replace("`t", ' ')
+  return $t
+}
+
+$rows = New-Object System.Collections.ArrayList
 function Add-Patch([string]$title, [string]$kb, [string]$status, [string]$cls, $when) {
-  $t = ($title | ForEach-Object { $_.ToString().Trim() })
+  $t = ([string]$title).Trim()
   if (-not $t) { return }
   if ($t.Length -gt 390) { $t = $t.Substring(0, 390) }
-  if (-not $kb -and $t -match '(KB\d{5,7})') { $kb = $Matches[1] }
-  $iso = $null
+  $k = ([string]$kb).Trim()
+  if (-not $k -and $t -match '(KB\d{5,7})') { $k = $Matches[1] }
+  $iso = ''
   if ($when) {
-    try { $iso = ([datetime]$when).ToUniversalTime().ToString('o') } catch {}
+    try { $iso = ([datetime]$when).ToUniversalTime().ToString('s') + 'Z' } catch { $iso = '' }
   }
-  $patches.Add([pscustomobject]@{
-    title = $t
-    kb = $kb
-    status = $status
-    classification = $cls
-    installedAt = $iso
+  [void]$rows.Add([pscustomobject]@{
+    title = $t; kb = $k; status = $status; cls = $cls; iso = $iso
   })
 }
 
@@ -35,13 +39,10 @@ try {
     if ($n -gt 80) { break }
     $kb = ''
     try {
-      if ($u.KBArticleIDs -and $u.KBArticleIDs.Count -gt 0) { $kb = 'KB' + $u.KBArticleIDs.Item(0) }
+      if ($u.KBArticleIDs -and $u.KBArticleIDs.Count -gt 0) { $kb = 'KB' + [string]$u.KBArticleIDs.Item(0) }
     } catch {}
     $cls = ''
     try { $cls = [string]$u.MsrcSeverity } catch {}
-    if (-not $cls) {
-      try { if ($u.IsDownloaded) { $cls = 'Downloaded' } } catch {}
-    }
     $st = 'missing'
     try { if ($u.RebootRequired) { $st = 'pending' } } catch {}
     Add-Patch ([string]$u.Title) $kb $st $cls $null
@@ -58,34 +59,42 @@ try {
     try { $when = $h.InstalledOn } catch {}
     if ($when -and $when -lt $cut) { continue }
     $kb = [string]$h.HotFixID
-    $title = $h.Description
+    $desc = [string]$h.Description
+    $title = $desc
     if (-not $title) { $title = $kb }
     if ($kb -and $title -notmatch [regex]::Escape($kb)) { $title = ($title + ' ' + $kb).Trim() }
-    Add-Patch $title $kb 'installed' ([string]$h.Description) $when
-    if ($patches.Count -ge 160) { break }
+    Add-Patch $title $kb 'installed' $desc $when
+    if ($rows.Count -ge 160) { break }
   }
-  Write-Host ('hotfix rows added; total=' + $patches.Count)
+  Write-Host ('hotfix total rows=' + $rows.Count)
 } catch {
   Write-Host ('hotfix skip ' + $_.Exception.Message)
 }
 
-Write-Host ('patches=' + $patches.Count)
-if ($patches.Count -eq 0) {
-  Write-Host 'No named patches on this host (WU search empty and no recent hotfixes).'
+Write-Host ('patches=' + $rows.Count)
+if ($rows.Count -eq 0) {
+  Write-Host 'No named patches on this host.'
   exit 0
 }
 
-$bodyObj = @{
-  hostName = $env:COMPUTERNAME
-  source = 'pulseway'
-  patches = @($patches)
+$parts = New-Object System.Collections.ArrayList
+foreach ($p in $rows) {
+  $kbJson = 'null'
+  if ($p.kb) { $kbJson = '"' + (J-Esc $p.kb) + '"' }
+  $clsJson = 'null'
+  if ($p.cls) { $clsJson = '"' + (J-Esc $p.cls) + '"' }
+  $whenJson = 'null'
+  if ($p.iso) { $whenJson = '"' + (J-Esc $p.iso) + '"' }
+  [void]$parts.Add(('{"title":"' + (J-Esc $p.title) + '","kb":' + $kbJson + ',"status":"' + (J-Esc $p.status) + '","classification":' + $clsJson + ',"installedAt":' + $whenJson + '}'))
 }
-$json = $bodyObj | ConvertTo-Json -Compress -Depth 5
+$json = '{"hostName":"' + (J-Esc $env:COMPUTERNAME) + '","source":"pulseway","patches":[' + ($parts -join ',') + ']}'
+Write-Host ('jsonBytes=' + $json.Length)
+
 try {
   $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 60 -Uri $AssureUrl -Method POST -Headers @{
     'X-Assure-Secret' = $AssureSecret
     'Content-Type' = 'application/json'
-  } -Body $json
+  } -Body ([Text.Encoding]::UTF8.GetBytes($json))
   Write-Host ('POST ' + $r.StatusCode + ' ' + $r.Content)
 } catch {
   Write-Host ('POST FAIL ' + $_.Exception.Message)
