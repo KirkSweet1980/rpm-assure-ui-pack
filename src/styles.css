@@ -876,6 +876,22 @@ html.dark .rpma-pane-head-row {
   gap: 8px;
   pointer-events: auto;
 }
+.rpma-sql-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+.rpma-sql-meta > em {
+  font-style: normal;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8aa0b0;
+  line-height: 1;
+}
+.rpma-sql-digital.is-live .rpma-sql-meta > em { color: #2ee6a6; }
 .rpma-sql-digits {
   display: inline-flex;
   align-items: baseline;
@@ -888,17 +904,9 @@ html.dark .rpma-pane-head-row {
   background: #061018;
   border: 1px solid #1a4a4a;
   border-radius: 6px;
-  padding: 4px 10px 3px;
+  padding: 3px 9px 2px;
   line-height: 1.15;
   white-space: nowrap;
-}
-.rpma-sql-digits b {
-  font-weight: 700;
-  margin-right: 2px;
-}
-.rpma-sql-digits em {
-  display: inline-block;
-  width: 8px;
 }
 .rpma-sql-digits i {
   font-style: normal;

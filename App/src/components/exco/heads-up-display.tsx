@@ -79,14 +79,9 @@ function useClock() {
 
 function digitalOf(d: Date | string | null | undefined) {
   const date = d ? new Date(d) : null;
-  if (!date || Number.isNaN(date.getTime())) {
-    return { day: "-- --- ----", time: "--:--:--" };
-  }
+  if (!date || Number.isNaN(date.getTime())) return "--:--:--";
   const p = partsOf(date);
-  return {
-    day: `${p.day} ${p.month.toUpperCase()} ${p.year}`,
-    time: `${p.hour}:${p.minute}:${p.second}`,
-  };
+  return `${p.hour}:${p.minute}:${p.second}`;
 }
 
 export function HeadsUpDisplay({
@@ -114,14 +109,15 @@ export function HeadsUpDisplay({
         <span className="rpma-sql-live-ico" aria-hidden>
           <Database size={15} strokeWidth={2.2} />
         </span>
-        <span className="rpma-sql-digits">
-          <b>{sqlDigits.day}</b>
-          <em />
-          {sqlDigits.time.slice(0, 2)}
-          <i>:</i>
-          {sqlDigits.time.slice(3, 5)}
-          <i>:</i>
-          {sqlDigits.time.slice(6, 8)}
+        <span className="rpma-sql-meta">
+          <em>SQL Refresh</em>
+          <span className="rpma-sql-digits">
+            {sqlDigits.slice(0, 2)}
+            <i>:</i>
+            {sqlDigits.slice(3, 5)}
+            <i>:</i>
+            {sqlDigits.slice(6, 8)}
+          </span>
         </span>
       </div>
     );
