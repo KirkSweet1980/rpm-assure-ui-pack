@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { NoCoverPanel } from "@/components/ui/no-cover";
 import { StatCard } from "@/components/portfolio/stat-card";
-import { buildServiceSla, type ServiceSlaPack } from "@/lib/data/service-sla";
+import { buildServiceSla, withSlaKpis, type ServiceSlaPack } from "@/lib/data/service-sla";
+import { fetchCustomerSlaContract } from "@/lib/data/customer-sla-contract";
+import { kpisOnCover } from "@/lib/data/sla-kpis";
+import { coverFromDetail } from "@/lib/data/cover";
+import type { SlaKpiOverrides } from "@/lib/data/service-sla";
 import { INDUSTRY_SLA_DOC } from "@/lib/data/sla-metrics";
 import { TenantTree } from "@/components/customer/tenant-tree";
 import type { IndustryPillarKey } from "@/lib/data/sla-metrics";
@@ -157,7 +161,24 @@ export function ServiceSlaSection({
   data: CustomerDetailPayload;
   pillar: IndustryPillarKey;
 }) {
-  const pack = buildServiceSla(pillar, data);
+  const cover = coverFromDetail(data);
+  const [kpis, setKpis] = useState<SlaKpiOverrides>({});
+  useEffect(() => {
+    let live = true;
+    const load = () => {
+      fetchCustomerSlaContract({ data: { code: data.customer.customerCode } }).then((r) => {
+        if (live) setKpis(kpisOnCover(cover, r.kpis));
+      });
+    };
+    load();
+    const on = () => load();
+    window.addEventListener("rpma-sla-kpis", on);
+    return () => {
+      live = false;
+      window.removeEventListener("rpma-sla-kpis", on);
+    };
+  }, [data.customer.customerCode, cover.syspro, cover.rmm, cover.cove, cover.epp, cover.csp]);
+  const pack = withSlaKpis(kpis, () => buildServiceSla(pillar, data));
   if (!pack.covered) {
     return (
       <NoCoverPanel

@@ -185,3 +185,22 @@ WHEN NOT MATCHED THEN INSERT
       return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
     }
   });
+
+export async function loadSlaKpiMap(): Promise<Record<string, import("./service-sla").SlaKpiOverrides>> {
+  const map: Record<string, import("./service-sla").SlaKpiOverrides> = {};
+  const pool = await getPool();
+  if (!pool) return map;
+  try {
+    const r = await pool.request().query(`
+SELECT CustomerCode, KpiJson FROM dbo.Dim_Customer_SlaContract WITH (NOLOCK)
+`);
+    for (const row of r.recordset as { CustomerCode: string; KpiJson: string | null }[]) {
+      const code = String(row.CustomerCode ?? "").toUpperCase();
+      if (!code) continue;
+      map[code] = parseKpis(row.KpiJson);
+    }
+  } catch {
+    /* empty */
+  }
+  return map;
+}

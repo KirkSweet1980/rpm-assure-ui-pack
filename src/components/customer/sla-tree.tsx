@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { NoCoverPanel } from "@/components/ui/no-cover";
@@ -13,7 +13,11 @@ import {
   buildRmmServiceSla,
   buildSysproServiceSla,
   buildTicketsServiceSla,
+  withSlaKpis,
 } from "@/lib/data/service-sla";
+import { fetchCustomerSlaContract } from "@/lib/data/customer-sla-contract";
+import { kpisOnCover } from "@/lib/data/sla-kpis";
+import type { SlaKpiOverrides } from "@/lib/data/service-sla";
 import { coverFromDetail, type CustomerCover } from "@/lib/data/cover";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
 import {
@@ -42,17 +46,37 @@ function vsIndustryTone(pct: number | null | undefined, target: number) {
 export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
   const cover = effectiveCover(data);
   const hasTickets = (data.incidents ?? []).length > 0 || (data.amsSlaSummary?.incidentCount30d ?? 0) > 0;
-  const sla = useMemo(() => buildExcoPillarSla(slaInputFromDetail(cover, data)), [cover, data]);
+  const [kpis, setKpis] = useState<SlaKpiOverrides>({});
+  useEffect(() => {
+    let live = true;
+    const load = () => {
+      fetchCustomerSlaContract({ data: { code: data.customer.customerCode } }).then((r) => {
+        if (live) setKpis(kpisOnCover(cover, r.kpis));
+      });
+    };
+    load();
+    const on = () => load();
+    window.addEventListener("rpma-sla-kpis", on);
+    return () => {
+      live = false;
+      window.removeEventListener("rpma-sla-kpis", on);
+    };
+  }, [data.customer.customerCode, cover.syspro, cover.rmm, cover.cove, cover.epp, cover.csp]);
+  const sla = useMemo(
+    () => buildExcoPillarSla({ ...slaInputFromDetail(cover, data), kpis }),
+    [cover, data, kpis],
+  );
   const packs = useMemo(
-    () => ({
-      syspro: buildSysproServiceSla(data),
-      rmm: buildRmmServiceSla(data),
-      cove: buildCoveServiceSla(data),
-      epp: buildEppServiceSla(data),
-      csp: buildCspServiceSla(data),
-      tickets: buildTicketsServiceSla(data),
-    }),
-    [data],
+    () =>
+      withSlaKpis(kpis, () => ({
+        syspro: buildSysproServiceSla(data),
+        rmm: buildRmmServiceSla(data),
+        cove: buildCoveServiceSla(data),
+        epp: buildEppServiceSla(data),
+        csp: buildCspServiceSla(data),
+        tickets: buildTicketsServiceSla(data),
+      })),
+    [data, kpis],
   );
   const [sel, setSel] = useState("contract");
 
@@ -90,7 +114,7 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <TenantTree title="Customer SLA" items={items} selected={sel} onSelect={setSel}>
-      {sel === "contract" ? <SignedSlaPanel code={data.customer.customerCode} /> : null}
+      {sel === "contract" ? <SignedSlaPanel code={data.customer.customerCode} cover={cover} /> : null}
 
       {sel === "clocks" ? (
         <Card>

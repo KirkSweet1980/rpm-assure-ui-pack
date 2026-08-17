@@ -15,7 +15,8 @@ import {
   buildTicketsServiceSla,
   withSlaKpis,
 } from "@/lib/data/service-sla";
-import { fetchCustomerSlaContract, kpisOnCover } from "@/lib/data/customer-sla-contract";
+import { fetchCustomerSlaContract } from "@/lib/data/customer-sla-contract";
+import { kpisOnCover } from "@/lib/data/sla-kpis";
 import type { SlaKpiOverrides } from "@/lib/data/service-sla";
 import { coverFromDetail, type CustomerCover } from "@/lib/data/cover";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
