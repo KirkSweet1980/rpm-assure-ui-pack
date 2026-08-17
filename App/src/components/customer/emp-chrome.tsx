@@ -169,6 +169,7 @@ export function EmpChrome({
 
   return (
     <div className="rpma-emp">
+      <div className="rpma-emp-stick">
       <div className="rpma-emp-title">
         <span className="rpma-emp-dots" aria-hidden>
           <i />
@@ -221,6 +222,7 @@ export function EmpChrome({
             );
           })}
         </div>
+      </div>
       </div>
       <div className="rpma-emp-work is-tree">
         <aside className="rpma-ttree-nav rpma-emp-tree" aria-label="Live modules">
