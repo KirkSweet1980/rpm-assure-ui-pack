@@ -207,6 +207,31 @@ if (-not $seenId.ContainsKey('48006116932')) {
   $seenId['48006116932'] = $true
 }
 Write-Log ('mapped company ids=' + $maps.Count)
+Write-Log ('skip search-by-company_id (Freshdesk plan rejects that field)')
+
+# Ticket-id pin (BHF 16248 etc.) + company maps in memory — no SQL COALESCE
+$codeByTicket = @{}
+$codeByCompanyId = @{}
+$codeByCompanyName = @{}
+try {
+  $tm = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; IF OBJECT_ID(N'dbo.Dim_Freshdesk_TicketMap') IS NOT NULL SELECT TicketId, CustomerCode FROM dbo.Dim_Freshdesk_TicketMap WHERE Active = 1;"
+  foreach ($line in @($tm)) {
+    if ($line -match '^\s*(\d+)\s*\|\s*(\S+)') { $codeByTicket[$Matches[1]] = $Matches[2].Trim() }
+  }
+} catch {}
+$codeByTicket['16248'] = 'BHF'
+try {
+  $cm = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT CONVERT(varchar(30), CompanyId), CustomerCode, CompanyName FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1;"
+  foreach ($line in @($cm)) {
+    if ([string]::IsNullOrWhiteSpace($line) -or $line -match 'Changed database') { continue }
+    $p = $line.Split('|')
+    if ($p.Length -lt 2) { continue }
+    $id = $p[0].Trim(); $code = $p[1].Trim(); $nm = if ($p.Length -ge 3) { $p[2].Trim() } else { '' }
+    if ($id -match '^\d+$' -and $code) { $codeByCompanyId[$id] = $code }
+    if ($nm -and $code) { $codeByCompanyName[$nm.ToLowerInvariant()] = $code }
+  }
+} catch {}
+Write-Log ('maps ticket=' + $codeByTicket.Count + ' companyId=' + $codeByCompanyId.Count)
 
 foreach ($m in $maps) {
   try {
@@ -221,30 +246,6 @@ foreach ($m in $maps) {
   } catch {
     Write-Log ('list-co warn ' + $m.Code + ' ' + $_.Exception.Message)
   }
-  $page = 1
-  do {
-    $q = 'company_id:' + $m.CompanyId
-    $url = "https://$FreshdeskDomain/api/v2/search/tickets?page=$page&query=" + [uri]::EscapeDataString(('"{0}"' -f $q))
-    try {
-      $sr = Invoke-FdGet $url
-    } catch {
-      Write-Log ('search fail ' + $m.Code + ' id=' + $m.CompanyId + ' p' + $page + ' ' + $_.Exception.Message)
-      break
-    }
-    $rows = @()
-    if ($sr.results) { $rows = @($sr.results) }
-    elseif ($sr -is [System.Array]) { $rows = @($sr) }
-    $keep = @()
-    foreach ($t in $rows) {
-      $u = $null
-      try { $u = [datetime]::Parse([string]$t.updated_at).ToUniversalTime() } catch {}
-      if ($u -and $u -lt $since) { continue }
-      $keep += $t
-    }
-    Add-Tickets $keep ('search ' + $m.Code + ' id=' + $m.CompanyId + ' p' + $page + ' apiTotal=' + $sr.total)
-    $page++
-    Start-Sleep -Milliseconds 300
-  } while ($page -le 10 -and $rows.Count -ge 30)
 }
 
 Write-Log ('tickets pulled=' + $all.Count)
@@ -337,17 +338,19 @@ foreach ($t in $all) {
   $tagsJson = Sql-Json $t.tags
   $cfJson = Sql-Json $t.custom_fields
 
-  $codeExpr = 'COALESCE((SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_TicketMap WITH (NOLOCK) WHERE Active = 1 AND TicketId = ' + (Sql-Num $tid) + ')'
-  if ($coId) {
-    $codeExpr += ', (SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND CompanyId = ' + (Sql-Num $coId) + ')'
-  } elseif ($coName) {
-    $codeExpr += ', (SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND LTRIM(RTRIM(CompanyName)) = LTRIM(RTRIM(' + (Sql-Esc $coName) + ')) )'
+  $codeLit = 'NULL'
+  $tidKey = [string](One-Val $tid)
+  if ($codeByTicket.ContainsKey($tidKey)) {
+    $codeLit = Sql-Esc $codeByTicket[$tidKey]
+  } elseif ($coId -and $codeByCompanyId.ContainsKey([string]$coId)) {
+    $codeLit = Sql-Esc $codeByCompanyId[[string]$coId]
+  } elseif ($coName -and $codeByCompanyName.ContainsKey($coName.ToLowerInvariant())) {
+    $codeLit = Sql-Esc $codeByCompanyName[$coName.ToLowerInvariant()]
   }
-  $codeExpr += ')'
 
   $line = 'INSERT INTO dbo.Freshdesk_Tickets (SnapshotDate, TicketId, CustomerCode, Subject, StatusId, StatusName, PriorityId, PriorityName, SourceId, TypeName, RequesterId, RequesterEmail, ResponderId, GroupId, CompanyId, CompanyName, CreatedAtUtc, UpdatedAtUtc, DueByUtc, FirstRespondedAtUtc, ResolvedAtUtc, ClosedAtUtc, TagsJson, CustomFieldsJson, ImportedAt) VALUES (@Snap, ' +
     (Sql-Num $tid) + ', ' +
-    $codeExpr + ', ' +
+    $codeLit + ', ' +
     (Sql-Esc $subj) + ', ' +
     (Sql-Num $statusId) + ', ' +
     (Sql-Esc (Status-Name $statusId)) + ', ' +
