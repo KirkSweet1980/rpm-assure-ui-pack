@@ -14,13 +14,12 @@ function decodeCode(raw: string): string {
 }
 
 export const Route = createFileRoute("/customers/$code/rmm")({
-  staleTime: 90_000,
-  preloadStaleTime: 60_000,
-  shouldReload: false,
+  staleTime: 60_000,
+  preloadStaleTime: 30_000,
   loader: async ({ params }) => {
     const code = decodeCode(params.code);
     const detail = await fetchCustomerDetail({
-      data: { code, legs: ["shell", "rmm"] },
+      data: { code, legs: ["shell", "rmm", "ams"] },
     });
     return detail ?? softMissingCustomer(code);
   },

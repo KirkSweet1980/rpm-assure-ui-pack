@@ -294,7 +294,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
             const selected = path === href || path === `${href}/`;
             const Icon = m.icon;
             const flag = live?.modules[m.path] ?? (isEco ? live?.pillars.eco : live?.modules[m.path]);
-            const dest = flag?.rag === "Amber" || flag?.rag === "Red" ? flag.href || href : href;
+            const dest = href;
             return (
               <SpaLink
                 key={href}

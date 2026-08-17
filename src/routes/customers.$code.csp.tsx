@@ -16,7 +16,7 @@ function decodeCode(raw: string): string {
 export const Route = createFileRoute("/customers/$code/csp")({
   staleTime: 90_000,
   preloadStaleTime: 60_000,
-  shouldReload: false,
+  shouldReload: true,
   loader: async ({ params }) => {
     const code = decodeCode(params.code);
     const detail = await fetchCustomerDetail({

@@ -55,10 +55,9 @@ function SyncRailHealth({
 
 export const Route = createFileRoute("/customers/$code")({
   // Keep parent loader warm so pillar/module clicks do not re-hit SQL every time
-  staleTime: 180_000,
-  preloadStaleTime: 180_000,
-  // Prefer cached parent when only the child segment changes
-  shouldReload: false,
+  staleTime: 60_000,
+  preloadStaleTime: 30_000,
+  shouldReload: true,
   loader: async ({ params }) => {
     const code = decodeCode(params.code);
     const detail = await fetchCustomerDetail({ data: { code, legs: ["shell"] } });
