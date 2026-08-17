@@ -55,8 +55,7 @@ Remove-Item Env:RPMA_PFX_PW -ErrorAction SilentlyContinue
 $thumb = $imported.Thumbprint
 W Green ('Imported thumbprint ' + $thumb)
 
-$acl = Get-Acl -Path ('Cert:\LocalMachine\My\' + $thumb)
-W Cyan 'Grant SQL service read on the private key if SQL fails to start after this.'
+# Private-key ACL on Cert: is not supported on all hosts - do not stop here.
 
 $net = Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server' -ErrorAction SilentlyContinue |
   Where-Object { $_.PSChildName -match 'MSSQL\d+\.' + [regex]::Escape($SqlInstance) } |
