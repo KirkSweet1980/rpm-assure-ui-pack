@@ -113,7 +113,11 @@ foreach ($l in $legs) {
       foreach ($f in @($errF, $outF)) {
         if (-not (Test-Path $f)) { continue }
         $tail = @(Get-Content $f -Tail 20 -EA SilentlyContinue | Where-Object { $_ -and $_.Trim() -ne "" })
-        $hit = $tail | Where-Object { $_ -match 'throw|error|fail|missing|login|denied|exception' } | Select-Object -Last 1
+        $hit = $tail | Where-Object {
+          $_ -match 'throw|fail|missing |login|denied|exception|Cannot bind|sqlcmd' -and
+          $_ -notmatch 'FullyQualifiedErrorId|CategoryInfo|^\+\s'
+        } | Select-Object -Last 1
+        if (-not $hit) { $hit = $tail | Where-Object { $_ -notmatch 'FullyQualifiedErrorId|CategoryInfo|^\+\s' } | Select-Object -Last 1 }
         if (-not $hit) { $hit = $tail | Select-Object -Last 1 }
         if ($hit) { $hint = ([string]$hit).Trim(); if ($hint.Length -gt 180) { $hint = $hint.Substring(0, 180) }; break }
       }

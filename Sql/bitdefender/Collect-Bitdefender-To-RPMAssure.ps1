@@ -15,8 +15,11 @@ foreach ($c in @(
 if (-not $cfg) { throw 'Missing Bitdefender.Config.ps1 — copy Bitdefender.Config.example.ps1 next to the collector and set $ApiKey' }
 . $cfg
 
-# Optional SQL overrides in config; else defaults used on central
-if (-not $SqlServer)   { $SqlServer = '102.222.21.220,14333' }
+# Optional SQL overrides in config; else local instance (do not use public 14333)
+if (-not $SqlServer -or $SqlServer -match '14333|102\.222\.21\.220') {
+  if (Get-Service -Name 'MSSQL$RPMREPORTS' -ErrorAction SilentlyContinue) { $SqlServer = '.\RPMREPORTS' }
+}
+if (-not $SqlServer)   { $SqlServer = '.\RPMREPORTS' }
 if (-not $SqlDatabase) { $SqlDatabase = 'RPMAssure_App' }
 if (-not $SqlUser)     { $SqlUser = 'Rpm_collect' }
 if (-not $SqlPassword) { $SqlPassword = 'RpmCollect#AHIC2026' }
@@ -32,9 +35,10 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $log = Join-Path $logDir ("bd_{0:yyyyMMdd_HHmmss}.log" -f (Get-Date))
 $script:RpcId = 0
 
-function Write-Log([string]$m) {
-  $line = ('{0:u} {1}' -f (Get-Date).ToUniversalTime(), $m)
-  Add-Content -LiteralPath $log -Value $line
+function Write-Log {
+  param([AllowEmptyString()][AllowNull()]$m)
+  $line = ('{0:u} {1}' -f (Get-Date).ToUniversalTime(), [string]$m)
+  Add-Content -LiteralPath $log -Value $line -ErrorAction SilentlyContinue
   Write-Host $line
 }
 
@@ -61,21 +65,30 @@ function Find-Sqlcmd {
   throw 'sqlcmd not found'
 }
 
-function Invoke-SqlText([string]$SqlText, [string]$Label) {
+function Invoke-SqlText {
+  param(
+    [AllowEmptyString()][AllowNull()]$SqlText,
+    [AllowEmptyString()][AllowNull()]$Label = 'sql'
+  )
+  if ([string]::IsNullOrWhiteSpace([string]$SqlText)) { throw 'Invoke-SqlText empty SQL' }
   $sqlcmd = Find-Sqlcmd
-  $f = Join-Path $logDir ("{0}_{1:yyyyMMdd_HHmmss}.sql" -f $Label, (Get-Date))
-  [IO.File]::WriteAllText($f, $SqlText, [Text.UTF8Encoding]::new($false))
-  Write-Log ("SQL " + $Label + " -> " + $f)
-  & $sqlcmd -S $SqlServer -d $SqlDatabase -U $SqlUser -P $SqlPassword -C -b -i $f
-  if ($LASTEXITCODE -ne 0) { throw ("sqlcmd failed " + $LASTEXITCODE + " on " + $Label) }
+  $tag = if ([string]::IsNullOrWhiteSpace([string]$Label)) { 'sql' } else { ([string]$Label -replace '[^\w\-]', '_') }
+  $f = Join-Path $logDir ("{0}_{1:yyyyMMdd_HHmmss}.sql" -f $tag, (Get-Date))
+  [IO.File]::WriteAllText($f, [string]$SqlText, [Text.UTF8Encoding]::new($false))
+  Write-Log ("SQL " + $tag + " -> " + $f)
+  $a = @('-S', $SqlServer, '-d', $SqlDatabase, '-C', '-b', '-i', $f)
+  if ($SqlUser -and $SqlPassword) { $a = @('-S', $SqlServer, '-d', $SqlDatabase, '-U', $SqlUser, '-P', $SqlPassword, '-C', '-b', '-i', $f) }
+  else { $a = @('-S', $SqlServer, '-d', $SqlDatabase, '-E', '-C', '-b', '-i', $f) }
+  & $sqlcmd @a
+  if ($LASTEXITCODE -ne 0) { throw ("sqlcmd failed " + $LASTEXITCODE + " on " + $tag) }
 }
 
 function Invoke-GzRpc {
   param(
-    [string]$Service,
-    [string]$Method,
+    [AllowEmptyString()][string]$Service = 'network',
+    [AllowEmptyString()][string]$Method = 'getEndpointsList',
     [hashtable]$Params = @{},
-    [string]$ApiVersion = 'v1.0'
+    [AllowEmptyString()][string]$ApiVersion = 'v1.0'
   )
   $script:RpcId++
   $uri = '{0}/{1}/jsonrpc/{2}' -f $baseApi, $ApiVersion, $Service
@@ -107,9 +120,12 @@ function Invoke-GzRpc {
   }
 }
 
-function Sql-Str([string]$s) {
-  if ($null -eq $s -or $s -eq '') { return 'NULL' }
-  return ("N'{0}'" -f ($s.Replace("'", "''")))
+function Sql-Str {
+  param($s)
+  if ($null -eq $s) { return 'NULL' }
+  $t = [string]$s
+  if ($t -eq '') { return 'NULL' }
+  return ("N'{0}'" -f ($t.Replace("'", "''")))
 }
 
 function Sql-Bit($v) {
@@ -255,8 +271,9 @@ try {
 }
 Write-Log ("Company map rules=" + $coMaps.Count)
 
-function Resolve-CompanyCode([string]$CompanyName) {
-  if ([string]::IsNullOrWhiteSpace($CompanyName)) { return $null }
+function Resolve-CompanyCode {
+  param($CompanyName)
+  if ([string]::IsNullOrWhiteSpace([string]$CompanyName)) { return $null }
   if ($CompanyName -eq '(api-key-company)') { return $null }
   $hay = $CompanyName.ToUpperInvariant()
   # Exact SQL map first (priority order already sorted)
@@ -291,10 +308,11 @@ function Resolve-CompanyCode([string]$CompanyName) {
   return $null
 }
 
-function Resolve-CustomerCode([string]$Name, [string]$Fqdn) {
+function Resolve-CustomerCode {
+  param($Name, $Fqdn)
   # Returns @{ Code = ...; Priority = n } or $null. Lower Priority = stronger.
-  $n = if ($Name) { $Name.ToUpperInvariant() } else { '' }
-  $f = if ($Fqdn) { $Fqdn.ToUpperInvariant() } else { '' }
+  $n = ([string]$Name).ToUpperInvariant()
+  $f = ([string]$Fqdn).ToUpperInvariant()
   $hay = ($n + ' ' + $f).Trim()
   foreach ($m in $maps) {
     $pat = $m.Pattern.ToUpperInvariant()
