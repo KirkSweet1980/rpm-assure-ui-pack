@@ -785,8 +785,6 @@ BEGIN
     CONSTRAINT PK_Bitdefender_Policies PRIMARY KEY (SnapshotDate, PolicyId, CustomerCode)
   );
 END
-IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'Rpm_collect')
-  GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Bitdefender_Policies TO [Rpm_collect];
 "@ -Label 'bd_policies_ddl'
 } catch {
   Write-Log ("WARN policies ddl: " + $_.Exception.Message)
@@ -808,9 +806,9 @@ try {
     elseif ($pj.result) { $items = @($pj.result) }
     Write-Log ("getPoliciesList page=$page n=$($items.Count)")
     foreach ($it in $items) {
-      $pid = [string]$it.id
-      if (-not $pid) { continue }
-      $policyById[$pid] = $it
+      $gzPolId = [string]$it.id
+      if (-not $gzPolId) { continue }
+      $policyById[$gzPolId] = $it
     }
     $pages = 1
     try { if ($pj.result.pages) { $pages = [int]$pj.result.pages } } catch {}
@@ -825,27 +823,27 @@ try {
 # Also resolve policy ids from endpoints we already have
 foreach ($eid in $epBag.Keys) {
   $ep = $epBag[$eid].Ep
-  $pid = ''
-  if ($ep.policy -and $ep.policy.id) { $pid = [string]$ep.policy.id }
-  if ($pid -and -not $policyById.ContainsKey($pid)) {
-    $policyById[$pid] = [pscustomobject]@{ id = $pid; name = $(if ($ep.policy.name) { $ep.policy.name } else { $pid }) }
+  $gzPolId = ''
+  if ($ep.policy -and $ep.policy.id) { $gzPolId = [string]$ep.policy.id }
+  if ($gzPolId -and -not $policyById.ContainsKey($gzPolId)) {
+    $policyById[$gzPolId] = [pscustomobject]@{ id = $gzPolId; name = $(if ($ep.policy.name) { $ep.policy.name } else { $gzPolId }) }
   }
 }
 
 $polDetails = @{}
-foreach ($pid in @($policyById.Keys)) {
+foreach ($gzPolId in @($policyById.Keys)) {
   try {
-    $rawD = Invoke-GzRpc -Service 'policies' -Method 'getPolicyDetails' -Params @{ policyId = $pid }
+    $rawD = Invoke-GzRpc -Service 'policies' -Method 'getPolicyDetails' -Params @{ policyId = $gzPolId }
     if ($rawD -match '"error"\s*:\s*\{') { continue }
     $det = ($rawD | ConvertFrom-Json).result
     if (-not $det) { continue }
     $mods = Get-EppModulesFromSettings $det.settings
     $nm = [string]$det.name
-    if (-not $nm -and $policyById[$pid].name) { $nm = [string]$policyById[$pid].name }
-    $polDetails[$pid] = [pscustomobject]@{ Name = $nm; Modules = $mods }
+    if (-not $nm -and $policyById[$gzPolId].name) { $nm = [string]$policyById[$gzPolId].name }
+    $polDetails[$gzPolId] = [pscustomobject]@{ Name = $nm; Modules = $mods }
     Write-Log ("policy $nm modules=" + (($mods | Where-Object { $_.enabled } | ForEach-Object { $_.label }) -join ','))
   } catch {
-    Write-Log ("getPolicyDetails $pid : " + $_.Exception.Message)
+    Write-Log ("getPolicyDetails $gzPolId : " + $_.Exception.Message)
   }
 }
 
@@ -854,12 +852,12 @@ $polCust = @{}
 foreach ($eid in $epBag.Keys) {
   $bag = $epBag[$eid]
   $ep = $bag.Ep
-  $pid = ''
-  if ($ep.policy -and $ep.policy.id) { $pid = [string]$ep.policy.id }
+  $gzPolId = ''
+  if ($ep.policy -and $ep.policy.id) { $gzPolId = [string]$ep.policy.id }
   $code = Resolve-EndpointCode ([string]$ep.name) ([string]$ep.fqdn) ([string]$bag.CompanyName)
-  if (-not $pid -or -not $code) { continue }
-  $k = "$pid|$code"
-  if (-not $polCust.ContainsKey($k)) { $polCust[$k] = @{ PolicyId = $pid; Code = $code; N = 0 } }
+  if (-not $gzPolId -or -not $code) { continue }
+  $k = "$gzPolId|$code"
+  if (-not $polCust.ContainsKey($k)) { $polCust[$k] = @{ PolicyId = $gzPolId; Code = $code; N = 0 } }
   $polCust[$k].N++
 }
 
