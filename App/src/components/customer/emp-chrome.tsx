@@ -151,14 +151,6 @@ export function EmpChrome({
           />
         </div>
       </div>
-      <nav className="rpma-emp-menu" aria-label="Application">
-        <SpaLink href={base} className={!rest ? "is-on" : undefined}>
-          Customer Ecosystem Home
-        </SpaLink>
-        <SpaLink href={`${base}/tickets`} className={rest.startsWith("/tickets") ? "is-on" : undefined}>
-          Customer Service Overview
-        </SpaLink>
-      </nav>
       <div className="rpma-emp-ribbon is-opt6" role="toolbar">
         <div className="rpma-emp-titles">
           {RIBBON.map((g) => {

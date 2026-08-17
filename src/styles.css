@@ -2035,13 +2035,7 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   color: #8aa0b0;
 }
 .rpma-emp-win { margin-left: auto; }
-.rpma-emp-menu {
-  display: flex;
-  gap: 10px;
-  padding: 8px 16px;
-  background: #081722;
-  border-bottom: 1px solid #123047;
-}
+.rpma-emp-menu { display: none; }
 .rpma-emp-menu a {
   padding: 8px 14px;
   font-size: 13px;
