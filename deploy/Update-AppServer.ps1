@@ -141,7 +141,7 @@ if ($ScriptsOnly) {
 
 $srcRoot = Resolve-AppSrc $Pack
 W Green ("Source " + $srcRoot)
-if (-not (Test-Path -LiteralPath $App)) { throw "Missing $App — this is the website host updater. On an Agent/SQL host use: -ScriptsOnly" }
+if (-not (Test-Path -LiteralPath $App)) { throw "Missing $App - this is the website host updater. On an Agent/SQL host use: -ScriptsOnly" }
 
 $svcObj = Get-Service -Name $SvcName -ErrorAction SilentlyContinue
 if ($svcObj -and $svcObj.Status -ne 'Stopped') {
@@ -259,7 +259,7 @@ if (Test-Path -LiteralPath $repSched) {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'deploy\Install-Report-Schedules.ps1')
 }
 
-# HTTPS: copy restore scripts (never overwrite a live Caddyfile — Settings / own cert)
+# HTTPS: copy restore scripts (never overwrite a live Caddyfile - Settings / own cert)
 foreach ($name in @(
     'Ensure-Https-443.ps1',
     'Start-Caddy-Https-443.ps1',

@@ -89,7 +89,18 @@ if (Test-Path $restamp) {
   if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
   $target = if ($server) { $server } else { '.\RPMREPORTS' }
   & $sqlcmd -S $target -d $db -C -b -i $restamp @extra
-  if ($LASTEXITCODE -eq 0) { W Green 'Cove/EPP restamp OK' } else { W Yellow 'Cove/EPP restamp warned — UI will still try a live restamp.' }
+  if ($LASTEXITCODE -eq 0) { W Green 'Cove/EPP restamp OK' } else { W Yellow 'Cove/EPP restamp warned - UI will still try a live restamp.' }
+}
+
+$coveRights = Join-Path $PSScriptRoot '..\cove\442_Cove_Collect_Rights.sql'
+if (-not (Test-Path $coveRights)) { $coveRights = 'C:\RPM-Assure\Sql\cove\442_Cove_Collect_Rights.sql' }
+if (Test-Path $coveRights) {
+  W Cyan '--- Cove collect rights (Rpm_collect INSERT, no ALTER) ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $coveRights @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'Cove collect rights OK' } else { W Yellow 'Cove collect rights warned.' }
 }
 
 $iopsPurge = Join-Path $PSScriptRoot '441_Purge_Sample_Iops.sql'
