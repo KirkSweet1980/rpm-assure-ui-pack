@@ -193,10 +193,24 @@ export function customerLiveStatus(
   const incRag: LiveTone = trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : "Green";
   const riskRag: LiveTone = openRisk.length > 0 ? "Amber" : "Green";
   const issueRag: LiveTone = openIssue.length > 0 ? "Amber" : "Green";
-  const amsSlaRag = slaTone(extra?.amsSlaSummary?.resolvePct ?? extra?.amsSlaSummary?.responsePct, 80);
-  const amsRag = [incRag, riskRag, issueRag].reduce(worse, "Green");
+  const ticketResp =
+    extra?.amsSlaSummary?.responsePct ??
+    (row as { ticketResponsePct?: number | null } | null | undefined)?.ticketResponsePct ??
+    null;
+  const ticketReso =
+    extra?.amsSlaSummary?.resolvePct ??
+    (row as { ticketResolvePct?: number | null } | null | undefined)?.ticketResolvePct ??
+    null;
+  const ticketPct =
+    ticketResp != null && ticketReso != null
+      ? Math.min(Number(ticketResp), Number(ticketReso))
+      : ticketReso ?? ticketResp;
+  const ticketSlaRag = slaTone(ticketPct, 90);
+  const amsSlaRag = slaTone(ticketPct, 90);
+  const amsRag = [incRag, riskRag, issueRag, amsSlaRag].reduce(worse, "Green");
+  const ticketRag = [incRag, ticketSlaRag].reduce(worse, "Green");
   // Microsoft 365 is posture only — never rolls into tenant RAG, assurance, or SLA.
-  const ecoRag = [sysproRag, rmmRag, coveRag, eppRag, amsRag].reduce(worse, "Green");
+  const ecoRag = [sysproRag, rmmRag, coveRag, eppRag, amsRag, ticketRag].reduce(worse, "Green");
 
   const off = (on: boolean): LiveTone => (on ? "Green" : "Off");
 
@@ -266,11 +280,17 @@ export function customerLiveStatus(
         : "Microsoft 365 posture (not scored in assurance / SLA)",
     },
     tickets: {
-      rag: trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : extra?.incidents?.length ? "Green" : "Green",
+      rag: ticketRag,
       cover: true,
       href: trueOpenInc > 0 ? `${base}/tickets/open` : `${base}/tickets`,
-      hint: trueOpenInc
+      hint: ticketSlaRag === "Red"
+        ? "Ticket SLA miss"
+        : trueOpenInc
         ? `${trueOpenInc} open ticket(s)`
+        : extra?.incidents?.length
+          ? `${extra.incidents.length} ticket(s) on feed`
+          : "No tickets for this customer",
+    },
         : extra?.incidents?.length
           ? `${extra.incidents.length} ticket(s) on feed`
           : "No tickets for this customer",

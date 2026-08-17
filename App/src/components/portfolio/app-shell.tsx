@@ -116,7 +116,20 @@ export function AppShell({
           return {
             code: r.customerCode,
             name: (r.displayName || r.customerCode).trim(),
-            healthRag: r.healthRag,
+            healthRag: (() => {
+              const sla = b?.slaOverallPct;
+              const slaRag =
+                sla == null
+                  ? null
+                  : sla < 55
+                    ? "Red"
+                    : sla < 80
+                      ? "Amber"
+                      : "Green";
+              if (slaRag === "Red" || r.healthRag === "Red") return "Red";
+              if (slaRag === "Amber" || r.healthRag === "Amber") return "Amber";
+              return r.healthRag;
+            })(),
             needsAttention:
               (b?.attentionReasons?.length ?? 0) > 0 || r.healthRag !== "Green",
             collectFresh: b?.collectFresh ?? !!r.lastImportAt,

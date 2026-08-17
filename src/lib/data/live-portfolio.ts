@@ -2996,8 +2996,18 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
       });
       b.pillarSla = sla.pillars;
       b.slaOverallPct = sla.overallPct;
-      // Overall compliance = covered-pillar average (null if only M365 / no cover)
       b.slaCompliancePct = hasSlaCover(cov) ? sla.overallPct : null;
+      if (sla.overallPct != null) {
+        const slaRag = sla.overallPct < 55 ? "Red" : sla.overallPct < 80 ? "Amber" : "Green";
+        const worse =
+          slaRag === "Red" || b.healthRag === "Red"
+            ? "Red"
+            : slaRag === "Amber" || b.healthRag === "Amber"
+              ? "Amber"
+              : "Green";
+        b.healthRag = worse;
+        if (row) row.healthRag = worse;
+      }
       if (!hasSlaCover(cov)) {
         b.availabilityPct = null;
       } else if (b.availabilityPct == null) {
