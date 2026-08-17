@@ -2327,6 +2327,14 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   gap: 1rem;
   padding: 0.75rem 0.85rem 1rem;
 }
+.rpma-emp-work.is-tree {
+  grid-template-columns: 220px minmax(0, 1fr) 260px;
+}
+.rpma-emp-tree {
+  position: sticky;
+  top: 0;
+  max-height: calc(100dvh - var(--pc-header-height) - 150px);
+}
 .rpma-emp-inspector {
   position: sticky;
   top: 0;
@@ -2344,7 +2352,9 @@ html.snow .rpma-emp-inspector {
 }
 @media (max-width: 960px) {
   .rpma-emp-work { grid-template-columns: 1fr; }
+  .rpma-emp-work.is-tree { grid-template-columns: 1fr; }
   .rpma-emp-inspector { margin: 0 0.75rem 0.85rem; }
+  .rpma-emp-tree { position: static; max-height: none; }
 }
 .rpma-emp-body.is-pad {
   padding: 0.75rem 0.85rem 1rem;

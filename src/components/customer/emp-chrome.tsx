@@ -7,7 +7,7 @@ import { EmpInspector } from "@/components/chrome/emp-inspector";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
-type RibbonItem = { label: string; rel: string; icon: LucideIcon };
+type RibbonItem = { label: string; full: string; rel: string; icon: LucideIcon };
 type RibbonGroup = { id: string; title: string; match: string; items: RibbonItem[] };
 
 const GROUP_TITLE: Record<string, string> = {
@@ -51,6 +51,7 @@ const RIBBON: RibbonGroup[] = [
     match: "",
     items: ECOSYSTEM_MODULES.map((m) => ({
       label: shortLabel(m.label),
+      full: m.label,
       rel: m.path,
       icon: m.icon,
     })),
@@ -61,6 +62,7 @@ const RIBBON: RibbonGroup[] = [
     match: p.overview,
     items: p.modules.map((m) => ({
       label: shortLabel(m.label),
+      full: m.label,
       rel: m.path,
       icon: m.icon,
     })),
@@ -184,7 +186,31 @@ export function EmpChrome({
           })}
         </div>
       </div>
-      <div className="rpma-emp-work">
+      <div className="rpma-emp-work is-tree">
+        <aside className="rpma-ttree-nav rpma-emp-tree" aria-label={`${group.title} modules`}>
+          <h2>{group.title}</h2>
+          <ul>
+            {group.items.map((it) => {
+              const href = `${base}${it.rel}`;
+              const active = (it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel;
+              const rag = ragOf(it.rel, live);
+              return (
+                <li key={it.rel || "home"}>
+                  <SpaLink
+                    href={href}
+                    className={cn("rpma-ttree-item", active && "is-on")}
+                    data-rag={rag}
+                  >
+                    <i data-tone={rag.toLowerCase()} />
+                    <span>
+                      <strong>{it.full}</strong>
+                    </span>
+                  </SpaLink>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
         <div className="rpma-emp-body">{children}</div>
         <EmpInspector
           name={customerName}
