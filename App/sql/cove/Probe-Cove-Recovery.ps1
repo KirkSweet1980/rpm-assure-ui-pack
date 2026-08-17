@@ -60,7 +60,7 @@ foreach ($r in $hit) {
   $au = GS $r 'AU'
   if (-not $au) { continue }
   foreach ($m in @('GetAccountInfo','EnumerateSessions')) {
-    $raw = Raw @{ jsonrpc='2.0'; visa=$visa; method=$m; id='p'; params=@{ accountId=[long]$au; AccountId=[long]$au; recordsCount=20 } }
+    $raw = Raw @{ jsonrpc='2.0'; visa=$visa; method=$m; id='p'; params=@{ accountId=[long]$au; recordsCount=20 } }
     $ok = $raw -notmatch '"error"'
     Write-Host ("probe {0} ok={1} len={2} prefix={3}" -f $m, $ok, $raw.Length, $raw.Substring(0, [Math]::Min(280, $raw.Length)))
   }
