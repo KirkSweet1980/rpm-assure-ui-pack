@@ -208,9 +208,10 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
     restoreLabel = `${tOk}/${tDen} test restores passed`;
     restoreMeasured = slaCover;
   } else if (inPlan > 0) {
-    restore = 0;
-    restoreLabel = `${inPlan} device(s) in a recovery plan · 0 completed tests`;
-    restoreMeasured = slaCover;
+    restore = null;
+    restoreLabel = `${inPlan} device(s) in Recovery Testing · last session is not on the statistics API (emails still fire). Not scored as a miss.`;
+    restoreExcluded = slaCover;
+    restoreMeasured = false;
   } else {
     restoreExcluded = slaCover;
   }
@@ -227,9 +228,10 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
     freqLabel = `Last test ${Math.round(days)} day(s) ago`;
     freqMeasured = slaCover;
   } else if (inPlan > 0) {
-    freq = 0;
-    freqLabel = `${inPlan} in plan · no recovery test on record`;
-    freqMeasured = slaCover;
+    freq = null;
+    freqLabel = `${inPlan} in Recovery Testing · session time not published by EnumerateAccountStatistics`;
+    freqExcluded = slaCover;
+    freqMeasured = false;
   } else {
     freqExcluded = slaCover;
   }

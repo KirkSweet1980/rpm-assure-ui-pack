@@ -251,7 +251,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 95–99% of test restores",
       contractual: true,
       measurable: true,
-      how: "Passed recovery tests ÷ (passed + failed). Scored only when devices are in a Recovery Testing or Standby Image plan. No plan = excluded, not a miss.",
+      how: "Passed recovery tests ÷ (passed + failed) when the last session time is on the device. In Recovery Testing with no API timestamp is excluded — not a miss. Cove emails prove tests run; statistics API does not publish RVO/RVL.",
     },
     {
       id: "cove-test-freq",
