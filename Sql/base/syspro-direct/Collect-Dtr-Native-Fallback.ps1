@@ -13,6 +13,14 @@ param(
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $ConfigPath)) { throw "Missing config: $ConfigPath" }
 . $ConfigPath
+$secLib = 'C:\RPM-Assure\Agent\Lib-SecureConfig.ps1'
+if (-not (Test-Path $secLib)) { $secLib = Join-Path (Split-Path -Parent $ConfigPath) '..\..\agent\Lib-SecureConfig.ps1' }
+if (Test-Path -LiteralPath $secLib) {
+  . $secLib
+  if (Get-Command Import-RpmaAgentSecrets -EA SilentlyContinue) {
+    try { Import-RpmaAgentSecrets } catch {}
+  }
+}
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $here 'Lib-Sqlcmd.ps1')
 if (-not $LogDir) { $LogDir = Join-Path (Split-Path -Parent $ConfigPath) 'logs' }
