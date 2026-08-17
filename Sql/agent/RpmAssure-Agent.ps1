@@ -723,7 +723,8 @@ if ($forceCodes.Count) {
 SET NOCOUNT ON;
 UPDATE dbo.Agent_Registry
 SET LastStatus = N'OK',
-    LastMessage = N'sync complete'
+    LastMessage = N'sync complete',
+    RequestSyncUtc = NULL
 WHERE HostName = $(Sql-Lit $HostName)
   AND (LastStatus IN (N'QUEUED', N'SYNCING') OR LastMessage LIKE N'sync requested%' OR LastMessage = N'collect running');
 "@

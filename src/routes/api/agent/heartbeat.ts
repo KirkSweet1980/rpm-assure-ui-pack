@@ -129,7 +129,7 @@ WHERE CustomerCode = @c AND HostName = @h;`);
           ).recordset?.[0] as { LastStatus?: string; LastMessage?: string; RequestSyncUtc?: Date } | undefined;
           const status = String(row?.LastStatus ?? "");
           const msg = String(row?.LastMessage ?? "");
-          const requestSync = status === "QUEUED" || /^sync requested/i.test(msg) || !!row?.RequestSyncUtc;
+          const requestSync = status === "QUEUED" || status === "SYNCING" || /^sync requested/i.test(msg) || /^recheck/i.test(msg);
           const requestUpdate = status === "UPDATE" || status === "UPDATING" || /^update requested/i.test(msg);
           return Response.json({
             ok: true,

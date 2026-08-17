@@ -51,7 +51,7 @@ WHERE HostName = @h`);
         const sync = rows.filter((r) => {
           const s = String(r.LastStatus ?? "");
           const m = String(r.LastMessage ?? "");
-          return s === "QUEUED" || /^sync requested/i.test(m) || !!r.RequestSyncUtc;
+          return s === "QUEUED" || s === "SYNCING" || /^sync requested/i.test(m) || /^recheck/i.test(m);
         });
         const upd = rows.filter((r) => {
           const s = String(r.LastStatus ?? "");
