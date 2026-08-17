@@ -5392,6 +5392,7 @@ ORDER BY
             message: r.Message != null ? String(r.Message) : null,
             raisedAt: toIso(r.RaisedAt),
             isActive: r.IsActive == null ? null : Boolean(r.IsActive),
+            source: "pulseway",
           }),
         )
         .filter((a) =>
@@ -5445,12 +5446,27 @@ ORDER BY
     }
 
     try {
-      const evRes = await pool.request().input("code", sql.NVarChar(50), code).query(`
+      const hosts = [
+        ...new Set(
+          rmm.devices
+            .map((d) => String(d.name ?? "").trim())
+            .filter((n) => n.length > 0),
+        ),
+      ].slice(0, 80);
+      const evReq = pool.request().input("code", sql.NVarChar(50), code);
+      hosts.forEach((h, i) => evReq.input(`eh${i}`, sql.NVarChar(200), h));
+      const hostOr = hosts.length
+        ? `OR UPPER(LTRIM(RTRIM(HostName))) IN (${hosts.map((_, i) => `UPPER(@eh${i})`).join(", ")})`
+        : "";
+      const evRes = await evReq.query(`
 SELECT TOP 4000
   HostName, TimeCreatedUtc, LogName, EventId, LevelName, ProviderName, MessageText
 FROM dbo.Agent_EventLog WITH (NOLOCK)
-WHERE CustomerCode = @code
-  AND TimeCreatedUtc >= DATEADD(day, -7, SYSUTCDATETIME())
+WHERE TimeCreatedUtc >= DATEADD(day, -7, SYSUTCDATETIME())
+  AND (
+    UPPER(LTRIM(RTRIM(CustomerCode))) = UPPER(@code)
+    ${hostOr}
+  )
 ORDER BY
   CASE WHEN LevelName = N'Critical' THEN 0 ELSE 1 END,
   TimeCreatedUtc DESC`);

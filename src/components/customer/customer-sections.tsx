@@ -2069,13 +2069,12 @@ function StatTile({
 }
 
 export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
-  const alerts = data.rmm?.alerts ?? [];
-  const events = data.rmm?.windowsEvents ?? [];
+  const alerts = (data.rmm?.alerts ?? []).filter((a) => a.source !== "agent");
   const devices = data.rmm?.devices ?? [];
-  if (!effectiveCover(data).rmm && events.length === 0) {
+  if (!effectiveCover(data).rmm && alerts.length === 0) {
     return (
       <NoCoverPanel
-        service="RMM alerts"
+        service="RMM | Infrastructure Management · Alerts"
         hint="No cover — no RMM data for this customer."
       />
     );
@@ -2126,120 +2125,66 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
     });
   }
   const groups = [...byDevice.values()].sort((a, b) => b.crit - a.crit || b.elev - a.elev || a.name.localeCompare(b.name));
+  const [sel, setSel] = useState(groups[0] ? (groups[0].deviceId || groups[0].name) : "");
+  const current = groups.find((g) => (g.deviceId || g.name) === sel) ?? groups[0];
+  const critN = groups.reduce((s, g) => s + g.crit, 0);
+  const elevN = groups.reduce((s, g) => s + g.elev, 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <ChartCaption
-        title="RMM Alerts"
-        why="RMM notifications plus Critical/Error Windows events from every host that runs the Assure Edge agent."
+        title="RMM | Infrastructure Management · Alerts"
+        why="Pulseway notifications and device counters for this tenant. Windows Event Logs sit under Event Logs."
       />
       <div className="grid gap-2 sm:grid-cols-4">
-        <StatCard label="Devices with alerts" value={groups.length} />
-        <StatCard label="RMM rows" value={alerts.filter((a) => a.source !== "agent").length} />
-        <StatCard label="Windows events (24h)" value={events.length} hint="Critical and Error from agent hosts" />
-        <StatCard
-          label="Devices in estate"
-          value={devices.length}
-          hint="This customer only"
-        />
+        <StatCard label="Hosts with alerts" value={groups.length} />
+        <StatCard label="Critical" value={critN} tone={critN ? "red" : "green"} />
+        <StatCard label="Elevated" value={elevN} tone={elevN ? "amber" : "default"} />
+        <StatCard label="Notification rows" value={alerts.length} hint="Latest RMM snapshot" />
       </div>
       {groups.length === 0 ? (
-        <p className="text-sm text-muted">No devices with alerts on the latest snapshot.</p>
+        <p className="text-sm text-muted">No server alerts on the latest RMM snapshot for this customer.</p>
       ) : (
-        <div className="space-y-3">
-          {groups.map((g) => (
-            <div
-              key={g.deviceId || g.name}
-              className="rounded-xl border border-border bg-surface p-3 shadow-sm"
-            >
+        <StickyPickSplit
+          title="Servers"
+          items={groups.map((g) => ({
+            id: g.deviceId || g.name,
+            label: g.name,
+            meta: g.crit ? `${g.crit} crit` : g.elev ? `${g.elev} elev` : "alert",
+            tone: g.crit ? "red" : g.elev ? "amber" : "off",
+          }))}
+          selected={current ? current.deviceId || current.name : ""}
+          onSelect={setSel}
+        >
+          {current ? (
+            <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-fg">{g.name}</span>
-                {g.type ? <span className="text-[11px] text-muted">{g.type}</span> : null}
-                {g.online === false ? (
-                  <Badge variant="red">Offline</Badge>
-                ) : g.online === true ? (
-                  <Badge variant="green">Online</Badge>
-                ) : null}
-                {g.crit > 0 ? <Badge variant="red">{g.crit} critical</Badge> : null}
-                {g.elev > 0 ? <Badge variant="amber">{g.elev} elevated</Badge> : null}
+                <span className="text-sm font-semibold">{current.name}</span>
+                {current.type ? <span className="text-[11px] text-muted">{current.type}</span> : null}
+                {current.online === false ? <Badge variant="red">Offline</Badge> : current.online === true ? <Badge variant="green">Online</Badge> : null}
+                {current.crit > 0 ? <Badge variant="red">{current.crit} critical</Badge> : null}
+                {current.elev > 0 ? <Badge variant="amber">{current.elev} elevated</Badge> : null}
               </div>
-              {g.rows.length > 0 ? (
-                <div className="mt-2 space-y-1.5">
-                  {g.rows.map((a) => (
-                    <div key={a.notificationId} className="rounded-lg bg-bg/60 px-2 py-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge
-                          variant={
-                            (a.severity || "").toLowerCase() === "critical"
-                              ? "red"
-                              : (a.severity || "").toLowerCase() === "elevated"
-                                ? "amber"
-                                : "muted"
-                          }
-                        >
-                          {a.severity ?? "Alert"}
-                        </Badge>
-                        <span className="text-xs font-medium text-fg">{a.title ?? "Notification"}</span>
-                      </div>
-                      {a.message ? <p className="mt-0.5 text-[11px] text-muted">{a.message}</p> : null}
-                      {a.raisedAt ? (
-                        <p className="mt-0.5 text-[11px] text-muted">{formatSastDateTime(a.raisedAt)}</p>
-                      ) : null}
+              {current.rows.length ? (
+                current.rows.map((a) => (
+                  <div key={a.notificationId} className="rounded-lg border border-border px-2 py-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={(a.severity || "").toLowerCase() === "critical" ? "red" : (a.severity || "").toLowerCase() === "elevated" ? "amber" : "muted"}>
+                        {a.severity ?? "Alert"}
+                      </Badge>
+                      <span className="text-xs font-medium">{a.title ?? "Notification"}</span>
                     </div>
-                  ))}
-                </div>
+                    {a.message ? <p className="mt-0.5 text-[11px] text-muted">{a.message}</p> : null}
+                    {a.raisedAt ? <p className="mt-0.5 text-[11px] text-muted">{formatSastDateTime(a.raisedAt)}</p> : null}
+                  </div>
+                ))
               ) : (
-                <p className="mt-1 text-[11px] text-muted">Alert counters on the device — no notification text in this snapshot.</p>
+                <p className="text-[12px] text-muted">Alert counters on the device — notification text not in this snapshot.</p>
               )}
             </div>
-          ))}
-        </div>
+          ) : null}
+        </StickyPickSplit>
       )}
-
-      <section className="rpma-panel p-0">
-        <div className="rpma-settings-panel-head">
-          Windows Critical Events
-          <span className="rpma-settings-count">{events.length} last 24h</span>
-        </div>
-        {events.length === 0 ? (
-          <p className="px-3 py-3 text-[12px] text-muted">
-            No Critical or Error events from Assure agents in the last 24 hours. Agents collect System and Application logs every cycle.
-          </p>
-        ) : (
-          <table className="rpma-xls text-left">
-            <thead>
-              <tr>
-                <th>Host</th>
-                <th>When</th>
-                <th>Level</th>
-                <th>Log</th>
-                <th>ID</th>
-                <th>Provider</th>
-                <th>Message</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((ev, i) => (
-                <tr key={`${ev.hostName}-${ev.timeCreatedUtc}-${ev.eventId}-${i}`}>
-                  <td className="font-mono">{ev.hostName || "—"}</td>
-                  <td>{formatSastDateTime(ev.timeCreatedUtc)}</td>
-                  <td>
-                    <Badge variant={ev.levelName.toLowerCase() === "critical" ? "red" : "amber"}>
-                      {ev.levelName}
-                    </Badge>
-                  </td>
-                  <td>{ev.logName}</td>
-                  <td className="font-mono">{ev.eventId}</td>
-                  <td>{ev.providerName || "—"}</td>
-                  <td className="max-w-[36rem] whitespace-pre-wrap break-words text-[12px] leading-snug">
-                    {ev.message || "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
     </div>
   );
 }
@@ -2276,14 +2221,14 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
       providerName: "RPM RMM",
       message: [a.title, a.message].filter(Boolean).join(" — "),
     }));
-  const events = agent.length ? agent : fromAlerts;
+  const events = [...agent, ...fromAlerts];
   const hosts = [...new Set(events.map((e) => e.hostName).filter(Boolean))];
   const [sel, setSel] = useState(hosts[0] ?? "");
   return (
     <div className="space-y-3">
       <ChartCaption
-        title="Windows event logs"
-        why="Critical and Error rows from Application and System logs (Assure agent), plus RMM alerts when the agent has not posted yet."
+        title="RMM | Infrastructure Management · Event Logs"
+        why="Windows Critical/Error from Assure agents (7 days) plus RMM notifications for this tenant. Empty list means none on file — not No Cover."
       />
       {events.length === 0 ? (
         <p className="text-sm text-muted">No event log rows for this customer yet.</p>

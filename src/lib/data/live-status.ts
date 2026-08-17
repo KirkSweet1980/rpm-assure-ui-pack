@@ -424,13 +424,20 @@ export function customerLiveStatus(
       rag: !c.rmm
         ? "Off"
         : (extra?.rmm?.windowsEvents ?? []).some((e) => /crit/i.test(String(e.levelName ?? "")))
+          || (extra?.rmm?.alerts ?? []).some((a) => a.source !== "agent" && /crit/i.test(String(a.severity ?? "")))
           ? "Red"
           : (extra?.rmm?.windowsEvents?.length ?? 0) > 0
+            || (extra?.rmm?.alerts ?? []).some((a) => a.source !== "agent")
             ? "Green"
             : "Amber",
       cover: Boolean(c.rmm) || (extra?.rmm?.windowsEvents?.length ?? 0) > 0,
       href: `${base}/rmm/events`,
-      hint: (extra?.rmm?.windowsEvents?.length ?? 0) > 0 ? `${extra?.rmm?.windowsEvents?.length} event(s)` : "Event logs",
+      hint:
+        (extra?.rmm?.windowsEvents?.length ?? 0) > 0
+          ? `${extra?.rmm?.windowsEvents?.length} Windows event(s)`
+          : (extra?.rmm?.alerts ?? []).filter((a) => a.source !== "agent").length
+            ? `${(extra?.rmm?.alerts ?? []).filter((a) => a.source !== "agent").length} RMM alert(s)`
+            : "No events on file",
     },
     "/cove": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove`, hint: c.cove ? "Backup overview" : "Backup not on cover" },
     "/cove/devices": {
