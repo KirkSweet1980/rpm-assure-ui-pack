@@ -664,9 +664,9 @@ html.dark .rpma-pane-head-row {
   padding: 6px 20px;
   border: 0;
   border-radius: 0;
-  background: var(--color-brand-teal);
-  color: #042f2e;
-  box-shadow: 0 2px 8px color-mix(in srgb, #042f2e 14%, transparent);
+  background: #22c55e;
+  color: #052e16;
+  box-shadow: 0 2px 8px color-mix(in srgb, #052e16 16%, transparent);
   overflow: hidden;
 }
 .rpma-hud-head {
@@ -686,7 +686,7 @@ html.dark .rpma-pane-head-row {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   text-align: center;
-  color: #042f2e;
+  color: #052e16;
   white-space: nowrap;
 }
 .rpma-hud-head::after { display: none; content: none; }
@@ -713,7 +713,7 @@ html.dark .rpma-pane-head-row {
   min-width: 0;
   text-align: center;
 }
-.rpma-hud-ico { width: 14px; height: 14px; flex: 0 0 auto; color: #042f2e; }
+.rpma-hud-ico { width: 14px; height: 14px; flex: 0 0 auto; color: #052e16; }
 .rpma-hud-k {
   margin: 0;
   display: flex;
@@ -724,7 +724,7 @@ html.dark .rpma-pane-head-row {
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: color-mix(in srgb, #042f2e 78%, #fff);
+  color: color-mix(in srgb, #052e16 78%, #fff);
 }
 .rpma-hud-v {
   margin: 0;
@@ -732,7 +732,7 @@ html.dark .rpma-pane-head-row {
   font-size: 13px;
   font-weight: 750;
   letter-spacing: -0.02em;
-  color: #042f2e;
+  color: #052e16;
   text-align: center;
   white-space: nowrap;
 }
@@ -747,8 +747,8 @@ html[data-theme="dark"] .rpma-hud-head,
 html.dark .rpma-hud-head,
 html[data-theme="dark"] .rpma-hud,
 html.dark .rpma-hud {
-  background: var(--color-brand-teal);
-  color: #042f2e;
+  background: #22c55e;
+  color: #052e16;
 }
 .rpma-viewbar {
   display: flex;
