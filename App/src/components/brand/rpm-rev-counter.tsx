@@ -60,7 +60,7 @@ export function RpmRevCounter({ className }: { className?: string }) {
           </feMerge>
         </filter>
       </defs>
-      <circle cx={cx} cy={cy} r={r + 3} fill="#0b1a3a" stroke="#1a3a4e" strokeWidth="1" />
+      <circle cx={cx} cy={cy} r={r + 3} fill="var(--rev-face, #0b1a3a)" stroke="var(--rev-ring, #1a3a4e)" strokeWidth="1" />
       <path
         d={arcPath(cx, cy, r, start, start + sweep)}
         fill="none"
@@ -80,7 +80,7 @@ export function RpmRevCounter({ className }: { className?: string }) {
             y1={inner.y}
             x2={outer.x}
             y2={outer.y}
-            stroke={n >= 7 ? "#ea4d4d" : "#d7ece8"}
+            stroke={n >= 7 ? "#ea4d4d" : "var(--rev-tick, #d7ece8)"}
             strokeWidth={n % 2 === 0 ? 1.4 : 0.8}
           />
         );
@@ -112,7 +112,7 @@ export function RpmRevCounter({ className }: { className?: string }) {
         x={cx}
         y={cy + 18.5}
         textAnchor="middle"
-        fill="#2d6a8a"
+        fill="var(--rev-readout, #2d6a8a)"
         fontFamily="Inter, sans-serif"
         fontSize="4.2"
         fontWeight="700"

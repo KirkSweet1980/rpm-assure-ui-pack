@@ -2181,3 +2181,141 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   .rpma-emp-tool { font-size: 8px; }
 }
 
+/* Light mode — same chrome, snow surfaces, dark type */
+html[data-theme="light"],
+html.snow {
+  --rev-face: #f3f6f8;
+  --rev-ring: #b7c4ce;
+  --rev-tick: #3d4b58;
+  --rev-readout: #2d6a8a;
+}
+html[data-theme="light"] .dk-header-one,
+html[data-theme="light"] .dk-header-tall,
+html.snow .dk-header-one,
+html.snow .dk-header-tall {
+  background: #ffffff;
+  color: #293240;
+  border-bottom: 1px solid #d5dbe3;
+  box-shadow: 0 1px 12px rgba(69, 90, 100, 0.08);
+}
+html[data-theme="light"] .dk-link,
+html.snow .dk-link,
+html[data-theme="light"] .dk-collapse,
+html.snow .dk-collapse { color: #3d4b58; }
+html[data-theme="light"] .dk-link.is-active,
+html.snow .dk-link.is-active,
+html[data-theme="light"] .dk-collapse.is-active,
+html.snow .dk-collapse.is-active {
+  color: #0b1a3a;
+  background: #e8eef3;
+}
+html[data-theme="light"] .dk-burger span,
+html.snow .dk-burger span { background: #3d4b58; }
+html[data-theme="light"] .rpma-hud,
+html.snow .rpma-hud {
+  background: #e8edf2;
+  color: #1d2630;
+  border-bottom: 1px solid #d5dbe3;
+}
+html[data-theme="light"] .rpma-hud-k,
+html.snow .rpma-hud-k { color: #536170; }
+html[data-theme="light"] .rpma-hud-v,
+html.snow .rpma-hud-v { color: #1d2630; }
+
+html[data-theme="light"] .rpma-emp,
+html.snow .rpma-emp {
+  background: #eef2f6;
+  border-color: #c5d0da;
+  color: #293240;
+}
+html[data-theme="light"] .rpma-emp-title,
+html.snow .rpma-emp-title {
+  background: linear-gradient(180deg, #f7f9fb 0%, #e6ebf0 100%);
+  border-bottom-color: #c5d0da;
+}
+html[data-theme="light"] .rpma-emp-title strong,
+html.snow .rpma-emp-title strong { color: #0b1a3a; }
+html[data-theme="light"] .rpma-emp-title em,
+html.snow .rpma-emp-title em { color: #536170; }
+html[data-theme="light"] .rpma-emp-menu,
+html.snow .rpma-emp-menu {
+  background: #e4ebf0;
+  border-bottom-color: #c5d0da;
+}
+html[data-theme="light"] .rpma-emp-menu a,
+html.snow .rpma-emp-menu a { color: #3d4b58; }
+html[data-theme="light"] .rpma-emp-menu a:hover,
+html[data-theme="light"] .rpma-emp-menu a.is-on,
+html.snow .rpma-emp-menu a:hover,
+html.snow .rpma-emp-menu a.is-on {
+  color: #0b1a3a;
+  background: color-mix(in srgb, #1bb8a6 18%, #fff);
+}
+html[data-theme="light"] .rpma-emp-ribbon,
+html.snow .rpma-emp-ribbon {
+  background: #e8eef3;
+  border-bottom-color: #c5d0da;
+}
+html[data-theme="light"] .rpma-emp-group,
+html.snow .rpma-emp-group { border-right-color: #c5d0da; }
+html[data-theme="light"] .rpma-emp-group.is-on,
+html.snow .rpma-emp-group.is-on {
+  background: color-mix(in srgb, #1bb8a6 10%, #fff);
+}
+html[data-theme="light"] .rpma-emp-tool,
+html.snow .rpma-emp-tool { color: #3d4b58; }
+html[data-theme="light"] .rpma-emp-tool:hover,
+html[data-theme="light"] .rpma-emp-tool.is-on,
+html.snow .rpma-emp-tool:hover,
+html.snow .rpma-emp-tool.is-on {
+  color: #0b1a3a;
+  background: color-mix(in srgb, #1bb8a6 16%, #fff);
+}
+html[data-theme="light"] .rpma-emp-gtitle,
+html.snow .rpma-emp-gtitle { color: #0b1a3a; }
+html[data-theme="light"] .rpma-emp-body,
+html.snow .rpma-emp-body { background: #f4f6f8; }
+html[data-theme="light"] .rpma-emp-body.is-pad,
+html.snow .rpma-emp-body.is-pad { color: #293240; }
+html[data-theme="light"] .rpma-emp-body.is-pad .text-muted,
+html[data-theme="light"] .rpma-emp-body.is-pad .text-subtle,
+html.snow .rpma-emp-body.is-pad .text-muted,
+html.snow .rpma-emp-body.is-pad .text-subtle { color: #536170; }
+html[data-theme="light"] .rpma-emp-body.is-pad h2,
+html[data-theme="light"] .rpma-emp-body.is-pad h3,
+html.snow .rpma-emp-body.is-pad h2,
+html.snow .rpma-emp-body.is-pad h3 { color: #1d2630; }
+
+html[data-theme="light"] .rpma-est-table th,
+html.snow .rpma-est-table th {
+  color: #536170;
+  background: #e8edf2;
+  border-bottom-color: #c5d0da;
+}
+html[data-theme="light"] .rpma-est-table td,
+html.snow .rpma-est-table td {
+  color: #293240;
+  border-bottom-color: #e2e8ee;
+}
+html[data-theme="light"] .rpma-est-table tbody tr:nth-child(even),
+html.snow .rpma-est-table tbody tr:nth-child(even) { background: #f7f9fb; }
+html[data-theme="light"] .rpma-est-table .muted,
+html.snow .rpma-est-table .muted { color: #536170; }
+html[data-theme="light"] .rpma-est-foot,
+html.snow .rpma-est-foot {
+  background: #e8edf2;
+  border-top-color: #c5d0da;
+  color: #536170;
+}
+html[data-theme="light"] .rpma-est-pages button,
+html.snow .rpma-est-pages button {
+  background: #fff;
+  color: #293240;
+  border-color: #c5d0da;
+}
+html[data-theme="light"] .rpma-est-star,
+html.snow .rpma-est-star { color: #8aa0b0; }
+html[data-theme="light"] .rpma-est-empty,
+html.snow .rpma-est-empty { color: #536170; }
+
+
