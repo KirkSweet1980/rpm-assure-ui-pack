@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>RPM Assure — SLA briefing for EXCO</title>
+<style>
+  @page { size: A4; margin: 16mm 16mm 18mm; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: "Segoe UI", Calibri, Arial, sans-serif;
+    color: #122033;
+    font-size: 10.4pt;
+    line-height: 1.38;
+    background: #fff;
+  }
+  h1 {
+    font-size: 18pt; letter-spacing: 0.04em; margin: 0 0 4px;
+    color: #0b1c33; font-weight: 700;
+  }
+  h2 {
+    font-size: 12pt; color: #0b1c33; margin: 16px 0 6px;
+    border-bottom: 1.5px solid #c9a227; padding-bottom: 3px;
+    page-break-after: avoid;
+  }
+  h3 { font-size: 10.5pt; color: #1a365d; margin: 11px 0 4px; page-break-after: avoid; }
+  p { margin: 0 0 7px; }
+  .kicker { color: #8a7330; font-size: 9pt; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; }
+  .sub { color: #4a5568; font-size: 9.5pt; margin-bottom: 10px; }
+  .hero {
+    background: #0b1c33; color: #f4efe3; padding: 16px 18px 14px; margin: 0 0 12px;
+  }
+  .hero h1 { color: #fff; }
+  .hero .gold { color: #e2c56a; }
+  .rule { height: 3px; background: linear-gradient(90deg, #c9a227, #0b1c33); margin: 0 0 12px; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; page-break-inside: avoid; }
+  th {
+    background: #0b1c33; color: #f4efe3; font-weight: 600; font-size: 8.6pt;
+    text-align: left; padding: 5px 7px; letter-spacing: 0.03em;
+  }
+  td { border-bottom: 1px solid #d9deE6; padding: 4.5px 7px; vertical-align: top; font-size: 9.3pt; }
+  tr:nth-child(even) td { background: #f6f4ee; }
+  .note {
+    background: #f6f4ee; border-left: 3px solid #c9a227; padding: 7px 10px; margin: 8px 0 10px;
+    font-size: 9.3pt;
+  }
+  ul { margin: 4px 0 8px 18px; padding: 0; }
+  li { margin: 2px 0; }
+  .cols { display: table; width: 100%; }
+  .col { display: table-cell; width: 50%; vertical-align: top; padding-right: 10px; }
+  .col + .col { padding-right: 0; padding-left: 10px; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 8pt; font-weight: 700; letter-spacing: 0.04em; }
+  .g { background: #d1fae5; color: #065f46; }
+  .a { background: #fef3c7; color: #92400e; }
+  .r { background: #fee2e2; color: #991b1b; }
+  footer.pg {
+    position: running(footer);
+    font-size: 8pt; color: #64748b;
+  }
+  .foot { margin-top: 14px; font-size: 8pt; color: #64748b; border-top: 1px solid #d9dee6; padding-top: 6px; }
+  strong { color: #0b1c33; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker gold">RPM Resources · Confidential · EXCO pack</div>
+  <h1>RPM Assure</h1>
+  <div class="gold" style="font-size:12pt;font-weight:600;">How the application works · How SLA is calculated</div>
+  <div style="margin-top:8px;font-size:9pt;color:#c5d0de;">17 August 2026 · SYSPRO Support & AMS Rev 5.0 · Industry measures 14 Aug 2026</div>
+</div>
+<div class="rule"></div>
+
+<h2>1. What RPM Assure is</h2>
+<p>One boardroom view of every customer we manage. It pulls live data from <strong>SYSPRO</strong>, <strong>Pulseway</strong> (remote management), <strong>Cove</strong> (cloud backup), <strong>Bitdefender</strong> (endpoint protection) and <strong>Microsoft 365</strong>.</p>
+<p>It does <strong>not</strong> replace those products. It answers three questions: <strong>who is in cover</strong>, <strong>is the service healthy now</strong>, and <strong>are we meeting SLA</strong>.</p>
+
+<h2>2. How to read the screen</h2>
+<table>
+  <thead><tr><th>Lamp</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Cover / No Cover</strong></td><td>In scope for that customer (contract / mapping). <strong>No Cover is not scored</strong> and never inflates a percentage.</td></tr>
+    <tr><td><strong>Robot — Green / Amber / Red</strong></td><td>Live health of that service <em>right now</em>.</td></tr>
+    <tr><td><strong>SLA %</strong></td><td>Measured performance vs target, <strong>only on covered services</strong>.</td></tr>
+  </tbody>
+</table>
+<p>
+  Colour bands (used everywhere):
+  <span class="pill g">Green ≥ 80</span>
+  <span class="pill a">Amber 55–79</span>
+  <span class="pill r">Red ≤ 54</span>
+</p>
+<p>A tenant is only <strong>Red</strong> if a <strong>covered</strong> service is Red. Microsoft 365 is <strong>posture only</strong> — it never moves SLA or tenant RAG.</p>
+
+<h2>3. The five services</h2>
+<table>
+  <thead><tr><th>Service</th><th>What EXCO sees</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td><strong>SYSPRO EcoSystem</strong></td><td>Collect freshness, job errors, FinSight out-of-balance, licence, operators</td><td>Customer SQL + Assure agent</td></tr>
+    <tr><td><strong>RPM Remote Management</strong></td><td>Servers online, 30-day uptime, critical alerts, patches</td><td>Pulseway</td></tr>
+    <tr><td><strong>RPM Cloud Backup</strong></td><td>Backup success, 24-hour RPO, restore tests</td><td>Cove</td></tr>
+    <tr><td><strong>RPM EPP</strong></td><td>Endpoints managed, signatures current, open high/critical incidents</td><td>Bitdefender</td></tr>
+    <tr><td><strong>Microsoft 365 CSP</strong></td><td>Secure Score, MFA, admins — <strong>not in SLA</strong></td><td>Microsoft Graph</td></tr>
+  </tbody>
+</table>
+<p><strong>Customer Ecosystem</strong> (top of the rail) is tenant-level: assurance pack, incidents, risks, and <strong>contract ticket SLA</strong>.</p>
+
+<h2>4. How SLA is calculated — two layers (do not mix them)</h2>
+<div class="note">
+  <strong>Layer A</strong> = the RPM contract (did we answer and restore tickets in Business Hours).<br/>
+  <strong>Layer B</strong> = operational SLA (is the platform — servers, backups, EPP — actually running).<br/>
+  Only <strong>covered</strong> services contribute. A No Cover pillar is dropped, not treated as 100%.
+</div>
+
+<h3>Layer A — RPM contract (SYSPRO Support & AMS Rev 5.0, August 2026)</h3>
+<p>Ticket clocks in <strong>Business Hours</strong> (08:00–17:00, 8 hours per day). These are <strong>targets, not guarantees</strong>.</p>
+<table>
+  <thead>
+    <tr><th>Priority</th><th>Meaning</th><th>Acknowledge</th><th>Start remote</th><th>Restore</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>P1 Critical</strong></td><td>System down / core process stopped, no workaround</td><td>30 minutes</td><td>1 Business Hour</td><td>8 Business Hours</td></tr>
+    <tr><td><strong>P2 High</strong></td><td>Major function impaired</td><td>30 minutes</td><td>2 Business Hours</td><td>2 Business Days</td></tr>
+    <tr><td><strong>P3 Medium</strong></td><td>Small group; workaround exists</td><td>2 Business Hours</td><td>8 Business Hours</td><td>5 Business Days</td></tr>
+    <tr><td><strong>P4 Low</strong></td><td>Minor / cosmetic</td><td>4 Business Hours</td><td>2 Business Days</td><td>By agreement</td></tr>
+  </tbody>
+</table>
+<p><strong>How we score it.</strong> For each clocked incident in the last <strong>30 days</strong>: did we meet the acknowledge clock? did we meet the restore clock?</p>
+<p style="font-family:Consolas,monospace;background:#0b1c33;color:#e2c56a;padding:8px 10px;">
+  Contract SLA % = tickets that met the clock ÷ tickets scored
+</p>
+<p>Shown on <strong>Customer SLA</strong>. If there are no clocked tickets, we do <strong>not</strong> invent a percentage.</p>
+
+<h3>Layer B — Operational SLA (covered services only)</h3>
+<p>Equal average of scored, covered pillars. Microsoft 365 is never included.</p>
+
+<p><strong>1. SYSPRO</strong> — start at 100, then deduct. Target: 100% controls clear (AMS health, not ticket clocks).</p>
+<table>
+  <thead><tr><th>Signal</th><th>Deduction</th></tr></thead>
+  <tbody>
+    <tr><td>Collect older than 24 hours</td><td>−35 (or −50 if never collected)</td></tr>
+    <tr><td>Each SYSPRO job error</td><td>−15, then −5 per extra error (cap −40)</td></tr>
+    <tr><td>Each FinSight out-of-balance line</td><td>−10, then −2 per extra (cap −35)</td></tr>
+  </tbody>
+</table>
+
+<p><strong>2. RMM</strong> — <em>servers only</em>. Workstations never score. Target: <strong>99.9% monthly uptime</strong>.</p>
+<ul>
+  <li><strong>Uptime:</strong> if Pulseway has 30-day offline hours:<br/>
+    <span style="font-family:Consolas,monospace;font-size:9pt;">(43,200 − average offline minutes) / 43,200</span><br/>
+    Otherwise: servers online ÷ servers on the latest snapshot.</li>
+  <li><strong>Critical alerts:</strong> −12 points each (cap −40).</li>
+  <li><strong>Coverage line:</strong> servers reporting in the last 15 minutes ÷ servers.</li>
+  <li>No classified servers → <strong>not scored</strong> (not 0%).</li>
+</ul>
+
+<p><strong>3. Cloud Backup</strong> — target <strong>99.5% success · 24-hour RPO</strong>.</p>
+<ul>
+  <li><strong>Success</strong> = OK jobs ÷ (OK + failed).</li>
+  <li><strong>RPO</strong> = last success within 24 hours (stale devices pull the score down).</li>
+  <li><strong>Restore</strong> = passed recovery tests ÷ (passed + failed), blended in at 30% when tests exist.</li>
+  <li>Devices mapped but no job outcome yet → <strong>70%</strong>, not 0.</li>
+</ul>
+
+<p><strong>4. EPP</strong> — target <strong>98% protected</strong>.</p>
+<ul>
+  <li><strong>Coverage</strong> = managed endpoints ÷ (managed + unmanaged).</li>
+  <li><strong>Currency</strong> = product + signatures current (when the collect has those flags).</li>
+  <li><strong>Open high/critical incidents:</strong> 100% if none; −20 per open incident.</li>
+</ul>
+
+<p><strong>5. Microsoft 365</strong> — Secure Score / MFA / admin posture only. <strong>Not in the SLA average.</strong></p>
+
+<h2>5. Customer Assurance score (the large number)</h2>
+<p>Blend of live health and covered legs only. No Cover never inflates the score.</p>
+<table>
+  <thead><tr><th>Weight</th><th>Signal</th></tr></thead>
+  <tbody>
+    <tr><td>50%</td><td>Health score (from the service robots)</td></tr>
+    <tr><td>20%</td><td>SYSPRO collect fresh (ignored if No Cover)</td></tr>
+    <tr><td>15%</td><td>SYSPRO jobs clean (ignored if No Cover)</td></tr>
+    <tr><td>15%</td><td>RMM servers: all online and no critical alerts (omitted if no servers)</td></tr>
+  </tbody>
+</table>
+<p>Same colour bands: Green ≥ 80 · Amber 55–79 · Red ≤ 54.</p>
+
+<h2>6. What EXCO can say with confidence</h2>
+<ol>
+  <li><strong>Cover</strong> = we contracted / mapped it. <strong>No Cover</strong> = we are not pretending to measure it.</li>
+  <li><strong>Green</strong> = covered services are meeting the live bar. <strong>Amber</strong> = watch. <strong>Red</strong> = a covered service is in breach.</li>
+  <li><strong>Contract SLA</strong> = did we answer and restore tickets in Business Hours.</li>
+  <li><strong>Service SLA</strong> = is the platform (servers, backups, EPP) actually running.</li>
+  <li>Numbers on screen are from <strong>today’s collect</strong>, not a monthly spreadsheet.</li>
+</ol>
+
+<div class="note">
+  <strong>Likely questions</strong><br/>
+  <em>“Why is this customer the same colour on the main page and inside?”</em> — One formula now; Cover and RAG are unified.<br/>
+  <em>“Why Cloud Backup No Cover if devices exist?”</em> — Devices must be mapped to that customer code before they count.<br/>
+  <em>“Why patch counts but not KB names?”</em> — Pulseway’s API only sends counts. Named KBs are collected on the server and posted into Assure.
+</div>
+
+<div class="foot">
+  RPM Assure · SLA briefing for EXCO · 17 August 2026 · Sources: SYSPRO Support & AMS Rev 5.0 (August 2026); RMM SLA Metrics Recommendations (14 August 2026); live scoring in Assure (rag-score, exco-sla-stats, service-sla).<br/>
+  Confidential — RPM Resources. Not a contractual amendment. Contract clocks remain targets, not guarantees.
+</div>
+
+</body>
+</html>
