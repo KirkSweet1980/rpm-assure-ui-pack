@@ -123,7 +123,6 @@ export function scoreTicket(row: FactIncidentRow, now = new Date()): TicketSlaCl
   }
   if (clock.restoreMins == null) resolve = row.resolveSlaMet ?? null;
 
-  void end;
   return {
     response,
     resolve,
