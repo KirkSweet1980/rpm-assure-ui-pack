@@ -23,7 +23,8 @@ param(
   [string]$CentralSqlUser = 'rpmassure',
   [string]$CentralSqlPassword = '',
   [string]$AgentAdminPassword = '',
-  [switch]$SkipHeartbeat
+  [switch]$SkipHeartbeat,
+  [switch]$Unattended
 )
 
 $ErrorActionPreference = 'Stop'
@@ -190,7 +191,66 @@ Write-Host 'Installing Windows service RPMAssure-Edge...'
 if (-not $SkipHeartbeat) {
   Write-Host 'First HTTPS heartbeat...'
   $env:RPM_ASSURE_IOPS_SECRET = $AgentSecret
+  $env:RPM_ASSURE_AGENT_SECRET = $AgentSecret
   & (Join-Path $AgentRoot 'RpmAssure-Agent.ps1') -AgentRoot $AgentRoot -HeartbeatOnly
+
+  $libHttps = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
+  if (Test-Path $libHttps) { . $libHttps }
+  $detectedSyspro = $false
+  try {
+    $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
+    if (-not (Test-Path $sqlcmd)) { $sqlcmd = (Get-Command sqlcmd -ErrorAction SilentlyContinue).Source }
+    if ($sqlcmd) {
+      $dbs = & $sqlcmd -S '.' -E -C -h -1 -W -Q "SET NOCOUNT ON; SELECT name FROM sys.databases WHERE state=0 AND name LIKE 'Syspro%';" 2>$null
+      foreach ($line in @($dbs)) {
+        if (([string]$line).Trim() -match '^Syspro') { $detectedSyspro = $true; break }
+      }
+    }
+  } catch {}
+  Write-Host ('Detected on this host: SYSPRO databases=' + $(if ($detectedSyspro) { 'yes' } else { 'no' }))
+
+  $exists = $true
+  try {
+    $look = Send-RpmaHttpsOnboard -Method GET -CustomerCode $CustomerCode
+    if ($look.Json -and $look.Json.ok) { $exists = [bool]$look.Json.exists }
+  } catch {
+    Write-Host ('WARN onboard lookup: ' + $_.Exception.Message)
+  }
+
+  if (-not $exists) {
+    Write-Host '========================================'
+    Write-Host (' Customer ' + $CustomerCode + ' is not on Assure. Creating it.')
+    Write-Host ' Tickets is always on. Other services: Y/N (Enter = suggested).'
+    Write-Host ' Cover still lights only when live data arrives (except Tickets).'
+    Write-Host '========================================'
+    $display = $CustomerCode
+    $sys = $detectedSyspro
+    $rmm = $false; $cove = $false; $epp = $false; $csp = $false
+    if (-not $Unattended) {
+      $dn = Read-Host ('Display name [' + $CustomerCode + ']')
+      if ($dn) { $display = $dn.Trim() }
+      function Ask-Yn([string]$label, [bool]$def) {
+        $hint = $(if ($def) { 'Y' } else { 'N' })
+        $a = Read-Host ($label + ' [' + $hint + ']')
+        if (-not $a) { return $def }
+        return ($a -match '^(y|yes|1)$')
+      }
+      $sys = Ask-Yn 'Enable SYSPRO' $detectedSyspro
+      $rmm = Ask-Yn 'Enable RPM Remote Management' $false
+      $cove = Ask-Yn 'Enable RPM Cloud Backup' $false
+      $epp = Ask-Yn 'Enable RPM EndPoint Protection' $false
+      $csp = Ask-Yn 'Enable Microsoft 365 CSP' $false
+    }
+    try {
+      $cr = Send-RpmaHttpsOnboard -Method POST -CustomerCode $CustomerCode -DisplayName $display `
+        -HostName $env:COMPUTERNAME -Syspro $sys -Rmm $rmm -Cove $cove -Epp $epp -Csp $csp
+      Write-Host ('Onboard Assure: created=' + $cr.Json.created + ' ' + $cr.Text)
+    } catch {
+      Write-Host ('WARN onboard create: ' + $_.Exception.Message)
+    }
+  } else {
+    Write-Host ('Customer ' + $CustomerCode + ' already on Assure. Cover stays live-data (no invent).')
+  }
 }
 
 Write-Host '========================================'
