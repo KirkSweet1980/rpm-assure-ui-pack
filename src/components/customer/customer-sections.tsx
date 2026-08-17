@@ -2274,7 +2274,7 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
     </div>
   );
 }
-  const agent = data.rmm?.windowsEvents ?? [];
+
 export function RmmMappingSection({ data }: { data: CustomerDetailPayload }) {
   const rmm = data.rmm;
   const maps = rmm?.mapping ?? [];
