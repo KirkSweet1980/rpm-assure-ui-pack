@@ -58,6 +58,7 @@ export const ECOSYSTEM_MODULES: NavItem[] = [
 export const CUSTOMER_PILLARS: {
   id: keyof CustomerCover;
   title: string;
+  modulesHeading: string;
   overview: string;
   icon: LucideIcon;
   color: string;
@@ -67,6 +68,7 @@ export const CUSTOMER_PILLARS: {
   {
     id: "syspro",
     title: "SYSPRO EcoSystem",
+    modulesHeading: "SYSPRO Service Modules",
     overview: "/syspro",
     icon: Database,
     color: "#0d9488",
@@ -87,6 +89,7 @@ export const CUSTOMER_PILLARS: {
   {
     id: "rmm",
     title: "RPM Remote Management",
+    modulesHeading: "RMM Service Modules",
     overview: "/rmm",
     icon: Server,
     color: "#2563eb",
@@ -105,6 +108,7 @@ export const CUSTOMER_PILLARS: {
   {
     id: "cove",
     title: "RPM Cloud Backup",
+    modulesHeading: "Backup Service Modules",
     overview: "/cove",
     icon: Cloud,
     color: "#7c3aed",
@@ -120,6 +124,7 @@ export const CUSTOMER_PILLARS: {
   {
     id: "epp",
     title: "RPM EPP",
+    modulesHeading: "EPP Service Modules",
     overview: "/epp",
     icon: Shield,
     color: "#dc2626",
@@ -136,6 +141,7 @@ export const CUSTOMER_PILLARS: {
   {
     id: "csp",
     title: "Microsoft 365 CSP",
+    modulesHeading: "CSP Service Modules",
     overview: "/csp",
     icon: Mail,
     color: "#ea580c",
@@ -169,6 +175,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
   }, [fromUrl]);
 
   const active = CUSTOMER_PILLARS.find((p) => p.id === picked);
+  const modulesHeading = active?.modulesHeading ?? "Service Modules";
 
   return (
     <aside className="rpma-pillar-rail" aria-label="Customer navigation">
@@ -231,10 +238,10 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
 
       <section className="rpma-nav-block">
         <div className="rpma-pillar-rail-head">
-          <h2>Service Modules</h2>
+          <h2>{modulesHeading}</h2>
           <HelpTip text="Pages inside the selected RPM service. Robot is live status for that module. Click an amber robot row to open the amber issue." />
         </div>
-        <div className="rpma-mod-static" role="navigation" aria-label="Service Modules">
+        <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
           {active ? (
             active.modules.map((m) => {
               const href = `${base}${m.path}`;

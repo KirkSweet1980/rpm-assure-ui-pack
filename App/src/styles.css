@@ -338,7 +338,7 @@ body {
 html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); border-color: var(--color-border); }
 .rpma-nav-block + .rpma-nav-block { border-top: 1px solid #e8edf3; }
 .rpma-pillar-rail-head { padding: 0.85rem 0.6rem 0.35rem; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.rpma-pillar-rail-head h2 { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; color: #4b5563; }
+.rpma-pillar-rail-head h2 { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; color: #4b5563; line-height: 1.25; }
 .rpma-dd { position: relative; padding: 0.4rem 0.8rem 0.85rem; }
 .rpma-dd-trigger {
   width: 100%; display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 5px 9px;
