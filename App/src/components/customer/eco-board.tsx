@@ -264,7 +264,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           </div>
         </div>
 
-        <Pane title="Service cover" tip="Green chip = live collect in scope. Grey = No Cover (not scored)." {...wgt("cover")}>
+        <Pane title="Service cover" tip="Green chip = live collect in scope. Grey = No RPM Cloud Backupr (not scored)." {...wgt("cover")}>
           <div className="flex flex-wrap gap-1.5">
             {serviceBars.map((s) => (
               <SpaLink
@@ -314,7 +314,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           ) : null}
         </Pane>
 
-        <Pane title="RPM RMM" tip="Pulseway agents on the latest snapshot." covered={isPillarCovered(cover, "rmm")} {...wgt("rmm")}>
+        <Pane title="RPM RMM" tip="RPM RMM agents on the latest snapshot." covered={isPillarCovered(cover, "rmm")} {...wgt("rmm")}>
           {isPillarCovered(cover, "rmm") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Online" value={rmmOn} tone="green" />
@@ -330,11 +330,11 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
               />
             </div>
           ) : (
-            <p className="text-[12px] text-muted">No cover — Pulseway is not in scope.</p>
+            <p className="text-[12px] text-muted">No cover — RPM RMM is not in scope.</p>
           )}
         </Pane>
 
-        <Pane title="Cloud Backup" tip="Cove devices vs 24h RPO." covered={isPillarCovered(cover, "cove")} {...wgt("backup")}>
+        <Pane title="Cloud Backup" tip="Cloud Backup devices vs 24h RPO." covered={isPillarCovered(cover, "cove")} {...wgt("backup")}>
           {isPillarCovered(cover, "cove") ? (
             <div className="grid grid-cols-2 gap-2">
               <StatCard label="Healthy" value={coveOk} tone="green" />

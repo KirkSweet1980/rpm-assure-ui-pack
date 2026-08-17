@@ -52,7 +52,7 @@ export function CoveEsrPanel({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="RPM Cloud Backup · Executive Summary"
-        hint="No cover — no Cove / Cyber Backup data for this customer."
+        hint="No cover — no RPM Cloud Backup data for this customer."
       />
     );
   }
@@ -66,7 +66,7 @@ export function CoveEsrPanel({ data }: { data: CustomerDetailPayload }) {
           <span className="font-semibold text-fg">
             Enabled safeguards | {esr.safeguardsOn} out of {esr.safeguardsTotal}
           </span>
-          . Platform safeguards for Cove Data Protection on this tenant.
+          . Platform safeguards for RPM Cloud Backup on this tenant.
         </p>
         <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
           {COVE_SAFEGUARDS.map((s) => (

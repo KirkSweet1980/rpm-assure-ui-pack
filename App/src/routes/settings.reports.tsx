@@ -68,7 +68,7 @@ function ReportSchedulesPage() {
       <section className="rpma-panel space-y-3 p-4">
         <p className="text-[12px] text-muted">
           Packs are generated automatically to disk. Email is optional (SMTP Report To). Daily 18:00 Day
-          End · Friday full assurance + patch + RMM / Cove / EPP · 1st of month AMS.
+          End · Friday full assurance + patch + RMM / RPM Cloud Backup / EPP · 1st of month AMS.
         </p>
         {!smtpOn ? (
           <p className="text-[12px] text-muted">

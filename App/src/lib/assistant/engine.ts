@@ -51,13 +51,13 @@ function pageHelp(path: string): string | null {
     return "RPM Cloud Backup is Cove. Healthy / Stale / Failed are the three states. Recovery is boot-test evidence. Retention is policy.";
   }
   if (/\/customers\/[^/]+\/epp/.test(path)) {
-    return "RPM EPP covers endpoints, policies, security incidents and quarantine. No Cover means no endpoints are mapped.";
+    return "RPM EndPoint Protection covers endpoints, policies, security incidents and quarantine. No RPM Cloud Backupr means no endpoints are mapped.";
   }
   if (/\/customers\/[^/]+\/csp/.test(path)) {
     return "Microsoft 365 CSP: Secure Score, Global Admins, MFA, Users, Licences. Scores are posture, not SYSPRO SLA.";
   }
   if (/\/customers\/[^/]+$/.test(path) || /\/customers\/[^/]+\/$/.test(path)) {
-    return "Tenant Overview (Ecosystem) is the visual board for this customer. Green = Cover, pewter = No Cover. Open Customer Assurance or an RPM Service from the rail.";
+    return "Tenant Overview (Ecosystem) is the visual board for this customer. Green = Cover, pewter = No RPM Cloud Backupr. Open Customer Assurance or an RPM Service from the rail.";
   }
   return null;
 }
@@ -90,7 +90,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
     return {
       source: "local",
       text:
-        "Cover means the tenant is in scope for that RPM Service and we collect data. No Cover (pewter) means it is not scored, not billed as that service, and does not move estate RAG. Green = Cover. Indigo = the selected item. Map Pulseway / Cove / RPM EPP / CSP in Configuration → Integrations, then run collect.",
+        "Cover means the tenant is in scope for that RPM Service and we collect data. No RPM Cloud Backupr (pewter) means it is not scored, not billed as that service, and does not move estate RAG. Green = Cover. Indigo = the selected item. Map RMM / RPM Cloud Backup / RPM EndPoint Protection / CSP in Configuration → Integrations, then run collect.",
       links: [{ label: "Assure Infrastructure Status", href: "/settings/infrastructure" }],
     };
   }
@@ -101,7 +101,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
       ctx.jobErrors ? `SYSPRO job errors: ${ctx.jobErrors}.` : null,
       ctx.finsightOob ? `FinSight out-of-balance lines: ${ctx.finsightOob}.` : null,
       ctx.rmmOffline ? `RMM servers offline: ${ctx.rmmOffline}.` : null,
-      "Amber is watch. Red is breach or open critical. No Cover services do not change RAG.",
+      "Amber is watch. Red is breach or open critical. No RPM Cloud Backupr services do not change RAG.",
     ]
       .filter(Boolean)
       .join(" ");
@@ -112,7 +112,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
     return {
       source: "local",
       text:
-        "SLA in Assure is scored per covered pillar: SYSPRO (collect freshness, job errors, FinSight), Remote Management (server online %, critical alerts — workstations excluded), Cloud Backup (healthy vs failed/stale), RPM EPP (managed estate). Microsoft 365 CSP is posture, not this SLA. Open Customer Assurance → SLA for clocks.",
+        "SLA in Assure is scored per covered pillar: SYSPRO (collect freshness, job errors, FinSight), Remote Management (server online %, critical alerts — workstations excluded), Cloud Backup (healthy vs failed/stale), RPM EndPoint Protection (managed estate). Microsoft 365 CSP is posture, not this SLA. Open Customer Assurance → SLA for clocks.",
       links: base
         ? [{ label: "SLA", href: `${base}/ams/sla` }]
         : [{ label: "Assure Eco-System", href: "/" }],
@@ -149,7 +149,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
     return {
       source: "local",
       text:
-        "Onboard on the customer SQL server with the one-shot script (Windows or SQL admin). It creates the read account, grants db_datareader, registers the tenant on central, then collect writes back. After SQL, map Pulseway / Cove / RPM EPP / CSP so Cover lights green. Configuration → Collect Inventory shows last import age.",
+        "Onboard on the customer SQL server with the one-shot script (Windows or SQL admin). It creates the read account, grants db_datareader, registers the tenant on central, then collect writes back. After SQL, map RPM RMM / RPM Cloud Backup / RPM EndPoint Protection / CSP so Cover lights green. Configuration → Collect Inventory shows last import age.",
       links: [
         { label: "Collect Inventory", href: "/settings/collect" },
         { label: "Assure Infrastructure Status", href: "/settings/infrastructure" },
@@ -213,7 +213,7 @@ export function answerLocally(question: string, ctx: AssistantContext): Assistan
     ? [
         `${ctx.customerName} (${ctx.customerCode}) · ${ctx.healthRag ?? "—"}`,
         ctx.cover
-          ? `Cover: SYSPRO ${ctx.cover.syspro ? "Yes" : "No"}, Remote Management ${ctx.cover.rmm ? "Yes" : "No"}, Cloud Backup ${ctx.cover.cove ? "Yes" : "No"}, RPM EPP ${ctx.cover.epp ? "Yes" : "No"}, Microsoft 365 CSP ${ctx.cover.csp ? "Yes" : "No"}.`
+          ? `Cover: SYSPRO ${ctx.cover.syspro ? "Yes" : "No"}, Remote Management ${ctx.cover.rmm ? "Yes" : "No"}, Cloud Backup ${ctx.cover.cove ? "Yes" : "No"}, RPM EndPoint Protection ${ctx.cover.epp ? "Yes" : "No"}, Microsoft 365 CSP ${ctx.cover.csp ? "Yes" : "No"}.`
           : null,
         pageHelp(ctx.pathname),
       ]

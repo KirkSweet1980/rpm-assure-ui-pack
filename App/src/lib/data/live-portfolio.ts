@@ -413,7 +413,7 @@ function recomputeRowHealth(row: PortfolioRow): void {
           })
         : {
             rag: "Amber" as const,
-            summary: "Cyber Backup covered — no device snapshot yet.",
+            summary: "RPM Cloud Backup covered — no device snapshot yet.",
           }
       : null;
 
@@ -1955,10 +1955,10 @@ function buildOperationalAssurance(args: {
 
     if (useCove) {
       const n = args.coveDeviceCount ?? 0;
-      if (n <= 0) bits.push("Cyber Backup: no devices (not scored).");
-      else bits.push(`Cyber Backup: ${n} device(s), ${args.coveFailedDeviceCount ?? 0} failed.`);
+      if (n <= 0) bits.push("RPM Cloud Backup: no devices (not scored).");
+      else bits.push(`RPM Cloud Backup: ${n} device(s), ${args.coveFailedDeviceCount ?? 0} failed.`);
     } else {
-      bits.push("Cyber Backup: No cover (not scored).");
+      bits.push("RPM Cloud Backup: No cover (not scored).");
     }
     if (useEpp) {
       const n = args.eppDeviceCount ?? 0;
@@ -5239,7 +5239,7 @@ ORDER BY
             deviceName: d.name,
             severity: "Critical",
             title: `${crit} critical alert${crit === 1 ? "" : "s"} on device`,
-            message: "From Pulseway device counters (notification text not in latest snapshot).",
+            message: "From RPM RMM device counters (notification text not in latest snapshot).",
             raisedAt: d.lastSeenOnline,
             isActive: true,
           });
@@ -5251,7 +5251,7 @@ ORDER BY
             deviceName: d.name,
             severity: "Elevated",
             title: `${elev} elevated alert${elev === 1 ? "" : "s"} on device`,
-            message: "From Pulseway device counters (notification text not in latest snapshot).",
+            message: "From RPM RMM device counters (notification text not in latest snapshot).",
             raisedAt: d.lastSeenOnline,
             isActive: true,
           });
@@ -5333,9 +5333,9 @@ ORDER BY
       (rmm.agentIops?.length ?? 0) > 0;
     if (!rmm.enabled) {
       rmm.message =
-        "RMM not mapped for this customer yet. Map Pulseway org → CustomerCode, enable PillarPulseway, or run 421 demo seed.";
+        "RMM not mapped for this customer yet. Map the RMM organisation, enable RMM cover, then run collect.";
     } else if (!rmm.summary && rmm.devices.length === 0) {
-      rmm.message = "Org map present but no RMM snapshot yet — run Pulseway collect or 421 demo seed.";
+      rmm.message = "Org map present but no RMM snapshot yet — run RMM collect.";
     }
   } catch (e) {
     rmm.message = e instanceof Error ? e.message : String(e);
@@ -7035,13 +7035,13 @@ ORDER BY UserPrincipalName, DisplayName`);
   }
   rmm.enabled = cover.rmm;
   if (!cover.rmm) {
-    rmm.message = "No cover — RMM (Pulseway) is not in scope for this customer.";
+    rmm.message = "No cover — RPM RMM is not in scope for this customer.";
     rmm.devices = [];
     rmm.alerts = (rmm.alerts ?? []).filter((a) => a.source === "agent");
     rmm.summary = null;
   } else if (!rmm.summary && rmm.devices.length === 0) {
     rmm.message =
-      "RMM is in scope but no devices on the latest snapshot. Confirm Pulseway org mapping and collect.";
+      "RMM is in scope but no devices on the latest snapshot. Confirm RMM organisation mapping and collect.";
   } else {
     rmm.message = null;
   }
@@ -7056,7 +7056,7 @@ ORDER BY UserPrincipalName, DisplayName`);
   }
   cove.enabled = cover.cove;
   if (!cover.cove) {
-    cove.message = "No cover — Cyber Backup (Cove) is not in scope for this customer.";
+    cove.message = "No cover — RPM Cloud Backup is not in scope for this customer.";
     cove.devices = [];
     cove.summary = null;
     cove.recovery = null;
@@ -7067,7 +7067,7 @@ ORDER BY UserPrincipalName, DisplayName`);
     cove.message =
       cove.mapping.length > 0
         ? "Partner mapped but no device rows on latest Cove collect. Re-run Collect-Cove-To-RPMAssure.ps1 and confirm Product matches PartnerName."
-        : "Cyber Backup is in scope but no device snapshot yet. Map Cove partner → CustomerCode and run Cove collect.";
+        : "RPM Cloud Backup is in scope but no device snapshot yet. Map the backup partner and run collect.";
   } else {
     cove.message = null;
   }
@@ -7142,7 +7142,7 @@ ORDER BY UserPrincipalName, DisplayName`);
             staleCount: Number(cove.summary.staleCount) || 0,
           })
         : cover.cove
-          ? { rag: "Amber" as const, summary: "Cyber Backup covered — no snapshot yet." }
+          ? { rag: "Amber" as const, summary: "RPM Cloud Backup covered — no snapshot yet." }
           : null;
     const eppN =
       Number(epp?.summary?.deviceCount) ||

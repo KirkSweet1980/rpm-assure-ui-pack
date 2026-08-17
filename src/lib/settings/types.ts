@@ -209,7 +209,7 @@ export type UiLabelsConfig = {
   assurePackShort: string;
   /** Exco Insight default title (dashboard.estateTitle can override) */
   excoTitle: string;
-  /** Cover "No Cover" chip text */
+  /** Cover "No RPM Cloud Backupr" chip text */
   noCover: string;
   coverOn: string;
 };
@@ -234,7 +234,7 @@ export const DEFAULT_UI_LABELS: UiLabelsConfig = {
   assurePack: "Customer Assurance",
   assurePackShort: "Assurance",
   excoTitle: "Customer Eco-System",
-  noCover: "No Cover",
+  noCover: "No RPM Cloud Backupr",
   coverOn: "Covered",
 };
 
@@ -248,7 +248,7 @@ export const UI_LABEL_FIELDS: {
   { key: "productName", label: "Product Name", help: "Shown in About and browser chrome.", group: "Brand" },
   { key: "excoTitle", label: "Main Page Title", help: "Default heading on Customer Eco-System.", group: "Brand" },
   { key: "servicesOnCover", label: "Services Heading", help: "Heading above customer service modules.", group: "Brand" },
-  { key: "noCover", label: "No Cover Text", help: "Status when a service has no mapped data.", group: "Brand" },
+  { key: "noCover", label: "No RPM Cloud Backupr Text", help: "Status when a service has no mapped data.", group: "Brand" },
   { key: "coverOn", label: "Cover Text", help: "Status when a service is in scope.", group: "Brand" },
   { key: "ecosystem", label: "Customer Eco-System", help: "Customer landing page and first service.", group: "Customer Services" },
   { key: "ecosystemShort", label: "Customer Eco-System (Short)", help: "Compact nav on narrow screens.", group: "Customer Services" },
@@ -259,7 +259,7 @@ export const UI_LABEL_FIELDS: {
   { key: "cove", label: "RPM Cloud Backup", help: "Cloud backup service name.", group: "Customer Services" },
   { key: "coveShort", label: "Cloud Backup (Short)", help: "Compact service label.", group: "Customer Services" },
   { key: "epp", label: "RPM EndPoint Protection", help: "Endpoint protection service name.", group: "Customer Services" },
-  { key: "eppShort", label: "RPM EPP (Short)", help: "Compact service label.", group: "Customer Services" },
+  { key: "eppShort", label: "RPM EndPoint Protection (Short)", help: "Compact service label.", group: "Customer Services" },
   { key: "csp", label: "Microsoft CSP", help: "Microsoft 365 / CSP service name.", group: "Customer Services" },
   { key: "cspShort", label: "Microsoft CSP (Short)", help: "Compact service label.", group: "Customer Services" },
   { key: "tickets", label: "Customer Tickets", help: "Freshdesk ticket service name.", group: "Customer Services" },
@@ -403,7 +403,7 @@ export const DASHBOARD_PRESETS: Record<
   },
   rmm: {
     label: "RMM Focus",
-    help: "Pulseway health first, with portfolio and attention.",
+    help: "RMM health first, with portfolio and attention.",
     patch: {
       estateTitle: "Exco Insight",
       estateSubtitle: "RMM estate — devices, offline agents, critical alerts.",

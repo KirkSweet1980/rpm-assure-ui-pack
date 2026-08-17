@@ -551,7 +551,7 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="SYSPRO Deployment"
-        hint="No cover — no SYSPRO data for this customer (no instance map / operators / collect). Deferred customers stay No Cover until enabled."
+        hint="No cover — no SYSPRO data for this customer (no instance map / operators / collect). Deferred customers stay No RPM Cloud Backupr until enabled."
       />
     );
   }
@@ -614,7 +614,7 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="RPM Remote Management"
-        hint="No cover — no Pulseway RMM devices or org mapped for this customer. Map an org and run Pulseway collect."
+        hint="No cover — no RPM RMM RMM devices or org mapped for this customer. Map an org and run RMM collect."
       />
     );
   }
@@ -670,7 +670,7 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-4">
       <ChartCaption
         title="RPM Remote Management overview"
-        why="Day snapshot from Pulseway (RPM Remote Management). RAG: Red if critical alerts or 5+ offline; Amber if any offline / elevated / disk pressure."
+        why="Day snapshot from RPM RMM (RPM Remote Management). RAG: Red if critical alerts or 5+ offline; Amber if any offline / elevated / disk pressure."
       />
       {rmm?.message ? (
         <p className="text-sm text-muted">{rmm.message}</p>
@@ -712,7 +712,7 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
 
           <ChartCaption
             title="Customer Storage"
-            why="Sum of Pulseway disk inventory for this customer. Used = total − free when both are reported."
+            why="Sum of RMM disk inventory for this customer. Used = total − free when both are reported."
           />
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
@@ -744,7 +744,7 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
 
           <ChartCaption
             title="Customer Reboot Age"
-            why="Days since last reboot, parsed from Pulseway uptime (e.g. Online 23d). Max is the oldest reboot in the fleet."
+            why="Days since last reboot, parsed from RMM uptime (e.g. Online 23d). Max is the oldest reboot in the fleet."
           />
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
@@ -764,7 +764,7 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
 
           <ChartCaption
             title="Customer Patches - Not Deployed"
-            why="Outstanding updates from Pulseway Updates (Critical + Important + Unspecified). SYSPRO hotfixes remain under SYSPRO → Hotfix Information."
+            why="Outstanding updates from RMM updates (Critical + Important + Unspecified). SYSPRO hotfixes remain under SYSPRO → Hotfix Information."
           />
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
@@ -952,7 +952,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-4">
       <ChartCaption
         title="Patch compliance — installed and outstanding"
-        why="Installed, recently installed (30 days), and outstanding Windows updates per server from Pulseway. Servers feed SLA. Workstations are visibility only."
+        why="Installed, recently installed (30 days), and outstanding Windows updates per server from RPM RMM. Servers feed SLA. Workstations are visibility only."
       />
       {rmm?.message ? (
         <p className="text-sm text-muted">{rmm.message}</p>
@@ -1182,7 +1182,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
 
       {devices.length === 0 ? (
         <p className="text-sm text-muted">
-          No RMM devices on latest snapshot. Map Pulseway org and re-run collect.
+          No RMM devices on latest snapshot. Map RMM organisation and re-run collect.
         </p>
       ) : reporting.length === 0 ? (
         <div className="space-y-2 rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted">
@@ -1191,7 +1191,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
             snapshot.
           </p>
           <p>
-            Pulseway does not put missing/installed update counts on the base device record.
+            RMM does not put missing/installed update counts on the base device record.
             The collect script must call OS Updates endpoints (devices/…/updates,
             windowsupdates, osupdates, …) and store PatchMissingCount /
             PatchInstalledCount / PatchPendingCount.
@@ -1200,7 +1200,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
             <li>
               On central: run{" "}
               <span className="font-mono text-xs">
-                Probe-Pulseway-Patch.ps1
+                the RMM patch probe
               </span>{" "}
               — look for lines marked <span className="font-mono">**PATCH-LIKE**</span> and
               paste that log if still empty.
@@ -1209,7 +1209,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
               Apply SQL{" "}
               <span className="font-mono text-xs">457_Ensure_Rmm_Devices_Latest_Patch.sql</span>{" "}
               then re-run{" "}
-              <span className="font-mono text-xs">Collect-Pulseway-To-RPMAssure.ps1</span>.
+              <span className="font-mono text-xs">the RMM collect</span>.
             </li>
             <li>
               Confirm in SQL that agents are reporting patch counts on the latest
@@ -1353,7 +1353,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
             {viewRows.length === 0 ? (
               <p className="px-3 py-4 text-sm text-muted">
                 {namedAll.length === 0
-                  ? "Pulseway published counts but no KB titles on this snapshot. Re-run Pulseway collect after the next agent cycle — named patches land in Pulseway_DevicePatches when the Updates list is present. Click a device count again after Recheck."
+                  ? "RMM published counts but no KB titles on this snapshot. Re-run RMM collect after the next agent cycle — named patches land in RMM patch list when the Updates list is present. Click a device count again after Recheck."
                   : "No patches in this filter. Try Installed or All named."}
               </p>
             ) : (
@@ -1620,7 +1620,7 @@ export function RmmDevicesSection({
         <h2 className="text-[15px] font-bold text-fg">{title}</h2>
         <p className="text-sm text-muted">
           {allDevices.length === 0
-            ? `Pulseway collect has 0 devices for this customer. Mapped org: ${mapped.join(", ") || data.rmm?.pulsewayOrgName || "—"}.`
+            ? `RMM collect has 0 devices for this customer. Mapped org: ${mapped.join(", ") || data.rmm?.pulsewayOrgName || "—"}.`
             : `${allDevices.length} device(s) on collect, 0 classified as ${title.toLowerCase()}.`}
         </p>
       </div>
@@ -1747,13 +1747,13 @@ export function RmmDevicesSection({
                   <StatTile
                     label="Operating system"
                     value={selected.osName?.trim() || "Not reported by agent"}
-                    tip="OS name as reported by the Pulseway agent on this device."
+                    tip="OS name as reported by the RPM RMM agent on this device."
                   />
                   <StatTile
                     label="IP address"
                     value={selected.ipAddress?.trim() || "Not reported by agent"}
                     mono
-                    tip="Primary IP the agent last reported. Blank if Pulseway did not send one."
+                    tip="Primary IP the agent last reported. Blank if RMM did not send one."
                   />
                   <StatCard
                     label="Days since reboot"
@@ -1765,7 +1765,7 @@ export function RmmDevicesSection({
                     hint={
                       selected.lastBootAt
                         ? `Boot ${formatSastDateTime(selected.lastBootAt)}`
-                        : "Pulseway uptime / last boot"
+                        : "RMM uptime / last boot"
                     }
                     tone={
                       selected.daysSinceReboot != null &&
@@ -1784,7 +1784,7 @@ export function RmmDevicesSection({
                     tone={
                       (selected.patchMissing ?? 0) > 0 ? "amber" : "default"
                     }
-                    hint="Critical + Important + Unspecified from Pulseway"
+                    hint="Critical + Important + Unspecified from RPM RMM"
                   />
                   <StatCard
                     label="Disk used"
@@ -1850,7 +1850,7 @@ export function RmmDevicesSection({
                         : "Not reported by agent"
                     }
                     bar={selected.cpuPct}
-                    tip="Latest CPU percent from Pulseway. Bar turns amber at 75% and red at 90%."
+                    tip="Latest CPU percent from RPM RMM. Bar turns amber at 75% and red at 90%."
                   />
                   <StatTile
                     label="Memory usage"
@@ -1860,12 +1860,12 @@ export function RmmDevicesSection({
                         : "Not reported by agent"
                     }
                     bar={selected.memoryPct}
-                    tip="Latest memory percent from Pulseway. Bar turns amber at 75% and red at 90%."
+                    tip="Latest memory percent from RPM RMM. Bar turns amber at 75% and red at 90%."
                   />
                   <StatTile
                     label="Alerts"
                     value={`Critical ${selected.criticalNotifications} · Elevated ${selected.elevatedNotifications}`}
-                    tip="Open Pulseway notifications on this device. Critical needs an owner today."
+                    tip="Open RMM notifications on this device. Critical needs an owner today."
                   />
                   <StatTile
                     label="Last seen online"
@@ -1885,7 +1885,7 @@ export function RmmDevicesSection({
                   </p>
                   {(selected.disks?.length ?? 0) === 0 ? (
                     <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted">
-                      No disk inventory from Pulseway for this device. Collect stores Name, free %, and size. IOPS is not in the Pulseway v3 API.
+                      No disk inventory from RPM RMM for this device. Collect stores Name, free %, and size. IOPS is not in the the RMM API.
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -2128,11 +2128,11 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-4">
       <ChartCaption
         title="RMM Alerts"
-        why="Pulseway notifications plus Critical/Error Windows events from every host that runs the Assure Edge agent."
+        why="RMM notifications plus Critical/Error Windows events from every host that runs the Assure Edge agent."
       />
       <div className="grid gap-2 sm:grid-cols-4">
         <StatCard label="Devices with alerts" value={groups.length} />
-        <StatCard label="Pulseway rows" value={alerts.filter((a) => a.source !== "agent").length} />
+        <StatCard label="RMM rows" value={alerts.filter((a) => a.source !== "agent").length} />
         <StatCard label="Windows events (24h)" value={events.length} hint="Critical and Error from agent hosts" />
         <StatCard
           label="Devices in estate"
@@ -2256,10 +2256,10 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
     .map((a) => ({
       hostName: a.deviceName || "",
       timeCreatedUtc: a.raisedAt,
-      logName: "Pulseway",
+      logName: "RPM RMM",
       eventId: 0,
       levelName: a.severity || "Error",
-      providerName: "Pulseway",
+      providerName: "RPM RMM",
       message: [a.title, a.message].filter(Boolean).join(" — "),
     }));
   const events = agent.length ? agent : fromAlerts;
@@ -2267,7 +2267,7 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-3">
       <ChartCaption
         title="Windows event logs"
-        why="Critical and Error rows from Application and System logs (Assure agent), plus Pulseway alerts when the agent has not posted yet."
+        why="Critical and Error rows from Application and System logs (Assure agent), plus RMM alerts when the agent has not posted yet."
       />
       {events.length === 0 ? (
         <p className="text-sm text-muted">No event log rows for this customer yet.</p>
@@ -2285,21 +2285,21 @@ export function RmmMappingSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-4">
       <ChartCaption
         title="Org mapping"
-        why="Maps external Pulseway organization → this CustomerCode (like SqlInstanceName for SYSPRO). Without a map, devices never land on the right customer."
+        why="Maps external RMM organisationanization → this CustomerCode (like SqlInstanceName for SYSPRO). Without a map, devices never land on the right customer."
       />
       <div className="rounded-xl border border-border bg-surface p-4 text-sm">
         <p>
-          <span className="text-muted">Dim_Customer.PulsewayOrgName:</span>{" "}
+          <span className="text-muted">RMM organisation:</span>{" "}
           <span className="font-mono">{rmm?.pulsewayOrgName ?? "—"}</span>
         </p>
         <p className="mt-1">
-          <span className="text-muted">PillarPulseway:</span>{" "}
+          <span className="text-muted">RMM cover:</span>{" "}
           {rmm?.pillarOn ? "On" : "Off"}
         </p>
       </div>
       {maps.length === 0 ? (
         <p className="text-sm text-muted">
-          No rows in Dim_Pulseway_OrgMap for this customer. Insert OrganizationName → CustomerCode, then collect.
+          No rows in RMM organisation map for this customer. Insert OrganizationName → CustomerCode, then collect.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
@@ -4465,7 +4465,7 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
                 {p.label}
                 {!p.covered ? (
                   <Badge variant="amber" className="ml-2">
-                    No Cover
+                    No RPM Cloud Backupr
                   </Badge>
                 ) : null}
               </CardHead>
@@ -4596,7 +4596,7 @@ function CoveRecentDaysPanel({
       <div className="rounded-xl border border-dashed border-border bg-surface/40 px-3 py-3">
         <ChartCaption title={title} why={why} />
         <p className="text-sm text-muted">
-          No multi-day Cove snapshots yet. After daily Cove collect runs, the last 7 days of backups and recovery tests appear here.
+          No multi-day Cove snapshots yet. After daily Cloud Backup collect runs, the last 7 days of backups and recovery tests appear here.
         </p>
       </div>
     );
@@ -4697,7 +4697,7 @@ function CoveRecentDaysPanel({
       </div>
       {rows.length < 7 ? (
         <p className="mt-2 text-[11px] text-muted">
-          Showing {rows.length} collect day(s) of the last 7 — more appear as daily Cove collect stores snapshots.
+          Showing {rows.length} collect day(s) of the last 7 — more appear as daily Cloud Backup collect stores snapshots.
         </p>
       ) : null}
     </div>
@@ -4710,7 +4710,7 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="RPM Cloud Backup"
-        hint="No cover — no Cove / Cyber Backup devices mapped for this customer. Map partner and run Cove collect."
+        hint="No cover — no RPM Cloud Backup devices mapped for this customer. Map partner and run Cloud Backup collect."
       />
     );
   }
@@ -4726,7 +4726,7 @@ export function CoveOverviewSection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="RPM Cloud Backup overview"
-        hint="No cover — no Cove / Cyber Backup data for this customer."
+        hint="No cover — no RPM Cloud Backup data for this customer."
       />
     );
   }
@@ -4830,7 +4830,7 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="Devices on Cloud Backup"
-        hint="No cover — no Cove data for this customer."
+        hint="No cover — no RPM Cloud Backup data for this customer."
       />
     );
   }
@@ -4838,7 +4838,7 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-4">
       <ChartCaption
         title="Devices on Cloud Backup"
-        why="Devices protected by RPM Cloud Backup — health, last success, and backup size from the latest Cove collect."
+        why="Devices protected by RPM Cloud Backup — health, last success, and backup size from the latest Cloud Backup collect."
       />
       {devices.length > 0 ? (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -4858,12 +4858,12 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
       <CoveRecentDaysPanel
         days={data.cove?.recentDays}
         title="Recent backups (last 7 days)"
-        why="Daily backup OK / stale / failed counts from Cove collect snapshots."
+        why="Daily backup OK / stale / failed counts from Cloud Backup collect snapshots."
       />
       {devices.length === 0 ? (
         <p className="text-sm text-muted">
           {data.cove?.message ||
-            "No Cove devices on latest snapshot. Map the N-Able partner to this CustomerCode and re-collect."}
+            "No Cloud Backup devices on latest snapshot. Map the N-Able partner to this CustomerCode and re-collect."}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
@@ -4982,7 +4982,7 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="Backup Recovery Testing"
-        hint="No cover — no Cove data for this customer."
+        hint="No cover — no RPM Cloud Backup data for this customer."
       />
     );
   }
@@ -5038,14 +5038,14 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
             </p>
           ) : (
             <p className="text-[12px] text-muted">
-              No VDR restore session timestamp yet (RVO/RVL empty). Re-run Cove collect after the
+              No VDR restore session timestamp yet (RVO/RVL empty). Re-run Cloud Backup collect after the
               RV* columns pack; plan membership still comes from I80.
             </p>
           )}
         </>
       ) : (
         <p className="text-sm text-muted">
-          No recovery summary yet. Apply SQL 436 and re-run Cove collect so I80 + RV* are stored.
+          No recovery summary yet. Apply SQL 436 and re-run Cloud Backup collect so I80 + RV* are stored.
         </p>
       )}
       <CoveRecentDaysPanel
@@ -5146,7 +5146,7 @@ export function CoveRetentionSection({ data }: { data: CustomerDetailPayload }) 
     return (
       <NoCoverPanel
         service="Retention policies"
-        hint="No cover — no Cove / Cloud Backup data for this customer."
+        hint="No cover — no RPM Cloud Backup data for this customer."
       />
     );
   }
@@ -5185,7 +5185,7 @@ export function CoveRetentionSection({ data }: { data: CustomerDetailPayload }) 
       </div>
       {devices.length > 0 && withPolicy === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted">
-          Devices are loaded but retention policy names are empty. Apply SQL 438, re-run Cove collect
+          Devices are loaded but retention policy names are empty. Apply SQL 438, re-run Cloud Backup collect
           (log should show Retention sample PN=), then rebuild/restart the app so the data layer maps PN/OP/FR.
         </p>
       ) : null}
@@ -5213,7 +5213,7 @@ export function CoveRetentionSection({ data }: { data: CustomerDetailPayload }) 
       {devices.length === 0 ? (
         <p className="text-sm text-muted">
           {data.cove?.message ||
-            "No Cove devices on latest snapshot. Run Cove collect after applying SQL 438."}
+            "No Cloud Backup devices on latest snapshot. Run Cloud Backup collect after applying SQL 438."}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
@@ -5275,7 +5275,7 @@ export function CoveRetentionSection({ data }: { data: CustomerDetailPayload }) 
       )}
       <p className="text-[12px] text-muted">
         Values come from Cove EnumerateAccountStatistics (PN / OP / FR / SR / HR / ZR / WR / NR).
-        Re-run Cove collect after SQL 438 so columns populate. Blank cells mean that data source is
+        Re-run Cloud Backup collect after SQL 438 so columns populate. Blank cells mean that data source is
         not in use or the API did not return a period for the device.
       </p>
     </div>

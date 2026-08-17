@@ -125,7 +125,7 @@ const PACKS: {
   },
   {
     id: "cove-service",
-    title: "Cove Executive Summary",
+    title: "Cloud Backup Executive Summary",
     when: "On demand",
     blurb: "Safeguards, success rate, RPO, restore, assets, retention — ESR layout.",
     needsCustomer: true,
@@ -483,11 +483,11 @@ function ReportsPage() {
     }
     if (format === "period-end") return "Period end · FinSight readiness";
     if (format === "estate") return "Assure Eco-System overview · all active customers";
-    if (format === "rmm-service") return "Remote Management Pack · latest Pulseway snapshot";
+    if (format === "rmm-service") return "Remote Management Pack · latest RMM snapshot";
     if (format === "rmm-availability") return "Server Availability · servers only for SLA";
     if (format === "rmm-patch") return "Patch Compliance · servers first";
     if (format === "rmm-capacity") return "Capacity & Performance · disk / CPU / memory / IOPS";
-    if (format === "cove-service") return "Cove Executive Summary · safeguards, RPO, restore, retention";
+    if (format === "cove-service") return "Cloud Backup Executive Summary · safeguards, RPO, restore, retention";
     if (format === "cove-recovery") return "Recovery Testing · plans and last test";
     if (format === "epp-service") return "RPM EndPoint Protection · endpoints only for cover";
     if (format === "epp-incidents") return "Incidents & Quarantine · latest collect";

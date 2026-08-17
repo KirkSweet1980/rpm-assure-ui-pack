@@ -1607,7 +1607,7 @@ export const fetchConfigHealth = createServerFn({ method: "GET" }).handler(async
   });
 
   const rest: Array<[string, string, string]> = [
-    ["rmm", "Pulseway API", "/settings/infrastructure"],
+    ["rmm", "RPM RMM", "/settings/infrastructure"],
     ["cove", "N-Able Cove Backup", "/settings/infrastructure"],
     ["epp", "RPM EPP API", "/settings/infrastructure"],
     ["csp", "Microsoft Graph API", "/settings/infrastructure"],
@@ -2239,7 +2239,7 @@ async function startApiFeedSyncHandler() {
       message: "Queued",
       log: null,
       legs: [
-        { name: "Pulseway", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "Waiting" },
+        { name: "RPM RMM", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "Waiting" },
         { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "Waiting" },
         { name: "RPM EndPoint Protection", label: "RPM EndPoint Protection", kind: "epp", status: "queued", pct: 0, message: "Waiting" },
         { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "Waiting" },
@@ -2274,7 +2274,7 @@ async function startApiFeedSyncHandler() {
   return {
     ok: true as const,
     started: true as const,
-    message: "API collect started (Pulseway, Cove, RPM EPP, Microsoft Graph).",
+    message: "API collect started (RPM RMM, RPM Cloud Backup, RPM EndPoint Protection, Microsoft Graph).",
     status: await readApiFeedStatusFile(),
   };
 }

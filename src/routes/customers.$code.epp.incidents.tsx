@@ -6,7 +6,7 @@ import { formatSastDateTime } from "@/lib/utils";
 
 function cleanDeviceName(name: string | null | undefined): string {
   if (!name) return "—";
-  // Strip GravityZone name-MAC suffix e.g. HOST-00155d151217
+  // Strip RPM EndPoint Protection name-MAC suffix e.g. HOST-00155d151217
   const m = name.match(/^(.*)-([0-9a-f]{12})$/i);
   return m ? m[1] : name;
 }
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
           service="RPM EndPoint Protection · Incidents"
           hint={
             epp?.message ||
-            "No cover — no RPM EPP endpoints mapped to this customer."
+            "No cover — no RPM EndPoint Protection endpoints mapped to this customer."
           }
         />
       );
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
         <Card>
           <CardHead>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>RPM EPP · Incidents ({rows.length})</span>
+              <span>RPM EndPoint Protection · Incidents ({rows.length})</span>
               {feed?.incidentsOk != null ? (
                 <span
                   className={
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
                 <p className="font-medium text-fg">No open incidents for this customer.</p>
                 {feed?.incidentsOk === false ? (
                   <p className="text-[12px] text-subtle">
-                    RPM EPP incidents feed failed
+                    RPM EndPoint Protection incidents feed failed
                     {feed.incidentsMessage ? `: ${feed.incidentsMessage}` : "."}
                   </p>
                 ) : (

@@ -210,7 +210,7 @@ export function customerTree(code: string, displayName: string): NavNode {
       {
         id: `${code}-cove`,
         label: "RPM Cloud Backup",
-        blurb: "Cove devices, status, recovery",
+        blurb: "Cloud Backup devices, status, recovery",
         href: `${base}/cove`,
         match: "prefix",
         audience: "ops",
@@ -285,7 +285,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-epp-incidents`,
             label: "Incidents",
-            blurb: "RPM EPP security incidents",
+            blurb: "RPM EndPoint Protection security incidents",
             href: `${base}/epp/incidents`,
             match: "exact",
             audience: "ops",

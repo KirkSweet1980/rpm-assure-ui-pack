@@ -834,10 +834,10 @@ function patchComplianceHtml(detail: CustomerDetailPayload): string {
       .join("");
     return `<h3 class="sub">${esc(heading)}</h3>
     <table class="ams"><thead><tr><th class="dark">Server / device</th><th class="dark">Patch</th><th class="dark">KB</th><th class="dark">${mode === "installed" ? "Class" : "Status"}</th><th class="dark">${mode === "installed" ? "Installed" : "Seen"}</th></tr></thead>
-    <tbody>${rows || `<tr><td colspan="5" class="muted">Pulseway did not publish named patches this collect — counts above still apply.</td></tr>`}</tbody></table>`;
+    <tbody>${rows || `<tr><td colspan="5" class="muted">RMM did not publish named patches this collect — counts above still apply.</td></tr>`}</tbody></table>`;
   }
   return `<h3 class="sub">Patch compliance</h3>
-  <p class="muted">Full estate from Pulseway. <strong>Servers feed SLA</strong>. Workstations are visibility only and do not move assurance score. Devices with no patch counters are omitted from %.</p>
+  <p class="muted">Full estate from RPM RMM. <strong>Servers feed SLA</strong>. Workstations are visibility only and do not move assurance score. Devices with no patch counters are omitted from %.</p>
   ${kvTable([
     ["Server devices reporting", fmtN(sp.reporting)],
     ["Servers current (0 missing)", fmtN(sp.compliant)],
@@ -871,7 +871,7 @@ function patchComplianceHtml(detail: CustomerDetailPayload): string {
   ${patchListTable("Outstanding / pending patches by device", missingNamed, "missing")}`;
 }
 
-/** Cover strip + RMM / Cove / EPP / M365 sections for every customer pack. */
+/** Cover strip + RMM / RPM Cloud Backup / EPP / M365 sections for every customer pack. */
 function coveredServicesHtml(detail: CustomerDetailPayload): string {
   const c = detail.customer;
   const cover: CustomerCover = coverFromDetail(detail);
@@ -883,14 +883,14 @@ function coveredServicesHtml(detail: CustomerDetailPayload): string {
     ["SYSPRO EcoSystem", ynCover(isPillarCovered(cover, "syspro"))],
     ["RPM RMM", ynCover(isPillarCovered(cover, "rmm"))],
     ["RPM Cloud Backup", ynCover(isPillarCovered(cover, "cove"))],
-    ["RPM EPP", ynCover(isPillarCovered(cover, "epp"))],
+    ["RPM EndPoint Protection", ynCover(isPillarCovered(cover, "epp"))],
     ["Microsoft CSP", ynCover(isPillarCovered(cover, "csp"))],
   ])}`);
 
   const rmm = detail.rmm;
   const rs = rmm?.summary;
   if (!isPillarCovered(cover, "rmm")) {
-    parts.push(`<h3 class="sub">RPM RMM</h3><p class="note"><strong class="warn">No cover</strong> — Pulseway is not in scope for this customer.</p>`);
+    parts.push(`<h3 class="sub">RPM RMM</h3><p class="note"><strong class="warn">No cover</strong> — RPM RMM is not in scope for this customer.</p>`);
   } else if (!rs && !(rmm?.devices?.length)) {
     parts.push(`<h3 class="sub">RPM RMM</h3><p class="note"><strong class="ok">Cover</strong> — mapped, no device rows on the latest collect.</p>`);
   } else {
@@ -927,10 +927,10 @@ function coveredServicesHtml(detail: CustomerDetailPayload): string {
 
   const epp = detail.epp;
   if (!isPillarCovered(cover, "epp")) {
-    parts.push(`<h3 class="sub">RPM EPP</h3><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
+    parts.push(`<h3 class="sub">RPM EndPoint Protection</h3><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
   } else {
     const es = epp?.summary;
-    parts.push(`<h3 class="sub">RPM EPP</h3>${kvTable([
+    parts.push(`<h3 class="sub">RPM EndPoint Protection</h3>${kvTable([
       ["Endpoints", esc(String(es?.deviceCount ?? epp?.devices?.length ?? c.eppDeviceCount ?? 0))],
       ["Managed / unmanaged", `${esc(String(es?.managedCount ?? "—"))} / ${esc(String(es?.unmanagedCount ?? "—"))}`],
       ["Infected", esc(String(c.bdInfectedCount ?? 0))],
@@ -1033,10 +1033,10 @@ export function buildApplicationsAmsHtml(opts: {
   <p class="muted">${esc(c.healthSummary || oa?.summary || "")}</p>
   ${
     variant === "weekly"
-      ? `<p class="muted"><strong>Weekly RPM Assure focus:</strong> every service on cover — SYSPRO, RMM, Cloud Backup, RPM EPP, Microsoft CSP — plus jobs, FinSight, and open risks.</p>`
+      ? `<p class="muted"><strong>Weekly RPM Assure focus:</strong> every service on cover — SYSPRO, RMM, Cloud Backup, RPM EndPoint Protection, Microsoft CSP — plus jobs, FinSight, and open risks.</p>`
       : variant === "monthly"
         ? `<p class="muted"><strong>Monthly RPM Assure board pack:</strong> executive narrative for ExCo across all services on cover. Uncovered services are listed as No cover and are not scored.</p>`
-        : `<p class="muted"><strong>Full assurance pack:</strong> SYSPRO plus every RPM service on cover (RMM, Cloud Backup, RPM EPP, Microsoft CSP). No cover stays visible and is not scored.</p>`
+        : `<p class="muted"><strong>Full assurance pack:</strong> SYSPRO plus every RPM service on cover (RMM, Cloud Backup, RPM EndPoint Protection, Microsoft CSP). No cover stays visible and is not scored.</p>`
   }
 
   ${coveredServicesHtml(detail)}
@@ -1237,7 +1237,7 @@ export function buildApplicationsAmsHtml(opts: {
   <div class="note">
     <strong>Notes</strong>
     <ul>
-      <li>This pack is generated from RPM Assure central collect (SYSPRO, RMM, Cloud Backup, RPM EPP, Microsoft CSP, and AMS facts).</li>
+      <li>This pack is generated from RPM Assure central collect (SYSPRO, RMM, Cloud Backup, RPM EndPoint Protection, Microsoft CSP, and AMS facts).</li>
       <li>Every service is listed. Cover uses the same rule as the customer rail. No cover is not scored.</li>
       <li>Sections such as 12-month sparkline trends, kill-script history, and full NOLOCK estate inventory appear when those collectors are enabled for the customer.</li>
       <li>Print or save as PDF from the browser. Outbound email is disabled.</li>
@@ -1410,7 +1410,7 @@ export function buildCustomPackHtml(opts: {
       ["SYSPRO Deployment", ynCover(isPillarCovered(cover, "syspro"))],
       ["RPM Remote Management", ynCover(isPillarCovered(cover, "rmm"))],
       ["RPM Cloud Backup", ynCover(isPillarCovered(cover, "cove"))],
-      ["RPM EPP", ynCover(isPillarCovered(cover, "epp"))],
+      ["RPM EndPoint Protection", ynCover(isPillarCovered(cover, "epp"))],
       ["Microsoft 365 Tenant", ynCover(isPillarCovered(cover, "csp"))],
     ])}`);
   }
@@ -1535,7 +1535,7 @@ export function buildCustomPackHtml(opts: {
   const rs = rmm?.summary;
   if (fieldOn(selected, "rmm_fleet") || fieldOn(selected, "rmm_alerts") || fieldOn(selected, "rmm_patches") || fieldOn(selected, "rmm_disks") || fieldOn(selected, "rmm_reboot")) {
     if (!isPillarCovered(cover, "rmm")) {
-      sections.push(`<h2 class="sec">RPM Remote Management</h2><p class="note"><strong class="warn">No cover</strong> — Pulseway is not in scope for this customer.</p>`);
+      sections.push(`<h2 class="sec">RPM Remote Management</h2><p class="note"><strong class="warn">No cover</strong> — RPM RMM is not in scope for this customer.</p>`);
     } else if (!rs && !(rmm?.devices?.length)) {
       sections.push(`<h2 class="sec">RPM Remote Management</h2><p class="note"><strong class="ok">Cover</strong> — mapped, no device rows on the latest collect.</p>`);
     } else {
@@ -1631,7 +1631,7 @@ export function buildCustomPackHtml(opts: {
   const epp = detail.epp;
   if (fieldOn(selected, "epp_summary") || fieldOn(selected, "epp_incidents")) {
     if (!isPillarCovered(cover, "epp")) {
-      sections.push(`<h2 class="sec">RPM EPP</h2><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
+      sections.push(`<h2 class="sec">RPM EndPoint Protection</h2><p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
     } else {
       const es = epp?.summary;
       const rows: Array<[string, string]> = [];
@@ -1665,7 +1665,7 @@ export function buildCustomPackHtml(opts: {
           ),
         ]);
       }
-      sections.push(`<h2 class="sec">RPM EPP</h2>${kvTable(rows)}`);
+      sections.push(`<h2 class="sec">RPM EndPoint Protection</h2>${kvTable(rows)}`);
     }
   }
 
@@ -1817,7 +1817,7 @@ export function buildRmmCapacityHtml(opts: {
     ...opts,
     kind: "capacity",
     title: "Capacity & Performance",
-    note: "Disk at risk (≥85%), CPU ≥80%, memory ≥85%. Peak IOPS only if Pulseway publishes it (v3 API does not).",
+    note: "Disk at risk (≥85%), CPU ≥80%, memory ≥85%. Peak IOPS only if RPM RMM publishes it (v3 API does not).",
   });
 }
 
@@ -1846,7 +1846,7 @@ function rmmPack(opts: {
   const sections: string[] = [];
   if (!covered) {
     sections.push(
-      `<p class="note"><strong class="warn">No cover</strong> — no RMM / Pulseway data for this customer.</p>`,
+      `<p class="note"><strong class="warn">No cover</strong> — no RMM / RPM RMM data for this customer.</p>`,
     );
   } else {
     sections.push(`<p class="note">${esc(opts.note)}</p>`);
@@ -1913,7 +1913,7 @@ function rmmPack(opts: {
   <h2>${esc(name)} (${esc(code)})</h2>
   <div class="brand-row">
     <div class="brand">RPM <span>Assure</span></div>
-    <div class="muted" style="font-size:11pt">RPM RMM · Pulseway snapshot</div>
+    <div class="muted" style="font-size:11pt">RPM RMM · RMM snapshot</div>
   </div>
 </div>
 <div class="page">
@@ -2034,7 +2034,7 @@ function covePack(
   const now = formatSastDateTime(new Date().toISOString());
   const dateLabel = formatSastDate(new Date().toISOString());
   const esr = buildCoveEsr(opts.customer);
-  const title = kind === "recovery" ? "Cove Recovery Testing" : "Cove Executive Summary";
+  const title = kind === "recovery" ? "Cove Recovery Testing" : "Cloud Backup Executive Summary";
   const sections = [coveEsrSections(esr)];
   if (kind === "recovery" && esr.covered) {
     const devices = opts.customer.cove?.devices ?? [];
@@ -2052,7 +2052,7 @@ function covePack(
           : `<tr><td colspan="5" class="muted">No recovery rows.</td></tr>`
       }</tbody></table>`);
   }
-  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Cloud Backup · Cove Executive Summary");
+  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM Cloud Backup · Cloud Backup Executive Summary");
 }
 
 export function buildEppServiceHtml(opts: {
@@ -2080,13 +2080,13 @@ function eppPack(
   const es = epp?.summary;
   const devices = epp?.devices ?? [];
   const covered = (es?.deviceCount ?? 0) > 0 || devices.length > 0;
-  const title = kind === "incidents" ? "Incidents & Quarantine" : "RPM EPP Pack";
+  const title = kind === "incidents" ? "Incidents & Quarantine" : "RPM EndPoint Protection Pack";
   const sections: string[] = [];
-  sections.push(`<p class="note">This pack is <strong>RPM EPP only</strong>. It does not include Pulseway / RMM devices.</p>`);
+  sections.push(`<p class="note">This pack is <strong>RPM EndPoint Protection only</strong>. It does not include RPM RMM devices.</p>`);
   if (!covered) {
     sections.push(`<p class="note"><strong class="warn">No cover</strong> — no managed endpoints for this customer.</p>`);
   } else {
-    sections.push(`<p class="note">RPM EPP only. Cover requires at least one endpoint.</p>`);
+    sections.push(`<p class="note">RPM EndPoint Protection only. Cover requires at least one endpoint.</p>`);
     if (kind === "service") {
       sections.push(`<h2 class="sec">Endpoints</h2>${kvTable([
         ["Endpoints", esc(String(es?.deviceCount ?? devices.length))],
@@ -2146,5 +2146,5 @@ function eppPack(
       }</tbody></table>`);
     }
   }
-  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM EPP snapshot");
+  return pillarPackShell(title, c.displayName, c.customerCode, dateLabel, now, sections, "RPM EndPoint Protection snapshot");
 }

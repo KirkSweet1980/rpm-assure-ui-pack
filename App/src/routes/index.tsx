@@ -1159,8 +1159,8 @@ function ExcoInsightPage() {
                 { k: "incidents" as DrillKind, l: "Incidents", v: incidents.length, t: "red" as const, tip: "Open major incidents across the estate." },
                 { k: "jobs" as DrillKind, l: "Job Errors", v: scoreboard.filter((b) => (b.jobErrorCount || 0) > 0).length, t: "red" as const, tip: "SYSPRO companies with failed or errored jobs on the last collect." },
                 { k: "finsight" as DrillKind, l: "FinSight OOB", v: finsightEstate.oobCustomers, t: "amber" as const, tip: "Customers with out-of-balance FinSight control lines." },
-                { k: "rmm-offline" as DrillKind, l: "Servers Off", v: scoreboard.filter((b) => (b.pulsewayServerOffline || 0) > 0).length, t: "red" as const, tip: "Customers with at least one Pulseway server offline." },
-                { k: "rmm-critical" as DrillKind, l: "RMM Critical", v: scoreboard.filter((b) => (b.pulsewayCriticalAlerts || 0) > 0).length, t: "red" as const, tip: "Customers with Pulseway critical alerts still open." },
+                { k: "rmm-offline" as DrillKind, l: "Servers Off", v: scoreboard.filter((b) => (b.pulsewayServerOffline || 0) > 0).length, t: "red" as const, tip: "Customers with at least one RPM RMM server offline." },
+                { k: "rmm-critical" as DrillKind, l: "RMM Critical", v: scoreboard.filter((b) => (b.pulsewayCriticalAlerts || 0) > 0).length, t: "red" as const, tip: "Customers with RPM RMM critical alerts still open." },
                 { k: "backup" as DrillKind, l: "Backup Issues", v: exco.backupUnhealthyCount, t: "amber" as const, tip: "Customers with failed or stale Cove backups on the latest collect." },
                 { k: "stale" as DrillKind, l: "Stale Collect", v: exco.collectStaleCount, t: "amber" as const, tip: "Last SYSPRO / agent collect is older than 24 hours." },
                 { k: "risks" as DrillKind, l: "Open Risks", v: exco.openRisksTotal, t: "amber" as const, tip: "Open Customer Assurance risks that still need a mitigation owner." },
@@ -1190,7 +1190,7 @@ function ExcoInsightPage() {
           </section>
 
           <section className={cn("rpma-pane is-tile", coverStats.n && (coverStats.syspro + coverStats.rmm + coverStats.cove + coverStats.epp + coverStats.csp) / (coverStats.n * 5) < 0.4 ? "is-amber" : "is-green")} id="exco-cover" {...wgt("cover")}>
-              <PaneHead tip="Scope only — not live health. Chip on the tenant rail is Cover / No Cover. This tile lights amber if estate cover is thin.">
+              <PaneHead tip="Scope only — not live health. Chip on the tenant rail is Cover / No RPM Cloud Backupr. This tile lights amber if estate cover is thin.">
                 Services On Cover
               </PaneHead>
               <ul className="rpma-pane-body space-y-2">
@@ -1256,13 +1256,13 @@ function ExcoInsightPage() {
               </PaneHead>
               <div className="rpma-pane-body grid grid-cols-2 gap-2">
                 <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Pulseway servers reporting online on the latest collect.">Online</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Online: Pulseway servers reporting online on the latest collect.</span>
+                  <MetricLabel showIcon={false} tip="RPM RMM servers reporting online on the latest collect.">Online</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Online: RPM RMM servers reporting online on the latest collect.</span>
                   <p className="font-mono text-[15px] font-bold text-rag-green">{serversOnline}</p>
                 </div>
                 <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Pulseway servers that have not checked in. Any count above 0 is red.">Servers Offline</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Servers Offline: Pulseway servers that have not checked in. Any count above 0 is red.</span>
+                  <MetricLabel showIcon={false} tip="RPM RMM servers that have not checked in. Any count above 0 is red.">Servers Offline</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Servers Offline: RPM RMM servers that have not checked in. Any count above 0 is red.</span>
                   <p className={cn("font-mono text-[15px] font-bold", serversOffline > 0 ? "text-rag-red" : "text-fg")}>{serversOffline}</p>
                 </div>
                 <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
@@ -1287,22 +1287,22 @@ function ExcoInsightPage() {
                   </p>
                 </div>
                 <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Cove devices whose last backup failed or has no success in 72 hours.">Backup Failed</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Failed: Cove devices whose last backup failed or has no success in 72 hours.</span>
+                  <MetricLabel showIcon={false} tip="Cloud Backup devices whose last backup failed or has no success in 72 hours.">Backup Failed</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Failed: Cloud Backup devices whose last backup failed or has no success in 72 hours.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.coveFailedTotal ?? 0) > 0 ? "text-rag-red" : "text-fg")}>
                     {exco.coveFailedTotal ?? 0}
                   </p>
                 </div>
                 <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Cove devices whose last successful backup is older than 36 hours.">Backup Stale</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Stale: Cove devices whose last successful backup is older than 36 hours.</span>
+                  <MetricLabel showIcon={false} tip="Cloud Backup devices whose last successful backup is older than 36 hours.">Backup Stale</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Stale: Cloud Backup devices whose last successful backup is older than 36 hours.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.coveStaleTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.coveStaleTotal ?? 0}
                   </p>
                 </div>
                 <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="RPM EPP endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">EPP Unmanaged: RPM EPP endpoints not under a managed policy, versus all mapped endpoints.</span>
+                  <MetricLabel showIcon={false} tip="RPM EndPoint Protection endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
+                  <span role="tooltip" className="rpma-help-bubble is-top">EPP Unmanaged: RPM EndPoint Protection endpoints not under a managed policy, versus all mapped endpoints.</span>
                   <p className={cn("font-mono text-[15px] font-bold", (exco.eppUnmanagedTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
                     {exco.eppUnmanagedTotal ?? 0}
                     <span className="ml-1 text-[10px] font-semibold text-muted">/ {exco.eppEndpointTotal ?? 0}</span>

@@ -4,7 +4,7 @@
  * Layer A — RPM contract (SYSPRO Support & AMS Rev 5.0, Aug 2026).
  *   Ticket clocks in Business Hours. No uptime %. Targets, not guarantees.
  *
- * Layer B — Operational posture for RMM / Cove / EPP.
+ * Layer B — Operational posture for RMM / RPM Cloud Backup / EPP.
  *   Industry measures from RMM SLA Metrics Recommendations (14 Aug 2026).
  *   These are NOT in the RPM SYSPRO+AMS contract (clauses 5.1, 11.2).
  */
@@ -130,7 +130,7 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
     targetPct: 99.9,
     targetLabel: "99.9% monthly uptime",
     howWeMeasure:
-      "From Pulseway OfflineHours30d when present: (43,200 − offline minutes) / 43,200. Otherwise snapshot servers online ÷ classified servers. Critical alerts deduct 12 pts each (cap −40). Workstations excluded.",
+      "From RPM RMM OfflineHours30d when present: (43,200 − offline minutes) / 43,200. Otherwise snapshot servers online ÷ classified servers. Critical alerts deduct 12 pts each (cap −40). Workstations excluded.",
     source: INDUSTRY_SLA_DOC,
   },
   cove: {
@@ -150,7 +150,7 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
     targetPct: 98,
     targetLabel: "98% endpoints managed",
     howWeMeasure:
-      "managed ÷ (managed + unmanaged) from RPM EPP. Open critical incidents pull the score down. Detection-efficacy is not contractual.",
+      "managed ÷ (managed + unmanaged) from RPM EndPoint Protection. Open critical incidents pull the score down. Detection-efficacy is not contractual.",
     source: INDUSTRY_SLA_DOC,
   },
 };
@@ -165,7 +165,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "99.9% (standard) · 99.95% important · 99.99% HA",
       contractual: true,
       measurable: true,
-      how: "Unplanned downtime minutes vs period. Pulseway 30-day offline hours, else current online/offline snapshot. Servers only.",
+      how: "Unplanned downtime minutes vs period. RPM RMM 30-day offline hours, else current online/offline snapshot. Servers only.",
     },
     {
       id: "rmm-coverage",
@@ -174,7 +174,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 99% in-scope servers reporting",
       contractual: true,
       measurable: true,
-      how: "Classified servers with a reporting Pulseway agent (online or last-seen within 15 minutes).",
+      how: "Classified servers with a reporting RPM RMM agent (online or last-seen within 15 minutes).",
     },
     {
       id: "rmm-mttd",
@@ -212,7 +212,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "99% – 99.9%+ of scheduled jobs",
       contractual: true,
       measurable: true,
-      how: "OK jobs ÷ (OK + failed) on latest Cove collect. Warnings that still meet RPO count as OK.",
+      how: "OK jobs ÷ (OK + failed) on latest Cloud Backup collect. Warnings that still meet RPO count as OK.",
     },
     {
       id: "cove-rpo",
@@ -259,7 +259,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 98–100% of in-scope endpoints",
       contractual: true,
       measurable: true,
-      how: "RPM EPP managed ÷ (managed + unmanaged).",
+      how: "RPM EndPoint Protection managed ÷ (managed + unmanaged).",
     },
     {
       id: "epp-update",
@@ -268,7 +268,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 95–99% within 24 hours",
       contractual: true,
       measurable: true,
-      how: "RPM EPP product / signature outdated flags from last collect. Current = not outdated.",
+      how: "RPM EndPoint Protection product / signature outdated flags from last collect. Current = not outdated.",
     },
     {
       id: "epp-mttd",
@@ -295,7 +295,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "0 open criticals",
       contractual: false,
       measurable: true,
-      how: "RPM EPP incidents currently open at critical / high. Operational, not a contractual nines target.",
+      how: "RPM EndPoint Protection incidents currently open at critical / high. Operational, not a contractual nines target.",
     },
   ],
 };
@@ -306,19 +306,19 @@ export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
     "Force majeure, client-caused issues, power or ISP failures outside RPM control.",
     "Third-party cloud platform outages.",
     "Workstations are excluded from the uptime commitment.",
-    "No Cover for Devices: 0 servers or 0 workstations are not scored in SLA.",
+    "No RPM Cloud Backupr for Devices: 0 servers or 0 workstations are not scored in SLA.",
   ],
   cove: [
     "Long-term offline devices, full disks, and application locks not remediated by the client.",
     "Extreme bandwidth constraints outside RPM control.",
     "A job that fails then succeeds inside the RPO window is still compliant.",
-    "No Cover for Devices: customers with 0 backup devices are not scored in SLA.",
+    "No RPM Cloud Backupr for Devices: customers with 0 backup devices are not scored in SLA.",
   ],
   epp: [
     "Detection-efficacy percentages are not contractual (threat novelty).",
     "Unmanaged devices the client has not approved for deployment.",
     "Endpoints offline longer than the update window are excluded from update compliance.",
-    "No Cover for Devices: 0 endpoints are not scored in SLA.",
+    "No RPM Cloud Backupr for Devices: 0 endpoints are not scored in SLA.",
   ],
 };
 

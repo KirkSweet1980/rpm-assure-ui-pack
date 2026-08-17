@@ -36,9 +36,9 @@ function ragClass(r: string) {
 
 const SOURCE_MAP: Array<[string, string, string]> = [
   ["SYSPRO EcoSystem", "Overview / Operators / Jobs / FinSight / Licence / Day End", "RPM Assure Agent"],
-  ["RPM Remote Management", "Overview / Servers / Workstations / Patch / Alerts", "Pulseway API"],
+  ["RPM Remote Management", "Overview / Servers / Workstations / Patch / Alerts", "RMM API"],
   ["RPM Cloud Backup", "Overview / Devices / Recovery / Retention", "N-Able Cove Backup"],
-  ["RPM EndPoint Protection", "Overview / Endpoints / Incidents / Quarantine", "RPM EPP API"],
+  ["RPM EndPoint Protection", "Overview / Endpoints / Incidents / Quarantine", "RPM EndPoint Protection API"],
   ["Microsoft 365 CSP", "Tenant / Secure Score / MFA / Admins / Licences", "Microsoft Graph API"],
   ["Customer Assurance", "Customer Incidents / Risks / SLA", "Assure AMS"],
 ];
@@ -187,7 +187,7 @@ function CollectInventoryPage() {
                     </td>
                     <td className="px-4 py-2.5">
                       {!row.sysproCovered ? (
-                        <span className="text-muted">No Cover</span>
+                        <span className="text-muted">No RPM Cloud Backupr</span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5">
                           <span className={cn("font-semibold", ragClass(row.healthRag))}>{row.healthRag}</span>

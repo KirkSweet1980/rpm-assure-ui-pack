@@ -267,11 +267,11 @@ function InfrastructureStatusPage() {
         </div>
         <div className="px-3 pb-3">
           <p className="mb-2 text-[11px] text-muted">
-            Pulseway, N-Able Cove Backup, RPM EPP and Microsoft Graph. Recheck runs every feed and queues every Assure SQL agent to sync / auto-update.
+            RPM RMM, N-Able Cove Backup, RPM EndPoint Protection and Microsoft Graph. Recheck runs every feed and queues every Assure SQL agent to sync / auto-update.
           </p>
           {(() => {
             const defaultLegs = [
-              { name: "Pulseway", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "" },
+              { name: "RPM RMM", label: "RMM", kind: "rmm", status: "queued", pct: 0, message: "" },
               { name: "Cove", label: "BACKUP", kind: "backup", status: "queued", pct: 0, message: "" },
               { name: "RPM EndPoint Protection", label: "RPM EndPoint Protection", kind: "epp", status: "queued", pct: 0, message: "" },
               { name: "CspGraph", label: "CSP", kind: "licensing", status: "queued", pct: 0, message: "" },
@@ -300,7 +300,7 @@ function InfrastructureStatusPage() {
                     <div key={leg.name}>
                       <div className="mb-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wide">
                         <span className="text-fg">
-                          {leg.label} · {leg.name === "Bitdefender" ? "RPM EndPoint Protection" : leg.name}
+                          {leg.label} · {leg.name === "RPM EndPoint Protection" ? "RPM EndPoint Protection" : leg.name}
                         </span>
                         <span
                           className={cn(
@@ -373,9 +373,9 @@ function InfrastructureStatusPage() {
                     (l) =>
                       l.kind.toLowerCase() === r.sourceKind.toLowerCase() ||
                       l.name.toLowerCase() === r.connectionCode.toLowerCase() ||
-                      (hid === "rmm" && l.name === "Pulseway") ||
+                      (hid === "rmm" && l.name === "RPM RMM") ||
                       (hid === "cove" && l.name === "Cove") ||
-                      (hid === "epp" && (l.name === "Bitdefender" || l.name === "RPM EPP")) ||
+                      (hid === "epp" && (l.name === "RPM EndPoint Protection" || l.name === "RPM EndPoint Protection")) ||
                       (hid === "csp" && l.name === "CspGraph"),
                   );
                   const legLabel =
@@ -530,7 +530,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                       </td>
                       <td>
                         {on.length === 0 ? (
-                          <span className="text-muted">No Cover</span>
+                          <span className="text-muted">No RPM Cloud Backupr</span>
                         ) : (
                           <span className="flex flex-wrap gap-1">
                             {on.map((c) => {

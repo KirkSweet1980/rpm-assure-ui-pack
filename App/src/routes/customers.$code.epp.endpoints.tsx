@@ -18,7 +18,7 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
           service="RPM EndPoint Protection · Endpoints"
           hint={
             epp?.message ||
-            "No cover — no RPM EPP endpoints mapped to this customer."
+            "No cover — no RPM EndPoint Protection endpoints mapped to this customer."
           }
         />
       );
@@ -26,11 +26,11 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
     return (
       <div className="space-y-3">
         <Card>
-          <CardHead>RPM EPP · Endpoints ({devices.length})</CardHead>
+          <CardHead>RPM EndPoint Protection · Endpoints ({devices.length})</CardHead>
           <CardContent className="p-0">
             {devices.length === 0 ? (
               <p className="p-4 text-sm text-muted">
-                No endpoint rows for this customer on the latest snapshot. Recheck RPM EPP on Assure API Feed Status.
+                No endpoint rows for this customer on the latest snapshot. Recheck RPM EndPoint Protection on Assure API Feed Status.
               </p>
             ) : (
               <div className="overflow-x-auto">
