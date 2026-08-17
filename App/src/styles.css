@@ -3256,3 +3256,154 @@ html.snow .rpma-rmm-detail {
   background: #f4f7fa;
   border-color: #c5d0da;
 }
+
+
+/* Dark mode polish — EMP + chrome */
+html[data-theme="dark"],
+html.dark,
+html.carbon {
+  --color-fg: #e8edf3;
+  --color-muted: #b4c2ce;
+  --color-subtle: #8aa0b0;
+  --color-surface: #0f1a24;
+  --color-surface-2: #132230;
+  --color-border: #1c3548;
+  --color-border-strong: #2a4a62;
+  --pc-heading-color: #f3f7fa;
+  --bs-body-color: #e8edf3;
+  --bs-body-bg: #071018;
+}
+html[data-theme="dark"] .dk-shell,
+html.dark .dk-shell,
+html.carbon .dk-shell {
+  background: #071018;
+  color: #e8edf3;
+}
+html[data-theme="dark"] .dk-header-one,
+html[data-theme="dark"] .dk-header-tall,
+html.dark .dk-header-one,
+html.dark .dk-header-tall {
+  background: #07141e;
+  color: #e8edf3;
+  border-bottom: 1px solid #14344a;
+}
+html[data-theme="dark"] .dk-header-navrow,
+html.dark .dk-header-navrow { background: #0a1c2a; border-top-color: #14344a; }
+html[data-theme="dark"] .dk-link,
+html[data-theme="dark"] .dk-collapse,
+html.dark .dk-link,
+html.dark .dk-collapse { color: #c5d4de; }
+html[data-theme="dark"] .dk-link.is-active,
+html[data-theme="dark"] .dk-collapse.is-active,
+html.dark .dk-link.is-active,
+html.dark .dk-collapse.is-active {
+  color: #fff;
+  background: color-mix(in srgb, #14b8a6 18%, #0a1c2a);
+}
+html[data-theme="dark"] .rpma-emp,
+html.dark .rpma-emp {
+  background: #061018;
+  border-color: #143044;
+  color: #e8edf3;
+}
+html[data-theme="dark"] .rpma-emp-body,
+html[data-theme="dark"] .rpma-emp-body.is-pad,
+html.dark .rpma-emp-body,
+html.dark .rpma-emp-body.is-pad {
+  background: #07141e;
+  color: #e8edf3;
+}
+html[data-theme="dark"] .rpma-emp .text-fg,
+html[data-theme="dark"] .rpma-emp h1,
+html[data-theme="dark"] .rpma-emp h2,
+html[data-theme="dark"] .rpma-emp h3,
+html[data-theme="dark"] .rpma-emp h4,
+html[data-theme="dark"] .rpma-emp strong,
+html[data-theme="dark"] .rpma-emp .font-semibold,
+html[data-theme="dark"] .rpma-emp .font-bold,
+html[data-theme="dark"] .rpma-emp .font-extrabold,
+html.dark .rpma-emp .text-fg,
+html.dark .rpma-emp h1,
+html.dark .rpma-emp h2,
+html.dark .rpma-emp h3,
+html.dark .rpma-emp strong {
+  color: #e8edf3 !important;
+}
+html[data-theme="dark"] .rpma-emp .text-muted,
+html[data-theme="dark"] .rpma-emp .text-subtle,
+html.dark .rpma-emp .text-muted,
+html.dark .rpma-emp .text-subtle { color: #9eb0be !important; }
+html[data-theme="dark"] .rpma-emp .rpma-glass,
+html[data-theme="dark"] .rpma-emp .rpma-card,
+html[data-theme="dark"] .rpma-emp .rpma-panel,
+html[data-theme="dark"] .rpma-emp .rpma-pane,
+html[data-theme="dark"] .rpma-rmm-detail,
+html[data-theme="dark"] .rpma-rmm-list,
+html[data-theme="dark"] .rpma-ttree-nav,
+html[data-theme="dark"] .rpma-emp-inspector,
+html.dark .rpma-emp .rpma-glass,
+html.dark .rpma-emp .rpma-card,
+html.dark .rpma-emp .rpma-panel,
+html.dark .rpma-rmm-detail,
+html.dark .rpma-rmm-list,
+html.dark .rpma-emp-inspector {
+  background: #0c1828 !important;
+  border-color: #1c3a50 !important;
+  color: #e8edf3 !important;
+}
+html[data-theme="dark"] .rpma-emp table th,
+html.dark .rpma-emp table th {
+  color: #9eb0be;
+  background: #0a1622;
+  border-color: #1a3044;
+}
+html[data-theme="dark"] .rpma-emp table td,
+html.dark .rpma-emp table td {
+  color: #dce6ee;
+  border-color: #1a3044;
+}
+html[data-theme="dark"] .rpma-xls th,
+html[data-theme="dark"] .rpma-xls td,
+html.dark .rpma-xls th,
+html.dark .rpma-xls td { border-color: #1a3044; }
+html[data-theme="dark"] .rpma-emp input,
+html[data-theme="dark"] .rpma-emp select,
+html[data-theme="dark"] .rpma-emp textarea,
+html.dark .rpma-emp input,
+html.dark .rpma-emp select,
+html.dark .rpma-emp textarea {
+  background: #08141e;
+  color: #e8edf3;
+  border-color: #2a4458;
+}
+html[data-theme="dark"] .rpma-ttree-item,
+html.dark .rpma-ttree-item { color: #dce6ee; }
+html[data-theme="dark"] .rpma-ttree-item em,
+html.dark .rpma-ttree-item em { color: #8aa0b0; }
+html[data-theme="dark"] .rpma-ttree-item.is-on,
+html.dark .rpma-ttree-item.is-on {
+  background: color-mix(in srgb, #14b8a6 18%, #0c1828);
+  color: #fff;
+}
+html[data-theme="dark"] .rpma-sla-banner.is-prov,
+html.dark .rpma-sla-banner.is-prov {
+  background: #3a2508;
+  color: #ffd28a;
+  border-color: #c47a14;
+}
+html[data-theme="dark"] .rpma-sla-banner.is-signed,
+html.dark .rpma-sla-banner.is-signed {
+  background: #0d2e24;
+  color: #8fce4a;
+}
+html[data-theme="dark"] .rpma-sql-digits,
+html.dark .rpma-sql-digits {
+  color: #2ee6a6;
+  text-shadow: 0 0 10px color-mix(in srgb, #2ee6a6 45%, transparent);
+}
+html[data-theme="dark"] .rpma-sql-meta > em,
+html.dark .rpma-sql-meta > em { color: #8aa0b0; }
+html[data-theme="dark"] .dk-content,
+html.dark .dk-content { color: #e8edf3; }
+html[data-theme="dark"] .rpma-amx-workspace,
+html.dark .rpma-amx-workspace { background: transparent; }
