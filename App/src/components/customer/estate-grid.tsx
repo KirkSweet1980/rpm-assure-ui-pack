@@ -227,7 +227,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
     },
     {
       on: cover.rmm,
-      name: "RMM | Infrastructure",
+      name: "RMM Infrastructure",
       href: `${base}/rmm`,
       bits: [
         `${srvOn} server online`,

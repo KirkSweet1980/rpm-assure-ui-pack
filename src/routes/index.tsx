@@ -1056,7 +1056,7 @@ function ExcoInsightPage() {
     }
     return [
       { k: "SYSPRO Landscape", ...age(latest(rows.map((r) => r.lastImportAt))) },
-      { k: "RMM | Infrastructure Management", ...age(latest(rows.map((r) => r.pulsewayLastImportAt))) },
+      { k: "RMM Infrastructure Management", ...age(latest(rows.map((r) => r.pulsewayLastImportAt))) },
       { k: "RPM Cloud Backup", ...age(latest(rows.map((r) => r.coveLastImportAt))) },
       { k: "RPM End Point Protection", ...age(latest(rows.map((r) => r.eppLastImportAt))) },
       { k: "Microsoft 365", ...age(latest(rows.map((r) => r.cspLastImportAt))) },
@@ -1140,7 +1140,7 @@ function ExcoInsightPage() {
           <div className="rpma-brief-svcs">
             {([
               { name: "SYSPRO Landscape", href: "/?view=finsight", pct: slaByService.syspro, n: coverStats.syspro, target: 90, note: "jobs miss" },
-              { name: "RMM | Infrastructure Management", href: "/?view=all", pct: slaByService.rmm, n: coverStats.rmm, target: 99, note: `${serversOnline} online` },
+              { name: "RMM Infrastructure Management", href: "/?view=all", pct: slaByService.rmm, n: coverStats.rmm, target: 99, note: `${serversOnline} online` },
               { name: "RPM Cloud Backup", href: "/?view=attention", pct: slaByService.cove, n: coverStats.cove, target: 99, note: "SLA miss" },
               { name: "RPM End Point Protection", href: "/?view=all", pct: slaByService.epp, n: coverStats.epp, target: 98, note: "on cover" },
             ]).map((s) => {

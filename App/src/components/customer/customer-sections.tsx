@@ -2103,7 +2103,7 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
   if (!effectiveCover(data).rmm && alerts.length === 0) {
     return (
       <NoCoverPanel
-        service="RMM | Infrastructure Management · Alerts"
+        service="RMM Infrastructure Management · Alerts"
         hint="No cover — no RMM data for this customer."
       />
     );
@@ -2162,7 +2162,7 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="space-y-3">
       <ChartCaption
-        title="RMM | Infrastructure Management · Alerts"
+        title="RMM Infrastructure Management · Alerts"
         why="Pulseway notifications and device counters for this tenant. Windows Event Logs sit under Event Logs."
       />
       <div className="grid gap-2 sm:grid-cols-4">
@@ -2421,7 +2421,7 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="space-y-3">
       <ChartCaption
-        title="RMM | Infrastructure Management · Event Logs"
+        title="RMM Infrastructure Management · Event Logs"
         why="Windows Critical/Error from Assure agents plus RPM RMM notifications for this tenant. A quiet host is not No Cover."
       />
       {hosts.length === 0 ? (

@@ -103,7 +103,7 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
     },
     { id: "posture", label: "Industry posture", meta: `${sla.pillars.length} pillars`, tone: "amber" as const },
     { id: "syspro", label: "SYSPRO Landscape", meta: packs.syspro.overallPct != null ? `${packs.syspro.overallPct}%` : "—", tone: cover.syspro ? "green" : "off" },
-    { id: "rmm", label: "RMM | Infrastructure", meta: packs.rmm.overallPct != null ? `${packs.rmm.overallPct}%` : "—", tone: cover.rmm ? "green" : "off" },
+    { id: "rmm", label: "RMM Infrastructure", meta: packs.rmm.overallPct != null ? `${packs.rmm.overallPct}%` : "—", tone: cover.rmm ? "green" : "off" },
     { id: "cove", label: "RPM Cloud Backup", meta: packs.cove.overallPct != null ? `${packs.cove.overallPct}%` : "—", tone: cover.cove ? "green" : "off" },
     { id: "epp", label: "RPM End Point Protection", meta: packs.epp.overallPct != null ? `${packs.epp.overallPct}%` : "—", tone: cover.epp ? "green" : "off" },
     { id: "csp", label: "Microsoft 365", meta: packs.csp.overallPct != null ? `${packs.csp.overallPct}%` : "—", tone: cover.csp ? "green" : "off" },
