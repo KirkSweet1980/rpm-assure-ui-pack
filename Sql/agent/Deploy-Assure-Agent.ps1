@@ -225,6 +225,6 @@ Write-Host (' Host     ' + $env:COMPUTERNAME)
 Write-Host (' Customer ' + $CustomerCode)
 Write-Host (' HTTPS    ' + $AppHttpsUrl)
 Write-Host ' Service  RPMAssure-Edge'
-Write-Host ' Re-run this script to pull git and refresh files.'
+Write-Host ' Re-run this script to refresh from Assure HTTPS.'
 Write-Host '========================================'
 Get-Service RPMAssure-Edge -ErrorAction SilentlyContinue | Format-Table Name, Status -AutoSize
