@@ -238,7 +238,7 @@ export function AppShell({
               />
             </div>
             <div className="dk-header-right">
-              <DensityToggle compact />
+              <DensityToggle />
               <ThemeToggle />
               <UserButton />
             </div>
