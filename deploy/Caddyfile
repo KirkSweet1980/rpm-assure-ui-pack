@@ -28,6 +28,12 @@ https://assure.rpmresources.co.za {
 		respond "ok" 200
 	}
 
+	# Agent pack — disk, not Vite. Customers never hit GitHub.
+	handle_path /downloads/* {
+		root * C:\RPM-Assure\downloads
+		file_server
+	}
+
 	reverse_proxy 127.0.0.1:8081 {
 		header_up Host {host}
 		header_up X-Real-IP {remote_host}

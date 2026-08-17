@@ -43,6 +43,7 @@ function Write-ZipFromFolder([string]$Folder, [string]$ZipPath) {
 }
 
 $dlDirs = @(
+  (Join-Path $Root 'downloads'),
   (Join-Path $Root 'App\public\downloads'),
   (Join-Path $Root 'deploy\ui-pack\public\downloads'),
   (Join-Path $Root 'deploy\ui-pack\App\public\downloads')
