@@ -54,7 +54,24 @@ $aliases = @(
   @{ n = 'interbrand'; c = 'IB' },
   @{ n = 'medipos'; c = 'MEDIPOS' },
   @{ n = 'rpm resources uk'; c = 'RPMINT' },
-  @{ n = 'rpm resources'; c = 'RPMINT' }
+  @{ n = 'rpm resources'; c = 'RPMINT' },
+  @{ n = 'redsun raisins'; c = 'RSR' },
+  @{ n = 'redsun'; c = 'RSR' },
+  @{ n = 'hydra sales'; c = 'HYDRA' },
+  @{ n = 'hydrasales'; c = 'HYDRA' },
+  @{ n = 'able tracers'; c = 'ABLE' },
+  @{ n = 'board of healthcare'; c = 'BHF' },
+  @{ n = 'board of health'; c = 'BHF' },
+  @{ n = 'sir fruit'; c = 'SIRF' },
+  @{ n = 'metsiwater'; c = 'METSI' },
+  @{ n = 'metsi water'; c = 'METSI' },
+  @{ n = 'ylj health'; c = 'YLJ' },
+  @{ n = 'oratouch'; c = 'YLJ' },
+  @{ n = 'ora touch'; c = 'YLJ' },
+  @{ n = 'vault tech'; c = 'VAULT' },
+  @{ n = 'vaulttech'; c = 'VAULT' },
+  @{ n = 'simply bright solutions'; c = 'SBS' },
+  @{ n = 'simply bright'; c = 'SBS' }
 )
 
 $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
@@ -102,7 +119,15 @@ function Resolve-Code([string]$fdName, $fdId) {
     if ($n -eq $c.Norm -or $n -eq $c.CodeNorm) { return $c.Code }
   }
   foreach ($a in $aliases) {
-    if ($n -eq $a.n -or ($a.n.Length -ge 8 -and $n.Contains($a.n))) {
+    if ($n -eq $a.n) {
+      $up = $a.c.ToUpperInvariant()
+      if ($valid.ContainsKey($up)) { return $up }
+    }
+  }
+  foreach ($a in $aliases) {
+    if ($a.n.Length -ge 6 -and $n.Contains($a.n)) {
+      if ($a.c -eq 'SBS' -and $n -match 'tank') { continue }
+      if ($a.c -eq 'HYDRA' -and $n -match 'hy.?line') { continue }
       $up = $a.c.ToUpperInvariant()
       if ($valid.ContainsKey($up)) { return $up }
     }
@@ -124,6 +149,65 @@ Write-Host '=== MAP (Assure customer exists) ==='
 $mapped | Format-Table CompanyName, CustomerCode, CompanyId -AutoSize
 Write-Host '=== UNMAPPED (left out on purpose) ==='
 $unmapped | Format-Table CompanyName, CompanyId -AutoSize
+
+Write-Host '=== SEARCH missing Assure names in Freshdesk ==='
+$wanted = @(
+  @{ q = 'Redsun'; c = 'RSR' },
+  @{ q = 'Hydra'; c = 'HYDRA' },
+  @{ q = 'Able Tracer'; c = 'ABLE' },
+  @{ q = 'Board of Health'; c = 'BHF' },
+  @{ q = 'Sir Fruit'; c = 'SIRF' },
+  @{ q = 'Metsi'; c = 'METSI' },
+  @{ q = 'YLJ'; c = 'YLJ' },
+  @{ q = 'ORATouch'; c = 'YLJ' },
+  @{ q = 'Vault-Tech'; c = 'VAULT' },
+  @{ q = 'Vault Tech'; c = 'VAULT' },
+  @{ q = 'Simply Bright'; c = 'SBS' }
+)
+foreach ($w in $wanted) {
+  $already = @($mapped | Where-Object { $_.CustomerCode -eq $w.c })
+  if ($already.Count -gt 0) {
+    Write-Host ('HAVE  ' + $w.c + ' via ' + (($already | ForEach-Object { $_.CompanyName }) -join ', '))
+    continue
+  }
+  $qs = 'name:''' + $w.q + ''''
+  $url = "https://$FreshdeskDomain/api/v2/search/companies?query=" + [uri]::EscapeDataString($qs)
+  try {
+    $sr = Invoke-RestMethod -Uri $url -Headers $hdr -TimeoutSec 30
+    $hits = @($sr.results)
+    if (-not $hits -and $sr) { $hits = @($sr) | Where-Object { $_.name } }
+    if ($hits.Count -eq 0) {
+      Write-Host ('MISS  ' + $w.c + ' search="' + $w.q + '"')
+    } else {
+      foreach ($h in $hits) {
+        Write-Host ('HIT   ' + $w.c + ' -> ' + $h.name + ' id=' + $h.id)
+        $code = Resolve-Code ([string]$h.name) $h.id
+        if (-not $code) { $code = $w.c }
+        if ($valid.ContainsKey($code.ToUpperInvariant())) {
+          $dup = $false
+          foreach ($m in $mapped) { if ($m.CompanyName -eq $h.name) { $dup = $true } }
+          if (-not $dup) {
+            [void]$mapped.Add([pscustomobject]@{
+              CompanyId = (To-Int64OrNull $h.id)
+              CompanyName = [string]$h.name
+              CustomerCode = $code
+            })
+          }
+        }
+      }
+    }
+  } catch {
+    Write-Host ('ERR   ' + $w.c + ' ' + $_.Exception.Message)
+  }
+}
+
+Write-Host ''
+Write-Host '=== ASSURE COVER (after search) ==='
+foreach ($code in @('AHIC','RSR','RSS','UVSS','HYDRA','ABLE','SBS','BHF','SIRF','RPMINT','IB','METSI','YLJ','MEDIPOS','VAULT')) {
+  $rows = @($mapped | Where-Object { $_.CustomerCode -eq $code })
+  if ($rows.Count -eq 0) { Write-Host ('NO COMPANY  ' + $code) }
+  else { Write-Host ('OK          ' + $code + ' <- ' + (($rows | ForEach-Object { $_.CompanyName }) -join '; ')) }
+}
 
 if ($mapped.Count -eq 0) {
   Write-Host 'Nothing to insert. Unmapped companies stay out of Assure.'
