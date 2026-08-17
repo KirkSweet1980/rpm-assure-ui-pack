@@ -35,7 +35,7 @@ type RibbonGroup = { id: string; title: string; match: string; items: RibbonItem
 const RIBBON: RibbonGroup[] = [
   {
     id: "estate",
-    title: "Estate",
+    title: "Customer Eco System",
     match: "",
     items: [
       { label: "Overview", rel: "", icon: LayoutDashboard },
@@ -47,7 +47,7 @@ const RIBBON: RibbonGroup[] = [
   },
   {
     id: "syspro",
-    title: "SYSPRO",
+    title: "SYSPRO Landscape",
     match: "/syspro",
     items: [
       { label: "Overview", rel: "/syspro", icon: LayoutDashboard },
@@ -59,7 +59,7 @@ const RIBBON: RibbonGroup[] = [
   },
   {
     id: "rmm",
-    title: "RMM",
+    title: "RMM | Infrastructure Management",
     match: "/rmm",
     items: [
       { label: "Overview", rel: "/rmm", icon: Server },
@@ -71,7 +71,7 @@ const RIBBON: RibbonGroup[] = [
   },
   {
     id: "backup",
-    title: "Backup",
+    title: "RPM Cloud Backup",
     match: "/cove",
     items: [
       { label: "Overview", rel: "/cove", icon: Cloud },
@@ -83,7 +83,7 @@ const RIBBON: RibbonGroup[] = [
   },
   {
     id: "epp",
-    title: "EPP",
+    title: "RPM End Point Protection",
     match: "/epp",
     items: [
       { label: "Overview", rel: "/epp", icon: Shield },
@@ -95,7 +95,7 @@ const RIBBON: RibbonGroup[] = [
   },
   {
     id: "tickets",
-    title: "Tickets",
+    title: "RPM Service Desk",
     match: "/tickets",
     items: [
       { label: "Overview", rel: "/tickets", icon: Ticket },
@@ -157,14 +157,12 @@ export function EmpChrome({
         </div>
       </div>
       <nav className="rpma-emp-menu" aria-label="Application">
-        <SpaLink href="/">File</SpaLink>
         <SpaLink href={base} className={!rest ? "is-on" : undefined}>
-          Home
+          Customer Ecosystem Home
         </SpaLink>
         <SpaLink href={`${base}/tickets`} className={rest.startsWith("/tickets") ? "is-on" : undefined}>
-          Customer Service
+          Customer Service Overview
         </SpaLink>
-        <SpaLink href={`${base}/ams/sla`}>View</SpaLink>
       </nav>
       <div className="rpma-emp-ribbon" role="toolbar">
         {RIBBON.map((g) => {
