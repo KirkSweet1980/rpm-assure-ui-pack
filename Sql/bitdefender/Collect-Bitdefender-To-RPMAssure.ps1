@@ -722,51 +722,46 @@ WHEN NOT MATCHED THEN INSERT (SnapshotDate, UsedSlots, ReservedSlots, TotalSlots
 }
 
 # --- Policies + installed modules (getPoliciesList / getPolicyDetails) ---
-function Get-EppModuleOn($v) {
-  if ($null -eq $v) { return $false }
-  if ($v -is [bool]) { return [bool]$v }
-  if ($v -is [int] -or $v -is [long] -or $v -is [double]) { return ([int]$v) -ne 0 }
-  try {
-    if ($v.PSObject.Properties['enabled'] -and $null -ne $v.enabled) { return [bool]$v.enabled }
-    if ($v.PSObject.Properties['enable'] -and $null -ne $v.enable) { return [bool]$v.enable }
-    if ($v.PSObject.Properties['installed'] -and $null -ne $v.installed) { return [bool]$v.installed }
-  } catch {}
-  return $true
-}
-function Get-EppModulesFromSettings($settings) {
-  $labels = [ordered]@{
-    antimalware = 'Antimalware'
-    firewall = 'Firewall'
-    contentControl = 'Content Control'
-    deviceControl = 'Device Control'
-    edrSensor = 'EDR'
-    edr = 'EDR'
-    networkSandboxing = 'Sandbox Analyzer'
-    encryption = 'Disk Encryption'
-    patchManagement = 'Patch Management'
-    integrityMonitor = 'Integrity Monitor'
-    exchange = 'Exchange Protection'
-    networkAttackDefense = 'Network Attack Defense'
-    indicatorsOfRisk = 'Risk Management'
-    liveSearch = 'Live Search'
-    PHASR = 'PHASR'
-    relay = 'Relay'
-    storageProtection = 'Storage Protection'
-    advancedThreatControl = 'Advanced Threat Control'
-    atc = 'Advanced Threat Control'
-    networkMonitor = 'Network Monitor'
-    hyperDetect = 'HyperDetect'
-    sandboxAnalyzer = 'Sandbox Analyzer'
+function Get-EppModulesJsonFromRaw([string]$raw) {
+  $pairs = @(
+    @{ k = 'antimalware'; l = 'Antimalware' },
+    @{ k = 'firewall'; l = 'Firewall' },
+    @{ k = 'contentControl'; l = 'Content Control' },
+    @{ k = 'deviceControl'; l = 'Device Control' },
+    @{ k = 'edrSensor'; l = 'EDR' },
+    @{ k = 'edr'; l = 'EDR' },
+    @{ k = 'networkSandboxing'; l = 'Sandbox Analyzer' },
+    @{ k = 'encryption'; l = 'Disk Encryption' },
+    @{ k = 'patchManagement'; l = 'Patch Management' },
+    @{ k = 'integrityMonitor'; l = 'Integrity Monitor' },
+    @{ k = 'exchange'; l = 'Exchange Protection' },
+    @{ k = 'networkAttackDefense'; l = 'Network Attack Defense' },
+    @{ k = 'indicatorsOfRisk'; l = 'Risk Management' },
+    @{ k = 'liveSearch'; l = 'Live Search' },
+    @{ k = 'PHASR'; l = 'PHASR' },
+    @{ k = 'relay'; l = 'Relay' },
+    @{ k = 'storageProtection'; l = 'Storage Protection' },
+    @{ k = 'advancedThreatControl'; l = 'Advanced Threat Control' },
+    @{ k = 'atc'; l = 'Advanced Threat Control' },
+    @{ k = 'networkMonitor'; l = 'Network Monitor' },
+    @{ k = 'hyperDetect'; l = 'HyperDetect' },
+    @{ k = 'sandboxAnalyzer'; l = 'Sandbox Analyzer' }
+  )
+  $bits = New-Object System.Collections.Generic.List[string]
+  $seen = @{}
+  foreach ($p in $pairs) {
+    $k = [string]$p.k
+    if ($seen.ContainsKey($p.l)) { continue }
+    if ($raw -notmatch ('"' + [regex]::Escape($k) + '"\s*:')) { continue }
+    $on = $true
+    if ($raw -match ('"' + [regex]::Escape($k) + '"\s*:\s*false')) { $on = $false }
+    $seen[$p.l] = $true
+    $en = 'true'
+    if (-not $on) { $en = 'false' }
+    $bits.Add(('{{"id":"{0}","label":"{1}","enabled":{2}}}' -f $k, $p.l, $en))
   }
-  $out = New-Object System.Collections.Generic.List[object]
-  if ($null -eq $settings) { return @() }
-  foreach ($key in $labels.Keys) {
-    $p = $settings.PSObject.Properties[$key]
-    if (-not $p) { continue }
-    $on = Get-EppModuleOn $p.Value
-    $out.Add([pscustomobject]@{ id = $key; label = $labels[$key]; enabled = $on })
-  }
-  return @($out)
+  if ($bits.Count -eq 0) { return '[]' }
+  return '[' + ($bits -join ',') + ']'
 }
 
 try {
@@ -833,15 +828,20 @@ foreach ($eid in $epBag.Keys) {
 $polDetails = @{}
 foreach ($gzPolId in @($policyById.Keys)) {
   try {
-    $rawD = Invoke-GzRpc -Service 'policies' -Method 'getPolicyDetails' -Params @{ policyId = $gzPolId }
-    if ($rawD -match '"error"\s*:\s*\{') { continue }
-    $det = ($rawD | ConvertFrom-Json).result
-    if (-not $det) { continue }
-    $mods = Get-EppModulesFromSettings $det.settings
-    $nm = [string]$det.name
+    $rawD = Invoke-GzRpc -Service 'policies' -Method 'getPolicyDetails' -Params @{ policyId = [string]$gzPolId }
+    $pre = $rawD
+    if ($pre.Length -gt 180) { $pre = $pre.Substring(0, 180) }
+    if ($rawD -match '"error"\s*:\s*\{') {
+      Write-Log ("getPolicyDetails skip id=$gzPolId prefix=$pre")
+      continue
+    }
+    $nm = ''
+    $nmM = [regex]::Match($rawD, '"name"\s*:\s*"([^"]+)"')
+    if ($nmM.Success) { $nm = $nmM.Groups[1].Value }
     if (-not $nm -and $policyById[$gzPolId].name) { $nm = [string]$policyById[$gzPolId].name }
-    $polDetails[$gzPolId] = [pscustomobject]@{ Name = $nm; Modules = $mods }
-    Write-Log ("policy $nm modules=" + (($mods | Where-Object { $_.enabled } | ForEach-Object { $_.label }) -join ','))
+    $modJson = Get-EppModulesJsonFromRaw $rawD
+    $polDetails[$gzPolId] = [pscustomobject]@{ Name = $nm; ModulesJson = $modJson }
+    Write-Log ("policy $nm modules=$modJson")
   } catch {
     Write-Log ("getPolicyDetails $gzPolId : " + $_.Exception.Message)
   }
@@ -866,9 +866,8 @@ foreach ($k in $polCust.Keys) {
   $row = $polCust[$k]
   $det = $polDetails[$row.PolicyId]
   $nm = if ($det -and $det.Name) { $det.Name } elseif ($policyById[$row.PolicyId].name) { [string]$policyById[$row.PolicyId].name } else { $row.PolicyId }
-  $mods = if ($det) { $det.Modules } else { @() }
   $json = '[]'
-  try { $json = ($mods | ConvertTo-Json -Compress -Depth 4) } catch { $json = '[]' }
+  if ($det -and $det.ModulesJson) { $json = [string]$det.ModulesJson }
   if (-not $json) { $json = '[]' }
   $polRows.Add(("({0},{1},{2},{3},{4},{5})" -f ("'{0}'" -f $snap), (Sql-Str $row.PolicyId), (Sql-Str $nm), (Sql-Str $row.Code), [int]$row.N, (Sql-Str $json)))
 }
