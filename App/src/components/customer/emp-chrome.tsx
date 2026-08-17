@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
@@ -158,15 +157,6 @@ export function EmpChrome({
     slaHref: `${base}${group.match || "/ams"}/sla`.replace("//", "/"),
   };
 
-  const [open, setOpen] = useState<string>(group.id);
-  const ready = Boolean(live);
-  const tree = useMemo(() => {
-    return RIBBON.filter((g) => g.id === group.id || pillarCovered(g.id, live)).map((g) => ({
-      ...g,
-      items: g.items.filter((it) => itemVisible(it, rest, live)),
-    }));
-  }, [live, group.id, rest]);
-
   return (
     <div className="rpma-emp">
       <div className="rpma-emp-stick">
@@ -224,50 +214,7 @@ export function EmpChrome({
         </div>
       </div>
       </div>
-      <div className="rpma-emp-work is-tree">
-        <aside className="rpma-ttree-nav rpma-emp-tree" aria-label="Live modules">
-          <h2>Live tree</h2>
-          {!ready ? <p className="rpma-tree-wait">Loading cover…</p> : null}
-          <ul>
-            {tree.map((g) => {
-              const expanded = open === g.id || g.id === group.id;
-              return (
-                <li key={g.id} className="rpma-tree-group">
-                  <button
-                    type="button"
-                    className={cn("rpma-tree-ghead", g.id === group.id && "is-on")}
-                    onClick={() => setOpen(expanded && g.id !== group.id ? group.id : g.id)}
-                  >
-                    {g.title}
-                    <em>{g.items.length}</em>
-                  </button>
-                  {expanded
-                    ? g.items.map((it) => {
-                        const href = `${base}${it.rel}`;
-                        const active = (it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel;
-                        const rag = ragOf(it.rel, live);
-                        const hint = live?.modules[it.rel]?.hint;
-                        return (
-                          <SpaLink
-                            key={it.rel || "home"}
-                            href={href}
-                            className={cn("rpma-ttree-item", active && "is-on")}
-                            data-rag={rag}
-                          >
-                            <i data-tone={rag.toLowerCase()} />
-                            <span>
-                              <strong>{it.full}</strong>
-                              {hint ? <em>{hint}</em> : null}
-                            </span>
-                          </SpaLink>
-                        );
-                      })
-                    : null}
-                </li>
-              );
-            })}
-          </ul>
-        </aside>
+      <div className="rpma-emp-work">
         <div className="rpma-emp-body">{children}</div>
         <EmpInspector
           name={customerName}
