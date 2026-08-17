@@ -561,14 +561,17 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         <Pane title="Server patch" {...wgt("patch")}>
           {isPillarCovered(cover, "rmm") ? (
+            <SpaLink to={`${base}/rmm/patch`} className="block">
             <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Servers checked" value={customer.pulsewayPatchDevices ?? 0} />
+              <StatCard label="Servers checked" value={customer.pulsewayPatchDevices ?? 0} hint="Open patch list" />
               <StatCard
-                label="Missing"
+                label="Outstanding"
                 value={customer.pulsewayPatchMissing ?? 0}
                 tone={(customer.pulsewayPatchMissing ?? 0) > 0 ? "amber" : "green"}
+                hint="Click for KB titles"
               />
             </div>
+            </SpaLink>
           ) : (
             <p className="text-[12px] text-muted">No cover — RMM is not in scope.</p>
           )}

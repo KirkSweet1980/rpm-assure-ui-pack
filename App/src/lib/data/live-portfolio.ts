@@ -4963,11 +4963,18 @@ WHERE d.CustomerCode = @code`);
           .request()
           .input("code", sql.NVarChar(50), code)
           .query(`
-          SELECT TOP 4000
+          SELECT TOP 8000
             DeviceId, DeviceName, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode
           FROM dbo.Pulseway_DevicePatches WITH (NOLOCK)
           WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_DevicePatches WITH (NOLOCK))
-            AND (CustomerCode = @code)
+            AND (
+              CustomerCode = @code
+              OR DeviceId IN (
+                SELECT d.DeviceId FROM dbo.Pulseway_Devices d WITH (NOLOCK)
+                WHERE d.CustomerCode = @code
+                  AND d.SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
+              )
+            )
           ORDER BY
             CASE WHEN Status = N'installed' THEN 0 WHEN Status = N'missing' THEN 1 ELSE 2 END,
             InstalledUtc DESC, Title`);

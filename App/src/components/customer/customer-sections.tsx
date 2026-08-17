@@ -842,6 +842,11 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   );
   const withMissing = reporting.filter((d) => (d.patchMissing ?? 0) > 0);
 
+  const [patchView, setPatchView] = useState<{
+    mode: "installed" | "missing" | "recent" | "all";
+    deviceId: string | null;
+  }>({ mode: "missing", deviceId: null });
+
   type BucketKey = "clean" | "light" | "medium" | "heavy";
   const bucketOf = (n: number): BucketKey => {
     if (n <= 0) return "clean";
@@ -919,6 +924,33 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
     1,
   );
 
+  const namedAll = rmm?.patches ?? [];
+  const cutoffMs = Date.now() - 30 * 86400000;
+  const namedForView = (mode: "installed" | "missing" | "recent" | "all", deviceId: string | null) => {
+    let rows = namedAll;
+    if (deviceId) rows = rows.filter((p) => p.deviceId === deviceId);
+    if (mode === "installed") rows = rows.filter((p) => p.status === "installed");
+    else if (mode === "missing") rows = rows.filter((p) => p.status === "missing" || p.status === "pending");
+    else if (mode === "recent") {
+      rows = rows.filter(
+        (p) => p.status === "installed" && p.installedAt && new Date(p.installedAt).getTime() >= cutoffMs,
+      );
+    }
+    return rows;
+  };
+  const openPatches = (mode: "installed" | "missing" | "recent" | "all", deviceId: string | null = null) => {
+    setPatchView({ mode, deviceId });
+    queueMicrotask(() =>
+      document.getElementById("rpma-patch-list")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+  const viewRows = namedForView(patchView.mode, patchView.deviceId);
+  const viewDeviceName = patchView.deviceId
+    ? devices.find((d) => d.deviceId === patchView.deviceId)?.name ||
+      namedAll.find((p) => p.deviceId === patchView.deviceId)?.deviceName ||
+      patchView.deviceId
+    : null;
+
   return (
     <div className="space-y-4">
       <ChartCaption
@@ -934,12 +966,14 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
           value={reporting.length}
           hint="Agents that sent Updates counters"
         />
+        <button type="button" className="text-left" onClick={() => openPatches("missing")}>
         <StatCard
           label="Outstanding updates"
           value={totalMissingSum ?? "—"}
           tone={(totalMissingSum ?? 0) > 0 ? "amber" : "default"}
-          hint="Critical + Important + Unspecified (this list only)"
+          hint="Click to list outstanding / pending patches"
         />
+        </button>
         <StatCard
           label="Agents with backlog"
           value={withMissing.length}
@@ -951,16 +985,20 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
           value={pendingSum || "—"}
           hint="Only when the server agent reports pending"
         />
+        <button type="button" className="text-left" onClick={() => openPatches("installed")}>
         <StatCard
           label="Installed (named)"
           value={(rmm?.patches ?? []).filter((p) => p.status === "installed").length || (s?.patchInstalled ?? "—")}
-          hint="Named installed updates this customer"
+          hint="Click to list installed patches"
         />
+        </button>
+        <button type="button" className="text-left" onClick={() => openPatches("recent")}>
         <StatCard
           label="Recently installed"
           value={s?.patchInstalledRecent ?? (rmm?.patches ?? []).filter((p) => p.status === "installed" && p.installedAt && Date.now() - new Date(p.installedAt).getTime() <= 30 * 86400000).length}
-          hint="Last 30 days"
+          hint="Last 30 days — click to list"
         />
+        </button>
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
@@ -1103,7 +1141,13 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                     <div key={d.deviceId}>
                       <div className="mb-0.5 flex items-baseline justify-between gap-2 text-xs">
                         <span className="truncate font-medium text-fg">
-                          {d.name ?? d.deviceId}
+                          <button
+                            type="button"
+                            className="truncate text-left underline-offset-2 hover:underline"
+                            onClick={() => openPatches("missing", d.deviceId)}
+                          >
+                            {d.name ?? d.deviceId}
+                          </button>
                           <span className="ml-1.5 font-normal text-muted">
                             {d.deviceType ?? "—"}
                             {d.isOnline === false ? " · offline" : ""}
@@ -1214,7 +1258,17 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                           : "Offline"}
                     </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">
-                      {reports ? (d.patchInstalled ?? "—") : "—"}
+                      {reports ? (
+                        <button
+                          type="button"
+                          className="underline-offset-2 hover:underline"
+                          onClick={() => openPatches("installed", d.deviceId)}
+                        >
+                          {d.patchInstalled ?? "—"}
+                        </button>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td
                       className={
@@ -1222,7 +1276,17 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                         ((d.patchMissing ?? 0) > 0 ? "font-semibold text-rag-amber" : "")
                       }
                     >
-                      {reports ? (d.patchMissing ?? "—") : "—"}
+                      {reports ? (
+                        <button
+                          type="button"
+                          className="underline-offset-2 hover:underline"
+                          onClick={() => openPatches("missing", d.deviceId)}
+                        >
+                          {d.patchMissing ?? "—"}
+                        </button>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">
                       {reports ? (d.patchPending ?? "—") : "—"}
@@ -1238,48 +1302,104 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
         </div>
       )}
       {(() => {
-        const named = rmm?.patches ?? [];
-        if (!named.length) return null;
-        const cutoff = Date.now() - 30 * 86400000;
-        const recent = named.filter(
-          (p) => p.status === "installed" && p.installedAt && new Date(p.installedAt).getTime() >= cutoff,
-        );
-        const installed = named.filter((p) => p.status === "installed");
-        const miss = named.filter((p) => p.status === "missing" || p.status === "pending");
-        const Block = ({ title, rows }: { title: string; rows: typeof named }) => (
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-muted">{title}</p>
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-3 py-2">Device</th>
-                  <th className="px-3 py-2">Patch</th>
-                  <th className="px-3 py-2">KB</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Installed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.slice(0, 80).map((p, i) => (
-                  <tr key={`${p.deviceId}-${p.title}-${i}`} className="border-b border-border/70">
-                    <td className="px-3 py-2">{p.deviceName || p.deviceId}</td>
-                    <td className="px-3 py-2">{p.title}</td>
-                    <td className="px-3 py-2 font-mono text-[11px]">{p.kb || "—"}</td>
-                    <td className="px-3 py-2">{p.status}</td>
-                    <td className="px-3 py-2 text-[12px] text-muted">
-                      {p.installedAt ? new Date(p.installedAt).toLocaleString("en-ZA") : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
+        const mode = patchView?.mode ?? "missing";
+        const title =
+          mode === "installed"
+            ? "Installed patches"
+            : mode === "recent"
+              ? "Recently installed (30 days)"
+              : mode === "all"
+                ? "All named patches"
+                : "Outstanding / pending patches";
+        const deviceHint = viewDeviceName ? ` · ${viewDeviceName}` : "";
         return (
-          <div className="space-y-3">
-            <Block title="Recently installed (30 days)" rows={recent} />
-            <Block title="Installed patches (this customer)" rows={installed} />
-            <Block title="Outstanding / pending by device" rows={miss} />
+          <div id="rpma-patch-list" className="space-y-2 rounded-xl border border-border">
+            <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
+                {title}
+                {deviceHint}
+              </p>
+              <div className="ml-auto flex flex-wrap gap-1">
+                {(
+                  [
+                    ["missing", "Outstanding"],
+                    ["installed", "Installed"],
+                    ["recent", "Last 30 days"],
+                    ["all", "All named"],
+                  ] as const
+                ).map(([m, lab]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={
+                      "rounded-md px-2 py-1 text-[11px] font-semibold " +
+                      ((patchView?.mode ?? "missing") === m
+                        ? "bg-accent text-accent-fg"
+                        : "bg-muted/50 text-muted hover:text-fg")
+                    }
+                    onClick={() => openPatches(m, patchView?.deviceId ?? null)}
+                  >
+                    {lab}
+                  </button>
+                ))}
+                {patchView?.deviceId ? (
+                  <button
+                    type="button"
+                    className="rounded-md px-2 py-1 text-[11px] text-muted hover:text-fg"
+                    onClick={() => openPatches(patchView.mode, null)}
+                  >
+                    All devices
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            {viewRows.length === 0 ? (
+              <p className="px-3 py-4 text-sm text-muted">
+                {namedAll.length === 0
+                  ? "Pulseway published counts but no KB titles on this snapshot. Re-run Pulseway collect after the next agent cycle — named patches land in Pulseway_DevicePatches when the Updates list is present. Click a device count again after Recheck."
+                  : "No patches in this filter. Try Installed or All named."}
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
+                    <tr>
+                      <th className="px-3 py-2">Device</th>
+                      <th className="px-3 py-2">Patch</th>
+                      <th className="px-3 py-2">KB</th>
+                      <th className="px-3 py-2">Class</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Installed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewRows.slice(0, 200).map((p, i) => (
+                      <tr key={`${p.deviceId}-${p.title}-${i}`} className="border-b border-border/70">
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            className="text-left underline-offset-2 hover:underline"
+                            onClick={() => openPatches(patchView?.mode ?? "all", p.deviceId)}
+                          >
+                            {p.deviceName || p.deviceId}
+                          </button>
+                        </td>
+                        <td className="px-3 py-2">{p.title}</td>
+                        <td className="px-3 py-2 font-mono text-[11px]">{p.kb || "—"}</td>
+                        <td className="px-3 py-2 text-[12px] text-muted">{p.classification || "—"}</td>
+                        <td className="px-3 py-2">{p.status}</td>
+                        <td className="px-3 py-2 text-[12px] text-muted">
+                          {p.installedAt ? new Date(p.installedAt).toLocaleString("en-ZA") : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {viewRows.length > 200 ? (
+                  <p className="px-3 py-2 text-[11px] text-muted">Showing 200 of {viewRows.length}</p>
+                ) : null}
+              </div>
+            )}
           </div>
         );
       })()}
