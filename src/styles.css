@@ -666,11 +666,12 @@ html.dark .rpma-pane-head-row {
 }
 .rpma-hud-head {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 6px 16px 0;
+  gap: 0;
+  min-height: 0;
+  padding: 8px 20px 0;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -682,7 +683,8 @@ html.dark .rpma-pane-head-row {
 }
 .rpma-hud-head h2 {
   margin: 0;
-  width: 100%;
+  width: auto;
+  padding: 0 0 6px;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -690,27 +692,46 @@ html.dark .rpma-pane-head-row {
   text-align: center;
   color: inherit;
 }
+.rpma-hud-head::after {
+  content: "";
+  display: block;
+  width: min(48rem, 78%);
+  height: 2px;
+  margin: 0 auto 2px;
+  background: var(--color-brand-ink);
+  opacity: 0.45;
+  border-radius: 1px;
+}
 .rpma-hud-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
+  align-items: stretch;
 }
 .rpma-hud-cell {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 4px;
   min-width: 0;
-  padding: 8px 16px 10px;
+  padding: 10px 16px 12px;
+  text-align: center;
   border-right: 1px solid color-mix(in srgb, #042f2e 18%, var(--color-brand-teal));
 }
 .rpma-hud-cell:last-child { border-right: 0; }
-.rpma-hud-cell > div { min-width: 0; text-align: center; }
-.rpma-hud-ico { width: 20px; height: 20px; flex: 0 0 auto; color: #042f2e; }
+.rpma-hud-cell > div {
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+}
+.rpma-hud-ico { width: 18px; height: 18px; flex: 0 0 auto; color: #042f2e; }
 .rpma-hud-k {
   margin: 0;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   gap: 5px;
   font-size: 11px;
   font-weight: 750;
@@ -719,12 +740,14 @@ html.dark .rpma-pane-head-row {
   color: color-mix(in srgb, #042f2e 78%, #fff);
 }
 .rpma-hud-v {
-  margin: 3px 0 0;
+  margin: 2px 0 0;
+  width: 100%;
   font-family: var(--font-mono);
   font-size: 16px;
   font-weight: 750;
   letter-spacing: -0.02em;
   color: #042f2e;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

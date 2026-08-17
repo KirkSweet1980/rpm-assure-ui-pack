@@ -46,7 +46,7 @@ function HudCell({
   return (
     <div className="rpma-hud-cell">
       <Icon className="rpma-hud-ico" aria-hidden />
-      <div className="min-w-0">
+      <div>
         <p className="rpma-hud-k">
           {label}
           {tip ? <HelpTip text={tip} side="bottom" /> : null}
