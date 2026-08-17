@@ -3422,24 +3422,45 @@ WHERE CustomerCode = @code`);
         .input("disp", sql.NVarChar(200), display)
         .query<{ InstanceName: string }>(`
 SELECT TOP 1 InstanceName FROM (
-  SELECT InstanceName FROM dbo.Syspro_OperGroup WITH (NOLOCK)
+  SELECT InstanceName FROM dbo.Syspro_SystemLicense WITH (NOLOCK)
+  WHERE CustomerCode = @code AND InstanceName IS NOT NULL
   UNION
-  SELECT InstanceName FROM dbo.Syspro_License WITH (NOLOCK)
+  SELECT InstanceName FROM dbo.Syspro_SystemLicense WITH (NOLOCK)
+  WHERE InstanceName IS NOT NULL
+    AND (
+      UPPER(LTRIM(RTRIM(InstanceName))) = UPPER(@code)
+      OR UPPER(LTRIM(RTRIM(InstanceName))) LIKE UPPER(@code) + N'%'
+    )
   UNION
-  SELECT InstanceName FROM dbo.Syspro_TaskGroup WITH (NOLOCK)
+  SELECT InstanceName FROM dbo.Syspro_Operators WITH (NOLOCK)
+  WHERE InstanceName IS NOT NULL
+    AND (
+      UPPER(LTRIM(RTRIM(InstanceName))) = UPPER(@code)
+      OR UPPER(LTRIM(RTRIM(InstanceName))) LIKE UPPER(@code) + N'%'
+    )
+  UNION
+  SELECT InstanceName FROM dbo.Syspro_VersionInfo WITH (NOLOCK)
+  WHERE InstanceName IS NOT NULL
+    AND (
+      UPPER(LTRIM(RTRIM(InstanceName))) = UPPER(@code)
+      OR UPPER(LTRIM(RTRIM(InstanceName))) LIKE UPPER(@code) + N'%'
+    )
   UNION
   SELECT InstanceName FROM dbo.Syspro_JobLogging WITH (NOLOCK)
-) AS i
-WHERE InstanceName IS NOT NULL
-  AND LTRIM(RTRIM(InstanceName)) <> N''
-  AND (
-    UPPER(LTRIM(RTRIM(InstanceName))) = UPPER(@code)
-    OR UPPER(LTRIM(RTRIM(InstanceName))) LIKE N'%' + UPPER(@code) + N'%'
-    OR (
-      LEN(@disp) >= 4
-      AND UPPER(LTRIM(RTRIM(InstanceName))) LIKE N'%' + UPPER(LEFT(@disp, 12)) + N'%'
+  WHERE InstanceName IS NOT NULL
+    AND (
+      UPPER(LTRIM(RTRIM(InstanceName))) = UPPER(@code)
+      OR UPPER(LTRIM(RTRIM(InstanceName))) LIKE UPPER(@code) + N'%'
     )
-  )
+  UNION
+  SELECT InstanceName FROM dbo.Syspro_OperGroup WITH (NOLOCK)
+  WHERE InstanceName IS NOT NULL
+    AND (
+      UPPER(LTRIM(RTRIM(InstanceName))) = UPPER(@code)
+      OR UPPER(LTRIM(RTRIM(InstanceName))) LIKE UPPER(@code) + N'%'
+    )
+) AS i
+WHERE InstanceName IS NOT NULL AND LTRIM(RTRIM(InstanceName)) <> N''
 ORDER BY
   CASE WHEN UPPER(LTRIM(RTRIM(InstanceName))) = UPPER(@code) THEN 0 ELSE 1 END,
   LEN(InstanceName)`);
@@ -4994,12 +5015,16 @@ SELECT d.HostName, d.DriveLetter, d.TotalGb, d.FreeGb, d.UsedPct, d.MediaType,
 FROM dbo.Agent_DiskIops AS d WITH (NOLOCK)
 INNER JOIN (
   SELECT CustomerCode, HostName, MAX(SnapshotUtc) AS mx
-  FROM dbo.Agent_DiskIops WITH (NOLOCK)
-  WHERE CustomerCode = @code
-    AND SnapshotUtc >= DATEADD(day, -7, SYSUTCDATETIME())
-  GROUP BY CustomerCode, HostName
-) m ON m.CustomerCode = d.CustomerCode AND m.HostName = d.HostName AND m.mx = d.SnapshotUtc
-WHERE d.CustomerCode = @code`);
+          FROM dbo.Agent_DiskIops WITH (NOLOCK)
+          WHERE (
+              CustomerCode = @code
+              OR (@code = N'IB' AND HostName LIKE N'IB-%')
+            )
+            AND SnapshotUtc >= DATEADD(day, -7, SYSUTCDATETIME())
+          GROUP BY CustomerCode, HostName
+        ) m ON m.HostName = d.HostName AND m.mx = d.SnapshotUtc
+          AND (m.CustomerCode = d.CustomerCode OR (d.CustomerCode IS NULL AND m.CustomerCode IS NULL))
+        WHERE d.CustomerCode = @code OR (@code = N'IB' AND d.HostName LIKE N'IB-%')`);
             const iopsRows = (iopsRes.recordset ?? []) as Array<{
               HostName?: string;
               DriveLetter?: string;
