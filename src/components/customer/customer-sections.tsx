@@ -4030,8 +4030,8 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="space-y-3">
       <ChartCaption
-        title="RPM Assure incidents — live feed + SLA clocks"
-        why="Open and recent incidents from Fact_Incident. Response/resolve times checked against Dim_SlaPolicy. Log first response and resolve to score SLA."
+        title="Customer incidents — Freshdesk + SLA clocks"
+        why="Tickets from Freshdesk (mapped companies only) land in Fact_Incident. Response/resolve scored against Dim_SlaPolicy. Manual log still available for Assure-only incidents."
       />
 
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -4052,6 +4052,64 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
           tone={(summary?.resolveBreach ?? 0) > 0 ? "red" : "green"}
         />
       </div>
+
+      <Card>
+        <CardHead>Ticket register (module data)</CardHead>
+        <CardContent className="overflow-x-auto p-0">
+          {incidents.length === 0 ? (
+            <p className="p-4 text-[12px] text-muted">
+              No Freshdesk or Assure incidents for this customer in the last 30 days.
+            </p>
+          ) : (
+            <table className="w-full text-left text-[12px]">
+              <thead className="rpma-table-head">
+                <tr>
+                  <th className="px-2 py-1.5">Ticket</th>
+                  <th className="px-2 py-1.5">Subject</th>
+                  <th className="px-2 py-1.5">Pri</th>
+                  <th className="px-2 py-1.5">Status</th>
+                  <th className="px-2 py-1.5">Opened</th>
+                  <th className="px-2 py-1.5">Response</th>
+                  <th className="px-2 py-1.5">Restore</th>
+                  <th className="px-2 py-1.5">Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incidents.map((inc, i) => {
+                  const fd = inc.externalRef && /^FD-\d+$/i.test(inc.externalRef)
+                    ? inc.externalRef.replace(/^FD-/i, "")
+                    : null;
+                  return (
+                    <tr key={inc.incidentId ?? i} className="border-t border-border">
+                      <td className="px-2 py-1.5 font-mono text-[11px] whitespace-nowrap">
+                        {fd ? (
+                          <a
+                            className="text-primary underline-offset-2 hover:underline"
+                            href={`https://rpmresourceshelp.freshdesk.com/a/tickets/${fd}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            #{fd}
+                          </a>
+                        ) : (
+                          inc.externalRef || "—"
+                        )}
+                      </td>
+                      <td className="px-2 py-1.5 font-medium text-fg">{inc.title}</td>
+                      <td className="px-2 py-1.5">{inc.priority || inc.severity}</td>
+                      <td className="px-2 py-1.5">{inc.status}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{formatSastDateTime(inc.openedAt)}</td>
+                      <td className="px-2 py-1.5">{slaBadge(inc.responseSlaMet, "Ack")}</td>
+                      <td className="px-2 py-1.5">{slaBadge(inc.resolveSlaMet, "Restore")}</td>
+                      <td className="px-2 py-1.5 text-muted">{inc.sourceSystem || "Assure"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHead>Log incident (starts SLA clock)</CardHead>
@@ -4243,7 +4301,8 @@ export function RisksSection({ data }: { data: CustomerDetailPayload }) {
 
 export function SlaSection({ data }: { data: CustomerDetailPayload }) {
   const cover = effectiveCover(data);
-  if (!cover.syspro && !cover.rmm && !cover.cove && !cover.epp) {
+  const hasTickets = (data.incidents ?? []).length > 0 || (data.amsSlaSummary?.incidentCount30d ?? 0) > 0;
+  if (!cover.syspro && !cover.rmm && !cover.cove && !cover.epp && !hasTickets) {
     return (
       <NoCoverPanel
         service="SLA"
@@ -4263,7 +4322,7 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-4">
       <ChartCaption
         title={`RPM SLA Rev ${RPM_SLA_REVISION} · operational posture`}
-        why={`${RPM_SLA_TITLE} (${RPM_SLA_DATE}). Contract clocks are Business Hours only. RMM, Backup and EPP use industry measures — they are not in this contract.`}
+        why={`${RPM_SLA_TITLE} (${RPM_SLA_DATE}). Contract clocks are Business Hours only. Freshdesk tickets scored on Customer Incidents feed Layer A. RMM, Backup and EPP use industry measures — they are not in this contract.`}
       />
 
       <div className="rounded-xl border border-border bg-surface-2 px-3 py-2 text-[12px] leading-relaxed text-fg">

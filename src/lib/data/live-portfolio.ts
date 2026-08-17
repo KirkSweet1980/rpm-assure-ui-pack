@@ -1427,7 +1427,7 @@ ORDER BY TaskGroup, OperatorCode;
 `;
 
 const TASK_ITEM_SQL = `
-SELECT TOP 40
+SELECT TOP 200
   OperatorCode, TaskGroup, Description, ProgramName, TaskType, SequenceNumber
 FROM dbo.Syspro_TaskItem
 WHERE InstanceName = @instance
@@ -1514,7 +1514,7 @@ ORDER BY
 
 
 const FACT_INCIDENTS_SQL = `
-SELECT TOP 40
+SELECT TOP 200
   CAST(IncidentId AS nvarchar(36)) AS IncidentId,
   Title, Severity, Status, Priority,
   OpenedAt, FirstResponseAt, ResolvedAt,
@@ -1536,7 +1536,7 @@ ORDER BY
 
 /* Fallback if view not deployed yet */
 const FACT_INCIDENTS_FALLBACK_SQL = `
-SELECT TOP 40
+SELECT TOP 200
   CAST(IncidentId AS nvarchar(36)) AS IncidentId,
   Title, Severity, Status, Priority,
   OpenedAt, FirstResponseAt, ResolvedAt,
@@ -1651,7 +1651,7 @@ ORDER BY GroupCode, OperatorCode;
 `;
 
 const OPER_AMEND_SQL = `
-SELECT TOP 40 OperatorCode, AmendDate, AmendType, Detail, ChangedBy
+SELECT TOP 200 OperatorCode, AmendDate, AmendType, Detail, ChangedBy
 FROM dbo.Syspro_OperAmend
 WHERE InstanceName = @instance
   AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Syspro_OperAmend WHERE InstanceName = @instance)
@@ -5266,7 +5266,7 @@ WHERE CustomerCode = @code`);
 
     try {
       const um = await pool.request().query(`
-SELECT TOP 40 PartnerName, PartnerId, DeviceCount, LastSnapshotDate
+SELECT TOP 200 PartnerName, PartnerId, DeviceCount, LastSnapshotDate
 FROM dbo.vw_Cove_UnmappedPartners WITH (NOLOCK)
 ORDER BY DeviceCount DESC`);
       cove.unmapped = (um.recordset ?? []).map((r: any) => ({

@@ -180,5 +180,20 @@ if (Test-Path -LiteralPath $patchTbl) {
   if ($LASTEXITCODE -eq 0) { W Green 'Pulseway_DevicePatches OK' } else { W Yellow 'Pulseway_DevicePatches warned.' }
 }
 
+foreach ($fdRel in @(
+  'freshdesk\510_Ensure_Freshdesk_Tickets.sql',
+  'freshdesk\513_Sync_Freshdesk_To_Fact_Incident.sql'
+)) {
+  $fd = Join-Path (Split-Path $PSScriptRoot -Parent) $fdRel
+  if (-not (Test-Path -LiteralPath $fd)) { $fd = Join-Path 'C:\RPM-Assure\Sql' $fdRel }
+  if (-not (Test-Path -LiteralPath $fd)) { continue }
+  W Cyan ('--- ' + $fdRel + ' ---')
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $fd @extra
+  if ($LASTEXITCODE -eq 0) { W Green ($fdRel + ' OK') } else { W Yellow ($fdRel + ' warned.') }
+}
+
 Write-Host 'Agents, RequestSyncUtc, vendor maps, and pillar columns are in place.'
 Write-Host 'Hard-refresh Assure. Cloud Backup and EPP fill from stamped devices, not just the map lamp.'

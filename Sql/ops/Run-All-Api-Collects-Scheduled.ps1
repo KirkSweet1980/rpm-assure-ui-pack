@@ -1,5 +1,5 @@
 # Sequential API collect every 15 min (or on demand from the UI).
-# Pulseway + Cove + RPM EPP + Microsoft Graph. Soft-fail each leg.
+# Pulseway + Cove + RPM EPP + Microsoft Graph + Freshdesk. Soft-fail each leg.
 # Writes C:\RPM-Assure\Sql\ops\api-sync-status.json for the progress bars.
 param([string]$Root = "C:\RPM-Assure")
 $ErrorActionPreference = "Continue"
@@ -23,7 +23,8 @@ $legs = @(
   @{ Name = "Pulseway";    Label = "RMM";     Kind = "rmm";        Rel = "Sql\rmm\pulseway\Collect-Pulseway-To-RPMAssure.ps1"; Extra = @() },
   @{ Name = "Cove";        Label = "BACKUP";  Kind = "backup";     Rel = "Sql\cove\Collect-Cove-To-RPMAssure.ps1"; Extra = @() },
   @{ Name = "RPM EPP";     Label = "RPM EPP"; Kind = "epp";        Rel = "Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1"; Extra = @() },
-  @{ Name = "CspGraph";    Label = "CSP";     Kind = "licensing";  Rel = "Sql\csp\Run-Csp-Collect-All.ps1"; Extra = @() }
+  @{ Name = "CspGraph";    Label = "CSP";     Kind = "licensing";  Rel = "Sql\csp\Run-Csp-Collect-All.ps1"; Extra = @() },
+  @{ Name = "Freshdesk";   Label = "AMS";     Kind = "ams";        Rel = "Sql\freshdesk\Collect-Freshdesk-To-RPMAssure.ps1"; Extra = @() }
 )
 
 function W([string]$m) {

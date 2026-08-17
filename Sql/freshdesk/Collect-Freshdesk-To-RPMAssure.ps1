@@ -16,12 +16,13 @@ function Write-Log([string]$m) {
 
 $cfg = Join-Path $here 'Freshdesk.Config.ps1'
 if (-not (Test-Path -LiteralPath $cfg)) {
-  throw "Missing $cfg - copy Freshdesk.Config.example.ps1 and set Domain + ApiKey"
+  Write-Host 'SKIP Freshdesk - missing Freshdesk.Config.ps1'
+  exit 2
 }
 . $cfg
 
-if ([string]::IsNullOrWhiteSpace($FreshdeskDomain)) { throw 'FreshdeskDomain not set' }
-if ([string]::IsNullOrWhiteSpace($FreshdeskApiKey)) { throw 'FreshdeskApiKey not set' }
+if ([string]::IsNullOrWhiteSpace($FreshdeskDomain)) { Write-Host 'SKIP Freshdesk - domain not set'; exit 2 }
+if ([string]::IsNullOrWhiteSpace($FreshdeskApiKey)) { Write-Host 'SKIP Freshdesk - api key not set'; exit 2 }
 $FreshdeskDomain = $FreshdeskDomain.Trim() -replace '^https?://', '' -replace '/$', ''
 if (-not $FreshdeskSqlServer) { $FreshdeskSqlServer = '.\RPMREPORTS' }
 if (-not $FreshdeskSqlDatabase) { $FreshdeskSqlDatabase = 'RPMAssure_App' }
@@ -122,7 +123,6 @@ function Sql-Json($obj) {
 }
 
 $since = (Get-Date).ToUniversalTime().AddDays(-[int]$FreshdeskLookbackDays)
-$sinceDay = $since.ToString('yyyy-MM-dd')
 $all = New-Object System.Collections.Generic.List[object]
 $seen = @{}
 
@@ -324,4 +324,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Log ('=== Freshdesk collect done tickets=' + $all.Count + ' log=' + $log + ' ===')
-Write-Log 'Map companies: INSERT Dim_Freshdesk_CompanyMap (CompanyName, CustomerCode) then re-run.'
+
+$sync = Join-Path $here '513_Sync_Freshdesk_To_Fact_Incident.sql'
+if (Test-Path -LiteralPath $sync) {
+  Write-Log 'SQL 513 Fact_Incident sync'
+  & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $sync
+  if ($LASTEXITCODE -ne 0) { Write-Log ('513 warned exit=' + $LASTEXITCODE) }
+  else { Write-Log '513 Fact_Incident sync OK' }
+}

@@ -118,13 +118,13 @@ if (Test-Path -LiteralPath $agentSrc) {
   robocopy $agentSrc $agentDest /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
 
-foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway', 'Sql\cove')) {
+foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway', 'Sql\cove', 'Sql\freshdesk')) {
   $from = Join-Path $Pack $rel
   if (Test-Path -LiteralPath $from) {
     $to = Join-Path $Root $rel
     New-Item -ItemType Directory -Force -Path $to | Out-Null
     W Cyan ("--- Copy " + $rel + " from git ---")
-    robocopy $from $to /E /NFL /NDL /NJH /NJS /nc /ns /np /XF Pulseway.Config.ps1 Csp.Config.ps1 Csp.Config.*.ps1 | Out-Null
+    robocopy $from $to /E /NFL /NDL /NJH /NJS /nc /ns /np /XF Pulseway.Config.ps1 Csp.Config.ps1 Csp.Config.*.ps1 Freshdesk.Config.ps1 | Out-Null
   }
 }
 
@@ -180,13 +180,13 @@ if (Test-Path -LiteralPath $agentSrc) {
   robocopy $agentSrc $agentDest /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
 
-foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway', 'Sql\cove')) {
+foreach ($rel in @('Sql\ops', 'Sql\csp', 'Sql\rmm\pulseway', 'Sql\cove', 'Sql\freshdesk')) {
   $from = Join-Path $Pack $rel
   if (Test-Path -LiteralPath $from) {
     $to = Join-Path $Root $rel
     New-Item -ItemType Directory -Force -Path $to | Out-Null
     W Cyan ("--- Copy " + $rel + " from git ---")
-    robocopy $from $to /E /NFL /NDL /NJH /NJS /nc /ns /np /XF Pulseway.Config.ps1 Csp.Config.ps1 Csp.Config.*.ps1 | Out-Null
+    robocopy $from $to /E /NFL /NDL /NJH /NJS /nc /ns /np /XF Pulseway.Config.ps1 Csp.Config.ps1 Csp.Config.*.ps1 Freshdesk.Config.ps1 | Out-Null
   }
 }
 
@@ -244,16 +244,17 @@ if (Test-Path -LiteralPath $apiPack) {
       'Sql\cove',
       'Sql\rmm\pulseway',
       'Sql\bitdefender',
-      'Sql\csp'
+      'Sql\csp',
+      'Sql\freshdesk'
     )) {
     $from = Join-Path $Pack $rel
     $to = Join-Path $Root $rel
     if (Test-Path -LiteralPath $from) {
       New-Item -ItemType Directory -Force -Path $to | Out-Null
-      robocopy $from $to /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /XF '*.Config.ps1' 'Cove.Config.ps1' 'Pulseway.Config.ps1' | Out-Null
+      robocopy $from $to /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /XF '*.Config.ps1' 'Cove.Config.ps1' 'Pulseway.Config.ps1' 'Freshdesk.Config.ps1' | Out-Null
     }
   }
-  W Cyan '--- API collect every 15 min (Pulseway + Cove + Bitdefender + CSP) ---'
+  W Cyan '--- API collect every 15 min (Pulseway + Cove + Bitdefender + CSP + Freshdesk) ---'
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $apiSched
 }
 

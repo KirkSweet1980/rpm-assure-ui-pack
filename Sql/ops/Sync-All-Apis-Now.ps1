@@ -44,6 +44,7 @@ Run-Leg 'Pulseway'    (Join-Path $Root 'Sql\rmm\pulseway\Collect-Pulseway-To-RPM
 Run-Leg 'Cove'        (Join-Path $Root 'Sql\cove\Collect-Cove-To-RPMAssure.ps1')
 Run-Leg 'RpmEpp' (Join-Path $Root 'Sql\bitdefender\Collect-Bitdefender-To-RPMAssure.ps1')
 Run-Leg 'CspGraph'    (Join-Path $Root 'Sql\csp\Collect-Csp-Graph-To-RPMAssure.ps1') @('-WindowsAuth','-SkipSchema')
+Run-Leg 'Freshdesk'   (Join-Path $Root 'Sql\freshdesk\Collect-Freshdesk-To-RPMAssure.ps1')
 
 W ("DONE log=" + $log)
 Write-Host 'Hard-refresh Assure after this finishes.' -ForegroundColor Green

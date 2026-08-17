@@ -38,6 +38,6 @@ if ($LASTEXITCODE -ne 0) { throw "schtasks create failed exit=$LASTEXITCODE - ru
 
 Write-Host "INSTALLED $taskName every $Minutes min"
 Write-Host "  Runner $runner"
-Write-Host "  Legs: Pulseway, Cove (cloud backup stays), Bitdefender, Microsoft Graph"
+Write-Host "  Legs: Pulseway, Cove, Bitdefender, Microsoft Graph, Freshdesk"
 if ($RunNow) { Start-ScheduledTask -TaskName $taskName }
 Get-ScheduledTask -TaskName $taskName | Format-Table TaskName, State -AutoSize
