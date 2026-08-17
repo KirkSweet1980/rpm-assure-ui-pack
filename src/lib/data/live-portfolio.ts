@@ -3658,6 +3658,7 @@ ORDER BY
         const m3 = pv.match(/^\d+\.\d+\.(\d+)$/);
         if (m4) build = m4[1];
         else if (m3) build = m3[1];
+        if (!build) build = pv;
       }
       sysproVersion = {
         productName: sysproVersion?.productName ?? license.productName ?? null,
@@ -3670,6 +3671,29 @@ ORDER BY
         customerName: sysproVersion?.customerName ?? license.customerName ?? null,
         serverName: sysproVersion?.serverName ?? instanceName ?? null,
         importDate: sysproVersion?.importDate ?? license.importDate ?? null,
+      };
+    }
+
+    if (sysproVersion && !sysproVersion.buildNumber && sysproVersion.productVersion) {
+      sysproVersion = { ...sysproVersion, buildNumber: sysproVersion.productVersion };
+    }
+
+    const companyDbs = new Set<string>();
+    for (const r of sqlHealthRows) {
+      if (r.companyDb) companyDbs.add(r.companyDb);
+    }
+    if ((!sysproVersion?.companyCount || sysproVersion.companyCount <= 0) && companyDbs.size > 0) {
+      sysproVersion = {
+        productName: sysproVersion?.productName ?? license?.productName ?? "SYSPRO",
+        productVersion: sysproVersion?.productVersion ?? license?.productVersion ?? null,
+        buildNumber: sysproVersion?.buildNumber ?? null,
+        licenseType: sysproVersion?.licenseType ?? license?.licenseType ?? null,
+        users: sysproVersion?.users ?? license?.users ?? null,
+        companyCount: companyDbs.size,
+        licenseExpiry: sysproVersion?.licenseExpiry ?? license?.licenseExpiry ?? null,
+        customerName: sysproVersion?.customerName ?? license?.customerName ?? null,
+        serverName: sysproVersion?.serverName ?? instanceName ?? null,
+        importDate: sysproVersion?.importDate ?? license?.importDate ?? null,
       };
     }
 

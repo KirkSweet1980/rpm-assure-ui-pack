@@ -30,6 +30,7 @@ import {
   DEFAULT_ECO_WIDGET_LAYOUT,
   ecoWidgetMeta,
   readEcoWidgetLayout,
+  visibleEcoWidgets,
   type EcoWidgetId,
   type EcoWidgetLayout,
 } from "@/lib/eco-widgets";
@@ -199,15 +200,18 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { k: "M365", at: customer.cspLastImportAt, on: Boolean(cover.csp) },
   ];
 
+  const shown = useMemo(() => new Set(visibleEcoWidgets(layout)), [layout]);
+
   function wgt(id: EcoWidgetId) {
     const meta = ecoWidgetMeta(id);
     return {
       "data-span": meta.span,
-      style: {
-        order: layout.order.indexOf(id),
-        display: layout.hidden.includes(id) ? "none" : undefined,
-      } as CSSProperties,
+      style: { order: layout.order.indexOf(id) } as CSSProperties,
     };
+  }
+
+  function show(id: EcoWidgetId) {
+    return shown.has(id);
   }
 
   const ragTone =
@@ -237,6 +241,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
 
       <div className="rpma-eco-board">
+        {show("hero") ? (
         <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3" {...wgt("hero")}>
           <RagBadge rag={tenantRag} title={live.pillars.eco.hint || customer.healthSummary} />
           <div className="min-w-0">
@@ -263,7 +268,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             />
           </div>
         </div>
+        ) : null}
 
+        {show("cover") ? (
         <Pane title="Service cover" tip="Green chip = live collect in scope. Grey = No Cover (not scored)." {...wgt("cover")}>
           <div className="flex flex-wrap gap-1.5">
             {serviceBars.map((s) => (
@@ -277,7 +284,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             ))}
           </div>
         </Pane>
+        ) : null}
 
+        {show("attention") ? (
         <Pane title="What needs attention" tip="Open signals across SYSPRO and AMS." {...wgt("attention")}>
           <div className="grid grid-cols-2 gap-1.5">
             {signalBars.map((e) => (
@@ -285,7 +294,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             ))}
           </div>
         </Pane>
+        ) : null}
 
+        {show("fleet") ? (
         <Pane title={fleetTitle} {...wgt("fleet")}>
           <div className="grid grid-cols-2 gap-1.5">
             {fleetPie.map((e) => (
@@ -293,7 +304,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             ))}
           </div>
         </Pane>
+        ) : null}
 
+        {show("sla") ? (
         <Pane title="SLA by service" tip="SYSPRO, RMM, Backup and EPP only. Microsoft CSP is posture — never scored." {...wgt("sla")}>
           <ul className="space-y-2">
             {sla.pillars.length ? (
@@ -313,7 +326,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <p className="mt-2 text-[11px] text-muted">Overall {Math.round(sla.overallPct)}%</p>
           ) : null}
         </Pane>
+        ) : null}
 
+        {show("rmm") ? (
         <Pane title="RPM RMM" tip="RPM RMM agents on the latest snapshot." covered={isPillarCovered(cover, "rmm")} {...wgt("rmm")}>
           {isPillarCovered(cover, "rmm") ? (
             <div className="grid grid-cols-2 gap-2">
@@ -333,7 +348,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <p className="text-[12px] text-muted">No cover — RPM RMM is not in scope.</p>
           )}
         </Pane>
+        ) : null}
 
+        {show("backup") ? (
         <Pane title="Cloud Backup" tip="Cloud Backup devices vs 24h RPO." covered={isPillarCovered(cover, "cove")} {...wgt("backup")}>
           {isPillarCovered(cover, "cove") ? (
             <div className="grid grid-cols-2 gap-2">
@@ -344,7 +361,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <p className="text-[12px] text-muted">No cover — Cloud Backup is not in scope.</p>
           )}
         </Pane>
+        ) : null}
 
+        {show("epp") ? (
         <Pane title="RPM EndPoint Protection" tip="Protected endpoints, incidents, and quarantine." covered={isPillarCovered(cover, "epp")} {...wgt("epp")}>
           {isPillarCovered(cover, "epp") ? (
             <div className="grid grid-cols-2 gap-2">
@@ -359,7 +378,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <p className="text-[12px] text-muted">No cover — RPM EndPoint Protection is not in scope.</p>
           )}
         </Pane>
+        ) : null}
 
+        {show("csp") ? (
         <Pane title="Microsoft CSP" tip="Tenant posture from Graph collect. Visibility only — not scored." covered={isPillarCovered(cover, "csp")} {...wgt("csp")}>
           {isPillarCovered(cover, "csp") ? (
             <div className="grid grid-cols-2 gap-2">
@@ -384,8 +405,10 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <p className="text-[12px] text-muted">No cover — Microsoft CSP is not in scope.</p>
           )}
         </Pane>
+        ) : null}
 
-        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={true} data-span={4}>
+        {show("tickets") ? (
+        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={true} {...wgt("tickets")}>
           {tix.total > 0 ? (
             <div className="grid grid-cols-3 gap-2">
               <StatCard label="Open" value={tix.open} tone={tix.open > 0 ? "amber" : "green"} />
@@ -396,8 +419,10 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <p className="text-[12px] text-muted">No tickets exist for this customer.</p>
           )}
         </Pane>
+        ) : null}
 
-        {dtrBars.length > 0 ? (
+        {show("finsight") ? (
+        dtrBars.length > 0 ? (
           <Pane title="FinSight · out of balance" {...wgt("finsight")}>
             <div className="grid grid-cols-2 gap-1.5">
               {dtrBars.slice(0, 6).map((e) => (
@@ -409,8 +434,14 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           <Pane title="FinSight · out of balance" {...wgt("finsight")}>
             <p className="text-[12px] text-muted">No out-of-balance modules on the latest collect.</p>
           </Pane>
-        )}
+        ) : (
+          <Pane title="FinSight · out of balance" {...wgt("finsight")}>
+            <p className="text-[12px] text-muted">No out-of-balance modules on the latest collect.</p>
+          </Pane>
+        )
+        ) : null}
 
+        {show("jumps") ? (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" {...wgt("jumps")}>
           {[
             { label: "Incidents", href: `${base}/tickets/open`, n: tix.total, hint: `${tix.open} open · Freshdesk` },
@@ -432,7 +463,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             </SpaLink>
           ))}
         </div>
+        ) : null}
 
+        {show("incidents") ? (
         <Pane title="Tickets (30d)" {...wgt("incidents")}>
           {incidents.length === 0 ? (
             <p className="text-[12px] text-muted">No Freshdesk tickets mapped to this customer yet.</p>
@@ -450,7 +483,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             </ul>
           )}
         </Pane>
+        ) : null}
 
+        {show("risks") ? (
         <Pane title="Open risks" {...wgt("risks")}>
           {openRisks.length === 0 ? (
             <p className="text-[12px] text-muted">No open risks.</p>
@@ -465,7 +500,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             </ul>
           )}
         </Pane>
+        ) : null}
 
+        {show("freshness") ? (
         <Pane title="Data freshness" tip="Age of the last collect per service." {...wgt("freshness")}>
           <ul className="space-y-1.5">
             {freshness.map((f) => (
@@ -476,19 +513,25 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             ))}
           </ul>
         </Pane>
+        ) : null}
 
+        {show("license") ? (
         <Pane title="SYSPRO licence" {...wgt("license")}>
           <p className="text-[13px] font-semibold text-fg">{license?.productName ?? "—"}</p>
           <p className="mt-1 text-[12px] text-muted">
             {license?.licenseExpiry ? `Expires ${formatSastDateTime(license.licenseExpiry)}` : "No licence row"}
           </p>
         </Pane>
+        ) : null}
 
+        {show("dayend") ? (
         <Pane title="Day End" {...wgt("dayend")}>
           <p className="text-[13px] font-semibold text-fg">{dayEnd?.label ?? "—"}</p>
           <p className="mt-1 text-[12px] text-muted">{dayEnd?.detail ?? "No day-end snapshot"}</p>
         </Pane>
+        ) : null}
 
+        {show("jobs") ? (
         <Pane title="Job logging" {...wgt("jobs")}>
           <StatCard
             label="Errors"
@@ -505,7 +548,9 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             </ul>
           ) : null}
         </Pane>
+        ) : null}
 
+        {show("patch") ? (
         <Pane title="Server patch" {...wgt("patch")}>
           {isPillarCovered(cover, "rmm") ? (
             <SpaLink href={`${base}/rmm/patch`} className="block">
@@ -523,21 +568,27 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             <p className="text-[12px] text-muted">No cover — RMM is not in scope.</p>
           )}
         </Pane>
+        ) : null}
 
+        {show("operators") ? (
         <Pane title="SYSPRO operators" {...wgt("operators")}>
           <div className="grid grid-cols-2 gap-2">
             <StatCard label="Active" value={customer.activeUserCount} tone={customer.activeUserCount > 0 ? "green" : "amber"} />
             <StatCard label="Total" value={Math.max(customer.operatorCount, (operators ?? []).length)} />
           </div>
         </Pane>
+        ) : null}
 
+        {show("hotfixes") ? (
         <Pane title="SYSPRO hotfixes" {...wgt("hotfixes")}>
           <StatCard label="Applied" value={(sysproHotfixes ?? []).length} />
           <p className="mt-1 text-[12px] text-muted">
             {(sysproHotfixes ?? []).slice(0, 2).map((h) => h.hotfixName || h.hotfixCode).filter(Boolean).join(" · ") || "No hotfix rows"}
           </p>
         </Pane>
+        ) : null}
 
+        {show("sqlhealth") ? (
         <Pane title="SQL health" {...wgt("sqlhealth")}>
           <div className="grid grid-cols-2 gap-2">
             <StatCard label="Checks" value={extraSummary?.sqlHealthCount ?? 0} />
@@ -548,6 +599,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             />
           </div>
         </Pane>
+        ) : null}
       </div>
     </div>
   );

@@ -3517,6 +3517,27 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
   }
   const { license, sysproVersion } = data;
   const code = data.customer.customerCode;
+  const build =
+    (sysproVersion?.buildNumber && sysproVersion.buildNumber !== "0"
+      ? sysproVersion.buildNumber
+      : null) ||
+    data.customer.sysproBuild ||
+    license?.productVersion ||
+    sysproVersion?.productVersion ||
+    "—";
+  const companyDbs = new Set<string>();
+  for (const r of data.sqlHealthRows ?? []) {
+    if (r.companyDb) companyDbs.add(r.companyDb);
+  }
+  for (const r of data.dtrDetailLines ?? []) {
+    if (r.companyDb) companyDbs.add(r.companyDb);
+  }
+  const companies =
+    (sysproVersion?.companyCount && sysproVersion.companyCount > 0
+      ? sysproVersion.companyCount
+      : null) ??
+    (license?.companyCount && license.companyCount > 0 ? license.companyCount : null) ??
+    (companyDbs.size > 0 ? companyDbs.size : null);
 
   return (
     <div className="space-y-3">
@@ -3527,12 +3548,9 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         <StatCard label="Product" value={license?.productName ?? sysproVersion?.productName ?? "—"} />
         <StatCard label="Version" value={license?.productVersion ?? sysproVersion?.productVersion ?? "—"} />
-        <StatCard label="Build" value={sysproVersion?.buildNumber ?? "—"} />
+        <StatCard label="Build" value={build} />
         <StatCard label="Users" value={license?.users ?? sysproVersion?.users ?? "—"} />
-        <StatCard
-          label="Companies"
-          value={sysproVersion?.companyCount ?? "—"}
-        />
+        <StatCard label="Companies" value={companies ?? "—"} />
       </div>
       {sysproVersion || license ? (
         <Card>
@@ -3550,7 +3568,7 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
             </p>
             <p>
               <span className="text-subtle">Build / DB </span>
-              {sysproVersion?.buildNumber ?? "—"}
+              {build}
             </p>
             <p>
               <span className="text-subtle">License type </span>
@@ -3562,7 +3580,7 @@ export function LicenseSection({ data }: { data: CustomerDetailPayload }) {
             </p>
             <p>
               <span className="text-subtle">Companies </span>
-              {sysproVersion?.companyCount ?? "—"}
+              {companies ?? "—"}
             </p>
             <p>
               <span className="text-subtle">Server </span>

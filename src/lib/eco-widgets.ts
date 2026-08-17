@@ -8,6 +8,7 @@ export type EcoWidgetId =
   | "backup"
   | "epp"
   | "csp"
+  | "tickets"
   | "finsight"
   | "jumps"
   | "incidents"
@@ -38,6 +39,7 @@ export const ECO_WIDGETS: EcoWidgetMeta[] = [
   { id: "backup", label: "Cloud Backup", span: 4, hint: "Cove healthy vs failed or stale" },
   { id: "epp", label: "RPM EndPoint Protection", span: 4, hint: "Managed endpoints and infections" },
   { id: "csp", label: "Microsoft CSP", span: 4, hint: "Secure Score, MFA, seats" },
+  { id: "tickets", label: "Customer Tickets", span: 4, hint: "Open / resolved / closed" },
   { id: "finsight", label: "FinSight Close", span: 12, hint: "Out-of-balance modules" },
   { id: "jumps", label: "Assurance Shortcuts", span: 12, hint: "Incidents, risks, SLA, issues" },
   { id: "incidents", label: "Open Incidents", span: 6, hint: "Latest open / major incidents" },
