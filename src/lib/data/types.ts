@@ -767,6 +767,7 @@ export type ExcoCustomerBoard = {
   slaOverallPct?: number | null;
   /** Pillar SLA breakdown (SYSPRO/RMM/Backup/EPP — never M365) */
   pillarSla?: ExcoPillarSla[];
+  slaKpis?: Partial<Record<"syspro" | "rmm" | "cove" | "epp" | "csp" | "tickets", number>>;
   availabilityPct: number | null;
   licenseExpiry: string | null;
   licenseProduct: string | null;

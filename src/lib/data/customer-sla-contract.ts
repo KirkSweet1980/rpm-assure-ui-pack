@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getPool, getLastPoolError, sql } from "@/lib/data/sql-pool";
 import { INDUSTRY_MEASURES, type IndustryPillarKey } from "@/lib/data/sla-metrics";
+import type { CustomerCover } from "@/lib/data/cover";
+import type { SlaKpiOverrides } from "@/lib/data/service-sla";
 
 export type SlaContractStatus = "provisional" | "signed";
 
@@ -185,3 +187,44 @@ WHEN NOT MATCHED THEN INSERT
       return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
     }
   });
+
+export function kpisOnCover(
+  cover: CustomerCover,
+  kpis: Partial<Record<IndustryPillarKey, number>> | undefined,
+): SlaKpiOverrides {
+  const out: SlaKpiOverrides = {};
+  if (!kpis) return out;
+  const on: Record<IndustryPillarKey, boolean> = {
+    syspro: Boolean(cover.syspro),
+    rmm: Boolean(cover.rmm),
+    cove: Boolean(cover.cove),
+    epp: Boolean(cover.epp),
+    csp: Boolean(cover.csp),
+    tickets: true,
+  };
+  for (const k of Object.keys(on) as IndustryPillarKey[]) {
+    if (!on[k]) continue;
+    const n = Number(kpis[k]);
+    if (Number.isFinite(n) && n > 0 && n <= 100) out[k] = Math.round(n * 10) / 10;
+  }
+  return out;
+}
+
+export async function loadSlaKpiMap(): Promise<Record<string, SlaKpiOverrides>> {
+  const map: Record<string, SlaKpiOverrides> = {};
+  const pool = await getPool();
+  if (!pool) return map;
+  try {
+    const r = await pool.request().query(`
+SELECT CustomerCode, KpiJson FROM dbo.Dim_Customer_SlaContract WITH (NOLOCK)
+`);
+    for (const row of r.recordset as { CustomerCode: string; KpiJson: string | null }[]) {
+      const code = String(row.CustomerCode ?? "").toUpperCase();
+      if (!code) continue;
+      map[code] = parseKpis(row.KpiJson);
+    }
+  } catch {
+    /* empty */
+  }
+  return map;
+}

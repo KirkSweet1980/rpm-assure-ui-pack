@@ -61,6 +61,7 @@ import { worstLiveRag } from "./live-status";
 import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } from "./day-end";
 import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfEvidence } from "./cover";
 import { buildExcoPillarSla, hasSlaCover } from "./exco-sla-stats";
+import { loadSlaKpiMap, kpisOnCover } from "./customer-sla-contract";
 import { scoreTicketSet } from "./ticket-sla";
 import { auditPortfolioRows } from "./pillar-audit";
 import { getPool, sql } from "./sql-pool";
@@ -2753,6 +2754,8 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
     );
   }
 
+  const slaKpiMap = await loadSlaKpiMap();
+
   const boards: ExcoCustomerBoard[] = rows.map((row) => {
     const e = enrichMap.get(row.customerCode.toUpperCase());
     const instKey = (row.sqlInstanceName || e?.SqlInstanceName || "")
@@ -2993,7 +2996,9 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
         ticketCount: row2?.ticketCount ?? 0,
         ticketResponsePct: row2?.ticketResponsePct ?? null,
         ticketResolvePct: row2?.ticketResolvePct ?? null,
+        kpis: kpisOnCover(cov, slaKpiMap[b.customerCode.toUpperCase()]),
       });
+      b.slaKpis = slaKpiMap[b.customerCode.toUpperCase()];
       b.pillarSla = sla.pillars;
       b.slaOverallPct = sla.overallPct;
       b.slaCompliancePct = hasSlaCover(cov) ? sla.overallPct : null;

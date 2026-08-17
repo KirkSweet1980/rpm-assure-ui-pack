@@ -684,6 +684,7 @@ function ExcoInsightPage() {
           eppDeviceCount: row?.eppDeviceCount ?? 0,
           eppManagedCount: row?.eppManagedCount ?? null,
           healthRag: b.healthRag,
+          kpis: b.slaKpis,
         });
         const byKey = Object.fromEntries(
           sla.pillars.map((p) => [p.pillar, p]),

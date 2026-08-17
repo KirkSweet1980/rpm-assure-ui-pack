@@ -8,6 +8,7 @@ import {
   type CustomerSlaContract,
 } from "@/lib/data/customer-sla-contract";
 import { INDUSTRY_MEASURES, type IndustryPillarKey } from "@/lib/data/sla-metrics";
+import type { CustomerCover } from "@/lib/data/cover";
 import { cn } from "@/lib/utils";
 
 const PILLARS: IndustryPillarKey[] = ["syspro", "rmm", "cove", "epp", "tickets", "csp"];
@@ -52,7 +53,12 @@ async function fileToStored(file: File): Promise<StoredDoc> {
   };
 }
 
-export function SignedSlaPanel({ code }: { code: string }) {
+export function SignedSlaPanel({ code, cover }: { code: string; cover?: CustomerCover }) {
+  const pillars = PILLARS.filter((p) => {
+    if (p === "tickets") return true;
+    if (!cover) return true;
+    return Boolean(cover[p]);
+  });
   const [row, setRow] = useState<CustomerSlaContract>(() => emptySlaContract(code));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -103,11 +109,12 @@ export function SignedSlaPanel({ code }: { code: string }) {
     setRow({ ...emptySlaContract(code), ...next, kpis: { ...defaultSlaKpis(), ...next.kpis } });
     setMsg(
       kind === "sign"
-        ? "Signed SLA on file. Custom targets are the ones you set below."
+        ? "Signed SLA on file. Custom targets apply to this customer’s covered services only."
         : kind === "custom"
-          ? "Custom SLA saved for this customer."
+          ? "Custom SLA saved. Targets now apply to this customer’s covered services."
           : "Draft saved.",
     );
+    window.dispatchEvent(new CustomEvent("rpma-sla-kpis", { detail: { code } }));
   }
 
   async function importFile(f: File) {
@@ -194,7 +201,8 @@ export function SignedSlaPanel({ code }: { code: string }) {
         <CardHead>Custom SLA</CardHead>
         <CardContent className="space-y-3">
           <p className="text-[12px] text-muted">
-            Create this customer’s own targets. Platform defaults stay until you change a cell and save.
+            Applies only to this customer, and only to services on Cover. Uncovered services stay on platform defaults
+            and are not scored.
           </p>
           <label className="grid max-w-md gap-1 text-[12px]">
             <span className="font-semibold">Custom SLA name</span>
@@ -215,7 +223,7 @@ export function SignedSlaPanel({ code }: { code: string }) {
               </tr>
             </thead>
             <tbody>
-              {PILLARS.map((p) => {
+              {pillars.map((p) => {
                 const m = INDUSTRY_MEASURES[p];
                 return (
                   <tr key={p} className="border-t border-border">

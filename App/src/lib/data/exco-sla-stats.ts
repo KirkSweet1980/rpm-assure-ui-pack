@@ -32,6 +32,8 @@ export type ExcoSlaInput = {
   ticketCount?: number | null;
   ticketResponsePct?: number | null;
   ticketResolvePct?: number | null;
+  /** Custom SLA % for this customer; only used on covered pillars */
+  kpis?: Partial<Record<"syspro" | "rmm" | "cove" | "epp" | "csp" | "tickets", number>>;
 };
 
 function clampPct(n: number): number {
@@ -181,7 +183,10 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
   overallPct: number | null;
 } {
   const cov = input.cover;
+  const k = input.kpis ?? {};
   const pillars: ExcoPillarSla[] = [];
+  const tgt = (pillar: keyof typeof INDUSTRY_MEASURES, fallback: number) =>
+    k[pillar] != null && Number.isFinite(k[pillar]) ? Number(k[pillar]) : fallback;
 
   // SYSPRO
   if (cov.syspro) {
@@ -192,7 +197,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: true,
       pct: s.pct,
       note: s.note,
-      industryTargetPct: 100,
+      industryTargetPct: tgt("syspro", 100),
       industryMetric: "AMS health (jobs, FinSight, collect) — Section 4, not ticket clocks",
     });
   } else {
@@ -202,7 +207,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: false,
       pct: null,
       note: "No Cover",
-      industryTargetPct: 100,
+      industryTargetPct: tgt("syspro", 100),
       industryMetric: "AMS health (jobs, FinSight, collect) — Section 4, not ticket clocks",
     });
   }
@@ -216,7 +221,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: true,
       pct: s.pct,
       note: s.note,
-      industryTargetPct: INDUSTRY_MEASURES.rmm.targetPct,
+      industryTargetPct: tgt("rmm", INDUSTRY_MEASURES.rmm.targetPct),
       industryMetric: INDUSTRY_MEASURES.rmm.targetLabel,
     });
   } else {
@@ -226,7 +231,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: false,
       pct: null,
       note: "No Cover",
-      industryTargetPct: INDUSTRY_MEASURES.rmm.targetPct,
+      industryTargetPct: tgt("rmm", INDUSTRY_MEASURES.rmm.targetPct),
       industryMetric: INDUSTRY_MEASURES.rmm.targetLabel,
     });
   }
@@ -240,7 +245,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: true,
       pct: s.pct,
       note: s.note,
-      industryTargetPct: INDUSTRY_MEASURES.cove.targetPct,
+      industryTargetPct: tgt("cove", INDUSTRY_MEASURES.cove.targetPct),
       industryMetric: INDUSTRY_MEASURES.cove.targetLabel,
     });
   } else {
@@ -250,7 +255,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: false,
       pct: null,
       note: "No Cover",
-      industryTargetPct: INDUSTRY_MEASURES.cove.targetPct,
+      industryTargetPct: tgt("cove", INDUSTRY_MEASURES.cove.targetPct),
       industryMetric: INDUSTRY_MEASURES.cove.targetLabel,
     });
   }
@@ -264,7 +269,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: true,
       pct: s.pct,
       note: s.note,
-      industryTargetPct: INDUSTRY_MEASURES.epp.targetPct,
+      industryTargetPct: tgt("epp", INDUSTRY_MEASURES.epp.targetPct),
       industryMetric: INDUSTRY_MEASURES.epp.targetLabel,
     });
   } else {
@@ -274,7 +279,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: false,
       pct: null,
       note: "No Cover",
-      industryTargetPct: INDUSTRY_MEASURES.epp.targetPct,
+      industryTargetPct: tgt("epp", INDUSTRY_MEASURES.epp.targetPct),
       industryMetric: INDUSTRY_MEASURES.epp.targetLabel,
     });
   }
@@ -288,7 +293,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: true,
       pct: s.pct,
       note: s.note,
-      industryTargetPct: 90,
+      industryTargetPct: tgt("tickets", 90),
       industryMetric: "Response + restore met % vs Dim_SlaPolicy (90% monthly target)",
     });
   } else {
@@ -298,7 +303,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
       covered: false,
       pct: null,
       note: "No Cover",
-      industryTargetPct: 90,
+      industryTargetPct: tgt("tickets", 90),
       industryMetric: "Response + restore met % vs Dim_SlaPolicy (90% monthly target)",
     });
   }
