@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.7.2"
+$AgentVersion = "2.8.0"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -373,6 +373,7 @@ WHERE HostName = $(Sql-Lit $HostName)
   }
   $pack = "C:\RPM-Assure\deploy\ui-pack"
   $packVerFile = Join-Path $pack "Sql\agent\VERSION"
+  if (-not (Test-Path $packVerFile)) { $packVerFile = Join-Path $pack "VERSION" }
   $fetchStamp = Join-Path $LogDir "last_pack_fetch.txt"
   $fetchDue = $true
   if (Test-Path $fetchStamp) {
@@ -381,12 +382,29 @@ WHERE HostName = $(Sql-Lit $HostName)
       if (((Get-Date).ToUniversalTime() - $lf.ToUniversalTime()).TotalMinutes -lt 360) { $fetchDue = $false }
     } catch {}
   }
-  $gitExe = "C:\Program Files\Git\cmd\git.exe"
-  if (($needUp -or $fetchDue) -and (Test-Path $gitExe) -and (Test-Path (Join-Path $pack ".git"))) {
-    W "pack fetch (needUp=$needUp fetchDue=$fetchDue)"
-    & $gitExe -C $pack fetch --all --prune 2>$null | Out-Null
-    & $gitExe -C $pack reset --hard origin/main 2>$null | Out-Null
-    [IO.File]::WriteAllText($fetchStamp, (Get-Date).ToUniversalTime().ToString("o"))
+  $httpsBase = "https://assure.rpmresources.co.za"
+  if (Get-Command Get-RpmaAssureUrl -ErrorAction SilentlyContinue) {
+    try { $httpsBase = Get-RpmaAssureUrl } catch {}
+  }
+  if ($needUp -or $fetchDue) {
+    W "pack fetch HTTPS (needUp=$needUp fetchDue=$fetchDue)"
+    try {
+      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+      $zip = Join-Path $env:TEMP "rpm-assure-agent.zip"
+      Invoke-WebRequest -UseBasicParsing -TimeoutSec 180 -Uri ($httpsBase.TrimEnd('/') + "/downloads/rpm-assure-agent.zip") -OutFile $zip
+      if ((Test-Path $zip) -and (Get-Item $zip).Length -gt 1000) {
+        if (Test-Path $pack) { Remove-Item $pack -Recurse -Force }
+        New-Item -ItemType Directory -Force -Path $pack | Out-Null
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [IO.Compression.ZipFile]::ExtractToDirectory($zip, $pack)
+        [IO.File]::WriteAllText($fetchStamp, (Get-Date).ToUniversalTime().ToString("o"))
+        W "pack fetch HTTPS ok"
+      } else {
+        W "WARN pack fetch empty"
+      }
+    } catch {
+      W ("WARN pack fetch HTTPS " + $_.Exception.Message)
+    }
   }
   if (-not $needUp -and (Test-Path $packVerFile)) {
     $pv = (Get-Content $packVerFile -Raw).Trim()

@@ -1,21 +1,16 @@
 # Deploy-Assure-Agent.ps1
 # No wizard. Administrator PowerShell on the customer host.
-# Git clone/pull, install RPMAssure-Edge, HTTPS heartbeat (Let's Encrypt).
+# Pulls the agent pack from Assure HTTPS only. No Git. No GitHub.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\Deploy-Assure-Agent.ps1
-#   (prompts for customer code and ingest secret)
+#   (prompts for customer code)
 #
-# Or pass them:
-#   ...\Deploy-Assure-Agent.ps1 -CustomerCode AHIC -AgentSecret '...'
-#
-# Optional: -CentralSqlPassword for SYSPRO collect / SQL fallback.
-# Re-run anytime to pull git and refresh the agent (keeps Agent.Config.ps1 and secrets).
+# If the customer does not exist on Assure, you are asked which services to enable.
 
 param(
   [string]$CustomerCode = '',
   [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
-  [string]$RepoUrl = 'https://github.com/KirkSweet1980/rpm-assure-ui-pack.git',
   [string]$Root = 'C:\RPM-Assure',
   [string]$RoleTags = 'syspro',
   [string]$CentralDataSource = '102.222.21.220,14333',
@@ -41,58 +36,29 @@ $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 if (-not $IsAdmin) { throw 'Run as Administrator.' }
 
 Write-Host '========================================'
-Write-Host ' RPM Assure Edge - deploy (no wizard)'
+Write-Host ' RPM Assure Edge - deploy (Assure HTTPS)'
 Write-Host '========================================'
 Write-Host ("Customer  " + $CustomerCode)
 Write-Host ("HTTPS     " + $AppHttpsUrl)
-Write-Host ("Git       " + $RepoUrl)
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-function Find-Git {
-  $g = Get-Command git -ErrorAction SilentlyContinue
-  if ($g) { return $g.Source }
-  foreach ($p in @('C:\Program Files\Git\cmd\git.exe', 'C:\Program Files (x86)\Git\cmd\git.exe')) {
-    if (Test-Path $p) { return $p }
-  }
-  return $null
-}
-
-function Install-GitIfMissing {
-  $git = Find-Git
-  if ($git) { return $git }
-  Write-Host 'Installing Git for Windows (silent)...'
-  $tmp = Join-Path $env:TEMP 'Git-64-bit.exe'
-  Invoke-WebRequest -UseBasicParsing -TimeoutSec 180 `
-    -Uri 'https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe' `
-    -OutFile $tmp
-  $p = Start-Process -FilePath $tmp -ArgumentList '/VERYSILENT','/NORESTART','/NOCANCEL','/SP-' -Wait -PassThru
-  if ($p.ExitCode -ne 0) { throw ('Git installer exit ' + $p.ExitCode) }
-  $git = Find-Git
-  if (-not $git) { throw 'Git installed but git.exe not found' }
-  return $git
-}
-
-$git = Install-GitIfMissing
-Write-Host ('git = ' + $git)
-
 $Pack = Join-Path $Root 'deploy\ui-pack'
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
-if (Test-Path (Join-Path $Pack '.git')) {
-  Write-Host ('git pull ' + $Pack)
-  & $git -C $Pack -c core.longpaths=true fetch --all --prune
-  if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
-  & $git -C $Pack -c core.longpaths=true reset --hard origin/main
-  if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
-} else {
-  if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
-  Write-Host ('git clone ' + $RepoUrl)
-  & $git -c core.longpaths=true clone --depth 1 --branch main $RepoUrl $Pack
-  if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }
-}
+$zip = Join-Path $env:TEMP 'rpm-assure-agent.zip'
+$base = $AppHttpsUrl.TrimEnd('/')
+Write-Host ('GET ' + $base + '/downloads/rpm-assure-agent.zip')
+Invoke-WebRequest -UseBasicParsing -TimeoutSec 180 -Uri ($base + '/downloads/rpm-assure-agent.zip') -OutFile $zip
+if (-not (Test-Path $zip) -or (Get-Item $zip).Length -lt 1000) { throw 'Agent pack download failed or empty. Publish the pack on Assure first.' }
+if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $Pack | Out-Null
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[IO.Compression.ZipFile]::ExtractToDirectory($zip, $Pack)
+Write-Host ('Unpacked pack to ' + $Pack)
 
 $src = Join-Path $Pack 'Sql\agent'
-if (-not (Test-Path (Join-Path $src 'RpmAssure-Agent.ps1'))) { throw ('Pack missing Sql\agent: ' + $src) }
+if (-not (Test-Path (Join-Path $src 'RpmAssure-Agent.ps1'))) { $src = Join-Path $Pack 'sql\agent' }
+if (-not (Test-Path (Join-Path $src 'RpmAssure-Agent.ps1'))) { throw ('Pack missing Sql\agent after unzip: ' + $Pack) }
 
 $AgentRoot = Join-Path $Root 'Agent'
 $SqlRoot = Join-Path $Root 'Sql'

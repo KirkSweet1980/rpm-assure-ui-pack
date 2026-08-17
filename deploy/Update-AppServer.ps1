@@ -314,6 +314,14 @@ if (Test-Path -LiteralPath $ren) {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ren
 }
 
+$pub = Join-Path $Root 'deploy\Publish-Agent-Pack.ps1'
+$pubFrom = Join-Path $Pack 'deploy\Publish-Agent-Pack.ps1'
+if (Test-Path $pubFrom) { Copy-Item -Force $pubFrom $pub }
+if (Test-Path $pub) {
+  W Cyan '--- Publish agent pack (HTTPS, no Git on customers) ---'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $pub
+}
+
 Write-Host '========================================' -ForegroundColor Cyan
 Write-Host ' GIT UPDATE COMPLETE'
 Write-Host (" Pack   : " + $Pack)
