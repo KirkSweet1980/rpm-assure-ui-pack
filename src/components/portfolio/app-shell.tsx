@@ -6,6 +6,7 @@ import { DkSidebarNav } from "@/components/nav/dk-sidebar-nav";
 import { UserButton } from "@/lib/auth/gates";
 import { fetchDataSourceStatus, fetchPortfolio } from "@/lib/data/portfolio";
 import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
+import { VisionAssistant } from "@/components/vision/vision-assistant";
 import {
   readClientPortfolioCache,
   writeClientPortfolioCache,
@@ -259,6 +260,7 @@ export function AppShell({
             <div className="dk-canvas rpma-topnav-canvas">{children}</div>
           </main>
         </div>
+        <VisionAssistant />
       </div>
     </CustomerListProvider>
   );
