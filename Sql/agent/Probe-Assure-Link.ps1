@@ -88,22 +88,14 @@ if ($conn.State -eq "Open") {
   $ensure.CommandText = @"
 IF OBJECT_ID(N'dbo.Agent_LinkProbe', N'U') IS NULL
 BEGIN
-  CREATE TABLE dbo.Agent_LinkProbe (
-    SnapshotUtc    datetime2(0)  NOT NULL,
-    CustomerCode   nvarchar(32)  NOT NULL,
-    HostName       nvarchar(128) NOT NULL,
-    SqlOk          bit           NOT NULL,
-    HttpOk         bit           NOT NULL,
-    HttpStatus     int           NULL,
-    LatencyMs      int           NULL,
-    Message        nvarchar(400) NULL,
-    ImportedAt     datetime2(3)  NOT NULL CONSTRAINT DF_Agent_LinkProbe_Imp DEFAULT SYSUTCDATETIME()
-  );
-  CREATE INDEX IX_Agent_LinkProbe_Cust ON dbo.Agent_LinkProbe (CustomerCode, HostName, SnapshotUtc DESC);
+  RAISERROR(N'Agent_LinkProbe missing - run 470 as sysadmin', 10, 1);
 END
+ELSE
+BEGIN
 INSERT INTO dbo.Agent_LinkProbe (SnapshotUtc, CustomerCode, HostName, SqlOk, HttpOk, HttpStatus, LatencyMs, Message)
 VALUES (SYSUTCDATETIME(), $(Sql-Lit $CustomerCode), $(Sql-Lit $HostName), $sqlOk, $httpOk, $httpStatus, $ms, $(Sql-Lit $msg));
 DELETE FROM dbo.Agent_LinkProbe WHERE SnapshotUtc < DATEADD(day, -14, SYSUTCDATETIME());
+END
 UPDATE dbo.Agent_Registry
 SET LastHeartbeatUtc = SYSUTCDATETIME(),
     LastStatus = CASE WHEN LastStatus IN (N'QUEUED', N'SYNCING') THEN LastStatus WHEN $sqlOk = 1 THEN N'ONLINE' ELSE N'JOB_FAIL' END,

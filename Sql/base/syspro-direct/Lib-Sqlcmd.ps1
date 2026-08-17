@@ -88,8 +88,8 @@ function Write-RpmaLog([string]$m) {
 function Invoke-RpmaSql {
   param(
     [Parameter(Mandatory)][string]$Server,
-    [Parameter(Mandatory)][string]$User,
-    [Parameter(Mandatory)][string]$Pass,
+    [string]$User,
+    [string]$Pass,
     [string]$Database,
     [Parameter(Mandatory)][string]$SqlText,
     [switch]$Tsv
@@ -105,7 +105,12 @@ function Invoke-RpmaSql {
   $a = New-Object System.Collections.Generic.List[string]
   [void]$a.Add('-S'); [void]$a.Add($Server)
   if ($Database) { [void]$a.Add('-d'); [void]$a.Add($Database) }
-  [void]$a.Add('-U'); [void]$a.Add($User)
+  $useWin = [string]::IsNullOrWhiteSpace($Pass)
+  if ($useWin) {
+    [void]$a.Add('-E')
+  } else {
+    [void]$a.Add('-U'); [void]$a.Add($(if ($User) { $User } else { 'sa' }))
+  }
   [void]$a.Add('-N'); [void]$a.Add('-C'); [void]$a.Add('-b'); [void]$a.Add('-x'); [void]$a.Add('-I')
   [void]$a.Add('-i'); [void]$a.Add($tmpSql)
   [void]$a.Add('-o'); [void]$a.Add($tmpOut)
@@ -118,7 +123,7 @@ function Invoke-RpmaSql {
   $old = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
   $prevPwd = $env:SQLCMDPASSWORD
-  $env:SQLCMDPASSWORD = $Pass
+  if (-not $useWin) { $env:SQLCMDPASSWORD = $Pass }
   try {
     & $script:RpmaSqlcmd @($a.ToArray()) 2>&1 | Out-Null
     $ec = $LASTEXITCODE

@@ -109,23 +109,9 @@ $sql = @"
 SET NOCOUNT ON;
 IF OBJECT_ID(N'dbo.Agent_EventLog', N'U') IS NULL
 BEGIN
-  CREATE TABLE dbo.Agent_EventLog (
-    SnapshotUtc     datetime2(0)  NOT NULL,
-    CustomerCode    nvarchar(32)  NOT NULL,
-    HostName        nvarchar(128) NOT NULL,
-    TimeCreatedUtc  datetime2(0)  NOT NULL,
-    LogName         nvarchar(40)  NOT NULL,
-    EventId         int           NOT NULL,
-    LevelName       nvarchar(16)  NOT NULL,
-    ProviderName    nvarchar(200) NULL,
-    MessageText     nvarchar(1800) NULL,
-    ImportedAt      datetime2(3)  NOT NULL CONSTRAINT DF_Agent_EventLog_Imp DEFAULT SYSUTCDATETIME()
-  );
-  CREATE INDEX IX_Agent_EventLog_Cust ON dbo.Agent_EventLog (CustomerCode, TimeCreatedUtc DESC);
+  RAISERROR(N'Agent_EventLog missing - run 470_Ensure_Agent_Tables.sql as sysadmin', 16, 1);
+  RETURN;
 END
-BEGIN TRY
-  GRANT SELECT, INSERT, DELETE ON dbo.Agent_EventLog TO [rpmassure];
-END TRY BEGIN CATCH END CATCH
 
 DECLARE @Snap datetime2(0) = CONVERT(datetime2(0), $(Sql-Lit $snap), 126);
 
