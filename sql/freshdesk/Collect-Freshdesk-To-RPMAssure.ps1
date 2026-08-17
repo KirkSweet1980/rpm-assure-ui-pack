@@ -410,3 +410,22 @@ foreach ($sqlName in @('514_Fuzzy_Map_Freshdesk_Companies.sql', '513_Sync_Freshd
   if ($LASTEXITCODE -ne 0) { Write-Log ($sqlName + ' warned exit=' + $LASTEXITCODE) }
   else { Write-Log ($sqlName + ' OK') }
 }
+
+$stampSql = @"
+SET NOCOUNT ON;
+IF OBJECT_ID(N'dbo.Dim_Connection', N'U') IS NOT NULL
+BEGIN
+  IF EXISTS (SELECT 1 FROM dbo.Dim_Connection WHERE ConnectionKind = N'FRESHDESK' OR SourceSystem = N'FRESHDESK')
+    UPDATE dbo.Dim_Connection
+      SET LastSuccessUtc = SYSUTCDATETIME(), Status = N'Active', LastMessage = N'collect ok tickets=$($all.Count)'
+    WHERE ConnectionKind = N'FRESHDESK' OR SourceSystem = N'FRESHDESK';
+  ELSE IF COL_LENGTH(N'dbo.Dim_Connection', N'ConnectionKind') IS NOT NULL
+    INSERT INTO dbo.Dim_Connection (ConnectionKind, DisplayName, Status, LastSuccessUtc, LastMessage)
+    VALUES (N'FRESHDESK', N'Freshdesk Tickets', N'Active', SYSUTCDATETIME(), N'collect ok tickets=$($all.Count)');
+END
+"@
+$stampFile = Join-Path $logDir ("fd_stamp_" + $stamp + ".sql")
+[IO.File]::WriteAllText($stampFile, $stampSql)
+& $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $stampFile
+Write-Log 'Dim_Connection FRESHDESK stamped Active'
+
