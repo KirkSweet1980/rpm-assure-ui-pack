@@ -1,10 +1,6 @@
 # Onboard Interbrand SYSPRO: agent + collect login + Customer.Config
 # Run as Administrator on the Interbrand SYSPRO SQL host.
-# Bootstrap login creates rpmassure. Do not commit the bootstrap password.
-#
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Onboard-IB-Syspro.ps1 `
-#     -BootstrapUser 'SysproLoginForPos' -BootstrapPassword '<from Kirk>' `
-#     -AgentSecret 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz'
+# Prefers git clone / Assure download — does not require raw.githubusercontent.com.
 
 param(
   [string]$BootstrapUser = 'SysproLoginForPos',
@@ -14,6 +10,7 @@ param(
   [string]$SqlInstance = '.',
   [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
+  [string]$RepoUrl = 'https://github.com/KirkSweet1980/rpm-assure-ui-pack.git',
   [string]$Root = 'C:\RPM-Assure'
 )
 
@@ -28,10 +25,49 @@ if (-not $BootstrapPassword) {
 }
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$deploy = Join-Path $env:TEMP 'Deploy-Assure-Agent.ps1'
-Invoke-WebRequest -UseBasicParsing -TimeoutSec 90 `
-  -Uri 'https://raw.githubusercontent.com/KirkSweet1980/rpm-assure-ui-pack/main/Sql/agent/Deploy-Assure-Agent.ps1' `
-  -OutFile $deploy
+
+function Find-Git {
+  $g = Get-Command git -ErrorAction SilentlyContinue
+  if ($g) { return $g.Source }
+  foreach ($p in @('C:\Program Files\Git\cmd\git.exe', 'C:\Program Files (x86)\Git\cmd\git.exe')) {
+    if (Test-Path $p) { return $p }
+  }
+  return $null
+}
+function Install-GitIfMissing {
+  $git = Find-Git
+  if ($git) { return $git }
+  Write-Host 'Installing Git for Windows (silent)...'
+  $tmp = Join-Path $env:TEMP 'Git-64-bit.exe'
+  Invoke-WebRequest -UseBasicParsing -TimeoutSec 180 `
+    -Uri 'https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe' `
+    -OutFile $tmp
+  $p = Start-Process -FilePath $tmp -ArgumentList '/VERYSILENT','/NORESTART','/NOCANCEL','/SP-' -Wait -PassThru
+  if ($p.ExitCode -ne 0) { throw ('Git installer exit ' + $p.ExitCode) }
+  $git = Find-Git
+  if (-not $git) { throw 'Git installed but git.exe not found' }
+  return $git
+}
+
+$git = Install-GitIfMissing
+$Pack = Join-Path $Root 'deploy\ui-pack'
+New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
+if (Test-Path (Join-Path $Pack '.git')) {
+  Write-Host ('git pull ' + $Pack)
+  & $git -C $Pack -c core.longpaths=true fetch --all --prune
+  if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+  & $git -C $Pack -c core.longpaths=true reset --hard origin/main
+  if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
+} else {
+  if (Test-Path $Pack) { Remove-Item $Pack -Recurse -Force }
+  Write-Host ('git clone ' + $RepoUrl)
+  & $git -c core.longpaths=true clone --depth 1 --branch main $RepoUrl $Pack
+  if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }
+}
+
+$deploy = Join-Path $Pack 'Sql\agent\Deploy-Assure-Agent.ps1'
+if (-not (Test-Path $deploy)) { $deploy = Join-Path $Pack 'sql\agent\Deploy-Assure-Agent.ps1' }
+if (-not (Test-Path $deploy)) { throw 'Pack missing Deploy-Assure-Agent.ps1 after git clone' }
 & $deploy -CustomerCode 'IB' -RoleTags 'syspro,sql' -AgentSecret $AgentSecret -AppHttpsUrl $AppHttpsUrl -Root $Root
 
 $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
@@ -71,7 +107,8 @@ if ($LASTEXITCODE -ne 0) { throw "sqlcmd grant failed $LASTEXITCODE - check inst
 
 $custDir = Join-Path $Root 'Sql\customers\IB'
 New-Item -ItemType Directory -Force -Path $custDir, (Join-Path $custDir 'logs') | Out-Null
-$packCust = Join-Path $Root 'deploy\ui-pack\Sql\customers\IB'
+$packCust = Join-Path $Pack 'Sql\customers\IB'
+if (-not (Test-Path $packCust)) { $packCust = Join-Path $Pack 'sql\customers\IB' }
 if (Test-Path $packCust) { Copy-Item -Force (Join-Path $packCust '*') $custDir -Exclude 'logs' }
 
 $dbsTxt = & $sqlcmd -S $SqlInstance -U $CollectUser -P $CollectPassword -C -h -1 -W -Q "SET NOCOUNT ON; SELECT name FROM sys.databases WHERE state=0 AND name LIKE 'SysproCompany%' ORDER BY 1;"
