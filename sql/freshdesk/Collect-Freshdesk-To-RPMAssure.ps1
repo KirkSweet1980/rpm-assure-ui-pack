@@ -167,12 +167,32 @@ try {
   Write-Log ('list-all warn ' + $_.Exception.Message)
 }
 
-# 2) Search by company_id (name search is invalid on this account)
-$namesTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT DISTINCT CustomerCode, CompanyId FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 AND CompanyId IS NOT NULL;"
+# Company catalog (id -> name) so blank company_id rows can be mapped
+$companyName = @{}
+try {
+  $cp = 1
+  do {
+    $cos = @(Invoke-FdGet ("companies?per_page=100&page=$cp"))
+    foreach ($c in $cos) {
+      $cid = [string](One-Val $c.id)
+      $cn = [string](One-Val $c.name)
+      if ($cid -and $cn) { $companyName[$cid] = $cn }
+    }
+    Write-Log ('companies page=' + $cp + ' got=' + $cos.Count + ' catalog=' + $companyName.Count)
+    $cp++
+    Start-Sleep -Milliseconds 200
+  } while ($cp -le 10 -and $cos.Count -eq 100)
+} catch {
+  Write-Log ('companies catalog warn ' + $_.Exception.Message)
+}
+
+# 2) Pull tickets per mapped company_id (list filter + search)
+$namesTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT DISTINCT LTRIM(RTRIM(CustomerCode)), CONVERT(varchar(30), CompanyId) FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 AND CompanyId IS NOT NULL;"
 $maps = @()
 $seenId = @{}
 foreach ($line in @($namesTxt)) {
   if ([string]::IsNullOrWhiteSpace($line)) { continue }
+  if ($line -match 'Changed database') { continue }
   $p = $line.Split('|')
   if ($p.Length -lt 2) { continue }
   $code = $p[0].Trim(); $id = $p[1].Trim()
@@ -181,13 +201,30 @@ foreach ($line in @($namesTxt)) {
     $maps += [pscustomobject]@{ Code = $code; CompanyId = $id }
   }
 }
+# Always include known BHF company
+if (-not $seenId.ContainsKey('48006116932')) {
+  $maps += [pscustomobject]@{ Code = 'BHF'; CompanyId = '48006116932' }
+  $seenId['48006116932'] = $true
+}
 Write-Log ('mapped company ids=' + $maps.Count)
 
 foreach ($m in $maps) {
+  try {
+    $page = 1
+    do {
+      $batch = @(Invoke-FdGet ("tickets?per_page=100&page=$page&company_id=$($m.CompanyId)&order_by=updated_at&order_type=desc"))
+      if ($batch.Count -eq 0) { break }
+      Add-Tickets $batch ('list-co ' + $m.Code + ' id=' + $m.CompanyId + ' p' + $page)
+      $page++
+      Start-Sleep -Milliseconds 200
+    } while ($page -le 10 -and $batch.Count -eq 100)
+  } catch {
+    Write-Log ('list-co warn ' + $m.Code + ' ' + $_.Exception.Message)
+  }
   $page = 1
   do {
-    $q = '"' + ('company_id:{0}' -f $m.CompanyId) + '"'
-    $url = "https://$FreshdeskDomain/api/v2/search/tickets?page=$page&query=" + [uri]::EscapeDataString($q)
+    $q = 'company_id:' + $m.CompanyId
+    $url = "https://$FreshdeskDomain/api/v2/search/tickets?page=$page&query=" + [uri]::EscapeDataString(('"{0}"' -f $q))
     try {
       $sr = Invoke-FdGet $url
     } catch {
@@ -254,6 +291,9 @@ foreach ($t in $all) {
     if ($t._company.name) { $coName = [string](One-Val $t._company.name) }
   }
   if (-not $coId -and $t.company_id) { $coId = One-Val $t.company_id }
+  if (-not $coName -and $coId -and $companyName.ContainsKey([string]$coId)) {
+    $coName = $companyName[[string]$coId]
+  }
 
   $firstR = $null; $resolved = $null; $closed = $null
   if ($t._stats) {

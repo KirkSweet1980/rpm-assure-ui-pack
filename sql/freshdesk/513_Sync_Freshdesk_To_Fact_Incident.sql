@@ -122,10 +122,14 @@ WHEN NOT MATCHED THEN INSERT (
   src.IsMajor, src.ExternalRef, src.OwnerName, N'Freshdesk', src.ModuleCode, src.BusinessImpact
 );
 
-PRINT CONCAT(N'Freshdesk -> Fact_Incident merge done. Rows on latest snap: ',
-  (SELECT COUNT(*) FROM dbo.Freshdesk_Tickets t
-   WHERE t.SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Freshdesk_Tickets)
-     AND t.CustomerCode IS NOT NULL));
+DECLARE @mapped int =
+(
+  SELECT COUNT(*)
+  FROM dbo.Freshdesk_Tickets t
+  WHERE t.SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Freshdesk_Tickets)
+    AND t.CustomerCode IS NOT NULL
+);
+PRINT CONCAT(N'Freshdesk -> Fact_Incident merge done. Rows on latest snap: ', @mapped);
 
 SELECT CustomerCode, COUNT(*) AS Incidents
 FROM dbo.Fact_Incident WITH (NOLOCK)
