@@ -3003,11 +3003,11 @@ export function DtrSection({ data }: { data: CustomerDetailPayload }) {
         why="Control totals (L1) roll from mid-level (L2) and detail (L3). Variance = sub-ledger close vs GL control close. Open recon cases to track clear-down."
       />
 
-      {detailAll.length > 0 ? (
+      {(detailAll.length > 0 || rows.length > 0) ? (
         <Card className="overflow-hidden border-primary/25">
           <CardContent className="p-4">
             <FinSightD3Hierarchy
-              lines={detailAll}
+              lines={detailAll.length > 0 ? detailAll : rows}
               focusModule={selectedMod}
               onSelectModule={(code) => {
                 setSelectedMod(code);
