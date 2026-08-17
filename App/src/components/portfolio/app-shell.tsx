@@ -226,9 +226,9 @@ export function AppShell({
                 </span>
               </Link>
             </div>
+            <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="sql" />
             <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="clock" />
             <div className="dk-header-right">
-              <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="sql" />
               <DensityToggle />
               <ThemeToggle />
               <UserButton />

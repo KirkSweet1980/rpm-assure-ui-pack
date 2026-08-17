@@ -863,11 +863,48 @@ html.dark .rpma-pane-head-row {
 }
 .rpma-hud-rev-svg { width: 92px !important; height: 76px !important; display: block; overflow: visible; }
 .rpma-hud-sql { display: flex; align-items: center; }
-.rpma-sql-live {
+.rpma-sql-digital {
+  position: absolute;
+  left: 26%;
+  top: 36px;
+  transform: translate(-50%, -50%);
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
+  pointer-events: auto;
+}
+.rpma-sql-digits {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #2ee6a6;
+  text-shadow: 0 0 8px color-mix(in srgb, #14b8a6 70%, transparent);
+  background: #061018;
+  border: 1px solid #1a4a4a;
+  border-radius: 6px;
+  padding: 3px 9px 2px;
+  line-height: 1.15;
+}
+.rpma-sql-digits i {
+  font-style: normal;
+  padding: 0 1px;
+  animation: rpma-sql-colon 1s steps(1) infinite;
+}
+.rpma-sql-digital.is-demo .rpma-sql-digits {
+  color: #ffa21d;
+  text-shadow: 0 0 8px color-mix(in srgb, #ffa21d 55%, transparent);
+  border-color: #5a4020;
+}
+@keyframes rpma-sql-colon {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.25; }
+}
+@media (max-width: 1023px) {
+  .rpma-sql-digital { position: static; transform: none; left: auto; top: auto; }
 }
 .rpma-sql-live-ico {
   position: relative;

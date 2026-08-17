@@ -77,6 +77,13 @@ function useClock() {
   return now;
 }
 
+function digitalOf(d: Date | string | null | undefined) {
+  const date = d ? new Date(d) : null;
+  if (!date || Number.isNaN(date.getTime())) return "--:--:--";
+  const p = partsOf(date);
+  return `${p.hour}:${p.minute}:${p.second}`;
+}
+
 export function HeadsUpDisplay({
   liveSql,
   generatedAt,
@@ -90,18 +97,25 @@ export function HeadsUpDisplay({
   const dateStr = `${now.weekday} ${now.day} ${now.month} ${now.year}`;
   const timeStr = `${now.hour}:${now.minute}:${now.second}`;
   const sqlWhen = formatSastDateTime(generatedAt);
+  const sqlDigits = digitalOf(generatedAt);
 
   if (variant === "sql") {
     return (
       <div
-        className={cn("rpma-sql-live", liveSql ? "is-live" : "is-demo")}
-        title={liveSql ? "Last live SQL read" : "Demo data"}
+        className={cn("rpma-sql-digital", liveSql ? "is-live" : "is-demo")}
+        title={liveSql ? `Last live SQL read ${sqlWhen}` : `Demo data ${sqlWhen}`}
         aria-label={liveSql ? `Live SQL ${sqlWhen}` : `Demo data ${sqlWhen}`}
       >
         <span className="rpma-sql-live-ico" aria-hidden>
-          <Database size={16} strokeWidth={2.2} />
+          <Database size={15} strokeWidth={2.2} />
         </span>
-        <span className="rpma-sql-live-time">{sqlWhen}</span>
+        <span className="rpma-sql-digits">
+          {sqlDigits.slice(0, 2)}
+          <i>:</i>
+          {sqlDigits.slice(3, 5)}
+          <i>:</i>
+          {sqlDigits.slice(6, 8)}
+        </span>
       </div>
     );
   }
