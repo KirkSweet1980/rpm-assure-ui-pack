@@ -2480,6 +2480,7 @@ html.snow .rpma-emp-inspector {
   color: inherit;
 }
 .rpma-eco-kpi:hover { border-color: #2ee6a6; }
+.rpma-eco-kpi.is-warn strong { color: #fbbf24; }
 .rpma-eco-kpi em { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #8aa0b0; }
 .rpma-eco-kpi strong { font-size: 18px; font-weight: 800; color: #e8f1f6; }
 .rpma-eco-svcs {

@@ -2517,16 +2517,6 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
   const oa = data.operationalAssurance;
   const score = oa?.scorePct ?? (c.healthRag === "Green" ? 88 : c.healthRag === "Amber" ? 68 : 42);
   const slaPack = buildExcoPillarSla(slaInputFromDetail(effectiveCover(data), data));
-  const riskPie = [
-    { name: "Open risks", value: openRisks.length, fill: "#ffa21d" },
-    { name: "Closed", value: Math.max(closedRisks, openRisks.length === 0 ? 1 : 0), fill: "#17c666" },
-  ];
-  const mixBars = [
-    { name: "Incidents", value: openInc.length, fill: "#ea4d4d" },
-    { name: "Major", value: major.length, fill: "#c0392b" },
-    { name: "Risks", value: openRisks.length, fill: "#ffa21d" },
-    { name: "Issues", value: openIssues.length, fill: "#5c6570" },
-  ];
   const slaBars = slaPack.pillars
     .filter((s) => s.covered && s.pct != null)
     .map((s) => ({
@@ -2550,62 +2540,20 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
         </div>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
-        <div className="rpma-glass p-3">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Risk register</p>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={riskPie} dataKey="value" nameKey="name" innerRadius={46} outerRadius={68} paddingAngle={2} isAnimationActive={false}>
-                  {riskPie.map((e) => (
-                    <Cell key={e.name} fill={e.fill} stroke="transparent" />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div className="rpma-glass p-3">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Open items</p>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mixBars} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} height={36} angle={-20} textAnchor="end" tickFormatter={(v) => axisLabel(v, 10)} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} width={24} tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={32} isAnimationActive={false}>
-                  {mixBars.map((e, i) => (
-                    <Cell key={i} fill={e.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div className="rpma-glass p-3">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">SLA by service</p>
-          <div className="h-48">
-            {slaBars.length ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={slaBars} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} horizontal={false} />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: CHART.axis, fontSize: 10 }} />
-                  <YAxis type="category" dataKey="name" width={120} tick={{ fill: CHART.axis, fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => axisLabel(v, 16)} />
-                  <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={14} isAnimationActive={false}>
-                    {slaBars.map((e, i) => (
-                      <Cell key={i} fill={e.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="px-2 py-8 text-sm text-muted">No SLA scores on this snapshot.</p>
-            )}
-          </div>
-        </div>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Open risks" value={openRisks.length} tone={openRisks.length === 0 ? "green" : "amber"} />
+        <StatCard label="Closed risks" value={closedRisks} />
+        <StatCard label="Open incidents" value={openInc.length} tone={openInc.length === 0 ? "green" : "red"} />
+        <StatCard label="Major" value={major.length} tone={major.length === 0 ? "green" : "red"} />
+        <StatCard label="Issues" value={openIssues.length} />
+        {slaBars.map((s) => (
+          <StatCard
+            key={s.name}
+            label={s.name}
+            value={`${s.value}%`}
+            tone={s.value >= 80 ? "green" : s.value >= 55 ? "amber" : "red"}
+          />
+        ))}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -4704,6 +4652,10 @@ function CoveRecentDaysPanel({
 
 export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
   const cover = effectiveCover(data);
+  const c = data.customer;
+  const devices = data.cove?.devices ?? [];
+  const n = c.coveDeviceCount ?? devices.length;
+  const fail = (c.coveFailedDeviceCount ?? 0) + (c.coveStaleDeviceCount ?? 0);
   if (!cover.cove) {
     return (
       <NoCoverPanel
@@ -4712,10 +4664,26 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
+  const code = c.customerCode;
   return (
     <div className="space-y-3">
       <SlaStrip data={data} pillar="cove" />
-      <CoveEsrPanel data={data} />
+      <ServiceVisuals
+        title="RPM Cloud Backup"
+        subtitle={c.displayName}
+        kpis={[
+          { label: "Devices", value: n },
+          { label: "Healthy", value: c.coveOkDeviceCount ?? Math.max(0, n - fail), tone: "green" },
+          { label: "Failed / stale", value: fail, tone: fail > 0 ? "amber" : "green" },
+          { label: "Tickets", value: ticketStats(ticketsForPillar(data.incidents, "cove")).open },
+        ]}
+        tiles={[
+          { label: "Devices", href: `/customers/${code}/cove/devices`, n, hint: "Protected" },
+          { label: "Recovery", href: `/customers/${code}/cove/recovery`, n: devices.filter((d) => d.lastRecoveryTestAt).length, hint: "Tests" },
+          { label: "Retention", href: `/customers/${code}/cove/retention`, n: devices.length, hint: "Policy" },
+          { label: "Service SLA", href: `/customers/${code}/cove/sla`, n: "Open", hint: "Clocks" },
+        ]}
+      />
     </div>
   );
 }

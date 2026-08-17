@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ServiceModuleMatrix } from "@/components/customer/service-module-matrix";
+import { CspTenantHealthSection } from "@/components/customer/customer-sections";
 import { Route as PillarRoute } from "./customers.$code.csp";
 
 export const Route = createFileRoute("/customers/$code/csp/")({
@@ -8,6 +8,6 @@ export const Route = createFileRoute("/customers/$code/csp/")({
     if (!data?.customer) {
       return <p className="text-sm text-muted">Loading customer workspace…</p>;
     }
-    return <ServiceModuleMatrix data={data} pillar="csp" />;
+    return <CspTenantHealthSection data={data} />;
   },
 });

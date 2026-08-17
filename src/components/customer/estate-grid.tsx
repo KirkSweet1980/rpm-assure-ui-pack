@@ -305,7 +305,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
               className={cn("rpma-eco-svc", s.on ? "is-on" : "is-off")}
             >
               <strong>{s.name}</strong>
-              <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
+              <span>{s.on ? `Cover · ${s.bits.join(" · ")}` : "No Cover"}</span>
             </SpaLink>
           ))}
         </div>
