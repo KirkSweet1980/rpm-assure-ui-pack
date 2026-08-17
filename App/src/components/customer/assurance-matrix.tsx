@@ -9,7 +9,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
-import { CUSTOMER_PILLARS } from "@/components/nav/customer-modules-panel";
 import { coverFromDetail, isPillarCovered, type PillarId } from "@/lib/data/cover";
 import { customerLiveStatus, type LiveTone } from "@/lib/data/live-status";
 import { ticketStats } from "@/lib/data/ticket-feed";
@@ -132,8 +131,8 @@ export function AssuranceMatrix({ data }: { data: CustomerDetailPayload }) {
                 <th>Health</th>
                 <th>Jobs</th>
                 <th className="hide-sm">Patch</th>
-                <th className="hide-sm">Backup</th>
-                <th>Tickets</th>
+                <th className="hide-sm">Backup success</th>
+                <th>Open tickets</th>
               </tr>
             </thead>
             <tbody>
@@ -148,23 +147,13 @@ export function AssuranceMatrix({ data }: { data: CustomerDetailPayload }) {
                     <td>
                       <SpaLink href={`${base}${r.href}`} className="rpma-amx-svc">
                         <span className="rpma-amx-ico">
-                          <Icon className="size-3.5" />
+                          <Icon className="size-4" />
                         </span>
                         <span>
                           <strong>{r.name}</strong>
                           <em>{r.sub}</em>
                         </span>
                       </SpaLink>
-                      <div className="rpma-amx-fly" role="menu">
-                        {(CUSTOMER_PILLARS.find((p) => p.id === r.id)?.modules ?? [])
-                          .filter((m) => m.path !== r.href)
-                          .slice(0, 8)
-                          .map((m) => (
-                            <SpaLink key={m.path} href={`${base}${m.path}`} className="rpma-amx-fly-a">
-                              {m.label}
-                            </SpaLink>
-                          ))}
-                      </div>
                     </td>
                     <td>
                       <span className={cn("rpma-amx-pill", r.on ? "is-cover" : "is-off")}>
