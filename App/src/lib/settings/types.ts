@@ -286,6 +286,48 @@ export type AppSettingsFile = {
   cronSecret?: string;
   lastWeeklyReportAt?: string | null;
   reportSchedule?: ReportScheduleConfig;
+  vision?: VisionRetrievalConfig;
+};
+
+export type VisionSourceId =
+  | "sla"
+  | "tickets"
+  | "rmm"
+  | "epp"
+  | "backup"
+  | "syspro"
+  | "cover"
+  | "agent"
+  | "csp"
+  | "howto";
+
+export type VisionRetrievalConfig = {
+  enabled: boolean;
+  topK: number;
+  minScore: number;
+  includePath: boolean;
+  includeCustomer: boolean;
+  sources: Record<VisionSourceId, boolean>;
+};
+
+export const DEFAULT_VISION: VisionRetrievalConfig = {
+  enabled: true,
+  topK: 3,
+  minScore: 1.2,
+  includePath: true,
+  includeCustomer: true,
+  sources: {
+    sla: true,
+    tickets: true,
+    rmm: true,
+    epp: true,
+    backup: true,
+    syspro: true,
+    cover: true,
+    agent: true,
+    csp: true,
+    howto: true,
+  },
 };
 
 export const DEFAULT_SMTP: SmtpConfig = {

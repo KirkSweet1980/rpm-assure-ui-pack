@@ -13,6 +13,7 @@ import {
   getAlertConfig,
   getDashboardConfig,
   getUiLabels,
+  getVisionConfig,
 } from "./settings-store";
 import {
   DEFAULT_ALERTS,
@@ -22,6 +23,7 @@ import {
   DEFAULT_REPORT_SCHEDULE,
   DEFAULT_SMTP,
   DEFAULT_SSL,
+  DEFAULT_VISION,
   emptySqlConnection,
   type AlertRulesConfig,
   type DashboardConfig,
@@ -31,6 +33,7 @@ import {
   type SmtpConfig,
   type SqlConnectionConfig,
   type SslConfig,
+  type VisionRetrievalConfig,
 } from "./types";
 import { appendAdminAudit, readAdminAudit } from "./admin-audit";
 import { type StaffRole, isStaffRole } from "@/lib/auth/roles";
@@ -121,6 +124,7 @@ export const fetchSettingsBundle = createServerFn({ method: "GET" }).handler(asy
     },
     lastWeeklyReportAt: file.lastWeeklyReportAt ?? null,
     cronConfigured: Boolean(file.cronSecret || process.env.RPM_ASSURE_CRON_SECRET),
+    vision: { ...DEFAULT_VISION, ...(file.vision ?? {}) },
   };
 });
 
@@ -933,6 +937,20 @@ export const saveRagSettings = createServerFn({ method: "POST" })
       ok: true,
     });
     return { ok: true as const, rag: getRagConfig() };
+  });
+
+export const saveVisionSettings = createServerFn({ method: "POST" })
+  .validator((data: { vision: VisionRetrievalConfig }) => data)
+  .handler(async ({ data }) => {
+    const prev = readSettingsFile();
+    writeSettingsFile({ ...prev, vision: data.vision });
+    appendAdminAudit({
+      actorEmail: "platform-admin",
+      action: "settings.vision.save",
+      detail: JSON.stringify(data.vision),
+      ok: true,
+    });
+    return { ok: true as const, vision: getVisionConfig() };
   });
 
 export const saveAlertSettings = createServerFn({ method: "POST" })

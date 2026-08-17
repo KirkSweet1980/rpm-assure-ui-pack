@@ -8,6 +8,7 @@ import {
   DEFAULT_SMTP,
   DEFAULT_SSL,
   DEFAULT_UI_LABELS,
+  DEFAULT_VISION,
   emptySqlConnection,
   type AlertRulesConfig,
   type AppSettingsFile,
@@ -18,6 +19,8 @@ import {
   type SslConfig,
   type SqlConnectionConfig,
   type UiLabelsConfig,
+  type VisionRetrievalConfig,
+  type VisionSourceId,
 } from "./types";
 
 const FILE = "rpma-settings.json";
@@ -42,6 +45,7 @@ function defaultFile(): AppSettingsFile {
     cronSecret: "",
     lastWeeklyReportAt: null,
     reportSchedule: { ...DEFAULT_REPORT_SCHEDULE },
+    vision: { ...DEFAULT_VISION },
   };
 }
 
@@ -186,6 +190,7 @@ export function readSettingsFile(): AppSettingsFile {
       cronSecret: typeof j.cronSecret === "string" ? j.cronSecret : "",
       lastWeeklyReportAt: j.lastWeeklyReportAt ?? null,
       reportSchedule: clampSchedule(j.reportSchedule),
+      vision: clampVision(j.vision),
     };
   } catch {
     return defaultFile();
@@ -220,6 +225,7 @@ export function writeSettingsFile(data: AppSettingsFile): void {
         ? data.lastWeeklyReportAt
         : (prev.lastWeeklyReportAt ?? null),
     reportSchedule: clampSchedule(data.reportSchedule ?? prev.reportSchedule),
+    vision: clampVision(data.vision ?? prev.vision),
   };
   fs.writeFileSync(settingsPath(), JSON.stringify(out, null, 2), "utf8");
 }
@@ -233,6 +239,39 @@ export function getPrimarySqlFromFile(): SqlConnectionConfig | null {
 
 export function getRagConfig(): RagThresholdConfig {
   return clampRag(readSettingsFile().rag);
+}
+
+const VISION_SOURCES: VisionSourceId[] = [
+  "sla",
+  "tickets",
+  "rmm",
+  "epp",
+  "backup",
+  "syspro",
+  "cover",
+  "agent",
+  "csp",
+  "howto",
+];
+
+function clampVision(v: Partial<VisionRetrievalConfig> | undefined): VisionRetrievalConfig {
+  const base = { ...DEFAULT_VISION, ...(v ?? {}) };
+  const sources = { ...DEFAULT_VISION.sources, ...(base.sources ?? {}) };
+  for (const id of VISION_SOURCES) sources[id] = sources[id] !== false;
+  const topK = Math.min(8, Math.max(1, Math.floor(Number(base.topK) || 3)));
+  const minScore = Math.min(8, Math.max(0.2, Number(base.minScore) || 1.2));
+  return {
+    enabled: base.enabled !== false,
+    topK,
+    minScore: Math.round(minScore * 10) / 10,
+    includePath: base.includePath !== false,
+    includeCustomer: base.includeCustomer !== false,
+    sources,
+  };
+}
+
+export function getVisionConfig(): VisionRetrievalConfig {
+  return clampVision(readSettingsFile().vision);
 }
 
 export function getAlertConfig(): AlertRulesConfig {

@@ -40,6 +40,7 @@ import { Route as SettingsLabelsRouteImport } from './routes/settings.labels'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsQueryRouteImport } from './routes/settings.query'
 import { Route as SettingsRagRouteImport } from './routes/settings.rag'
+import { Route as SettingsVisionRouteImport } from './routes/settings.vision'
 import { Route as SettingsReportsRouteImport } from './routes/settings.reports'
 import { Route as SettingsSecurityRouteImport } from './routes/settings.security'
 import { Route as SettingsSmtpRouteImport } from './routes/settings.smtp'
@@ -268,6 +269,11 @@ const SettingsQueryRoute = SettingsQueryRouteImport.update({
 const SettingsRagRoute = SettingsRagRouteImport.update({
   id: '/rag',
   path: '/rag',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsVisionRoute = SettingsVisionRouteImport.update({
+  id: '/vision',
+  path: '/vision',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsReportsRoute = SettingsReportsRouteImport.update({
@@ -697,6 +703,7 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/query': typeof SettingsQueryRoute
   '/settings/rag': typeof SettingsRagRoute
+  '/settings/vision': typeof SettingsVisionRoute
   '/settings/reports': typeof SettingsReportsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/settings/smtp': typeof SettingsSmtpRoute
@@ -802,6 +809,7 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/query': typeof SettingsQueryRoute
   '/settings/rag': typeof SettingsRagRoute
+  '/settings/vision': typeof SettingsVisionRoute
   '/settings/reports': typeof SettingsReportsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/settings/smtp': typeof SettingsSmtpRoute
@@ -903,6 +911,7 @@ export interface FileRoutesById {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/query': typeof SettingsQueryRoute
   '/settings/rag': typeof SettingsRagRoute
+  '/settings/vision': typeof SettingsVisionRoute
   '/settings/reports': typeof SettingsReportsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/settings/smtp': typeof SettingsSmtpRoute
@@ -1012,6 +1021,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/query'
     | '/settings/rag'
+    | '/settings/vision'
     | '/settings/reports'
     | '/settings/security'
     | '/settings/smtp'
@@ -1117,6 +1127,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/query'
     | '/settings/rag'
+    | '/settings/vision'
     | '/settings/reports'
     | '/settings/security'
     | '/settings/smtp'
@@ -1217,6 +1228,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/query'
     | '/settings/rag'
+    | '/settings/vision'
     | '/settings/reports'
     | '/settings/security'
     | '/settings/smtp'
@@ -1539,6 +1551,13 @@ declare module '@tanstack/react-router' {
       path: '/rag'
       fullPath: '/settings/rag'
       preLoaderRoute: typeof SettingsRagRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/vision': {
+      id: '/settings/vision'
+      path: '/vision'
+      fullPath: '/settings/vision'
+      preLoaderRoute: typeof SettingsVisionRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/reports': {
@@ -2077,6 +2096,7 @@ interface SettingsRouteChildren {
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsQueryRoute: typeof SettingsQueryRoute
   SettingsRagRoute: typeof SettingsRagRoute
+  SettingsVisionRoute: typeof SettingsVisionRoute
   SettingsReportsRoute: typeof SettingsReportsRoute
   SettingsSecurityRoute: typeof SettingsSecurityRoute
   SettingsSmtpRoute: typeof SettingsSmtpRoute
@@ -2102,6 +2122,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsQueryRoute: SettingsQueryRoute,
   SettingsRagRoute: SettingsRagRoute,
+  SettingsVisionRoute: SettingsVisionRoute,
   SettingsReportsRoute: SettingsReportsRoute,
   SettingsSecurityRoute: SettingsSecurityRoute,
   SettingsSmtpRoute: SettingsSmtpRoute,

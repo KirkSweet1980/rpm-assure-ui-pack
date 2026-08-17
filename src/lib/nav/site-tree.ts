@@ -608,6 +608,14 @@ export function settingsTree(): NavNode {
           audience: "admin",
         },
         {
+          id: "set-vision",
+          label: "Vision",
+          blurb: "Assistant retrieval sources",
+          href: "/settings/vision",
+          match: "exact",
+          audience: "admin",
+        },
+        {
           id: "set-alerts",
           label: "Alerts",
           blurb: "In-app rules for health & stale collect",
