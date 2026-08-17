@@ -8,7 +8,6 @@ import {
   ticketsInBucket,
   type TicketBucket,
 } from "@/lib/data/ticket-feed";
-import { ticketStats, ticketsInBucket, type TicketBucket } from "@/lib/data/ticket-feed";
 import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
 import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
 
