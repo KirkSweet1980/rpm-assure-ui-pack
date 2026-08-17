@@ -20,14 +20,14 @@ import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type 
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { SpaLink } from "@/components/nav/spa-link";
+import { keepLiveIops } from "@/lib/data/agent-iops";
 import {
-  keepLiveIops,
   iopsBand,
   classifyDrive,
   DRIVE_STATS,
   expectedIopsForMedia,
   expectedLatencyMsForMedia,
-} from "@/lib/data/agent-iops";
+} from "@/lib/data/drive-stats";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
   Bar,
