@@ -415,7 +415,12 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Log ('=== Freshdesk collect done tickets=' + $all.Count + ' log=' + $log + ' ===')
 
-foreach ($sqlName in @('514_Fuzzy_Map_Freshdesk_Companies.sql', '513_Sync_Freshdesk_To_Fact_Incident.sql')) {
+foreach ($sqlName in @(
+  '518_Ensure_Customers_From_Freshdesk.sql',
+  '512_Register_SBT_And_Map_BHF.sql',
+  '514_Fuzzy_Map_Freshdesk_Companies.sql',
+  '513_Sync_Freshdesk_To_Fact_Incident.sql'
+)) {
   $sync = Join-Path $here $sqlName
   if (-not (Test-Path -LiteralPath $sync)) { continue }
   Write-Log ('SQL ' + $sqlName)
