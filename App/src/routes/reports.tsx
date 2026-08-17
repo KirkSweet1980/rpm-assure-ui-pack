@@ -13,6 +13,7 @@ import {
   REPORT_FIELDS,
   defaultCustomFieldIds,
 } from "@/lib/data/report-fields";
+import { TenantTree } from "@/components/customer/tenant-tree";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/reports")({
@@ -294,8 +295,8 @@ function ReportsPage() {
   const navigate = useNavigate({ from: "/reports" });
   const rows = data?.rows ?? [];
 
-  const [format, setFormat] = useState<ReportFormat | null>(
-    PACKS.some((p) => p.id === search.format) ? (search.format as ReportFormat) : null,
+  const [format, setFormat] = useState<ReportFormat>(
+    PACKS.some((p) => p.id === search.format) ? (search.format as ReportFormat) : "ams-monthly",
   );
   const [customerCode, setCustomerCode] = useState(
     search.customer || rows[0]?.customerCode || "",
@@ -321,7 +322,6 @@ function ReportsPage() {
           : raw;
     const ok = PACKS.some((p) => p.id === aliased);
     if (ok) setFormat(aliased as ReportFormat);
-    if (!search.format) setFormat(null);
     if (search.customer) setCustomerCode(search.customer);
   }, [search.format, search.customer]);
 
@@ -501,10 +501,11 @@ function ReportsPage() {
     <RequireAuth>
       <AppShell>
         <EmpWindow
-          title="Reporting"
+          title="Reporting · Assurance Packs"
           menu={[
             { label: "Customer Ecosystem Home", href: "/" },
-            { label: "Customer Service Overview", href: "/reports?format=ams-monthly", on: true },
+            { label: "Reporting", href: "/reports", on: true },
+            { label: "Report schedule", href: "/settings/reports" },
           ]}
           groups={REPORT_SERVICES.map((s): EmpGroup => ({
             id: s.id,
@@ -522,55 +523,53 @@ function ReportsPage() {
             }),
           }))}
         >
-            {!pack ? (
-              <section className="rpma-rpt-catalog">
-                <div className="rpma-rpt-hero">
+          <TenantTree
+            title="Assurance Packs"
+            items={PACKS.map((p) => ({
+              id: p.id,
+              label: p.title,
+              meta: p.when,
+              tone: format === p.id ? "green" : "off",
+            }))}
+            selected={format}
+            onSelect={(id) => selectFormat(id as ReportFormat)}
+          >
+            {pack ? (
+              <div className="rpma-folio">
+                <header className="rpma-folio-head">
                   <div>
-                    <h2>Report catalog</h2>
-                    <p>Pick a pack. Preview and print, or send on schedule from Configuration → Report Packs.</p>
-                  </div>
-                </div>
-                {REPORT_SERVICES.map((svc) => {
-                  const packs = PACKS.filter((p) => p.service === svc.id);
-                  return (
-                    <div key={svc.id} className="rpma-rpt-block">
-                      <header className="rpma-rpt-block-head">
-                        <h3>{svc.title}</h3>
-                        <span>{packs.length}</span>
-                      </header>
-                      <div className="rpma-rpt-grid">
-                        {packs.map((p) => {
-                          const Icon = PACK_ICON[p.id];
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => selectFormat(p.id)}
-                              className="rpma-rpt-card"
-                            >
-                              <div className="rpma-rpt-card-top">
-                                <span className="rpma-rpt-ico" aria-hidden>
-                                  <Icon size={16} />
-                                </span>
-                                <span className="when">{p.when}</span>
-                              </div>
-                              <h3>{p.title}</h3>
-                              <p className="blurb">{p.blurb}</p>
-                              <span className="rpma-rpt-open">Open pack</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </section>
-            ) : (
-              <>
-                <div className="rpma-rpt-hero">
-                  <div>
+                    <p className="rpma-folio-kicker">{pack.when} · {pack.service.toUpperCase()}</p>
                     <h2>{pack.title}</h2>
                     <p>{pack.blurb}</p>
+                  </div>
+                  <div className="rpma-folio-actions">
+                    <Button type="button" size="sm" disabled={busy} onClick={() => void loadPreview()}>
+                      {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
+                      Refresh
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" disabled={busy || !previewHtml} onClick={openPrint}>
+                      <Printer className="mr-1.5 h-4 w-4" />
+                      Print / PDF
+                    </Button>
+                  </div>
+                </header>
+
+                <div className="rpma-folio-kpis">
+                  <div>
+                    <em>Cadence</em>
+                    <strong>{pack.when}</strong>
+                  </div>
+                  <div>
+                    <em>Tenant</em>
+                    <strong>{needsCustomer ? (rows.find((r) => r.customerCode === customerCode)?.displayName ?? "—") : "All customers"}</strong>
+                  </div>
+                  <div>
+                    <em>Preview</em>
+                    <strong>{busy ? "Building…" : previewHtml ? "Ready" : "Waiting"}</strong>
+                  </div>
+                  <div>
+                    <em>Scope</em>
+                    <strong>{periodBanner}</strong>
                   </div>
                 </div>
 
@@ -595,63 +594,19 @@ function ReportsPage() {
                       </select>
                     </label>
                   ) : (
-                    <p className="text-sm text-muted">
-                      Assure Eco-System pack covers all customers.
-                    </p>
+                    <p className="text-sm text-muted">Estate pack covers every active customer.</p>
                   )}
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" disabled={busy} onClick={() => void loadPreview()}>
-                      {busy ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="mr-1.5 h-4 w-4" />
-                      )}
-                      Refresh preview
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={busy || !previewHtml}
-                      onClick={openPrint}
-                    >
-                      <Printer className="mr-1.5 h-4 w-4" />
-                      Print / PDF
-                    </Button>
-                  </div>
                 </div>
 
-                <p className="mb-3 text-xs text-muted">{periodBanner}</p>
-
                 {format === "custom-pack" ? (
-                  <section className="mb-5">
-                    <h2 className="mb-2 text-sm font-bold text-fg">Custom report fields</h2>
-                    <p className="mb-3 text-xs text-muted">
-                      Select the data blocks to include. Selection is remembered in this browser.
-                    </p>
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setCustomFields(defaultCustomFieldIds())}
-                      >
-                        Defaults
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setCustomFields(REPORT_FIELDS.map((f) => f.id))}
-                      >
-                        Select all
-                      </Button>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => setCustomFields([])}>
-                        Clear
-                      </Button>
+                  <section className="rpma-folio-fields">
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setCustomFields(defaultCustomFieldIds())}>Defaults</Button>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setCustomFields(REPORT_FIELDS.map((f) => f.id))}>Select all</Button>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setCustomFields([])}>Clear</Button>
                       <span className="self-center text-xs text-muted">{selectedCount} selected</span>
                     </div>
-                    <div className="grid gap-3 lg:grid-cols-2">
+                    <div className="grid gap-2 lg:grid-cols-2">
                       {REPORT_FIELD_GROUPS.map((g) => {
                         const fields = REPORT_FIELDS.filter((f) => f.group === g.id);
                         const allOn = fields.every((f) => customFields.includes(f.id));
@@ -660,42 +615,20 @@ function ReportsPage() {
                             <CardHead>
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span>{g.label}</span>
-                                <button
-                                  type="button"
-                                  className="text-[11px] font-semibold text-accent hover:underline"
-                                  onClick={() => selectGroup(g.id, !allOn)}
-                                >
+                                <button type="button" className="text-[11px] font-semibold text-accent hover:underline" onClick={() => selectGroup(g.id, !allOn)}>
                                   {allOn ? "Clear group" : "All in group"}
                                 </button>
                               </div>
-                              <p className="mt-0.5 text-[11px] font-normal normal-case text-muted">
-                                {g.blurb}
-                              </p>
                             </CardHead>
                             <CardContent className="space-y-1.5 pt-2">
                               {fields.map((f) => {
                                 const on = customFields.includes(f.id);
                                 return (
-                                  <label
-                                    key={f.id}
-                                    className={cn(
-                                      "flex cursor-pointer gap-2 rounded-lg border px-2.5 py-2 text-sm transition",
-                                      on
-                                        ? "border-accent/40 bg-accent-soft/40"
-                                        : "border-border bg-surface hover:border-accent/25",
-                                    )}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="mt-0.5"
-                                      checked={on}
-                                      onChange={() => toggleField(f.id)}
-                                    />
+                                  <label key={f.id} className={cn("flex cursor-pointer gap-2 rounded-lg border px-2.5 py-2 text-sm", on ? "border-accent/40 bg-accent-soft/40" : "border-border")}>
+                                    <input type="checkbox" className="mt-0.5" checked={on} onChange={() => toggleField(f.id)} />
                                     <span>
-                                      <span className="font-semibold text-fg">{f.label}</span>
-                                      <span className="mt-0.5 block text-[11px] text-muted">
-                                        {f.blurb}
-                                      </span>
+                                      <span className="font-semibold">{f.label}</span>
+                                      <span className="mt-0.5 block text-[11px] text-muted">{f.blurb}</span>
                                     </span>
                                   </label>
                                 );
@@ -708,30 +641,27 @@ function ReportsPage() {
                   </section>
                 ) : null}
 
-                {msg ? (
-                  <p className="mb-3 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg">
-                    {msg}
-                  </p>
-                ) : null}
+                {msg ? <p className="rpma-folio-msg">{msg}</p> : null}
+                {previewSubject ? <p className="rpma-folio-subj"><em>Subject</em> {previewSubject}</p> : null}
 
-                {previewSubject ? (
-                  <p className="mb-2 text-xs text-muted">
-                    <span className="font-bold text-fg">Subject: </span>
-                    {previewSubject}
-                  </p>
-                ) : null}
-
-                <div className="rpma-rpt-preview">
+                <div className="rpma-folio-paper">
+                  <div className="rpma-folio-paper-bar">
+                    <span />
+                    <span />
+                    <span />
+                    <em>{pack.title}</em>
+                  </div>
                   {previewUrl ? (
                     <iframe title="Report preview" src={previewUrl} />
                   ) : (
-                    <div className="flex min-h-[16rem] items-center justify-center text-sm text-muted">
-                      {busy ? "Generating preview…" : "Select a customer and refresh to preview."}
+                    <div className="rpma-folio-empty">
+                      {busy ? "Generating preview…" : "Select a tenant and refresh to preview this pack."}
                     </div>
                   )}
                 </div>
-              </>
-            )}
+              </div>
+            ) : null}
+          </TenantTree>
         </EmpWindow>
       </AppShell>
     </RequireAuth>
