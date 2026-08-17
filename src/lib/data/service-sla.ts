@@ -26,6 +26,7 @@ export type ServiceSlaLine = {
   measured: boolean;
   contractual: boolean;
   how: string;
+  excluded?: boolean;
 };
 
 export type ServiceSlaPack = {
@@ -57,9 +58,11 @@ function line(
   actualPct: number | null,
   actualLabel: string,
   measured: boolean,
+  extra?: { excluded?: boolean },
 ): ServiceSlaLine {
   const def = INDUSTRY_SLA_LINES[pillar].find((d) => d.id === defId);
   const targetPct = def?.targetPct ?? null;
+  const excluded = Boolean(extra?.excluded);
   return {
     id: defId,
     metric: def?.metric ?? defId,
@@ -67,16 +70,17 @@ function line(
     targetPct,
     actualPct,
     actualLabel,
-    tone: !measured
+    tone: excluded || !measured
       ? "default"
       : targetPct != null
         ? vsIndustryTone(actualPct, targetPct)
         : actualPct != null && actualPct >= 90
           ? "green"
           : "amber",
-    measured,
+    measured: measured && !excluded,
     contractual: Boolean(def?.contractual),
     how: def?.how ?? "",
+    excluded,
   };
 }
 
@@ -192,25 +196,50 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
   const tOk = rec?.testSuccessCount ?? 0;
   const tFail = rec?.testFailedCount ?? 0;
   const tDen = tOk + tFail;
-  const restore = tDen > 0 ? clamp((tOk / tDen) * 100) : null;
-  const restoreLabel =
-    tDen > 0 ? `${tOk}/${tDen} test restores passed` : "No completed recovery tests";
+  const devices = data.cove?.devices ?? [];
+  const inPlan =
+    (rec?.recoveryTestingCount ?? 0) + (rec?.standbyImageCount ?? 0) ||
+    devices.filter((d) => (d.recoveryPlanType ?? 0) >= 1).length;
+  let restore: number | null = null;
+  let restoreLabel = "No recovery plan on this tenant — not scored";
+  let restoreExcluded = false;
+  let restoreMeasured = false;
+  if (tDen > 0) {
+    restore = clamp((tOk / tDen) * 100);
+    restoreLabel = `${tOk}/${tDen} test restores passed`;
+    restoreMeasured = slaCover;
+  } else if (inPlan > 0) {
+    restore = 0;
+    restoreLabel = `${inPlan} device(s) in a recovery plan · 0 completed tests`;
+    restoreMeasured = slaCover;
+  } else {
+    restoreExcluded = slaCover;
+  }
 
   const lastTest = rec?.lastRecoveryTestAt ?? s?.recovery?.lastRecoveryTestAt ?? null;
   const ageH = hoursAgo(lastTest);
   let freq: number | null = null;
-  let freqLabel = "No recovery test on record";
+  let freqLabel = "No recovery plan on this tenant — not scored";
+  let freqExcluded = false;
+  let freqMeasured = false;
   if (ageH != null) {
     const days = ageH / 24;
     freq = days <= 31 ? 100 : days <= 93 ? 70 : 35;
     freqLabel = `Last test ${Math.round(days)} day(s) ago`;
+    freqMeasured = slaCover;
+  } else if (inPlan > 0) {
+    freq = 0;
+    freqLabel = `${inPlan} in plan · no recovery test on record`;
+    freqMeasured = slaCover;
+  } else {
+    freqExcluded = slaCover;
   }
 
   const lines: ServiceSlaLine[] = [
     line("cove-success", "cove", success, successLabel, slaCover && success != null),
     line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
-    line("cove-restore", "cove", restore, restoreLabel, slaCover && restore != null),
-    line("cove-test-freq", "cove", freq, freqLabel, slaCover && freq != null),
+    line("cove-restore", "cove", restore, restoreLabel, restoreMeasured, { excluded: restoreExcluded }),
+    line("cove-test-freq", "cove", freq, freqLabel, freqMeasured, { excluded: freqExcluded }),
   ];
 
   return {

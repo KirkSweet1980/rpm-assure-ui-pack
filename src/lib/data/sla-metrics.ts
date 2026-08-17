@@ -251,7 +251,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 95–99% of test restores",
       contractual: true,
       measurable: true,
-      how: "Cove recovery tests passed ÷ (passed + failed). Unknown / not-in-plan are excluded from the rate.",
+      how: "Passed recovery tests ÷ (passed + failed). Scored only when devices are in a Recovery Testing or Standby Image plan. No plan = excluded, not a miss.",
     },
     {
       id: "cove-test-freq",
@@ -260,7 +260,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "Monthly (critical) / quarterly (others)",
       contractual: true,
       measurable: true,
-      how: "Last recovery test age. Green ≤ 31 days, amber ≤ 93 days, red if never or older.",
+      how: "Age of last recovery test on devices that have a plan. In plan with no test = miss. No plan = excluded.",
     },
   ],
   epp: [
@@ -393,6 +393,7 @@ export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
     "Long-term offline devices, full disks, and application locks not remediated by the client.",
     "Extreme bandwidth constraints outside RPM control.",
     "A job that fails then succeeds inside the RPO window is still compliant.",
+    "Restore and test-frequency are scored only when a Recovery Testing or Standby Image plan is on. No plan is excluded, not a miss.",
     "No Cover for Devices: customers with 0 backup devices are not scored in SLA.",
   ],
   epp: [
