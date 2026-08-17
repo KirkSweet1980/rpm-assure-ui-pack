@@ -45,6 +45,7 @@ $idMaps = @{
   '48002600047' = 'MEDIPOS'  # Medipos
   '48001751035' = 'RPMINT'   # RPM Resources
   '48002584815' = 'RPMINT'   # RPM Resources (UK)
+  '48005599640' = 'SBT'      # SBS Tanks (not Simply Bright)
 }
 
 $aliases = @(
@@ -70,8 +71,12 @@ $aliases = @(
   @{ n = 'ora touch'; c = 'YLJ' },
   @{ n = 'vault tech'; c = 'VAULT' },
   @{ n = 'vaulttech'; c = 'VAULT' },
+  @{ n = 'sbs tanks'; c = 'SBT' },
   @{ n = 'simply bright solutions'; c = 'SBS' },
-  @{ n = 'simply bright'; c = 'SBS' }
+  @{ n = 'simply bright'; c = 'SBS' },
+  @{ n = 'board of healthcare funders'; c = 'BHF' },
+  @{ n = 'board of healthcare'; c = 'BHF' },
+  @{ n = 'bhf global'; c = 'BHF' }
 )
 
 $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
@@ -173,8 +178,10 @@ $wanted = @(
   @{ q = 'Vault-Tech'; c = 'VAULT' },
   @{ q = 'Simply Bright Solutions'; c = 'SBS' },
   @{ q = 'Simply Bright'; c = 'SBS' },
+  @{ q = 'SBS Tanks'; c = 'SBT' },
   @{ q = 'BHF'; c = 'BHF' },
   @{ q = 'PCNS'; c = 'BHF' },
+  @{ q = 'Board of Healthcare Funders'; c = 'BHF' },
   @{ q = 'Board of Healthcare'; c = 'BHF' }
 )
 foreach ($w in $wanted) {
@@ -218,7 +225,7 @@ foreach ($w in $wanted) {
 
 Write-Host ''
 Write-Host '=== ASSURE COVER (after search) ==='
-foreach ($code in @('AHIC','RSR','RSS','UVSS','HYDRA','ABLE','SBS','BHF','SIRF','RPMINT','IB','METSI','YLJ','MEDIPOS','VAULT')) {
+foreach ($code in @('AHIC','RSR','RSS','UVSS','HYDRA','ABLE','SBS','SBT','BHF','SIRF','RPMINT','IB','METSI','YLJ','MEDIPOS','VAULT')) {
   $rows = @($mapped | Where-Object { $_.CustomerCode -eq $code })
   if ($rows.Count -eq 0) { Write-Host ('NO COMPANY  ' + $code) }
   else { Write-Host ('OK          ' + $code + ' <- ' + (($rows | ForEach-Object { $_.CompanyName }) -join '; ')) }
