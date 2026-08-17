@@ -175,13 +175,14 @@ body {
   color: var(--pc-sidebar-color);
 }
 .dk-header-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-items: stretch;
+  gap: 12px;
   position: relative;
-  min-height: 112px;
-  padding: 8px 14px 14px;
+  min-height: 96px;
+  padding: 10px 16px;
   flex: 0 0 auto;
   min-width: 0;
   overflow: visible;
@@ -191,18 +192,18 @@ body {
   align-items: center;
   justify-content: flex-start;
   min-width: 0;
-  max-width: 28%;
-  gap: 6px;
+  max-width: none;
+  gap: 14px;
   z-index: 1;
 }
 .dk-header-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
   min-width: 0;
-  max-width: 28%;
+  max-width: none;
   z-index: 1;
 }
 .dk-header-one .dk-brand, .dk-header-tall .dk-brand {
@@ -212,14 +213,14 @@ body {
   align-items: center;
 }
 .dk-nav.is-top { display: contents; }
-.dk-shell.is-topnav { --pc-header-height: 184px; --rpma-hud-h: 0px; }
-.dk-shell.is-topnav.is-menu-open { --pc-header-height: 184px; }
+.dk-shell.is-topnav { --pc-header-height: 160px; --rpma-hud-h: 0px; }
+.dk-shell.is-topnav.is-menu-open { --pc-header-height: 160px; }
 .dk-header-navrow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
   min-height: 52px;
-  margin-top: 6px;
+  margin-top: 0;
   background: #0a1c2a;
   border-top: 1px solid #14344a;
 }
@@ -843,14 +844,14 @@ html.dark .rpma-pane-head-row {
 .rpma-hud,
 .rpma-hud-spacer { display: none; }
 .rpma-hud-mid {
-  position: absolute;
-  left: 50%;
-  top: 56px;
-  transform: translate(-50%, -50%);
+  position: static;
+  left: auto;
+  top: auto;
+  transform: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
   z-index: 2;
   pointer-events: auto;
 }
@@ -866,10 +867,10 @@ html.dark .rpma-pane-head-row {
 .rpma-hud-rev-svg { width: 92px !important; height: 76px !important; display: block; overflow: visible; }
 .rpma-hud-sql { display: flex; align-items: center; }
 .rpma-sql-digital {
-  position: absolute;
-  left: 26%;
-  top: 56px;
-  transform: translate(-50%, -50%);
+  position: static;
+  left: auto;
+  top: auto;
+  transform: none;
   z-index: 3;
   display: inline-flex;
   align-items: center;
