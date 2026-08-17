@@ -7,6 +7,7 @@ import {
   fetchConfigHealth,
   fetchIntegrations,
   requestAgentSync,
+  requestAgentUpdate,
   fetchApiFeedSyncStatus,
   recheckInfrastructure,
   type ConfigHealthItem,
@@ -223,6 +224,23 @@ function InfrastructureStatusPage() {
       setAgentMsg(r.message);
       return;
     }
+    void load();
+  }
+
+  async function updateOne(row: InfraAgentRow) {
+    if (!row.hostName) return;
+    armed.current.add(row.customerCode);
+    setSync((p) => ({ ...p, [row.customerCode]: "queued" }));
+    const r = await requestAgentUpdate({
+      data: { customerCode: row.customerCode, hostName: row.hostName },
+    });
+    if (!r.ok) {
+      armed.current.delete(row.customerCode);
+      setSync((p) => ({ ...p, [row.customerCode]: "error" }));
+      setAgentMsg(r.message);
+      return;
+    }
+    setAgentMsg(r.message);
     void load();
   }
 
@@ -550,6 +568,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                       </td>
                       <td className="text-right">
                         {row.hostName ? (
+                          <span className="inline-flex flex-wrap justify-end gap-1">
                           <Button
                             type="button"
                             size="sm"
@@ -559,6 +578,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                           >
                             Sync
                           </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 px-2.5 text-[11px]"
+                            disabled={!canSync}
+                            onClick={() => void updateOne(row)}
+                          >
+                            Update Agent
+                          </Button>
+                          </span>
                         ) : (
                           <span className="text-[11px] text-muted">No agent</span>
                         )}

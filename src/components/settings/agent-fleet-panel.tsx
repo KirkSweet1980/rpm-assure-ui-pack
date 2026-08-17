@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bot, RefreshCw } from "lucide-react";
+import { Bot, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   fetchAgentStatus,
@@ -118,6 +118,24 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
     void load();
   }
 
+  async function updateOne(row: AgentStatusRow) {
+    if (!row.hostName) return;
+    setSelected(row.agentId);
+    armed.current = new Set([row.agentId]);
+    startedAt.current[row.agentId] = Date.now();
+    setSync({ [row.agentId]: { phase: "queued", pct: 8, note: `Update ${SHIPPED_AGENT_VERSION}` } });
+    const r = await requestAgentUpdate({
+      data: { customerCode: row.customerCode, hostName: row.hostName },
+    });
+    if (!r.ok) {
+      armed.current.delete(row.agentId);
+      setSync({ [row.agentId]: { phase: "error", pct: 0, note: r.message } });
+      return;
+    }
+    setSync({ [row.agentId]: { phase: "queued", pct: 20, note: `Update ${SHIPPED_AGENT_VERSION}` } });
+    void load();
+  }
+
   const sel = rows.find((r) => r.agentId === selected);
   const selSt = sel ? sync[sel.agentId] : undefined;
 
@@ -229,6 +247,17 @@ export function AgentFleetPanel({ compact = false }: { compact?: boolean }) {
             onClick={() => void syncOne(sel)}
           >
             Sync Now
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="h-8 px-3 text-[12px]"
+            disabled={!sel.hostName || selSt?.phase === "queued" || selSt?.phase === "running"}
+            onClick={() => void updateOne(sel)}
+          >
+            <Download className="size-3.5" />
+            Update Agent
           </Button>
           {selSt ? (
             <div className="min-w-[160px] flex-1">
