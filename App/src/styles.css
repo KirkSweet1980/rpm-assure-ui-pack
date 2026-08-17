@@ -319,6 +319,9 @@ body {
   grid-template-columns: var(--rail-services) minmax(0, 1fr);
   grid-template-areas: "services detail";
 }
+.rpma-d3-workspace.is-exco {
+  --rail-services: 20.75rem;
+}
 .rpma-d3-workspace > .rpma-list,
 .rpma-d3-workspace > .rpma-d3-master { grid-area: customers; min-width: 0; }
 .rpma-d3-workspace > .rpma-pillar-rail { grid-area: services; min-width: 0; }
@@ -912,6 +915,16 @@ html.dark .rpma-xls tbody td:first-child {
 }
 .rpma-nav-ico { width: 13px; height: 13px; flex: 0 0 auto; }
 .rpma-mod-row.is-on { background: #f3f5f9; font-weight: 700; box-shadow: inset 3px 0 0 #0d9488; }
+button.rpma-eco-item,
+button.rpma-svc-row,
+button.rpma-mod-row {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  width: 100%;
+  text-align: left;
+}
 html[data-theme="dark"] .rpma-mod-row { color: var(--color-fg); }
 html[data-theme="dark"] .rpma-mod-row.is-on { background: #222b38; }
 
