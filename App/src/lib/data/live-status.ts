@@ -385,7 +385,7 @@ export function customerLiveStatus(
     "/syspro/security": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/security`, hint: "Security" },
     "/syspro/sql": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/sql`, hint: "SQL" },
     "/syspro/sla": { rag: sysproRag === "Off" ? off(Boolean(c.syspro)) : sysproRag, cover: Boolean(c.syspro), href: `${base}/syspro/sla`, hint: "SYSPRO SLA" },
-    "/rmm": { rag: off(Boolean(c.rmm) && srvN > 0), cover: Boolean(c.rmm) && srvN > 0, href: `${base}/rmm`, hint: srvN > 0 ? "RMM overview" : "No Cover for Devices" },
+    "/rmm": { rag: off(Boolean(c.rmm)), cover: Boolean(c.rmm), href: `${base}/rmm`, hint: c.rmm ? (srvN > 0 ? "RMM overview" : "RMM on cover") : "RMM not on cover" },
     "/rmm/devices": {
       rag: devicesRag,
       cover: srvCover,
@@ -412,10 +412,13 @@ export function customerLiveStatus(
     },
     "/rmm/sla": { rag: off(Boolean(c.rmm)), cover: Boolean(c.rmm), href: `${base}/rmm/sla`, hint: "RMM SLA" },
     "/rmm/iops": {
-      rag: !c.rmm ? "Off" : (extra?.rmm?.agentIops?.length ?? 0) > 0 || srvN > 0 ? "Green" : "Off",
-      cover: Boolean(c.rmm),
+      rag: !c.rmm ? "Off" : (extra?.rmm?.agentIops?.length ?? 0) > 0 ? "Green" : "Amber",
+      cover: Boolean(c.rmm) || (extra?.rmm?.agentIops?.length ?? 0) > 0,
       href: `${base}/rmm/iops`,
-      hint: (extra?.rmm?.agentIops?.length ?? 0) > 0 ? `${extra?.rmm?.agentIops?.length} IOPS volume(s)` : srvN > 0 ? "Disk IOPS" : "No Cover for Devices",
+      hint:
+        (extra?.rmm?.agentIops?.length ?? 0) > 0
+          ? `${extra?.rmm?.agentIops?.length} IOPS volume(s)`
+          : "IOPS arrives from Pulseway script or agent",
     },
     "/rmm/events": {
       rag: !c.rmm
@@ -424,12 +427,12 @@ export function customerLiveStatus(
           ? "Red"
           : (extra?.rmm?.windowsEvents?.length ?? 0) > 0
             ? "Green"
-            : off(Boolean(c.rmm)),
-      cover: Boolean(c.rmm),
+            : "Amber",
+      cover: Boolean(c.rmm) || (extra?.rmm?.windowsEvents?.length ?? 0) > 0,
       href: `${base}/rmm/events`,
       hint: (extra?.rmm?.windowsEvents?.length ?? 0) > 0 ? `${extra?.rmm?.windowsEvents?.length} event(s)` : "Event logs",
     },
-    "/cove": { rag: off(coveDevCover), cover: coveDevCover, href: `${base}/cove`, hint: coveDevCover ? "Backup overview" : "No Cover for Devices" },
+    "/cove": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove`, hint: c.cove ? "Backup overview" : "Backup not on cover" },
     "/cove/devices": {
       rag: coveDevRag,
       cover: coveDevCover,
@@ -439,7 +442,7 @@ export function customerLiveStatus(
     "/cove/recovery": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/recovery`, hint: "Recovery" },
     "/cove/retention": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/retention`, hint: "Retention" },
     "/cove/sla": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/sla`, hint: "Backup SLA" },
-    "/epp": { rag: off(eppDevCover), cover: eppDevCover, href: `${base}/epp`, hint: eppDevCover ? "EPP overview" : "No Cover for Devices" },
+    "/epp": { rag: off(Boolean(c.epp)), cover: Boolean(c.epp), href: `${base}/epp`, hint: c.epp ? "EPP overview" : "EPP not on cover" },
     "/epp/endpoints": {
       rag: eppEndRag,
       cover: eppDevCover,

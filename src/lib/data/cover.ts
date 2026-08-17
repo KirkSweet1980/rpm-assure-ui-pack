@@ -73,11 +73,15 @@ export type CoverInput = {
   pulsewayOrgName?: string | null;
   pulsewayDeviceCount?: number | null;
   pulsewayMapped?: boolean | null;
+  rmmIopsCount?: number | null;
+  rmmEventCount?: number | null;
   coveDeviceCount?: number | null;
   coveMapped?: boolean | null;
   covePartnerName?: string | null;
   eppDeviceCount?: number | null;
   eppMapped?: boolean | null;
+  eppPolicyCount?: number | null;
+  eppIncidentCount?: number | null;
   cspUserCount?: number | null;
   cspLicenseCount?: number | null;
   cspMapped?: boolean | null;
@@ -100,9 +104,15 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     Boolean(input.sysproHasVersion) ||
     (Number(input.sysproHotfixCount) || 0) > 0;
 
-  const rmmEvidence = (Number(input.pulsewayDeviceCount) || 0) > 0;
+  const rmmEvidence =
+    (Number(input.pulsewayDeviceCount) || 0) > 0 ||
+    (Number(input.rmmIopsCount) || 0) > 0 ||
+    (Number(input.rmmEventCount) || 0) > 0;
   const coveEvidence = (Number(input.coveDeviceCount) || 0) > 0;
-  const eppEvidence = (Number(input.eppDeviceCount) || 0) > 0;
+  const eppEvidence =
+    (Number(input.eppDeviceCount) || 0) > 0 ||
+    (Number(input.eppPolicyCount) || 0) > 0 ||
+    (Number(input.eppIncidentCount) || 0) > 0;
   const cspEvidence =
     (Number(input.cspUserCount) || 0) > 0 ||
     (Number(input.cspLicenseCount) || 0) > 0;
@@ -265,11 +275,15 @@ export function coverFromDetail(data: {
     pulsewayOrgName: data.rmm?.pulsewayOrgName ?? c?.pulsewayOrgName,
     pulsewayDeviceCount: rmmCount,
     pulsewayMapped: Boolean(c?.pulsewayMapped) || (data.rmm?.mapping?.length ?? 0) > 0,
+    rmmIopsCount: (data.rmm as { agentIops?: unknown[] } | null | undefined)?.agentIops?.length ?? 0,
+    rmmEventCount: (data.rmm as { windowsEvents?: unknown[] } | null | undefined)?.windowsEvents?.length ?? 0,
     coveDeviceCount: coveCount,
     coveMapped: Boolean(c?.coveMapped) || (data.cove?.mapping?.length ?? 0) > 0,
     covePartnerName: c?.covePartnerName,
     eppDeviceCount: eppCount,
     eppMapped: Boolean(c?.eppMapped) || (data.epp?.devices?.length ?? 0) > 0,
+    eppPolicyCount: (data.epp as { policies?: unknown[] } | null | undefined)?.policies?.length ?? 0,
+    eppIncidentCount: (data.epp as { incidents?: unknown[] } | null | undefined)?.incidents?.length ?? 0,
     cspUserCount: cspUsers,
     cspLicenseCount: data.csp?.licenses?.length ?? c?.cspLicenseSkuCount ?? c?.cspLicenseCount ?? 0,
     cspMapped: Boolean(c?.cspMapped) || data.csp?.enabled === true,

@@ -118,6 +118,10 @@ function itemVisible(
 ) {
   if (ALWAYS_ON.has(it.rel)) return true;
   if ((it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel) return true;
+  if (/\/sla$/.test(it.rel) || /\/(syspro|rmm|cove|epp|csp|tickets)$/.test(it.rel)) {
+    const p = it.rel.split("/")[1];
+    if (p && live?.pillars[p]?.cover) return true;
+  }
   const flag = live?.modules[it.rel];
   if (flag) return flag.cover;
   return ragOf(it.rel, live) !== "Off";
