@@ -3593,3 +3593,11 @@ html.snow .rpma-epp-mod.is-off .rpma-epp-state { color: #b91c1c; }
 .rpma-iops-matrix-rows article[data-kind="sata-hdd"] .rpma-iops-track > i { background: linear-gradient(90deg, #b45309, #fbbf24); }
 .rpma-iops-matrix-rows article[data-kind="sas-hdd"] .rpma-iops-track > i { background: linear-gradient(90deg, #c2410c, #fdba74); }
 .rpma-iops-matrix-rows article[data-kind="virtual"] .rpma-iops-track > i { background: linear-gradient(90deg, #475569, #94a3b8); }
+
+
+.rpma-drive-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rpma-drive-chip[data-bus="NVMe"] { color: #7c3aed; border-color: color-mix(in srgb, #7c3aed 40%, var(--color-border)); }
+.rpma-drive-chip[data-bus="SSD"] { color: #0d9488; border-color: color-mix(in srgb, #0d9488 40%, var(--color-border)); }
+.rpma-drive-chip[data-bus="SAS"] { color: #2563eb; border-color: color-mix(in srgb, #2563eb 40%, var(--color-border)); }
+.rpma-drive-chip[data-bus="SATA"] { color: #b45309; border-color: color-mix(in srgb, #b45309 40%, var(--color-border)); }
+.rpma-drive-chip[data-bus="unk"] { color: var(--color-muted); }

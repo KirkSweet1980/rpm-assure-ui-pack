@@ -15,5 +15,7 @@ export {
   expectedIopsForMedia,
   expectedLatencyMsForMedia,
   iopsBand,
+  inferDriveBus,
+  busToKind,
 } from "./drive-stats";
-export type { DriveKind, IopsBand } from "./drive-stats";
+export type { DriveKind, IopsBand, DriveBus } from "./drive-stats";

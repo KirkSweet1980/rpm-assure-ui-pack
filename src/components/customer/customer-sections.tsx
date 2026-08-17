@@ -25,8 +25,8 @@ import {
   iopsBand,
   classifyDrive,
   DRIVE_STATS,
-  expectedIopsForMedia,
-  expectedLatencyMsForMedia,
+  inferDriveBus,
+  busToKind,
 } from "@/lib/data/drive-stats";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
@@ -1506,7 +1506,18 @@ function AgentHostTelemetry({
                 <tr key={`${r.hostName}-${r.driveLetter}-${i}`}>
                   <td className="font-mono">{r.hostName || "—"}</td>
                   <td className="font-mono">{r.driveLetter || "—"}</td>
-                  <td>{r.mediaType || "—"}</td>
+                  <td>
+                    {r.mediaType || "—"}
+                    {(() => {
+                      const bus = inferDriveBus({
+                        media: r.mediaType,
+                        totalIops: r.totalIops,
+                        readLatencyMs: r.readLatencyMs,
+                        writeLatencyMs: r.writeLatencyMs,
+                      });
+                      return bus ? <span className="rpma-drive-chip" data-bus={bus}> {bus}</span> : null;
+                    })()}
+                  </td>
                   <td>{size}</td>
                   <td className={usedCls}>{used != null ? `${used.toFixed(1)}%` : "—"}</td>
                   <td>{fmtI(r.readIops)}</td>
@@ -2234,10 +2245,17 @@ function IopsPerfMatrix({
       <div className="rpma-iops-matrix-rows">
         {list.map((r, i) => {
           const actual = Number(r.totalIops) || 0;
-          const kind = classifyDrive(r.mediaType);
+          const reported = classifyDrive(r.mediaType);
+          const bus = inferDriveBus({
+            media: r.mediaType,
+            totalIops: r.totalIops,
+            readLatencyMs: r.readLatencyMs,
+            writeLatencyMs: r.writeLatencyMs,
+          });
+          const kind = busToKind(bus, reported);
           const stat = DRIVE_STATS[kind];
-          const expected = expectedIopsForMedia(r.mediaType) || stat.iops;
-          const expectedLat = expectedLatencyMsForMedia(r.mediaType) || stat.latencyMs;
+          const expected = stat.iops;
+          const expectedLat = stat.latencyMs;
           const ofExp = expected > 0 ? Math.round((actual / expected) * 100) : 0;
           const band = iopsBand(actual, expected, r.queueLen);
           const scale = Math.max(expected * 1.4, actual, 1);
@@ -2254,8 +2272,15 @@ function IopsPerfMatrix({
             <article key={`${r.driveLetter}-${i}`} data-band={band} data-kind={kind}>
               <div className="rpma-iops-k">
                 <strong>{r.driveLetter || "?"}</strong>
-                <span className="rpma-drive-chip" data-kind={kind}>
-                  {stat.label}
+                <span className="rpma-drive-chips">
+                  {reported === "virtual" || /virtual/i.test(r.mediaType || "") ? (
+                    <span className="rpma-drive-chip" data-kind="virtual">Virtual</span>
+                  ) : (
+                    <span className="rpma-drive-chip" data-kind={reported}>{DRIVE_STATS[reported].label}</span>
+                  )}
+                  <span className="rpma-drive-chip" data-bus={bus || "unk"}>
+                    Drive type {bus || "—"}
+                  </span>
                 </span>
               </div>
               <div className="rpma-iops-track" title={`${Math.round(actual)} of ${expected} expected IOPS`}>
