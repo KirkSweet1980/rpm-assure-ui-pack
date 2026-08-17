@@ -120,7 +120,7 @@ body {
 .dk-brand-mark { display: none; }
 .dk-brand-text { display: flex; flex-direction: column; line-height: 1.05; position: relative; padding-bottom: 5px; }
 .dk-brand-text strong {
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: transparent;
@@ -150,8 +150,8 @@ body {
   .dk-brand-text::after { animation: none; width: 100%; }
 }
 .dk-link, .dk-collapse {
-  display: flex; align-items: center; gap: 6px; width: auto; margin: 0; padding: 4px 8px;
-  border: 0; background: transparent; color: #d5deea; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 5px; width: auto; margin: 0; padding: 3px 6px;
+  border: 0; background: transparent; color: #d5deea; font-size: 10px; font-weight: 600;
   text-decoration: none; text-align: left; border-radius: 6px; cursor: pointer;
 }
 .dk-link.is-active, .dk-collapse.is-active { color: #fff; background: var(--pc-active-background); }
@@ -211,9 +211,9 @@ body {
   align-items: center;
 }
 .dk-nav.is-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 2px; padding: 0; }
-.dk-shell.is-topnav { --pc-header-height: 76px; --rpma-hud-h: 0px; }
-.dk-shell.is-topnav.is-menu-open { --pc-header-height: 76px; }
-.dk-header-one .dk-iconbtn, .dk-header-tall .dk-iconbtn { color: #ced4dc; background: transparent; border: 0; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; }
+.dk-shell.is-topnav { --pc-header-height: 72px; --rpma-hud-h: 0px; }
+.dk-shell.is-topnav.is-menu-open { --pc-header-height: 72px; }
+.dk-header-one .dk-iconbtn, .dk-header-tall .dk-iconbtn { color: #ced4dc; background: transparent; border: 0; width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; }
 .dk-header-nav.is-collapsed { display: none; }
 .dk-burger { width: 40px; height: 40px; border: 0; border-radius: 10px; background: color-mix(in srgb, #fff 8%, transparent); display: none; place-items: center; gap: 5px; cursor: pointer; }
 .dk-burger span { width: 18px; height: 2px; background: #e8eef6; display: block; border-radius: 99px; }
@@ -837,14 +837,14 @@ html.dark .rpma-pane-head-row {
   min-width: 0;
   text-align: left;
 }
-.rpma-hud-ico { width: 12px; height: 12px; flex: 0 0 auto; color: var(--color-brand-teal); }
+.rpma-hud-ico { width: 11px; height: 11px; flex: 0 0 auto; color: var(--color-brand-teal); }
 .rpma-hud-k {
   margin: 0;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
-  font-size: 9px;
+  gap: 3px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -853,7 +853,7 @@ html.dark .rpma-pane-head-row {
 .rpma-hud-v {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
   color: #f3f5f7;
@@ -2508,7 +2508,7 @@ html.snow .rpma-est-empty { color: #536170; }
   color: inherit;
   text-decoration: none;
 }
-.rpma-brief-svc em { font-style: normal; font-size: 12px; font-weight: 750; color: var(--color-muted); }
+.rpma-brief-svc em { font-style: normal; font-size: 11px; font-weight: 800; color: var(--color-muted); line-height: 1.25; }
 .rpma-brief-svc strong { display: block; margin: 6px 0 10px; font-size: 36px; font-weight: 800; letter-spacing: -0.04em; }
 .rpma-brief-bar { height: 6px; border-radius: 99px; background: #1a2834; overflow: hidden; }
 .rpma-brief-bar i { display: block; height: 100%; border-radius: 99px; }

@@ -1054,11 +1054,11 @@ function ExcoInsightPage() {
       return { label: `${Math.round(h / 24)}d ago`, tone: "red" as const };
     }
     return [
-      { k: "SYSPRO", ...age(latest(rows.map((r) => r.lastImportAt))) },
-      { k: "RMM", ...age(latest(rows.map((r) => r.pulsewayLastImportAt))) },
-      { k: "Backup", ...age(latest(rows.map((r) => r.coveLastImportAt))) },
-      { k: "EPP", ...age(latest(rows.map((r) => r.eppLastImportAt))) },
-      { k: "M365", ...age(latest(rows.map((r) => r.cspLastImportAt))) },
+      { k: "SYSPRO Landscape", ...age(latest(rows.map((r) => r.lastImportAt))) },
+      { k: "RMM | Infrastructure Management", ...age(latest(rows.map((r) => r.pulsewayLastImportAt))) },
+      { k: "RPM Cloud Backup", ...age(latest(rows.map((r) => r.coveLastImportAt))) },
+      { k: "RPM End Point Protection", ...age(latest(rows.map((r) => r.eppLastImportAt))) },
+      { k: "Microsoft 365", ...age(latest(rows.map((r) => r.cspLastImportAt))) },
     ];
   }, [rows]);
 
@@ -1088,7 +1088,7 @@ function ExcoInsightPage() {
           <div className="rpma-brief-head">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h1>
-                Customer Eco-System is{" "}
+                Customer Eco System is{" "}
                 <span className={rag.overall === "Green" ? "text-rag-green" : rag.overall === "Amber" ? "text-rag-amber" : "text-rag-red"}>
                   {rag.overall}
                 </span>
@@ -1138,10 +1138,10 @@ function ExcoInsightPage() {
 
           <div className="rpma-brief-svcs">
             {([
-              { name: "SYSPRO", href: "/?view=finsight", pct: slaByService.syspro, n: coverStats.syspro, target: 90, note: "jobs miss" },
-              { name: "RMM", href: "/?view=all", pct: slaByService.rmm, n: coverStats.rmm, target: 99, note: `${serversOnline} online` },
-              { name: "Cloud Backup", href: "/?view=attention", pct: slaByService.cove, n: coverStats.cove, target: 99, note: "SLA miss" },
-              { name: "End Point", href: "/?view=all", pct: slaByService.epp, n: coverStats.epp, target: 98, note: "on cover" },
+              { name: "SYSPRO Landscape", href: "/?view=finsight", pct: slaByService.syspro, n: coverStats.syspro, target: 90, note: "jobs miss" },
+              { name: "RMM | Infrastructure Management", href: "/?view=all", pct: slaByService.rmm, n: coverStats.rmm, target: 99, note: `${serversOnline} online` },
+              { name: "RPM Cloud Backup", href: "/?view=attention", pct: slaByService.cove, n: coverStats.cove, target: 99, note: "SLA miss" },
+              { name: "RPM End Point Protection", href: "/?view=all", pct: slaByService.epp, n: coverStats.epp, target: 98, note: "on cover" },
             ]).map((s) => {
               const pct = s.pct;
               const tone = pct == null ? "muted" : pct >= s.target ? "green" : pct >= s.target - 5 ? "amber" : "red";
