@@ -180,8 +180,18 @@ BEGIN
     CONSTRAINT PK_Agent_DiskIops PRIMARY KEY (SnapshotUtc, CustomerCode, HostName, DriveLetter)
   );
 END
-IF COL_LENGTH(N'dbo.Agent_DiskIops', N'Source') IS NULL
-  ALTER TABLE dbo.Agent_DiskIops ADD Source nvarchar(40) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'TotalGb') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD TotalGb decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'FreeGb') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD FreeGb decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'UsedPct') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD UsedPct decimal(6,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'MediaType') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD MediaType nvarchar(40) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'ReadIops') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD ReadIops decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'WriteIops') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD WriteIops decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'TotalIops') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD TotalIops decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'QueueLen') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD QueueLen decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'ReadLatencyMs') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD ReadLatencyMs decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'WriteLatencyMs') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD WriteLatencyMs decimal(18,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'SampleSec') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD SampleSec decimal(6,2) NULL;
+IF COL_LENGTH(N'dbo.Agent_DiskIops', N'Source') IS NULL ALTER TABLE dbo.Agent_DiskIops ADD Source nvarchar(40) NULL;
 `);
           const source = str(body.source ?? "pulseway", 40) || "pulseway";
           const snap = new Date();
