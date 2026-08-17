@@ -175,115 +175,143 @@ export const CUSTOMER_PILLARS: {
   },
 ];
 
-function pillarIdFromPath(path: string, base: string) {
+function pillarIdFromPath(path: string, base: string): string {
   const rest = path.slice(base.length).replace(/^\//, "");
   const first = rest.split("/")[0];
-  if (first === "ams") return null;
-  return CUSTOMER_PILLARS.some((p) => p.id === first) ? first : null;
+  if (!first || first === "ams") return "eco";
+  return CUSTOMER_PILLARS.some((p) => p.id === first) ? first : "eco";
 }
+
+const ECO_PILLAR = {
+  id: "eco",
+  title: "Tenant",
+  short: "Tenant",
+  modulesHeading: "Tenant modules",
+  overview: "",
+  icon: LayoutDashboard,
+  color: "#0d9488",
+};
 
 export function CustomerPillarRail({ code, cover, live }: Props) {
   const path = useRouterState({ select: (s) => s.location.pathname }).replace(/\/$/, "");
   const base = `/customers/${encodeURIComponent(code)}`;
   const fromUrl = pillarIdFromPath(path, base);
-  const [picked, setPicked] = useState<string | null>(fromUrl);
+  const [picked, setPicked] = useState<string>(fromUrl);
 
   useEffect(() => {
     setPicked(fromUrl);
   }, [fromUrl]);
 
-  const active = CUSTOMER_PILLARS.find((p) => p.id === picked);
-  const modulesHeading = active?.modulesHeading ?? "Service Modules";
+  const active = CUSTOMER_PILLARS.find((p) => p.id === picked) ?? null;
+  const isEco = picked === "eco" || !active;
+  const modules = isEco ? ECOSYSTEM_MODULES : active.modules;
+  const modulesHeading = isEco ? ECO_PILLAR.modulesHeading : active.modulesHeading;
+  const serviceCover = isEco ? true : active.covered(cover);
+
+  const iconItems: {
+    id: string;
+    title: string;
+    short: string;
+    href: string;
+    Icon: LucideIcon;
+    color: string;
+    on: boolean;
+    rag: LiveFlag["rag"];
+    hint?: string;
+  }[] = [
+    {
+      id: "eco",
+      title: "Tenant / Customer Ecosystem",
+      short: "Tenant",
+      href: base,
+      Icon: ECO_PILLAR.icon,
+      color: ECO_PILLAR.color,
+      on: true,
+      rag: live?.pillars.eco?.rag ?? "Green",
+      hint: live?.pillars.eco?.hint,
+    },
+    ...CUSTOMER_PILLARS.map((p) => {
+      const on = p.covered(cover);
+      const flag = live?.pillars[p.id];
+      return {
+        id: p.id,
+        title: p.title,
+        short:
+          p.id === "syspro"
+            ? "SYSPRO"
+            : p.id === "rmm"
+              ? "RMM"
+              : p.id === "cove"
+                ? "Backup"
+                : p.id === "epp"
+                  ? "EPP"
+                  : p.id === "csp"
+                    ? "M365"
+                    : "Tickets",
+        href: `${base}${p.overview}`,
+        Icon: p.icon,
+        color: p.color,
+        on,
+        rag: flag?.rag ?? (on ? "Green" : "Off"),
+        hint: flag?.hint,
+      };
+    }),
+  ];
 
   return (
-    <aside className="rpma-pillar-rail" aria-label="Customer navigation">
-      <section className="rpma-nav-block">
+    <aside className="rpma-pillar-rail rpma-dual-rail" aria-label="Customer navigation">
+      <nav className="rpma-icon-rail" aria-label="RPM Services">
+        {iconItems.map((it) => {
+          const selected = picked === it.id;
+          const Icon = it.Icon;
+          return (
+            <SpaLink
+              key={it.id}
+              href={it.href}
+              title={`${it.title} — ${it.on ? "Cover" : "No cover"} · ${it.hint ?? "live status"}`}
+              className={cn("rpma-icon-btn", selected && "is-on", !it.on && "is-off")}
+              onClick={() => setPicked(it.id)}
+            >
+              <span className="rpma-icon-mark">
+                <Icon style={{ color: it.color }} aria-hidden />
+                <span className={cn("rpma-icon-pip", it.on ? "is-cover" : "is-nocover")} />
+              </span>
+              <em>{it.short}</em>
+              <StatusRobot rag={it.rag} title={it.hint} />
+            </SpaLink>
+          );
+        })}
+      </nav>
+
+      <section className="rpma-mod-col">
         <div className="rpma-pillar-rail-head">
-          <h2>Customer EcoSystem</h2>
-          <HelpTip text="Tenant-level pages: overview, assurance, incidents, risks and SLA. The robot is live RAG — green clear, amber watch, red breach." />
+          <h2>{modulesHeading}</h2>
+          <HelpTip text="Modules for the selected service. Robot is live RAG. Cover chip is scope." />
         </div>
-        <div className="rpma-eco-list">
-          {ECOSYSTEM_MODULES.map((m) => {
+        <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
+          {modules.map((m) => {
             const href = m.path ? `${base}${m.path}` : base;
             const selected = path === href || path === `${href}/`;
             const Icon = m.icon;
-            const flag = live?.modules[m.path] ?? live?.pillars.eco;
+            const flag = live?.modules[m.path] ?? (isEco ? live?.pillars.eco : live?.modules[m.path]);
+            const dest = flag?.rag === "Amber" || flag?.rag === "Red" ? flag.href || href : href;
             return (
               <SpaLink
                 key={href}
-                href={href}
-                title={`${m.label} — ${flag?.hint ?? "Customer EcoSystem"}`}
-                className={cn("rpma-eco-item", selected && "is-on")}
-                onClick={() => setPicked(null)}
+                href={dest}
+                title={flag?.hint ?? m.label}
+                className={cn("rpma-mod-row", selected && "is-on")}
               >
                 <Icon className="rpma-nav-ico" style={{ color: m.color }} aria-hidden />
                 <span className="min-w-0 flex-1 truncate">{m.label}</span>
-                <StatusRobot rag={flag?.rag ?? "Green"} title={flag?.hint} />
+                <CoverTag on={serviceCover} />
+                <StatusRobot
+                  rag={flag?.rag ?? (serviceCover ? "Green" : "Off")}
+                  title={flag?.hint}
+                />
               </SpaLink>
             );
           })}
-        </div>
-      </section>
-
-      <section className="rpma-nav-block">
-        <div className="rpma-pillar-rail-head">
-          <h2>RPM Services</h2>
-          <HelpTip text="Outline chip = Cover or No Cover (scope). Robot visor = live RAG for that service. Green clear, amber watch, red breach. Grey robot = not scored because No Cover." />
-        </div>
-        <div className="rpma-svc-static" role="navigation" aria-label="RPM Services">
-          {CUSTOMER_PILLARS.map((p) => {
-            const on = p.covered(cover);
-            const Icon = p.icon;
-            const selected = picked === p.id;
-            const flag = live?.pillars[p.id];
-            return (
-              <SpaLink
-                key={p.id}
-                href={`${base}${p.overview}`}
-                title={`${p.title} — ${on ? "Cover" : "No cover"} · ${flag?.hint ?? "live status"}`}
-                className={cn("rpma-svc-row", selected && "is-on")}
-                onClick={() => setPicked(p.id)}
-              >
-                <Icon className="rpma-svc-glyph" style={{ color: p.color }} aria-hidden />
-                <span className="rpma-svc-row-name">{p.title}</span>
-                <CoverTag on={on} />
-                <StatusRobot rag={flag?.rag ?? (on ? "Green" : "Off")} title={flag?.hint} />
-              </SpaLink>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="rpma-nav-block">
-        <div className="rpma-pillar-rail-head">
-          <h2>{modulesHeading}</h2>
-          <HelpTip text="Pages inside the selected RPM service. Robot is live status for that module. Click an amber robot row to open the amber issue." />
-        </div>
-        <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
-          {active ? (
-            active.modules.map((m) => {
-              const href = `${base}${m.path}`;
-              const selected = path === href || path === `${href}/`;
-              const Icon = m.icon;
-              const flag = live?.modules[m.path];
-              const dest = flag?.rag === "Amber" || flag?.rag === "Red" ? flag.href : href;
-              return (
-                <SpaLink
-                  key={href}
-                  href={dest}
-                  title={flag?.hint ?? m.label}
-                  className={cn("rpma-mod-row", selected && "is-on")}
-                >
-                  <Icon className="rpma-nav-ico" style={{ color: m.color }} aria-hidden />
-                  <span className="min-w-0 flex-1 truncate">{m.label}</span>
-                  <CoverTag on={active.covered(cover)} />
-                  <StatusRobot rag={flag?.rag ?? (active.covered(cover) ? "Green" : "Off")} title={flag?.hint} />
-                </SpaLink>
-              );
-            })
-          ) : (
-            <p className="rpma-list-empty">Select an RPM Service</p>
-          )}
         </div>
       </section>
     </aside>
