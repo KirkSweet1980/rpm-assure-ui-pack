@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SlaSection } from "@/components/customer/customer-sections";
+import { ServiceSlaSection } from "@/components/customer/service-sla-section";
 import { Route as PillarRoute } from "./customers.$code.syspro";
 
 export const Route = createFileRoute("/customers/$code/syspro/sla")({
@@ -8,6 +8,6 @@ export const Route = createFileRoute("/customers/$code/syspro/sla")({
     if (!data?.customer) {
       return <p className="text-sm text-muted">Loading customer workspace…</p>;
     }
-    return <SlaSection data={data} />;
+    return <ServiceSlaSection data={data} pillar="syspro" />;
   },
 });

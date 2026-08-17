@@ -98,7 +98,7 @@ export const RPM_CONTRACT_RULES = {
     "SYSPRO Support + AMS only. Backups, infrastructure, OS, AD and cybersecurity are excluded (clauses 5.1 and 11.2).",
 } as const;
 
-export type IndustryPillarKey = "rmm" | "cove" | "epp";
+export type IndustryPillarKey = "rmm" | "cove" | "epp" | "syspro" | "csp" | "tickets";
 
 export type IndustryMeasure = {
   pillar: IndustryPillarKey;
@@ -150,8 +150,38 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
     targetPct: 98,
     targetLabel: "98% endpoints managed",
     howWeMeasure:
-      "managed ÷ (managed + unmanaged) from RPM EndPoint Protection. Open critical incidents pull the score down. Detection-efficacy is not contractual.",
+      "managed ÷ (managed + unmanaged) from RPM EndPoint Protection. Open critical incidents pull the score down.",
     source: INDUSTRY_SLA_DOC,
+  },
+  syspro: {
+    pillar: "syspro",
+    label: "SYSPRO",
+    metric: "Application health",
+    targetPct: 90,
+    targetLabel: "90% jobs clean · FinSight in control",
+    howWeMeasure:
+      "Job errors and FinSight out-of-balance lines. Zero of each is 100%. Ticket clocks sit on Customer Tickets.",
+    source: RPM_SLA_TITLE,
+  },
+  csp: {
+    pillar: "csp",
+    label: "Microsoft 365",
+    metric: "Tenant posture",
+    targetPct: 80,
+    targetLabel: "Secure Score and MFA registration",
+    howWeMeasure:
+      "Secure Score % and MFA registered ÷ capable. Posture only — not the signed SYSPRO + AMS contract.",
+    source: "Microsoft 365 tenant collect",
+  },
+  tickets: {
+    pillar: "tickets",
+    label: "Customer Tickets",
+    metric: "Response and restore",
+    targetPct: 90,
+    targetLabel: "90% response · 90% restore (SAST BH)",
+    howWeMeasure:
+      "Freshdesk first-response and resolve vs signed P1–P4 clocks in 08:00–17:00 SAST. Open clocks are not misses.",
+    source: RPM_SLA_TITLE,
   },
 };
 
@@ -177,31 +207,22 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       how: "Classified servers with a reporting RPM RMM agent (online or last-seen within 15 minutes).",
     },
     {
-      id: "rmm-mttd",
-      metric: "Mean time to detect (critical)",
-      targetPct: null,
-      targetLabel: "< 5–15 minutes",
+      id: "rmm-patch",
+      metric: "Server patch compliance",
+      targetPct: 95,
+      targetLabel: "≥ 95% servers with no outstanding critical/important",
       contractual: false,
-      measurable: false,
-      how: "Requires real-time RMM alerting clocks. Not scored until a helpdesk feed timestamps detection.",
+      measurable: true,
+      how: "Servers with zero outstanding updates ÷ classified servers that report a patch count.",
     },
     {
-      id: "rmm-mttr-p1",
-      metric: "MTTR P1 — full server / service outage",
-      targetPct: null,
-      targetLabel: "Response 15–30 min · restore 2–4 hours",
+      id: "rmm-disk",
+      metric: "Disk pressure",
+      targetPct: 100,
+      targetLabel: "0 servers at ≥85% used",
       contractual: false,
-      measurable: false,
-      how: "Ticket clocks. Not scored until a helpdesk feed exists.",
-    },
-    {
-      id: "rmm-mttr-p2",
-      metric: "MTTR P2 — significant degradation",
-      targetPct: null,
-      targetLabel: "Response 30–60 min · restore 4–8 hours",
-      contractual: false,
-      measurable: false,
-      how: "Ticket clocks. Not scored until a helpdesk feed exists.",
+      measurable: true,
+      how: "Servers with a disk at or above 85% used. One at-risk volume is a miss on that server.",
     },
   ],
   cove: [
@@ -241,15 +262,6 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       measurable: true,
       how: "Last recovery test age. Green ≤ 31 days, amber ≤ 93 days, red if never or older.",
     },
-    {
-      id: "cove-rto",
-      metric: "RTO — standard",
-      targetPct: null,
-      targetLabel: "4–12 hours or next business day",
-      contractual: false,
-      measurable: false,
-      how: "Requires timed restore clocks. Not scored from collect.",
-    },
   ],
   epp: [
     {
@@ -280,6 +292,93 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       how: "RPM EndPoint Protection incidents currently open at critical / high. Operational, not a contractual nines target.",
     },
   ],
+  syspro: [
+    {
+      id: "syspro-jobs",
+      metric: "Job logging",
+      targetPct: 100,
+      targetLabel: "0 failed / error jobs on last collect",
+      contractual: true,
+      measurable: true,
+      how: "SYSPRO job error count. Each error deducts 8 points (floor 0).",
+    },
+    {
+      id: "syspro-finsight",
+      metric: "FinSight control",
+      targetPct: 100,
+      targetLabel: "0 out-of-balance recon lines",
+      contractual: true,
+      measurable: true,
+      how: "Open FinSight OOB lines. Each line deducts 10 points (floor 0).",
+    },
+    {
+      id: "syspro-collect",
+      metric: "Collect freshness",
+      targetPct: 100,
+      targetLabel: "Last collect within 24 hours",
+      contractual: false,
+      measurable: true,
+      how: "Hours since last SYSPRO import. Green ≤ 24h, amber ≤ 48h, then a miss.",
+    },
+  ],
+  csp: [
+    {
+      id: "csp-score",
+      metric: "Secure Score",
+      targetPct: 70,
+      targetLabel: "≥ 70% of Microsoft max",
+      contractual: false,
+      measurable: true,
+      how: "Current Secure Score ÷ max from the Microsoft 365 collect.",
+    },
+    {
+      id: "csp-mfa",
+      metric: "MFA registration",
+      targetPct: 95,
+      targetLabel: "≥ 95% of MFA-capable users registered",
+      contractual: false,
+      measurable: true,
+      how: "MFA registered ÷ MFA capable on the latest tenant snapshot.",
+    },
+    {
+      id: "csp-seats",
+      metric: "Licence assignment",
+      targetPct: 80,
+      targetLabel: "Assigned seats in use",
+      contractual: false,
+      measurable: true,
+      how: "Assigned seats ÷ purchased seats. Visibility only — unused seats are not a breach.",
+    },
+  ],
+  tickets: [
+    {
+      id: "tickets-response",
+      metric: "Acknowledge / first response",
+      targetPct: 90,
+      targetLabel: "≥ 90% within signed clock",
+      contractual: true,
+      measurable: true,
+      how: "Freshdesk first-response vs P1–P4 acknowledge minutes in SAST business hours. Last 30 days.",
+    },
+    {
+      id: "tickets-restore",
+      metric: "Restore / resolve",
+      targetPct: 90,
+      targetLabel: "≥ 90% within signed restore",
+      contractual: true,
+      measurable: true,
+      how: "Resolved tickets vs P1–P3 restore clocks. P4 restore is by agreement and is not scored.",
+    },
+    {
+      id: "tickets-open",
+      metric: "Open tickets",
+      targetPct: 100,
+      targetLabel: "Owned and inside clock",
+      contractual: false,
+      measurable: true,
+      how: "Open count. 0 open = 100%. Each open ticket deducts 5 points (floor 40) — operational, not a miss on restore.",
+    },
+  ],
 };
 
 export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
@@ -301,6 +400,19 @@ export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
     "Unmanaged devices the client has not approved for deployment.",
     "Endpoints offline longer than the update window are excluded from update compliance.",
     "No Cover for Devices: 0 endpoints are not scored in SLA.",
+  ],
+  syspro: [
+    "Demo or deferred companies are not scored until collect is enabled.",
+    "Hotfixes and SQL instance health are visibility, not this score.",
+  ],
+  csp: [
+    "Microsoft 365 is posture, not the signed SYSPRO + AMS contract.",
+    "Secure Score and MFA depend on Graph collect for that tenant.",
+  ],
+  tickets: [
+    "Open clocks are not scored as a miss until the clock expires.",
+    "P4 restore is by agreement.",
+    "Unmapped Freshdesk companies do not land on a customer.",
   ],
 };
 

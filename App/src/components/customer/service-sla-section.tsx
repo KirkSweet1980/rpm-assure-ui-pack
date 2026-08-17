@@ -12,6 +12,9 @@ const TITLES: Record<IndustryPillarKey, string> = {
   rmm: "RPM Remote Management · Service SLA",
   cove: "RPM Cloud Backup · Service SLA",
   epp: "RPM EndPoint Protection · Service SLA",
+  syspro: "SYSPRO · Service SLA",
+  csp: "Microsoft 365 · Tenant posture",
+  tickets: "Customer Tickets · Service SLA",
 };
 
 function toneClass(tone: ServiceSlaPack["lines"][number]["tone"]) {
@@ -42,7 +45,7 @@ export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
         <StatCard
           label="Measured lines"
           value={pack.lines.filter((l) => l.measured).length}
-          hint={`${pack.lines.filter((l) => !l.measured).length} require a clock feed`}
+          hint={`${pack.lines.filter((l) => !l.measured).length} not scored this period`}
         />
         <StatCard label="Source" value="Collect" hint={pack.source} />
       </div>
@@ -102,6 +105,45 @@ export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
           </p>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/** Compact score row for service hubs and modules. */
+export function SlaStrip({
+  data,
+  pillar,
+}: {
+  data: CustomerDetailPayload;
+  pillar: IndustryPillarKey;
+}) {
+  const pack = buildServiceSla(pillar, data);
+  if (!pack.covered) return null;
+  return (
+    <div className="grid gap-2 sm:grid-cols-4">
+      <StatCard
+        label="SLA"
+        value={pack.overallPct != null ? `${pack.overallPct}%` : "—"}
+        tone={
+          pack.overallPct == null
+            ? "default"
+            : pack.overallPct >= 95
+              ? "green"
+              : pack.overallPct >= 85
+                ? "amber"
+                : "red"
+        }
+        hint={pack.headline}
+      />
+      {pack.lines.slice(0, 3).map((l) => (
+        <StatCard
+          key={l.id}
+          label={l.metric}
+          value={l.actualPct != null ? `${l.actualPct}%` : "—"}
+          tone={l.tone === "default" ? "default" : l.tone}
+          hint={l.actualLabel}
+        />
+      ))}
     </div>
   );
 }

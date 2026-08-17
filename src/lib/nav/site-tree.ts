@@ -200,7 +200,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-rmm-sla`,
             label: "Service SLA",
-            blurb: "Uptime 99.9% · agent coverage · MTTR clocks",
+            blurb: "Uptime 99.9% · agent coverage · patches · disk",
             href: `${base}/rmm/sla`,
             match: "exact",
             audience: "ops",
@@ -301,7 +301,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-epp-sla`,
             label: "Service SLA",
-            blurb: "Coverage 98% · updates · threat clocks",
+            blurb: "Coverage 98% · definition updates · open criticals",
             href: `${base}/epp/sla`,
             match: "exact",
             audience: "ops",
@@ -361,6 +361,14 @@ export function customerTree(code: string, displayName: string): NavNode {
             label: "License stats",
             blurb: "Purchased vs assigned by product",
             href: `${base}/csp/licenses`,
+            match: "exact",
+            audience: "ops",
+          },
+          {
+            id: `${code}-csp-sla`,
+            label: "Service SLA",
+            blurb: "Secure Score · MFA · seat assignment",
+            href: `${base}/csp/sla`,
             match: "exact",
             audience: "ops",
           },

@@ -61,8 +61,8 @@ import {
   RPM_SLA_TITLE,
   vsIndustryTone,
 } from "@/lib/data/sla-metrics";
-import { buildRmmServiceSla, buildCoveServiceSla, buildEppServiceSla } from "@/lib/data/service-sla";
-import { ServiceSlaTable } from "@/components/customer/service-sla-section";
+import { buildRmmServiceSla, buildCoveServiceSla, buildEppServiceSla, buildSysproServiceSla, buildCspServiceSla, buildTicketsServiceSla } from "@/lib/data/service-sla";
+import { ServiceSlaTable, SlaStrip } from "@/components/customer/service-sla-section";
 import { CoveEsrPanel } from "@/components/customer/cove-esr-panel";
 import { cn, formatSastDate, formatSastDateTime } from "@/lib/utils";
 import {
@@ -561,6 +561,7 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
   const idleOps = Math.max(0, totalOps - activeOps);
   return (
     <div className="space-y-3">
+      <SlaStrip data={data} pillar="syspro" />
       <ServiceVisuals
       title="SYSPRO"
       subtitle={`${c.displayName} · last collect ${formatSastDateTime(c.lastImportAt)}`}
@@ -614,7 +615,7 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
     return (
       <NoCoverPanel
         service="RPM Remote Management"
-        hint="No cover — no RPM RMM RMM devices or org mapped for this customer. Map an org and run RMM collect."
+        hint="No cover — no RPM RMM devices or org mapped for this customer. Map an org and run RMM collect."
       />
     );
   }
@@ -624,6 +625,7 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
   const wsOff = s?.workstationOffline || fromDevices.workstationOffline;
   return (
     <div className="space-y-4">
+    <SlaStrip data={data} pillar="rmm" />
     <ServiceVisuals
       title="RPM Remote Management"
       subtitle={`${c.displayName}${rmm?.pulsewayOrgName ? ` · ${rmm.pulsewayOrgName}` : ""}`}
@@ -4500,12 +4502,15 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
       </div>
 
       <ChartCaption
-        title="Service SLA — RMM · Cloud Backup · RPM EndPoint Protection"
-        why={`${INDUSTRY_SLA_DOC}. Measured from live collect. Ticket MTTD/MTTR lines stay unmeasured until a helpdesk feed exists.`}
+        title="Service SLA — every covered pillar"
+        why="Scored from live collect and Freshdesk. Unmeasurable clocks (MTTD / EDR) are not shown."
       />
+      <ServiceSlaTable pack={buildSysproServiceSla(data)} />
       <ServiceSlaTable pack={buildRmmServiceSla(data)} />
       <ServiceSlaTable pack={buildCoveServiceSla(data)} />
       <ServiceSlaTable pack={buildEppServiceSla(data)} />
+      <ServiceSlaTable pack={buildCspServiceSla(data)} />
+      <ServiceSlaTable pack={buildTicketsServiceSla(data)} />
     </div>
   );
 }
@@ -4716,6 +4721,7 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
   }
   return (
     <div className="space-y-3">
+      <SlaStrip data={data} pillar="cove" />
       <CoveEsrPanel data={data} />
     </div>
   );
@@ -4756,6 +4762,7 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   const fdTickets = ticketStats(ticketsForPillar(data.incidents, "epp"));
   return (
     <div className="space-y-3">
+    <SlaStrip data={data} pillar="epp" />
     <ServiceVisuals
       title="RPM EndPoint Protection"
       subtitle={data.customer.displayName}
@@ -5363,6 +5370,7 @@ export function CspTenantHealthSection({ data }: { data: CustomerDetailPayload }
 
   return (
     <div className="space-y-4">
+      <SlaStrip data={data} pillar="csp" />
       <ServiceVisuals
         title="Microsoft 365 CSP"
         subtitle={t?.displayName || t?.primaryDomain || data.customer.displayName}

@@ -2,6 +2,8 @@
  * Score RMM / Cove / EPP against the 14 Aug 2026 industry SLA guide.
  * Only lines we can compute from live collect are scored.
  */
+import { coverFromDetail } from "./cover";
+import { scoreTicketSet } from "./ticket-sla";
 import { isRmmServer } from "./rmm-device-class";
 import {
   INDUSTRY_MEASURES,
@@ -78,10 +80,6 @@ function line(
   };
 }
 
-function unmeasured(defId: string, pillar: IndustryPillarKey): ServiceSlaLine {
-  return line(defId, pillar, null, "Not measured", false);
-}
-
 function overallOf(lines: ServiceSlaLine[]): number | null {
   const scored = lines.filter((l) => l.measured && l.actualPct != null && l.contractual);
   if (!scored.length) return null;
@@ -134,12 +132,22 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     ? `${reporting}/${servers.length} servers reporting`
     : "No Cover for Devices";
 
+  const patchRep = servers.filter((d) => d.patchMissing != null || d.patchInstalled != null);
+  const patchClean = patchRep.filter((d) => (d.patchMissing ?? 0) === 0).length;
+  const patchPct = patchRep.length ? clamp((patchClean / patchRep.length) * 100) : null;
+  const patchLabel = patchRep.length
+    ? `${patchClean}/${patchRep.length} servers with no outstanding updates`
+    : "No patch counts on this collect";
+
+  const diskHigh = data.rmm?.summary?.diskHighCount ?? data.customer?.rmmDiskHighTotal ?? 0;
+  const diskPct = slaCover ? (diskHigh === 0 ? 100 : clamp(100 - diskHigh * 15)) : null;
+  const diskLabel = slaCover ? `${diskHigh} volume(s) at ≥85% used` : "No Cover for Devices";
+
   const lines: ServiceSlaLine[] = [
     line("rmm-uptime", "rmm", uptime, upLabel, slaCover && uptime != null),
     line("rmm-coverage", "rmm", covPct, covLabel, slaCover && covPct != null),
-    unmeasured("rmm-mttd", "rmm"),
-    unmeasured("rmm-mttr-p1", "rmm"),
-    unmeasured("rmm-mttr-p2", "rmm"),
+    line("rmm-patch", "rmm", patchPct, patchLabel, slaCover && patchPct != null),
+    line("rmm-disk", "rmm", diskPct, diskLabel, slaCover && diskPct != null),
   ];
 
   return {
@@ -203,7 +211,6 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
     line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
     line("cove-restore", "cove", restore, restoreLabel, slaCover && restore != null),
     line("cove-test-freq", "cove", freq, freqLabel, slaCover && freq != null),
-    unmeasured("cove-rto", "cove"),
   ];
 
   return {
@@ -281,11 +288,129 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   };
 }
 
+export function buildSysproServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
+  const cover = Boolean(coverFromDetail(data).syspro);
+  const c = data.customer;
+  const errors = c.sysproJobErrorCount ?? 0;
+  const oob = c.sysproDtrVarianceLines ?? 0;
+  const jobPct = cover ? clamp(100 - errors * 8) : null;
+  const finPct = cover ? clamp(100 - oob * 10) : null;
+  const age = hoursAgo(c.lastImportAt);
+  let collectPct: number | null = null;
+  let collectLabel = "No collect timestamp";
+  if (age != null) {
+    collectPct = age <= 24 ? 100 : age <= 48 ? 70 : 35;
+    collectLabel = `Last collect ${age < 2 ? `${Math.round(age * 60)} min` : `${age.toFixed(1)} h`} ago`;
+  }
+  const lines: ServiceSlaLine[] = [
+    line("syspro-jobs", "syspro", jobPct, `${errors} job error(s)`, cover && jobPct != null),
+    line("syspro-finsight", "syspro", finPct, `${oob} FinSight OOB line(s)`, cover && finPct != null),
+    line("syspro-collect", "syspro", collectPct, collectLabel, cover && collectPct != null),
+  ];
+  return {
+    pillar: "syspro",
+    title: INDUSTRY_MEASURES.syspro.label,
+    covered: cover,
+    overallPct: cover ? overallOf(lines) : null,
+    headline: INDUSTRY_MEASURES.syspro.targetLabel,
+    lines,
+    exclusions: INDUSTRY_SLA_EXCLUSIONS.syspro,
+    source: INDUSTRY_MEASURES.syspro.source,
+  };
+}
+
+export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
+  const cover = Boolean(coverFromDetail(data).csp);
+  const p = data.csp?.posture;
+  const s = data.csp?.summary;
+  const score = p?.secureScorePct ?? (p?.secureScore != null && p.secureScoreMax ? (p.secureScore / p.secureScoreMax) * 100 : null);
+  const scorePct = score != null ? clamp(score) : null;
+  const mfa = p?.mfaRegisteredPct != null ? clamp(p.mfaRegisteredPct) : null;
+  const seats = s?.totalSeats ? clamp(((s.assignedSeats ?? 0) / s.totalSeats) * 100) : null;
+  const slaCover = cover && Boolean(p || s);
+  const lines: ServiceSlaLine[] = [
+    line(
+      "csp-score",
+      "csp",
+      scorePct,
+      scorePct != null ? `${scorePct}% Secure Score` : "No Secure Score on collect",
+      slaCover && scorePct != null,
+    ),
+    line(
+      "csp-mfa",
+      "csp",
+      mfa,
+      mfa != null
+        ? `${p?.mfaRegisteredCount ?? "—"}/${p?.mfaCapableCount ?? "—"} registered`
+        : "No MFA counts on collect",
+      slaCover && mfa != null,
+    ),
+    line(
+      "csp-seats",
+      "csp",
+      seats,
+      s?.totalSeats ? `${s.assignedSeats}/${s.totalSeats} seats assigned` : "No seat counts",
+      slaCover && seats != null,
+    ),
+  ];
+  return {
+    pillar: "csp",
+    title: INDUSTRY_MEASURES.csp.label,
+    covered: slaCover,
+    overallPct: slaCover ? overallOf(lines) : null,
+    headline: INDUSTRY_MEASURES.csp.targetLabel,
+    lines,
+    exclusions: INDUSTRY_SLA_EXCLUSIONS.csp,
+    source: INDUSTRY_MEASURES.csp.source,
+  };
+}
+
+export function buildTicketsServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
+  const rows = data.incidents ?? [];
+  const cover = rows.length > 0 || Boolean(coverFromDetail(data).tickets);
+  const pack = scoreTicketSet(rows);
+  const openPct = cover ? clamp(Math.max(40, 100 - pack.open * 5)) : null;
+  const lines: ServiceSlaLine[] = [
+    line(
+      "tickets-response",
+      "tickets",
+      pack.responsePct,
+      pack.responseScored
+        ? `${pack.responseMet}/${pack.responseScored} met · ${pack.responseBreach} breach`
+        : "No closed response clocks in 30 days",
+      cover && pack.responsePct != null,
+    ),
+    line(
+      "tickets-restore",
+      "tickets",
+      pack.resolvePct,
+      pack.resolveScored
+        ? `${pack.resolveMet}/${pack.resolveScored} met · ${pack.resolveBreach} breach`
+        : "No closed restore clocks in 30 days",
+      cover && pack.resolvePct != null,
+    ),
+    line("tickets-open", "tickets", openPct, `${pack.open} open now`, cover && openPct != null),
+  ];
+  return {
+    pillar: "tickets",
+    title: INDUSTRY_MEASURES.tickets.label,
+    covered: cover && rows.length > 0,
+    overallPct: cover && rows.length > 0 ? overallOf(lines) : null,
+    headline: INDUSTRY_MEASURES.tickets.targetLabel,
+    lines,
+    exclusions: INDUSTRY_SLA_EXCLUSIONS.tickets,
+    source: INDUSTRY_MEASURES.tickets.source,
+  };
+}
+
 export function buildServiceSla(
   pillar: IndustryPillarKey,
   data: CustomerDetailPayload,
 ): ServiceSlaPack {
   if (pillar === "rmm") return buildRmmServiceSla(data);
   if (pillar === "cove") return buildCoveServiceSla(data);
-  return buildEppServiceSla(data);
+  if (pillar === "epp") return buildEppServiceSla(data);
+  if (pillar === "syspro") return buildSysproServiceSla(data);
+  if (pillar === "csp") return buildCspServiceSla(data);
+  return buildTicketsServiceSla(data);
 }

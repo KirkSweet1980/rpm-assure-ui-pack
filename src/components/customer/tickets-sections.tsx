@@ -8,7 +8,7 @@ import {
   ticketsInBucket,
   type TicketBucket,
 } from "@/lib/data/ticket-feed";
-import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
+import { SlaStrip } from "@/components/customer/service-sla-section";
 import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
 
 function slaChip(met: boolean | null | undefined) {
@@ -116,6 +116,7 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   }
   return (
     <div className="space-y-3">
+      <SlaStrip data={data} pillar="tickets" />
       <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
         <Ticket className="h-5 w-5 text-primary" aria-hidden />
         <div className="min-w-0">
