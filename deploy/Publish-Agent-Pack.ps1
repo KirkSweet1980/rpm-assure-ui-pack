@@ -1,4 +1,5 @@
-# Publish agent files to C:\RPM-Assure\downloads. No Temp copy of .ps1 (Defender locks those).
+# Publish agent files to C:\RPM-Assure\downloads.
+# Zip is a clean runtime pack only - no installer\ Git launchers (EPP flags those).
 
 param(
   [string]$Root = 'C:\RPM-Assure',
@@ -9,44 +10,67 @@ $ErrorActionPreference = 'Stop'
 $dl = Join-Path $Root 'downloads'
 New-Item -ItemType Directory -Force -Path $dl | Out-Null
 
-$ver = '2.8.0'
-$vf = Join-Path $Pack 'Sql\agent\VERSION'
-if (-not (Test-Path $vf)) { $vf = Join-Path $Pack 'sql\agent\VERSION' }
-if (Test-Path $vf) { $ver = ((Get-Content $vf -Raw) -replace '\s', '') }
-if (-not $ver) { $ver = '2.8.0' }
+$ver = '2.8.1'
+foreach ($vf in @(
+    (Join-Path $Pack 'Sql\agent\VERSION'),
+    (Join-Path $Pack 'sql\agent\VERSION')
+  )) {
+  if (Test-Path $vf) {
+    $ver = ((Get-Content $vf -Raw) -replace '\s', '')
+    if ($ver) { break }
+  }
+}
 [IO.File]::WriteAllText((Join-Path $dl 'VERSION'), $ver)
 
 foreach ($pair in @(
     @('Sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
     @('sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
     @('Sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1'),
-    @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1'),
-    @('public\downloads\RPM-Exco-Brief.html', 'RPM-Exco-Brief.html'),
-    @('App\public\downloads\RPM-Exco-Brief.html', 'RPM-Exco-Brief.html')
+    @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1')
   )) {
   $src = Join-Path $Pack $pair[0]
   if (Test-Path $src) { Copy-Item -Force -LiteralPath $src (Join-Path $dl $pair[1]) }
 }
 
+$stage = Join-Path $env:TEMP ('rpma-pack-clean-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+New-Item -ItemType Directory -Force -Path $stage | Out-Null
+$excludeDir = [regex]'\\installer\\|\\logs\\|\\\.git\\'
+$excludeName = [regex]'(?i)(Launch-From-Git|Launch-ABLE|Launch-Fresh-Wizard|Repair-Pack-And-Launch|Bootstrap-Customer-Agent|Replace-Old-Agent)\.ps1$'
+
+function Copy-Clean([string]$Rel) {
+  $from = Join-Path $Pack $Rel
+  if (-not (Test-Path $from)) { return $false }
+  Get-ChildItem -LiteralPath $from -Recurse -File | ForEach-Object {
+    if ($_.FullName -match $excludeDir) { return }
+    if ($_.Name -match $excludeName) { return }
+    $relFile = $_.FullName.Substring($from.Length).TrimStart('\')
+    $dest = Join-Path (Join-Path $stage $Rel) $relFile
+    New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
+    [IO.File]::Copy($_.FullName, $dest, $true)
+  }
+  return $true
+}
+
+$any = $false
+foreach ($rel in @('Sql\agent', 'sql\agent', 'Sql\base\syspro-direct', 'sql\base\syspro-direct', 'Sql\customers', 'sql\customers')) {
+  if (Copy-Clean $rel) { $any = $true }
+}
+if (-not $any) { throw "No agent files under $Pack" }
+
 $zip = Join-Path $dl 'rpm-assure-agent.zip'
 if (Test-Path $zip) { Remove-Item $zip -Force }
-
 $tar = Join-Path $env:WINDIR 'System32\tar.exe'
 if (-not (Test-Path $tar)) { $tar = 'tar' }
 $here = Get-Location
-Set-Location $Pack
+Set-Location $stage
 try {
-  $parts = @()
-  foreach ($rel in @('Sql\agent', 'Sql\base\syspro-direct', 'Sql\customers')) {
-    if (Test-Path (Join-Path $Pack $rel)) { $parts += $rel }
-  }
-  if ($parts.Count -eq 0) { throw "No Sql\\agent under $Pack" }
-  & $tar -a -c -f $zip @parts
+  & $tar -a -c -f $zip *
   if ($LASTEXITCODE -ne 0) { throw "tar zip failed $LASTEXITCODE" }
 } finally {
   Set-Location $here
+  Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 $len = (Get-Item $zip).Length
-Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len)
+Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len + ' (no installer Git launchers)')
 Get-ChildItem $dl | Select-Object Name, Length | Format-Table -AutoSize
