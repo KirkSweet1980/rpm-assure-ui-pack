@@ -225,17 +225,6 @@ export function AppShell({
                   <strong>RPM Assure</strong>
                 </span>
               </Link>
-              <div
-                id="rpma-top-menu"
-                className={cn("dk-header-nav", !menuOpen && "is-collapsed")}
-              >
-                <DkSidebarNav
-                  pathname={pathname}
-                  customers={switcherCustomers}
-                  currentCode={currentCustomerCode}
-                  layout="top"
-                />
-              </div>
             </div>
             <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="clock" />
             <div className="dk-header-right">
@@ -244,6 +233,17 @@ export function AppShell({
               <ThemeToggle />
               <UserButton />
             </div>
+          </div>
+          <div
+            id="rpma-top-menu"
+            className={cn("dk-header-navrow", !menuOpen && "is-collapsed")}
+          >
+            <DkSidebarNav
+              pathname={pathname}
+              customers={switcherCustomers}
+              currentCode={currentCustomerCode}
+              layout="top"
+            />
           </div>
         </header>
         <div className="dk-main">
