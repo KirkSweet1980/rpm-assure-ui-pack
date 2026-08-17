@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.8.3"
+$AgentVersion = "2.8.4"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -335,6 +335,8 @@ $detail = @{
 } | ConvertTo-Json -Compress
 
 $hbFailed = $false
+$script:NeedHttpsUpdate = $false
+$script:NeedHttpsSync = $false
 foreach ($hc in $hostCustomers) {
   $cc = $hc.Code
   $hbSql = @"
@@ -372,6 +374,10 @@ VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Li
       if ($hr.StatusCode -ge 200 -and $hr.StatusCode -lt 300) {
         $httpsOk = $true
         W ("Heartbeat HTTPS $cc@$HostName")
+        if ($hr.Json) {
+          if ($hr.Json.requestUpdate) { $script:NeedHttpsUpdate = $true; W 'Assure requested UPDATE via HTTPS' }
+          if ($hr.Json.requestSync) { $script:NeedHttpsSync = $true; W 'Assure requested SYNC via HTTPS' }
+        }
       }
     } catch {
       W ("WARN https heartbeat $cc : " + $_.Exception.Message)
@@ -406,7 +412,7 @@ WHERE HostName = $(Sql-Lit $HostName)
   AND (LastStatus IN (N'UPDATE', N'UPDATING') OR LastMessage LIKE N'update requested%');
 "@
   $ur = Invoke-CentralSql -SqlText $qUp -Tsv
-  $needUp = $false
+  $needUp = [bool]$script:NeedHttpsUpdate
   if ($ur.ExitCode -eq 0 -and $ur.Text) {
     foreach ($line in ($ur.Text -split "`r?`n")) {
       if ($line.Trim() -and $line -notmatch 'LastMessage|---') { $needUp = $true }
@@ -502,8 +508,9 @@ WHERE HostName = $(Sql-Lit $HostName);
 "@)
       }
       W "UPDATE applied $newVer - next cycle uses new files"
+    } else {
+      W "WARN update files missing on this host"
     }
-    W "WARN update files missing on this host"
   }
 } catch { W ("WARN update check " + $_.Exception.Message) }
 

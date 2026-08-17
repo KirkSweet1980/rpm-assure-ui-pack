@@ -1719,7 +1719,7 @@ FROM dbo.Agent_Registry WITH (NOLOCK)`);
   };
 });
 
-export const SHIPPED_AGENT_VERSION = "2.8.3";
+export const SHIPPED_AGENT_VERSION = "2.8.4";
 
 export type AgentStatusRow = {
   customerCode: string;
