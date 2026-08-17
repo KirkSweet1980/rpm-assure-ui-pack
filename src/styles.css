@@ -9,8 +9,8 @@
   --color-surface: #ffffff;
   --color-surface-2: #f4f5fb;
   --color-fg: #293240;
-  --color-muted: #5b6b79;
-  --color-subtle: #8996a4;
+  --color-muted: #3d4b58;
+  --color-subtle: #536170;
   --color-border: #e9ecef;
   --color-border-strong: #d5dbe3;
   --color-brand-slate: #2d6a8a;
@@ -1583,6 +1583,60 @@ a.rpma-glass:hover,
   transform: translateY(-1px);
   border-color: var(--color-brand-teal);
   box-shadow: 0 3px 10px color-mix(in srgb, var(--color-nav) 12%, transparent);
+}
+
+/* Light mode: both fixed side rails are light grey, text stays dark */
+html:not([data-theme="dark"]):not(.dark) .rpma-list,
+html:not([data-theme="dark"]):not(.dark) .rpma-d3-master,
+html:not([data-theme="dark"]):not(.dark) .rpma-pillar-rail {
+  background: #e4e7ec;
+  border-color: #cfd4dc;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-list,
+html:not([data-theme="dark"]):not(.dark) .rpma-d3-master,
+html:not([data-theme="dark"]):not(.dark) .rpma-pillar-rail {
+  color: #1f2937;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-pillar-rail-head h2,
+html:not([data-theme="dark"]):not(.dark) .rpma-list-title,
+html:not([data-theme="dark"]):not(.dark) .rpma-list-name,
+html:not([data-theme="dark"]):not(.dark) .rpma-svc-row,
+html:not([data-theme="dark"]):not(.dark) .rpma-svc-row-name,
+html:not([data-theme="dark"]):not(.dark) .rpma-mod-row,
+html:not([data-theme="dark"]):not(.dark) .rpma-eco-item,
+html:not([data-theme="dark"]):not(.dark) .rpma-modbtn,
+html:not([data-theme="dark"]):not(.dark) .rpma-dd-trigger {
+  color: #1f2937;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-list-empty,
+html:not([data-theme="dark"]):not(.dark) .rpma-dd-trigger .is-ph,
+html:not([data-theme="dark"]):not(.dark) .rpma-dd-chev,
+html:not([data-theme="dark"]):not(.dark) .text-muted {
+  color: #3d4b58;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-list .text-subtle,
+html:not([data-theme="dark"]):not(.dark) .rpma-pillar-rail .text-subtle,
+html:not([data-theme="dark"]):not(.dark) .rpma-d3-master .text-subtle {
+  color: #4b5a68;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-list-row.is-active,
+html:not([data-theme="dark"]):not(.dark) .rpma-eco-item.is-on,
+html:not([data-theme="dark"]):not(.dark) .rpma-svc-row.is-on,
+html:not([data-theme="dark"]):not(.dark) .rpma-mod-row.is-on {
+  background: #d8dde5;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-list-search,
+html:not([data-theme="dark"]):not(.dark) .rpma-dd-trigger {
+  background: #eef0f3;
+  border-color: #c5ccd6;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-crumb-a,
+html:not([data-theme="dark"]):not(.dark) .rpma-crumb-now {
+  color: #1f2937;
+}
+html:not([data-theme="dark"]):not(.dark) .rpma-crumb-muted,
+html:not([data-theme="dark"]):not(.dark) .rpma-crumb-arr {
+  color: #4b5a68;
 }
 .rpma-srv-kind {
   display: inline-flex;
