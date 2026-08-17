@@ -200,7 +200,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { k: "M365", at: customer.cspLastImportAt, on: Boolean(cover.csp) },
   ];
 
-  const shown = useMemo(() => new Set(visibleEcoWidgets(layout)), [layout]);
+  const shown = useMemo(() => new Set(visibleEcoWidgets(layout, cover)), [layout, cover]);
 
   function wgt(id: EcoWidgetId) {
     const meta = ecoWidgetMeta(id);
@@ -234,6 +234,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
       {customizeOpen ? (
         <EcoCustomizePanel
           layout={layout}
+          cover={cover}
           onChange={setLayout}
           onClose={() => setCustomizeOpen(false)}
         />

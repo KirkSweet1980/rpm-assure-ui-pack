@@ -1,3 +1,5 @@
+import type { CustomerCover } from "@/lib/data/types";
+
 export type EcoWidgetId =
   | "hero"
   | "cover"
@@ -22,36 +24,40 @@ export type EcoWidgetId =
   | "hotfixes"
   | "sqlhealth";
 
+export type EcoWidgetRequire = keyof CustomerCover | null;
+
 export type EcoWidgetMeta = {
   id: EcoWidgetId;
   label: string;
   span: 3 | 4 | 6 | 8 | 12;
   hint: string;
+  /** null = tenant pane, always listed. Else only when that service has Cover. */
+  requires: EcoWidgetRequire;
 };
 
 export const ECO_WIDGETS: EcoWidgetMeta[] = [
-  { id: "hero", label: "Customer Header", span: 12, hint: "RAG, assurance score, services on cover" },
-  { id: "cover", label: "Service Cover", span: 4, hint: "Which RPM services are in scope" },
-  { id: "attention", label: "Needs Attention", span: 4, hint: "Jobs, FinSight, risks, incidents" },
-  { id: "fleet", label: "Fleet Mix", span: 4, hint: "RMM, backup or operators mix" },
-  { id: "sla", label: "SLA By Service", span: 6, hint: "Covered-pillar SLA scores" },
-  { id: "rmm", label: "RPM RMM", span: 6, hint: "Servers, workstations, critical alerts" },
-  { id: "backup", label: "Cloud Backup", span: 4, hint: "Cove healthy vs failed or stale" },
-  { id: "epp", label: "RPM EndPoint Protection", span: 4, hint: "Managed endpoints and infections" },
-  { id: "csp", label: "Microsoft CSP", span: 4, hint: "Secure Score, MFA, seats" },
-  { id: "tickets", label: "Customer Tickets", span: 4, hint: "Open / resolved / closed" },
-  { id: "finsight", label: "FinSight Close", span: 12, hint: "Out-of-balance modules" },
-  { id: "jumps", label: "Assurance Shortcuts", span: 12, hint: "Incidents, risks, SLA, issues" },
-  { id: "incidents", label: "Open Incidents", span: 6, hint: "Latest open / major incidents" },
-  { id: "risks", label: "Open Risks", span: 6, hint: "Risk register still open" },
-  { id: "freshness", label: "Data Freshness", span: 6, hint: "Last collect per service" },
-  { id: "license", label: "SYSPRO Licence", span: 3, hint: "Product and expiry" },
-  { id: "dayend", label: "Day End", span: 3, hint: "Automated close status" },
-  { id: "jobs", label: "Job Logging", span: 6, hint: "SYSPRO job errors" },
-  { id: "patch", label: "Server Patch", span: 6, hint: "Missing patches on servers" },
-  { id: "operators", label: "SYSPRO Operators", span: 4, hint: "Active vs quiet operators" },
-  { id: "hotfixes", label: "SYSPRO Hotfixes", span: 4, hint: "Applied hotfix count" },
-  { id: "sqlhealth", label: "SQL Health", span: 4, hint: "SYSPRO SQL health checks" },
+  { id: "hero", label: "Customer Header", span: 12, hint: "RAG, assurance score, services on cover", requires: null },
+  { id: "cover", label: "Service Cover", span: 4, hint: "Which RPM services are in scope", requires: null },
+  { id: "attention", label: "Needs Attention", span: 4, hint: "Jobs, FinSight, risks, incidents", requires: null },
+  { id: "fleet", label: "Fleet Mix", span: 4, hint: "RMM, backup or operators mix", requires: null },
+  { id: "sla", label: "SLA By Service", span: 6, hint: "Covered-pillar SLA scores", requires: null },
+  { id: "rmm", label: "RPM RMM", span: 6, hint: "Servers, workstations, critical alerts", requires: "rmm" },
+  { id: "backup", label: "Cloud Backup", span: 4, hint: "Healthy vs failed or stale", requires: "cove" },
+  { id: "epp", label: "RPM EndPoint Protection", span: 4, hint: "Managed endpoints and infections", requires: "epp" },
+  { id: "csp", label: "Microsoft CSP", span: 4, hint: "Secure Score, MFA, seats", requires: "csp" },
+  { id: "tickets", label: "Customer Tickets", span: 4, hint: "Open / resolved / closed", requires: "tickets" },
+  { id: "finsight", label: "FinSight Close", span: 12, hint: "Out-of-balance modules", requires: "syspro" },
+  { id: "jumps", label: "Assurance Shortcuts", span: 12, hint: "Incidents, risks, SLA, issues", requires: null },
+  { id: "incidents", label: "Open Incidents", span: 6, hint: "Latest open / major incidents", requires: null },
+  { id: "risks", label: "Open Risks", span: 6, hint: "Risk register still open", requires: null },
+  { id: "freshness", label: "Data Freshness", span: 6, hint: "Last collect per service", requires: null },
+  { id: "license", label: "SYSPRO Licence", span: 3, hint: "Product and expiry", requires: "syspro" },
+  { id: "dayend", label: "Day End", span: 3, hint: "Automated close status", requires: "syspro" },
+  { id: "jobs", label: "Job Logging", span: 6, hint: "SYSPRO job errors", requires: "syspro" },
+  { id: "patch", label: "Server Patch", span: 6, hint: "Missing patches on servers", requires: "rmm" },
+  { id: "operators", label: "SYSPRO Operators", span: 4, hint: "Active vs quiet operators", requires: "syspro" },
+  { id: "hotfixes", label: "SYSPRO Hotfixes", span: 4, hint: "Applied hotfix count", requires: "syspro" },
+  { id: "sqlhealth", label: "SQL Health", span: 4, hint: "SYSPRO SQL health checks", requires: "syspro" },
 ];
 
 export type EcoWidgetLayout = {
@@ -113,7 +119,21 @@ export function persistEcoWidgetLayout(layout: EcoWidgetLayout) {
   }
 }
 
-export function visibleEcoWidgets(layout: EcoWidgetLayout): EcoWidgetId[] {
+export function ecoWidgetCovered(id: EcoWidgetId, cover?: CustomerCover | null): boolean {
+  const req = ecoWidgetMeta(id).requires;
+  if (!req) return true;
+  if (req === "tickets") return true;
+  return Boolean(cover?.[req]);
+}
+
+export function coveredEcoWidgetIds(cover?: CustomerCover | null): EcoWidgetId[] {
+  return ALL_IDS.filter((id) => ecoWidgetCovered(id, cover));
+}
+
+export function visibleEcoWidgets(
+  layout: EcoWidgetLayout,
+  cover?: CustomerCover | null,
+): EcoWidgetId[] {
   const hidden = new Set(layout.hidden);
-  return layout.order.filter((id) => !hidden.has(id));
+  return layout.order.filter((id) => !hidden.has(id) && ecoWidgetCovered(id, cover));
 }
