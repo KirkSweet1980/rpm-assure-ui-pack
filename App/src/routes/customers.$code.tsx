@@ -1,20 +1,14 @@
 import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
-import { RagBadge } from "@/components/portfolio/rag-badge";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { customerPathParts } from "@/components/nav/customer-modules-panel";
-import { AmxTopBar } from "@/components/customer/amx-chrome";
-import { useSpaNavigate } from "@/components/nav/spa-link";
+import { EmpChrome } from "@/components/customer/emp-chrome";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import { noCoverForDevicesLabel } from "@/lib/data/device-cover";
-import { coverFromDetail, isPillarCovered, type PillarId } from "@/lib/data/cover";
-import { CoverTag } from "@/components/ui/status-robot";
+import { coverFromDetail } from "@/lib/data/cover";
 import type { CustomerDetailPayload, HealthRag } from "@/lib/data/types";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
 import { useRouterState } from "@tanstack/react-router";
@@ -178,7 +172,6 @@ function CustomerLayout() {
   > & { _missing?: boolean; code?: string };
   const customer = data?.customer;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const go = useSpaNavigate();
   const { profile } = useStaffProfile();
 
   useEffect(() => {
@@ -222,88 +215,6 @@ function CustomerLayout() {
     }
   }
 
-  const pathBits = pathname.replace(/\/$/, "").split("/").filter(Boolean);
-  let pageTitle = "Customer Ecosystem";
-  if (pathBits.length === 2) {
-    pageTitle = "Customer Ecosystem";
-  } else if (pathBits[2] === "syspro" && pathBits.length === 3) {
-    pageTitle = "SYSPRO";
-  } else if (pathBits[2] === "syspro" && pathBits[3]) {
-    const map: Record<string, string> = {
-      health: "Health",
-      operators: "Operators",
-      jobs: "Job Logging",
-      "day-end": "Day End",
-      dtr: "FinSight",
-      security: "Security",
-      license: "Licence",
-      hotfixes: "Hotfixes",
-      sql: "SQL",
-    };
-    pageTitle = `SYSPRO · ${map[pathBits[3]] || pathBits[3]}`;
-  } else if (pathBits[2] === "rmm" && pathBits.length === 3) {
-    pageTitle = "RPM Remote Management";
-  } else if (pathBits[2] === "rmm" && pathBits[3]) {
-    const map: Record<string, string> = {
-      devices: "Servers",
-      workstations: "Workstations",
-      patch: "Patch Compliance",
-      alerts: "Alerts",
-    };
-    pageTitle = `RPM Remote Management · ${map[pathBits[3]] || pathBits[3]}`;
-  } else if (pathBits[2] === "cove" && pathBits.length === 3) {
-    pageTitle = "RPM Cloud Backup";
-  } else if (pathBits[2] === "cove" && pathBits[3]) {
-    const map: Record<string, string> = {
-      overview: "Backup Devices",
-      devices: "Backup Devices",
-      recovery: "Recovery",
-      retention: "Retention",
-    };
-    pageTitle = `RPM Cloud Backup · ${map[pathBits[3]] || pathBits[3]}`;
-  } else if (pathBits[2] === "epp") {
-    const map: Record<string, string> = {
-      endpoints: "Endpoints",
-      incidents: "Security Incidents",
-      modules: "Policies",
-      quarantine: "Quarantine",
-    };
-    pageTitle =
-      pathBits.length === 3
-        ? "RPM EndPoint Protection"
-        : `RPM EndPoint Protection · ${map[pathBits[3]] || pathBits[3]}`;
-  } else if (pathBits[2] === "csp") {
-    const map: Record<string, string> = {
-      users: "Users",
-      licenses: "Licences",
-      "secure-score": "Secure Score",
-      "global-admins": "Global Admins",
-      mfa: "MFA",
-    };
-    pageTitle =
-      pathBits.length === 3
-        ? "Microsoft 365 CSP"
-        : `Microsoft 365 CSP · ${map[pathBits[3]] || pathBits[3]}`;
-  } else if (pathBits[2] === "ams" && pathBits.length === 3) {
-    pageTitle = "Customer Assurance";
-  } else if (pathBits[2] === "ams" && pathBits[3]) {
-    const map: Record<string, string> = {
-      incidents: "Customer Incidents",
-      risks: "Customer Risks",
-      sla: "Customer SLA",
-    };
-    pageTitle = `Customer Assurance · ${map[pathBits[3]] || pathBits[3]}`;
-  } else if (pathBits[2] === "tickets" && pathBits.length === 3) {
-    pageTitle = "Customer Tickets";
-  } else if (pathBits[2] === "tickets" && pathBits[3]) {
-    const map: Record<string, string> = {
-      open: "Open Tickets",
-      resolved: "Resolved Tickets",
-      closed: "Closed Tickets",
-    };
-    pageTitle = `Customer Tickets · ${map[pathBits[3]] || pathBits[3]}`;
-  }
-
   const missing = Boolean((data as { _missing?: boolean })?._missing);
   const pageCover = coverFromDetail(data);
   const live = customerLiveStatus(
@@ -314,14 +225,7 @@ function CustomerLayout() {
   );
   const tenantRag: HealthRag =
     live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
-  const tenantHint = live.pillars.eco.hint || customer.healthSummary;
   const noDeviceCover = noCoverForDevicesLabel(pathname, customer, data);
-  const pathPillar = ((): PillarId | null => {
-    const p = pathBits[2];
-    if (p === "syspro" || p === "rmm" || p === "cove" || p === "epp" || p === "csp" || p === "tickets") return p;
-    return null;
-  })();
-  const pageCoverOn = pathPillar ? isPillarCovered(pageCover, pathPillar) : null;
 
   return (
     <RequireAuth>
@@ -332,57 +236,23 @@ function CustomerLayout() {
             healthRag={tenantRag}
             name={customer.displayName}
           />
-          <AmxTopBar
+          <EmpChrome
             customerCode={customer.customerCode}
             customerName={customer.displayName}
-            kicker={
-              pathPillar
-                ? `Assurance matrix · ${pageTitle}`
-                : "Assurance matrix · Customer"
-            }
-          />
-          <div className="rpma-amx-backrow">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-[12px]"
-              onClick={() => {
-                const bits = customerPathParts(pathname, customer.customerCode);
-                if (bits.isDeepModule) {
-                  go(bits.overviewHref);
-                  return;
-                }
-                if (bits.pillar) {
-                  go(bits.base);
-                  return;
-                }
-                go("/");
-              }}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back
-            </Button>
-            <RagBadge rag={tenantRag} title={tenantHint} />
-            <Badge variant={data.dataMode === "demo" || missing ? "amber" : "green"}>
-              {missing ? "Unresolved" : data.dataMode === "demo" ? "Demo data" : "Live SQL"}
-            </Badge>
-            {pageCoverOn != null ? <CoverTag on={pageCoverOn} /> : null}
-          </div>
-          {missing ? (
-            <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
-              <p className="font-semibold">Customer code not resolved</p>
-              <p className="mt-1 text-muted">
-                URL code <span className="font-mono">{customer.customerCode}</span> was not found.
-              </p>
-            </div>
-          ) : null}
-          {noDeviceCover ? (
-            <p className="rpma-pane-nocover mb-2">{noDeviceCover}</p>
-          ) : null}
-          <div className="rpma-amx-canvas">
+          >
+            {missing ? (
+              <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
+                <p className="font-semibold">Customer code not resolved</p>
+                <p className="mt-1 text-muted">
+                  URL code <span className="font-mono">{customer.customerCode}</span> was not found.
+                </p>
+              </div>
+            ) : null}
+            {noDeviceCover ? (
+              <p className="rpma-pane-nocover mb-2">{noDeviceCover}</p>
+            ) : null}
             <Outlet />
-          </div>
+          </EmpChrome>
         </div>
       </AppShell>
     </RequireAuth>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AssuranceMatrix } from "@/components/customer/assurance-matrix";
+import { EstateGrid } from "@/components/customer/estate-grid";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
 import { softMissingCustomer } from "@/lib/data/soft-customer";
 
@@ -31,5 +31,5 @@ function ExecPage() {
   if (!data?.customer) {
     return <p className="text-sm text-muted">Loading customer workspace…</p>;
   }
-  return <AssuranceMatrix data={data} />;
+  return <EstateGrid data={data} />;
 }
