@@ -6,6 +6,7 @@
 $ErrorActionPreference = "Continue"
 $roots = @(
   "C:\RPM-Assure\Sql\csp",
+  "C:\RPM-Assure\sql\csp",
   $PSScriptRoot,
   "C:\RPM-Assure\deploy\ui-pack\Sql\csp",
   "C:\RPM-Assure\deploy\ui-pack\sql\csp",
@@ -14,7 +15,10 @@ $roots = @(
   "C:\RPM-Assure\Sql"
 ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
 
-$here = $roots | Where-Object { Test-Path -LiteralPath (Join-Path $_ "Collect-Csp-Graph-To-RPMAssure.ps1") } | Select-Object -First 1
+$here = $null
+foreach ($dir in $roots) {
+  if (Test-Path -LiteralPath (Join-Path $dir "Collect-Csp-Graph-To-RPMAssure.ps1")) { $here = $dir; break }
+}
 if (-not $here) { $here = "C:\RPM-Assure\Sql\csp" }
 $logDir = Join-Path $here "logs"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
@@ -36,32 +40,31 @@ if (-not (Test-Path -LiteralPath $collect)) {
   }
 }
 if (-not (Test-Path -LiteralPath $collect)) {
-  L "MISSING Collect-Csp-Graph-To-RPMAssure.ps1 — skip (not configured)"
+  L "MISSING Collect-Csp-Graph-To-RPMAssure.ps1 - skip (not configured)"
   exit 2
 }
 
 $configs = @()
 foreach ($dir in $roots) {
-  $configs += @(Get-ChildItem -LiteralPath $dir -Filter "Csp.Config*.ps1" -File -EA SilentlyContinue |
-    Where-Object { $_.Name -notmatch 'example' })
-  $configs += @(Get-ChildItem -LiteralPath $dir -Filter "Csp.Config*.ps1" -File -Recurse -Depth 3 -EA SilentlyContinue |
+  $configs += @(Get-ChildItem -LiteralPath $dir -Filter "Csp.Config*.ps1" -File -Force -EA SilentlyContinue |
     Where-Object { $_.Name -notmatch 'example' })
 }
 $configs = @($configs | Sort-Object FullName -Unique)
+L ("Found " + $configs.Count + " config(s): " + (($configs | ForEach-Object { $_.Name }) -join ', '))
 
 if ($configs.Count -eq 0) {
-  L "No Csp.Config*.ps1 found in: $($roots -join '; ') — skip (Graph not configured)"
+  L ("No Csp.Config*.ps1 found in: " + ($roots -join '; ') + " - skip (Graph not configured)")
   exit 2
 }
 
 $fail = 0
 $ok = 0
 foreach ($cfg in $configs) {
-  L ("--- " + $cfg.Name + " ---")
+  L ("--- " + $cfg.FullName + " ---")
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $collect `
     -ConfigPath $cfg.FullName -SkipSchema `
     -SqlServer "102.222.21.220,14333" -SqlDatabase "RPMAssure_App" `
-    -SqlUser "Rpm_collect" -SqlPassword "RpmCollect#AHIC2026" *>> $log 2>&1
+    -SqlUser "Rpm_collect" -SqlPassword "RpmCollect#AHIC2026"
   $code = $LASTEXITCODE
   L ("exit=" + $code + " config=" + $cfg.Name)
   if ($code -ne 0) { $fail++ } else { $ok++ }
