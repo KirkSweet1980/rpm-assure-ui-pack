@@ -1,34 +1,27 @@
-# RPM Assure - apply agent files from the local git pack only.
-# No downloads, no extra .cmd, no hidden process.
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Update-Agent-From-Central.ps1
-param(
-  [string]$AgentRoot = 'C:\RPM-Assure\Agent',
-  [string]$Root = 'C:\RPM-Assure',
-  [string]$Pack = 'C:\RPM-Assure\deploy\ui-pack'
-)
-
-$ErrorActionPreference = 'Stop'
-$git = 'C:\Program Files\Git\cmd\git.exe'
-if (-not (Test-Path $git)) { throw 'Git not installed' }
-if (-not (Test-Path (Join-Path $Pack '.git'))) { throw "Missing git pack $Pack" }
-
-& $git -C $Pack fetch --all --prune
-if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
-& $git -C $Pack reset --hard origin/main
-if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
-
-$from = Join-Path $Pack 'Sql\agent'
-if (-not (Test-Path (Join-Path $from 'RpmAssure-Agent.ps1'))) { throw "Pack missing $from" }
-
-New-Item -ItemType Directory -Force -Path $AgentRoot | Out-Null
-robocopy $from $AgentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-
-$baseFrom = Join-Path $Pack 'Sql\base\syspro-direct'
-$baseTo = Join-Path $Root 'Sql\base\syspro-direct'
-if (Test-Path $baseFrom) {
-  New-Item -ItemType Directory -Force -Path $baseTo | Out-Null
-  robocopy $baseFrom $baseTo /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+# Pull Edge agent + native FinSight helpers from GitHub. Safe for Pulseway / scheduled.
+param([string]$AgentRoot = 'C:\RPM-Assure\Agent')
+$ErrorActionPreference = 'Continue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$base = 'https://raw.githubusercontent.com/KirkSweet1980/rpm-assure-ui-pack/main'
+function Get-RpmaFile([string]$Rel, [string]$Dest) {
+  New-Item -ItemType Directory -Force -Path (Split-Path $Dest) | Out-Null
+  Invoke-WebRequest -UseBasicParsing -Uri ($base + '/' + $Rel) -OutFile $Dest -TimeoutSec 60
+  Write-Host ('ok ' + $Dest)
 }
-
-Write-Output 'UPDATED from local git pack'
+Get-RpmaFile 'Sql/agent/RpmAssure-Agent.ps1' (Join-Path $AgentRoot 'RpmAssure-Agent.ps1')
+Get-RpmaFile 'Sql/agent/RpmAssure-Agent-Loop.ps1' (Join-Path $AgentRoot 'RpmAssure-Agent-Loop.ps1')
+Get-RpmaFile 'Sql/agent/Start-Agent-Tray.ps1' (Join-Path $AgentRoot 'Start-Agent-Tray.ps1')
+Get-RpmaFile 'Sql/agent/Collect-Windows-EventLog.ps1' (Join-Path $AgentRoot 'Collect-Windows-EventLog.ps1')
+Get-RpmaFile 'Sql/agent/Collect-Host-Iops.ps1' (Join-Path $AgentRoot 'Collect-Host-Iops.ps1')
+Get-RpmaFile 'Sql/agent/Probe-Assure-Link.ps1' (Join-Path $AgentRoot 'Probe-Assure-Link.ps1')
+Get-RpmaFile 'Sql/agent/Lib-SecureConfig.ps1' (Join-Path $AgentRoot 'Lib-SecureConfig.ps1')
+Get-RpmaFile 'Sql/agent/Lib-RpmaHttps.ps1' (Join-Path $AgentRoot 'Lib-RpmaHttps.ps1')
+Get-RpmaFile 'Sql/agent/VERSION' (Join-Path $AgentRoot 'VERSION')
+Get-RpmaFile 'Sql/base/syspro-direct/Collect-Dtr-Native-Fallback.ps1' 'C:\RPM-Assure\Sql\base\syspro-direct\Collect-Dtr-Native-Fallback.ps1'
+Get-RpmaFile 'Sql/base/syspro-direct/Lib-Sqlcmd.ps1' 'C:\RPM-Assure\Sql\base\syspro-direct\Lib-Sqlcmd.ps1'
+Write-Host ('VERSION ' + ((Get-Content (Join-Path $AgentRoot 'VERSION') -Raw).Trim()))
+if (Get-Service RPMAssure-Edge -EA SilentlyContinue) {
+  Restart-Service RPMAssure-Edge -Force
+  Write-Host 'RPMAssure-Edge restarted'
+}
 exit 0

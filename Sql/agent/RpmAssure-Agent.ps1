@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.7.1"
+$AgentVersion = "2.7.2"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -407,6 +407,12 @@ WHERE HostName = $(Sql-Lit $HostName);
     $applied = $false
     if (Test-Path (Join-Path $from "RpmAssure-Agent.ps1")) {
       robocopy $from $AgentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 status.json request-sync.flag Update-Agent-From-Central.ps1 /XD logs /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+      $sysFrom = Join-Path $pack "Sql\base\syspro-direct"
+      $sysTo = "C:\RPM-Assure\Sql\base\syspro-direct"
+      if (Test-Path $sysFrom) {
+        New-Item -ItemType Directory -Force -Path $sysTo | Out-Null
+        robocopy $sysFrom $sysTo "Collect-Dtr-Native-Fallback.ps1" "Lib-Sqlcmd.ps1" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+      }
       $applied = $true
     }
     if (-not $applied) {
