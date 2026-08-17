@@ -17,8 +17,10 @@ if (Test-Path $lib) {
   $script:RpmaAgentRoot = $AgentRoot
   Import-RpmaAgentSecrets
 }
+$httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
+if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.5.4"
+$AgentVersion = "2.7.0"
 $HostName = $env:COMPUTERNAME
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
@@ -76,7 +78,15 @@ function Invoke-AdoSql {
   $csb['User ID'] = $User
   $csb['Password'] = $Pass
   $csb['Encrypt'] = $true
-  $csb['TrustServerCertificate'] = $true
+  $trust = $true
+  if (Get-Command Get-RpmaAgentSettings -ErrorAction SilentlyContinue) {
+    try {
+      $stEnc = Get-RpmaAgentSettings
+      if ($null -ne $stEnc.trustSqlCert) { $trust = [bool]$stEnc.trustSqlCert }
+      elseif ($Server -match '^[A-Za-z]') { $trust = $false }
+    } catch {}
+  }
+  $csb['TrustServerCertificate'] = $trust
   $csb['Connect Timeout'] = 45
   $conn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
   try {
@@ -317,12 +327,29 @@ WHEN NOT MATCHED THEN INSERT (CustomerCode, HostName, InstanceName, AgentVersion
 INSERT INTO dbo.Agent_Heartbeat (CustomerCode, HostName, AgentVersion, OsCaption, MemFreeMb, DiskFreeGb, DetailJson)
 VALUES ($(Sql-Lit $cc), $(Sql-Lit $HostName), $(Sql-Lit $AgentVersion), $(Sql-Lit $os), $(if ($null -eq $mem) { 'NULL' } else { $mem }), $(if ($null -eq $disk) { 'NULL' } else { $disk }), $(Sql-Lit $detail));
 "@
-  $r = Invoke-CentralSql -SqlText $hbSql
-  if ($r.ExitCode -ne 0) {
-    W ("WARN heartbeat $cc : " + $r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))
-    $hbFailed = $true
-  } else {
-    W "Heartbeat pushed $cc@$HostName"
+  $r = $null
+  $httpsOk = $false
+  if (Get-Command Send-RpmaHttpsHeartbeat -ErrorAction SilentlyContinue) {
+    try {
+      $hr = Send-RpmaHttpsHeartbeat -CustomerCode $cc -HostName $HostName -AgentVersion $AgentVersion `
+        -RoleTags $RoleTags -InstanceName $hc.Instance -InstallPath $AgentRoot `
+        -OsCaption $os -MemFreeMb $mem -DiskFreeGb $disk -DetailJson $detail
+      if ($hr.StatusCode -ge 200 -and $hr.StatusCode -lt 300) {
+        $httpsOk = $true
+        W ("Heartbeat HTTPS $cc@$HostName")
+      }
+    } catch {
+      W ("WARN https heartbeat $cc : " + $_.Exception.Message)
+    }
+  }
+  if (-not $httpsOk) {
+    $r = Invoke-CentralSql -SqlText $hbSql
+    if ($r.ExitCode -ne 0) {
+      W ("WARN heartbeat $cc : " + $r.Text.Substring(0, [Math]::Min(400, $r.Text.Length)))
+      $hbFailed = $true
+    } else {
+      W "Heartbeat SQL $cc@$HostName"
+    }
   }
 }
 if (-not $hostCustomers.Count) { $hbFailed = $true }
@@ -419,9 +446,22 @@ if (Test-Path $flag) {
   Remove-Item $flag -Force -EA SilentlyContinue
 }
 
-# Honour Assure UI sync button (RequestSyncUtc)
+# Honour Assure UI sync button (RequestSyncUtc) - HTTPS first, SQL fallback
 try {
-  $qSync = @"
+  $httpsSync = $false
+  if (Get-Command Invoke-RpmaAssureHttps -ErrorAction SilentlyContinue) {
+    try {
+      $srH = Invoke-RpmaAssureHttps -Path ('/api/agent/sync?hostName=' + [uri]::EscapeDataString($HostName)) -Method GET
+      if ($srH.Json -and $srH.Json.ok) {
+        $httpsSync = $true
+        foreach ($c in @($srH.Json.requestSync)) {
+          if ($c) { $forceCodes += ([string]$c).ToUpperInvariant() }
+        }
+      }
+    } catch { W ("WARN https sync " + $_.Exception.Message) }
+  }
+  if (-not $httpsSync) {
+    $qSync = @"
 SET NOCOUNT ON;
 SELECT CustomerCode
 FROM dbo.Agent_Registry WITH (NOLOCK)
@@ -431,11 +471,12 @@ WHERE HostName = $(Sql-Lit $HostName)
     OR LastMessage LIKE N'sync requested%'
   );
 "@
-  $sr = Invoke-CentralSql -SqlText $qSync -Tsv
-  if ($sr.ExitCode -eq 0) {
-    foreach ($line in ($sr.Text -split "`r?`n")) {
-      $c = $line.Trim()
-      if ($c -and $c -notmatch 'CustomerCode|---') { $forceCodes += $c.ToUpperInvariant() }
+    $sr = Invoke-CentralSql -SqlText $qSync -Tsv
+    if ($sr.ExitCode -eq 0) {
+      foreach ($line in ($sr.Text -split "`r?`n")) {
+        $c = $line.Trim()
+        if ($c -and $c -notmatch 'CustomerCode|---') { $forceCodes += $c.ToUpperInvariant() }
+      }
     }
   }
   if ($forceCodes.Count) {

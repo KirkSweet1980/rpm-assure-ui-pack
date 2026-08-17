@@ -48,7 +48,9 @@ function Get-RpmaAgentSettings {
     centralDatabase    = 'RPMAssure_App'
     centralSqlUser     = 'rpmassure'
     encryptSql         = $true
-    appHttpsUrl        = ''
+    trustSqlCert       = $true
+    appHttpsUrl        = 'https://assure.rpmresources.co.za'
+    agentSecret        = ''
   }
   if (-not (Test-Path $p)) { return [pscustomobject]$def }
   try {

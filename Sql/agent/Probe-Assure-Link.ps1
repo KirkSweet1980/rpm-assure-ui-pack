@@ -18,6 +18,8 @@ if (Test-Path $lib) {
   $script:RpmaAgentRoot = $AgentRoot
   if (Get-Command Import-RpmaAgentSecrets -EA SilentlyContinue) { try { Import-RpmaAgentSecrets } catch {} }
 }
+$httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
+if (Test-Path $httpsLib) { . $httpsLib }
 if (-not $CentralDataSource) { throw "CentralDataSource missing" }
 if (-not $CentralDatabase) { $CentralDatabase = "RPMAssure_App" }
 if (-not $CentralSqlUser -or -not $CentralSqlPassword) { throw "Central SQL login missing" }
@@ -40,6 +42,12 @@ $csb["User ID"] = $CentralSqlUser
 $csb["Password"] = $CentralSqlPassword
 $csb["Encrypt"] = $true
 $csb["TrustServerCertificate"] = $true
+if (Get-Command Get-RpmaAgentSettings -EA SilentlyContinue) {
+  try {
+    $st2 = Get-RpmaAgentSettings
+    if ($null -ne $st2.trustSqlCert) { $csb["TrustServerCertificate"] = [bool]$st2.trustSqlCert }
+  } catch {}
+}
 $csb["Connect Timeout"] = 20
 $conn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
 $sqlOk = 0

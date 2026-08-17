@@ -1,0 +1,37 @@
+Secure Assure <-> Edge
+
+1) Agent HTTPS (Let's Encrypt on the website)
+   Public site already uses Caddy ACME for https://assure.rpmresources.co.za
+   New APIs:
+     POST /api/agent/heartbeat
+     GET  /api/agent/sync?hostName=HOST
+   Same secret as IOPS: RPM_ASSURE_IOPS_SECRET (or RPM_ASSURE_AGENT_SECRET)
+   Edge 2.7+ posts heartbeat over HTTPS first, SQL fallback if HTTPS fails.
+
+   Website host:
+     git pull / Update-AppServer.ps1
+     add RPM_ASSURE_IOPS_SECRET if missing (already used for Pulseway IOPS)
+     Restart-Service RPMAssure-App
+
+   Each Edge host:
+     copy Sql\agent\Lib-RpmaHttps.ps1 and new RpmAssure-Agent.ps1
+     set appHttpsUrl = https://assure.rpmresources.co.za
+     set agentSecret = the same ingest secret
+     or env RPM_ASSURE_IOPS_SECRET
+
+2) SQL TLS (same Let's Encrypt cert, different port)
+   Let's Encrypt cannot speak TDS. We bind Caddy's existing
+   assure.rpmresources.co.za certificate onto SQL Server.
+
+   On the SQL/website host (Administrator):
+     C:\RPM-Assure\deploy\Enable-Sql-Tls-From-Caddy.ps1
+
+   Then point agents at the NAME, not the IP:
+     CentralDataSource = assure.rpmresources.co.za,14333
+     Encrypt = True
+     TrustSqlCert = False   (Agent.Settings.json trustSqlCert)
+
+   Do this AFTER HTTPS heartbeat is green, so a SQL cert mismatch
+   does not leave agents mute.
+
+   Keep 14333 firewalled to known agent IPs if it is on the public NIC.

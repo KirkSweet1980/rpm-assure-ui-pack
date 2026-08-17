@@ -103,6 +103,17 @@ if (Test-Path $coveRights) {
   if ($LASTEXITCODE -eq 0) { W Green 'Cove collect rights OK' } else { W Yellow 'Cove collect rights warned.' }
 }
 
+$agentHttps = Join-Path $PSScriptRoot '..\agent\443_Agent_Https.sql'
+if (-not (Test-Path $agentHttps)) { $agentHttps = 'C:\RPM-Assure\Sql\agent\443_Agent_Https.sql' }
+if (Test-Path $agentHttps) {
+  W Cyan '--- Agent HTTPS heartbeat columns ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $agentHttps @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'Agent HTTPS columns OK' } else { W Yellow 'Agent HTTPS columns warned.' }
+}
+
 $iopsPurge = Join-Path $PSScriptRoot '441_Purge_Sample_Iops.sql'
 if (-not (Test-Path $iopsPurge)) { $iopsPurge = 'C:\RPM-Assure\Sql\central\441_Purge_Sample_Iops.sql' }
 if (Test-Path $iopsPurge) {
