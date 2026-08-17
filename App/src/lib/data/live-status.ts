@@ -49,19 +49,21 @@ function realOpenIssues(extra?: Partial<CustomerDetailPayload> | null) {
 }
 
 function jobFailCount(row?: PortfolioRow | null, extra?: Partial<CustomerDetailPayload> | null): number {
-  if (extra?.jobErrors) return extra.jobErrors.filter((j) => isJobFailed(j)).length;
-  return Math.max(0, Number(row?.sysproJobErrorCount) || 0);
-}
-
-function jobsHaveVerifiedFails(extra?: Partial<CustomerDetailPayload> | null): boolean {
-  return Array.isArray(extra?.jobErrors);
+  const fromRow = Math.max(0, Number(row?.sysproJobErrorCount) || 0);
+  if (fromRow > 0) return fromRow;
+  if (Array.isArray(extra?.jobErrors) && extra.jobErrors.length > 0) {
+    return extra.jobErrors.filter((j) => isJobFailed(j)).length;
+  }
+  return 0;
 }
 
 function dtrOobCount(row?: PortfolioRow | null, extra?: Partial<CustomerDetailPayload> | null): number {
-  if (extra?.dtrLevel1 && extra.dtrLevel1.length > 0) {
+  const fromRow = Math.max(0, Number(row?.sysproDtrVarianceLines) || 0);
+  if (fromRow > 0) return fromRow;
+  if (Array.isArray(extra?.dtrLevel1) && extra.dtrLevel1.length > 0) {
     return extra.dtrLevel1.reduce((s, d) => s + (Number(d.varianceLineCount) || 0), 0);
   }
-  return Math.max(0, Number(row?.sysproDtrVarianceLines) || 0);
+  return 0;
 }
 
 function collectStale(sysproOn: boolean, row?: PortfolioRow | null, extra?: Partial<CustomerDetailPayload> | null): boolean {
@@ -160,11 +162,11 @@ export function customerLiveStatus(
   const redAt = Math.max(1, Number(DEFAULT_RAG.jobErrorsRedAt) || 10);
   const jobsRag: LiveTone = !c.syspro
     ? "Off"
-    : jobs <= 0
-      ? "Green"
-      : jobsHaveVerifiedFails(extra) && jobs >= redAt
-        ? "Red"
-        : "Amber";
+    : jobs >= redAt
+      ? "Red"
+      : jobs > 0
+        ? "Amber"
+        : "Green";
   const dtrRag: LiveTone = !c.syspro ? "Off" : dtr > 0 ? "Amber" : "Green";
   const healthRag: LiveTone = !c.syspro ? "Off" : stale ? "Amber" : "Green";
   const dayRag: LiveTone = !c.syspro ? "Off" : dayEndRag(extra);
