@@ -2095,7 +2095,33 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 .rpma-emp-tool[data-rag="Off"] {
   opacity: 0.48;
 }
-.rpma-emp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #07141e; }
+.rpma-emp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #07141e; overflow: auto; }
+.rpma-emp-work {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  align-items: stretch;
+}
+.rpma-emp-inspector {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  margin: 0.85rem 0.85rem 0.85rem 0;
+  border-radius: 14px;
+  border: 1px solid #1c2c40;
+  background: #0c1828;
+  padding: 1rem;
+}
+html[data-theme="light"] .rpma-emp-inspector,
+html.snow .rpma-emp-inspector {
+  background: #fff;
+  border-color: #d5dbe3;
+}
+@media (max-width: 960px) {
+  .rpma-emp-work { grid-template-columns: 1fr; }
+  .rpma-emp-inspector { margin: 0 0.75rem 0.85rem; }
+}
 .rpma-emp-body.is-pad {
   padding: 0.75rem 0.85rem 1rem;
   overflow: auto;

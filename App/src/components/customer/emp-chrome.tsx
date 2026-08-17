@@ -27,6 +27,7 @@ import { SpaLink } from "@/components/nav/spa-link";
 import { CustomerSwitcher } from "@/components/nav/customer-switcher";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
 import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
+import { EmpInspector } from "@/components/chrome/emp-inspector";
 import { cn } from "@/lib/utils";
 
 type RibbonItem = { label: string; rel: string; icon: LucideIcon };
@@ -125,17 +126,33 @@ export function EmpChrome({
   customerCode,
   customerName,
   live,
+  lastImportAt,
   children,
 }: {
   customerCode: string;
   customerName: string;
   live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> };
+  lastImportAt?: string | null;
   children: ReactNode;
 }) {
   const { customers } = useCustomerList();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const base = `/customers/${encodeURIComponent(customerCode)}`;
   const rest = pathname.replace(base, "") || "";
+  const group =
+    RIBBON.find((g) => g.match && (rest === g.match || rest.startsWith(`${g.match}/`))) ??
+    RIBBON[0];
+  const item =
+    group.items.find((it) => it.rel && (rest === it.rel || rest.startsWith(`${it.rel}/`))) ??
+    group.items[0];
+  const flag = live?.modules[item.rel] ?? live?.modules[rest] ?? live?.pillars[group.id];
+  const ctx = {
+    service: group.title,
+    module: item.label,
+    cover: flag?.cover ?? true,
+    health: ragOf(item.rel, live),
+    slaHref: `${base}${group.match || "/ams"}/sla`.replace("//", "/"),
+  };
 
   return (
     <div className="rpma-emp">
@@ -199,7 +216,18 @@ export function EmpChrome({
           );
         })}
       </div>
-      <div className="rpma-emp-body">{children}</div>
+      <div className="rpma-emp-work">
+        <div className="rpma-emp-body">{children}</div>
+        <EmpInspector
+          name={customerName}
+          service={ctx.service}
+          module={ctx.module}
+          cover={ctx.cover}
+          health={ctx.health}
+          lastUtc={lastImportAt}
+          slaHref={ctx.slaHref}
+        />
+      </div>
     </div>
   );
 }

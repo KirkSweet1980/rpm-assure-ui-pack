@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { Building2 } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS } from "@/components/nav/customer-modules-panel";
 import { coverFromDetail, isPillarCovered, type PillarId } from "@/lib/data/cover";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import type { CustomerDetailPayload } from "@/lib/data/types";
-import { cn, formatSastDateTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const PILLAR_SUB: Record<string, string> = {
   syspro: "ERP Platform",
@@ -32,8 +31,6 @@ export function ServiceModuleMatrix({
   const base = `/customers/${encodeURIComponent(customer.customerCode)}`;
   const mods = (def?.modules ?? []).filter((m) => m.path !== def?.overview);
   const [sel, setSel] = useState(mods[0]?.path ?? "");
-  const active = mods.find((m) => m.path === sel) ?? mods[0];
-  const last = customer.lastImportAt;
 
   const rows = useMemo(
     () =>
@@ -111,46 +108,6 @@ export function ServiceModuleMatrix({
           </table>
         </div>
       </div>
-      <aside className="rpma-amx-side">
-        <div className="rpma-amx-card">
-          <span className="rpma-amx-ico lg">
-            <Building2 className="size-5" />
-          </span>
-          <div>
-            <strong>{customer.displayName}</strong>
-            <em>
-              {def?.title} · {active?.label}
-            </em>
-          </div>
-        </div>
-        <dl className="rpma-amx-dl">
-          <div>
-            <dt>SLA cover</dt>
-            <dd className={on ? "text-emerald-400" : "text-muted"}>{on ? "Covered" : "Out of scope"}</dd>
-          </div>
-          <div>
-            <dt>Health</dt>
-            <dd>
-              {on
-                ? rag === "Green"
-                  ? "Healthy"
-                  : rag === "Amber"
-                    ? "Watch"
-                    : rag === "Red"
-                      ? "Miss"
-                      : "—"
-                : "—"}
-            </dd>
-          </div>
-          <div>
-            <dt>Last updated</dt>
-            <dd>{formatSastDateTime(last)}</dd>
-          </div>
-        </dl>
-        <SpaLink href={`${base}${def?.overview ?? ""}/sla`} className="rpma-amx-sla">
-          View SLA history
-        </SpaLink>
-      </aside>
     </div>
   );
 }

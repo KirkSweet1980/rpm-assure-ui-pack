@@ -242,6 +242,7 @@ function CustomerLayout() {
             customerCode={customer.customerCode}
             customerName={customer.displayName}
             live={live}
+            lastImportAt={customer.lastImportAt}
           >
             {missing ? (
               <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
