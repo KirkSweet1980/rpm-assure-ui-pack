@@ -89,23 +89,19 @@ export function HeadsUpDisplay({
   const now = useClock();
   const dateStr = `${now.weekday} ${now.day} ${now.month} ${now.year}`;
   const timeStr = `${now.hour}:${now.minute}:${now.second}`;
-  const sqlLabel = liveSql ? "Live SQL" : "Demo data";
   const sqlWhen = formatSastDateTime(generatedAt);
 
   if (variant === "sql") {
     return (
-      <div className="rpma-hud-sql">
-        <HudCell
-          icon={Database}
-          label={sqlLabel}
-          value={sqlWhen}
-          tone={liveSql ? "live" : "demo"}
-          tip={
-            liveSql
-              ? "Last successful read from the central Assure SQL. Live = not demo seed."
-              : "Showing packaged demo data. Connect SQL in Configuration to go live."
-          }
-        />
+      <div
+        className={cn("rpma-sql-live", liveSql ? "is-live" : "is-demo")}
+        title={liveSql ? "Last live SQL read" : "Demo data"}
+        aria-label={liveSql ? `Live SQL ${sqlWhen}` : `Demo data ${sqlWhen}`}
+      >
+        <span className="rpma-sql-live-ico" aria-hidden>
+          <Database size={16} strokeWidth={2.2} />
+        </span>
+        <span className="rpma-sql-live-time">{sqlWhen}</span>
       </div>
     );
   }
