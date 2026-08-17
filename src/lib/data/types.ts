@@ -82,6 +82,8 @@ export type PortfolioRow = {
   coveMapped?: boolean | null;
   eppMapped?: boolean | null;
   cspMapped?: boolean | null;
+  ticketCount?: number | null;
+  ticketsMapped?: boolean | null;
 };
 
 export type OperatorRow = {

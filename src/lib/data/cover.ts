@@ -113,7 +113,7 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     cove: resolveVendor(coveEvidence, input.coveMapped, input.pillarCove),
     epp: resolveVendor(eppEvidence, input.eppMapped, input.pillarEpp),
     csp: resolveVendor(cspEvidence, input.cspMapped, input.pillarCsp),
-    tickets: (Number(input.ticketCount) || 0) > 0 || input.ticketsMapped === true,
+    tickets: (Number(input.ticketCount) || 0) > 0,
   };
 }
 
@@ -197,6 +197,8 @@ export function coverFromDetail(data: {
     cspLicenseSkuCount?: number | null;
     cspLicenseCount?: number | null;
     cspMapped?: boolean | null;
+    ticketCount?: number | null;
+    ticketsMapped?: boolean | null;
   } | null;
   license?: unknown;
   sysproVersion?: unknown;
@@ -271,8 +273,8 @@ export function coverFromDetail(data: {
     cspUserCount: cspUsers,
     cspLicenseCount: data.csp?.licenses?.length ?? c?.cspLicenseSkuCount ?? c?.cspLicenseCount ?? 0,
     cspMapped: Boolean(c?.cspMapped) || data.csp?.enabled === true,
-    ticketCount: data.incidents?.length ?? 0,
-    ticketsMapped: (data.incidents?.length ?? 0) > 0,
+    ticketCount: firstPositive(data.incidents?.length, c?.ticketCount),
+    ticketsMapped: Boolean(c?.ticketsMapped) || (data.incidents?.length ?? 0) > 0,
   });
 }
 

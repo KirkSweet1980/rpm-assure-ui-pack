@@ -1197,6 +1197,70 @@ INNER JOIN (
 }
 
 
+async function enrichTicketsPortfolio(
+  pool: NonNullable<Awaited<ReturnType<typeof getPool>>>,
+  rows: PortfolioRow[],
+): Promise<void> {
+  if (!rows.length) return;
+  const counts = new Map<string, number>();
+  const mapped = new Set<string>();
+  try {
+    const fi = await pool.request().query(`
+SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, COUNT_BIG(*) AS TicketCount
+FROM dbo.Fact_Incident WITH (NOLOCK)
+WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+GROUP BY UPPER(LTRIM(RTRIM(CustomerCode)))`);
+    for (const r of fi.recordset ?? []) {
+      const k = String(r.CustomerCode).toUpperCase();
+      counts.set(k, Math.max(counts.get(k) ?? 0, Number(r.TicketCount) || 0));
+    }
+  } catch (e) {
+    console.warn(
+      "[rpm-assure] tickets Fact_Incident cover:",
+      e instanceof Error ? e.message : e,
+    );
+  }
+  try {
+    const fd = await pool.request().query(`
+SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, COUNT_BIG(*) AS TicketCount
+FROM dbo.Freshdesk_Tickets WITH (NOLOCK)
+WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Freshdesk_Tickets WITH (NOLOCK))
+GROUP BY UPPER(LTRIM(RTRIM(CustomerCode)))`);
+    for (const r of fd.recordset ?? []) {
+      const k = String(r.CustomerCode).toUpperCase();
+      counts.set(k, Math.max(counts.get(k) ?? 0, Number(r.TicketCount) || 0));
+    }
+  } catch (e) {
+    console.warn(
+      "[rpm-assure] tickets Freshdesk_Tickets cover:",
+      e instanceof Error ? e.message : e,
+    );
+  }
+  try {
+    const maps = await pool.request().query(`
+SELECT DISTINCT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode
+FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK)
+WHERE ISNULL(Active,1) = 1
+  AND CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''`);
+    for (const r of maps.recordset ?? []) {
+      mapped.add(String(r.CustomerCode).toUpperCase());
+    }
+  } catch {
+    /* map optional */
+  }
+  for (const row of rows) {
+    const k = row.customerCode.toUpperCase();
+    const n = counts.get(k) ?? 0;
+    row.ticketCount = n;
+    row.ticketsMapped = mapped.has(k);
+    row.cover = {
+      ...(row.cover ?? { syspro: false, rmm: false, cove: false }),
+      tickets: n > 0,
+    };
+  }
+}
+
 const PORTFOLIO_SQL = `
 SELECT
   c.CustomerCode,
@@ -2358,6 +2422,7 @@ WHERE PulsewayOrgName IS NOT NULL AND LTRIM(RTRIM(CAST(PulsewayOrgName AS nvarch
     enrichCovePortfolio(pool, rows),
     enrichEppPortfolio(pool, rows),
     enrichCspPortfolio(pool, rows),
+    enrichTicketsPortfolio(pool, rows),
   ]);
   for (const row of rows) {
     recomputeRowHealth(row);
@@ -3127,6 +3192,14 @@ ORDER BY CASE WHEN c.CustomerCode = @code THEN 0 ELSE 1 END`);
           }),
         );
       }
+      enrichJobs.push(
+        enrichTicketsPortfolio(pool, [customer]).catch((e) => {
+          console.warn(
+            "[rpm-assure] single-customer tickets enrich:",
+            e instanceof Error ? e.message : e,
+          );
+        }),
+      );
       await Promise.all(enrichJobs);
       await hydrateHealthInputsFromEstate(pool, customer);
       recomputeRowHealth(customer);

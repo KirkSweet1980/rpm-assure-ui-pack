@@ -294,6 +294,15 @@ function CustomerLayout() {
       sla: "Customer SLA",
     };
     pageTitle = `Customer Assurance · ${map[pathBits[3]] || pathBits[3]}`;
+  } else if (pathBits[2] === "tickets" && pathBits.length === 3) {
+    pageTitle = "Customer Tickets";
+  } else if (pathBits[2] === "tickets" && pathBits[3]) {
+    const map: Record<string, string> = {
+      open: "Open Tickets",
+      resolved: "Resolved Tickets",
+      closed: "Closed Tickets",
+    };
+    pageTitle = `Customer Tickets · ${map[pathBits[3]] || pathBits[3]}`;
   }
 
   const missing = Boolean((data as { _missing?: boolean })?._missing);
@@ -310,7 +319,7 @@ function CustomerLayout() {
   const noDeviceCover = noCoverForDevicesLabel(pathname, customer, data);
   const pathPillar = ((): PillarId | null => {
     const p = pathBits[2];
-    if (p === "syspro" || p === "rmm" || p === "cove" || p === "epp" || p === "csp") return p;
+    if (p === "syspro" || p === "rmm" || p === "cove" || p === "epp" || p === "csp" || p === "tickets") return p;
     return null;
   })();
   const pageCoverOn = pathPillar ? isPillarCovered(pageCover, pathPillar) : null;
