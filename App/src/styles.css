@@ -3458,3 +3458,69 @@ html.snow .rpma-folio-empty { color: #536170; }
 @media (max-width: 900px) {
   .rpma-folio-kpis { grid-template-columns: 1fr 1fr; }
 }
+
+
+/* EPP module lamps */
+.rpma-epp-mod-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+.rpma-epp-mod {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 16px 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.rpma-epp-mod.is-on { border-color: color-mix(in srgb, #22c55e 45%, var(--color-border)); }
+.rpma-epp-mod.is-off { border-color: color-mix(in srgb, #ef4444 35%, var(--color-border)); }
+.rpma-epp-mod h3 {
+  margin: 8px 0 0; font-size: 12px; font-weight: 800; line-height: 1.25; color: inherit;
+}
+.rpma-epp-state { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.rpma-epp-mod.is-on .rpma-epp-state { color: #16a34a; }
+.rpma-epp-mod.is-off .rpma-epp-state { color: #dc2626; }
+.rpma-epp-meta { margin: 0; font-size: 10px; color: var(--color-muted); }
+.rpma-epp-lamp {
+  width: 30px; height: 30px; border-radius: 99px; position: relative;
+  border: 2px solid rgba(255,255,255,0.18);
+}
+.rpma-epp-lamp::after {
+  content: ""; position: absolute; inset: 5px auto auto 6px; width: 8px; height: 5px;
+  border-radius: 99px; background: rgba(255,255,255,0.55);
+}
+.rpma-epp-lamp[data-on="1"] {
+  background: radial-gradient(circle at 32% 28%, #bbf7d0, #22c55e 52%, #14532d);
+  box-shadow: 0 0 0 4px rgba(34,197,94,0.16), 0 0 16px #22c55e, 0 0 32px rgba(34,197,94,0.4);
+  animation: rpma-epp-pulse 1.7s ease-in-out infinite;
+}
+.rpma-epp-lamp[data-on="0"] {
+  background: radial-gradient(circle at 32% 28%, #fecaca, #ef4444 52%, #7f1d1d);
+  box-shadow: 0 0 0 4px rgba(239,68,68,0.14), 0 0 12px rgba(239,68,68,0.55);
+}
+@keyframes rpma-epp-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(34,197,94,0.16), 0 0 14px #22c55e, 0 0 26px rgba(34,197,94,0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(34,197,94,0.08), 0 0 22px #4ade80, 0 0 40px rgba(34,197,94,0.55); }
+}
+.rpma-epp-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 999px; padding: 3px 8px 3px 6px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  border: 1px solid var(--color-border);
+}
+.rpma-epp-chip i {
+  width: 9px; height: 9px; border-radius: 99px; display: block;
+}
+.rpma-epp-chip.is-on { color: #15803d; background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.35); }
+.rpma-epp-chip.is-on i { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+.rpma-epp-chip.is-off { color: #b91c1c; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
+.rpma-epp-chip.is-off i { background: #ef4444; box-shadow: 0 0 7px #ef4444; }
+html[data-theme="light"] .rpma-epp-mod.is-on .rpma-epp-state,
+html.snow .rpma-epp-mod.is-on .rpma-epp-state { color: #15803d; }
+html[data-theme="light"] .rpma-epp-mod.is-off .rpma-epp-state,
+html.snow .rpma-epp-mod.is-off .rpma-epp-state { color: #b91c1c; }
