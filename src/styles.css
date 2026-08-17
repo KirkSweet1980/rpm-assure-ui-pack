@@ -1455,28 +1455,34 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
   width: 100%;
   box-sizing: border-box;
 }
-.rpma-svc-row {
-  min-height: 34px;
-  padding: 7px 10px;
-  font-size: 12px;
+.rpma-svc-row,
+.rpma-mod-row {
+  min-height: 0;
+  padding: 5px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .rpma-svc-row-name {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  font-size: 12px;
-  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  line-height: 1.2;
 }
 .rpma-mod-row {
-  min-height: 32px;
-  padding: 7px 10px;
-  font-size: 12px;
-  line-height: 1.3;
-  white-space: normal;
+  overflow: hidden;
 }
 .rpma-modbtn {
-  min-height: 32px;
+  min-height: 0;
   justify-content: flex-start;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.rpma-cover-tag {
+  font-size: 8px;
+  padding: 1px 5px;
+  letter-spacing: 0.04em;
 }
 .rpma-settings-body {
   padding: 0 2px 1rem;
