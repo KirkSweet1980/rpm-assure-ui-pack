@@ -2238,6 +2238,7 @@ function IopsPerfMatrix({
           const stat = DRIVE_STATS[kind];
           const expected = expectedIopsForMedia(r.mediaType) || stat.iops;
           const expectedLat = expectedLatencyMsForMedia(r.mediaType) || stat.latencyMs;
+          const ofExp = expected > 0 ? Math.round((actual / expected) * 100) : 0;
           const band = iopsBand(actual, expected, r.queueLen);
           const scale = Math.max(expected * 1.4, actual, 1);
           const actPct = Math.min(100, (actual / scale) * 100);
