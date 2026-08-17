@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Toggle sets html.dark + data-theme. Without this, dark: follows the OS only. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Inter", system-ui, sans-serif;
