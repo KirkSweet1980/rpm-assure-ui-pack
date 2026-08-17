@@ -175,10 +175,11 @@ body {
   color: var(--pc-sidebar-color);
 }
 .dk-header-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
+  position: relative;
   min-height: var(--pc-header-height);
   flex: 1;
   min-width: 0;
@@ -189,7 +190,19 @@ body {
   align-items: center;
   justify-content: flex-start;
   min-width: 0;
+  max-width: calc(50% - 200px);
   gap: 8px;
+  z-index: 1;
+}
+.dk-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: calc(50% - 200px);
+  z-index: 1;
 }
 .dk-header-one .dk-brand, .dk-header-tall .dk-brand {
   height: auto;
@@ -199,7 +212,6 @@ body {
 }
 .dk-header-nav { display: flex; align-items: center; justify-content: flex-start; flex: 1; min-width: 0; }
 .dk-nav.is-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 4px; padding: 0; }
-.dk-header-right { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-shrink: 0; }
 .dk-shell.is-topnav { --pc-header-height: 88px; --rpma-hud-h: 0px; }
 .dk-shell.is-topnav.is-menu-open { --pc-header-height: 88px; }
 .dk-header-one .dk-iconbtn, .dk-header-tall .dk-iconbtn { color: #ced4dc; background: transparent; border: 0; width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; }
@@ -213,7 +225,9 @@ body {
 @media (max-width: 1023px) {
   .dk-burger { display: grid; }
   .dk-header-one, .dk-header-tall { flex-wrap: wrap; height: auto; }
-  .dk-header-row { grid-template-columns: auto 1fr auto; }
+  .dk-header-row { display: flex; }
+  .dk-header-left, .dk-header-right { max-width: none; }
+  .rpma-hud-mid { position: static; transform: none; margin: 0 auto; }
   .dk-header-nav { flex: 1 1 100%; justify-content: center; }
   .dk-header-nav.is-collapsed { display: none; }
   .dk-shell.is-topnav.is-menu-open { --pc-header-height: 140px; }
@@ -785,17 +799,25 @@ html.dark .rpma-pane-head-row {
 .rpma-hud,
 .rpma-hud-spacer { display: none; }
 .rpma-hud-mid {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 28px;
+  z-index: 2;
   pointer-events: auto;
 }
 .rpma-hud-rev {
   display: grid;
   place-items: center;
   width: 92px;
-  z-index: 2;
+  flex: 0 0 92px;
+}
+.rpma-hud-mid .rpma-hud-cell {
+  min-width: 148px;
 }
 .rpma-hud-rev-svg { width: 92px !important; height: 76px !important; display: block; overflow: visible; }
 .rpma-hud-sql { display: flex; align-items: center; }
