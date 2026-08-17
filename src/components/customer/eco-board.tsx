@@ -420,7 +420,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
             { label: "SLA", href: `${base}/ams/sla`, n: `${score}%`, hint: "Assurance" },
             { label: "Customer Assurance", href: `${base}/ams`, n: openIssues.length, hint: "Issues" },
           ].map((t) => (
-            <SpaLink key={t.href} href={t.href} className="rpma-glass block px-3 py-2.5 hover:shadow-md">
+            <SpaLink key={t.href} href={t.href} className="rpma-glass rpma-tile block px-3 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{t.label}</p>
               <p
                 className={cn(
