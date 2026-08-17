@@ -1,7 +1,10 @@
+SET QUOTED_IDENTIFIER ON;
+GO
 /* Stamp CustomerCode from map, then MERGE latest Freshdesk tickets into Fact_Incident.
-   SLA clocks stay NULL so vw_Ams_IncidentLive / vw_Ams_SlaCompliance_30d compute them.
-   Does not touch non-Freshdesk incidents. */
+   Do not fail the merge if a filtered index cannot be created. */
 SET NOCOUNT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 USE RPMAssure_App;
 GO
 
@@ -27,20 +30,20 @@ IF COL_LENGTH(N'dbo.Fact_Incident', N'ModuleCode') IS NULL
   ALTER TABLE dbo.Fact_Incident ADD ModuleCode nvarchar(50) NULL;
 GO
 
+/* Non-filtered index only - sqlcmd defaults QUOTED_IDENTIFIER OFF and filtered indexes fail. */
 IF NOT EXISTS (
-  SELECT 1 FROM sys.indexes WHERE name = N'UX_Fact_Incident_FdRef' AND object_id = OBJECT_ID(N'dbo.Fact_Incident')
+  SELECT 1 FROM sys.indexes WHERE name = N'IX_Fact_Incident_FdRef' AND object_id = OBJECT_ID(N'dbo.Fact_Incident')
 )
-  CREATE UNIQUE INDEX UX_Fact_Incident_FdRef
-    ON dbo.Fact_Incident (SourceSystem, ExternalRef)
-    WHERE SourceSystem = N'Freshdesk' AND ExternalRef IS NOT NULL;
+  CREATE INDEX IX_Fact_Incident_FdRef
+    ON dbo.Fact_Incident (SourceSystem, ExternalRef);
 GO
 
 UPDATE t SET t.CustomerCode = m.CustomerCode
 FROM dbo.Freshdesk_Tickets t
 JOIN dbo.Dim_Freshdesk_CompanyMap m ON m.Active = 1
  AND (
-      (t.CompanyId IS NOT NULL AND t.CompanyId = m.CompanyId)
-   OR LTRIM(RTRIM(t.CompanyName)) = LTRIM(RTRIM(m.CompanyName))
+      (t.CompanyId IS NOT NULL AND m.CompanyId IS NOT NULL AND t.CompanyId = m.CompanyId)
+   OR LTRIM(RTRIM(ISNULL(t.CompanyName,N''))) = LTRIM(RTRIM(m.CompanyName))
  )
 WHERE t.CustomerCode IS NULL OR t.CustomerCode <> m.CustomerCode;
 

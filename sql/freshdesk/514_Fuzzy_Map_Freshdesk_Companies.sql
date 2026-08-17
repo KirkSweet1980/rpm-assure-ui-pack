@@ -97,4 +97,15 @@ FROM dbo.Freshdesk_Tickets
 WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Freshdesk_Tickets)
 GROUP BY CustomerCode
 ORDER BY Tickets DESC;
+
+PRINT '=== Unmapped company ids / names (latest snap) ===';
+SELECT TOP 25
+  ISNULL(CONVERT(nvarchar(30), CompanyId), N'(none)') AS CompanyId,
+  ISNULL(NULLIF(LTRIM(RTRIM(CompanyName)), N''), N'(blank)') AS CompanyName,
+  COUNT(*) AS Tickets
+FROM dbo.Freshdesk_Tickets
+WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Freshdesk_Tickets)
+  AND CustomerCode IS NULL
+GROUP BY CompanyId, CompanyName
+ORDER BY Tickets DESC;
 GO

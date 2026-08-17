@@ -167,27 +167,31 @@ try {
   Write-Log ('list-all warn ' + $_.Exception.Message)
 }
 
-# 2) Search by company NAME (company_id is invalid_field on this account)
-$namesTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT CompanyName, CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 AND CompanyName IS NOT NULL;"
+# 2) Search by company_id (name search is invalid on this account)
+$namesTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT DISTINCT CustomerCode, CompanyId FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 AND CompanyId IS NOT NULL;"
 $maps = @()
+$seenId = @{}
 foreach ($line in @($namesTxt)) {
   if ([string]::IsNullOrWhiteSpace($line)) { continue }
   $p = $line.Split('|')
   if ($p.Length -lt 2) { continue }
-  $nm = $p[0].Trim(); $code = $p[1].Trim()
-  if ($nm) { $maps += [pscustomobject]@{ Name = $nm; Code = $code } }
+  $code = $p[0].Trim(); $id = $p[1].Trim()
+  if ($id -match '^\d+$' -and -not $seenId.ContainsKey($id)) {
+    $seenId[$id] = $true
+    $maps += [pscustomobject]@{ Code = $code; CompanyId = $id }
+  }
 }
-Write-Log ('mapped company names=' + $maps.Count)
+Write-Log ('mapped company ids=' + $maps.Count)
 
 foreach ($m in $maps) {
   $page = 1
   do {
-    $q = '"' + ("company:'{0}'" -f $m.Name) + '"'
+    $q = '"' + ('company_id:{0}' -f $m.CompanyId) + '"'
     $url = "https://$FreshdeskDomain/api/v2/search/tickets?page=$page&query=" + [uri]::EscapeDataString($q)
     try {
       $sr = Invoke-FdGet $url
     } catch {
-      Write-Log ('search fail ' + $m.Code + ' "' + $m.Name + '" p' + $page + ' ' + $_.Exception.Message)
+      Write-Log ('search fail ' + $m.Code + ' id=' + $m.CompanyId + ' p' + $page + ' ' + $_.Exception.Message)
       break
     }
     $rows = @()
@@ -200,7 +204,7 @@ foreach ($m in $maps) {
       if ($u -and $u -lt $since) { continue }
       $keep += $t
     }
-    Add-Tickets $keep ('search ' + $m.Code + ' "' + $m.Name + '" p' + $page + ' apiTotal=' + $sr.total)
+    Add-Tickets $keep ('search ' + $m.Code + ' id=' + $m.CompanyId + ' p' + $page + ' apiTotal=' + $sr.total)
     $page++
     Start-Sleep -Milliseconds 300
   } while ($page -le 10 -and $rows.Count -ge 30)
@@ -329,7 +333,7 @@ foreach ($sqlName in @('514_Fuzzy_Map_Freshdesk_Companies.sql', '513_Sync_Freshd
   $sync = Join-Path $here $sqlName
   if (-not (Test-Path -LiteralPath $sync)) { continue }
   Write-Log ('SQL ' + $sqlName)
-  & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $sync
+  & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -I -b -i $sync
   if ($LASTEXITCODE -ne 0) { Write-Log ($sqlName + ' warned exit=' + $LASTEXITCODE) }
   else { Write-Log ($sqlName + ' OK') }
 }
