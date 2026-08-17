@@ -174,7 +174,7 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.rmm,
     source: INDUSTRY_MEASURES.rmm.source,
-  };
+  });
 }
 
 export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
@@ -217,7 +217,7 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.cove,
     source: INDUSTRY_MEASURES.cove.source,
-  };
+  });
 }
 
 export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
@@ -288,7 +288,7 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.epp,
     source: INDUSTRY_MEASURES.epp.source,
-  };
+  });
 }
 
 export function buildSysproServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
@@ -319,7 +319,7 @@ export function buildSysproServiceSla(data: CustomerDetailPayload): ServiceSlaPa
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.syspro,
     source: INDUSTRY_MEASURES.syspro.source,
-  };
+  });
 }
 
 export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
@@ -365,7 +365,7 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.csp,
     source: INDUSTRY_MEASURES.csp.source,
-  };
+  });
 }
 
 export function buildTicketsServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
@@ -403,7 +403,7 @@ export function buildTicketsServiceSla(data: CustomerDetailPayload): ServiceSlaP
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.tickets,
     source: INDUSTRY_MEASURES.tickets.source,
-  };
+  });
 }
 
 export function buildServiceSla(
