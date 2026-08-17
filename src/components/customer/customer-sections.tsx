@@ -1443,6 +1443,7 @@ function AgentHostTelemetry({
 
   return (
     <div className="space-y-3">
+      {iopsShow.length > 0 ? (
       <section className="rpma-panel p-0">
         <div className="rpma-settings-panel-head">
           Agent Disk IOPS
@@ -1451,11 +1452,6 @@ function AgentHostTelemetry({
             {iopsLatest ? ` · latest ${formatSastDateTime(iopsLatest)}` : ""}
           </span>
         </div>
-        {iopsShow.length === 0 ? (
-          <p className="px-3 py-3 text-[12px] text-muted">
-            No live IOPS yet. Pulseway REST v3 cannot return IOPS. Schedule Pulseway-Collect-DiskIops.ps1 in Pulseway Automation (it POSTs counters to Assure), or install the Assure agent. Recheck only pulls devices — IOPS arrives from the script.
-          </p>
-        ) : (
           <table className="rpma-xls text-left">
             <thead>
               <tr>
@@ -1504,18 +1500,14 @@ function AgentHostTelemetry({
               })}
             </tbody>
           </table>
-        )}
       </section>
+      ) : null}
+      {evShow.length > 0 ? (
       <section className="rpma-panel p-0">
         <div className="rpma-settings-panel-head">
-          Server Event Log
-          <span className="rpma-settings-count">{evShow.length} last 24h</span>
+          Windows Event Log
+          <span className="rpma-settings-count">{evShow.length}</span>
         </div>
-        {evShow.length === 0 ? (
-          <p className="px-3 py-3 text-[12px] text-muted">
-            No Critical or Error events from Assure agent hosts in the last 24 hours.
-          </p>
-        ) : (
           <table className="rpma-xls text-left">
             <thead>
               <tr>
@@ -1561,8 +1553,8 @@ function AgentHostTelemetry({
               })}
             </tbody>
           </table>
-        )}
       </section>
+      ) : null}
     </div>
   );
 }
@@ -1633,9 +1625,6 @@ export function RmmDevicesSection({
             ? `Pulseway collect has 0 devices for this customer. Mapped org: ${mapped.join(", ") || data.rmm?.pulsewayOrgName || "—"}.`
             : `${allDevices.length} device(s) on collect, 0 classified as ${title.toLowerCase()}.`}
         </p>
-        {mode === "servers" ? (
-          <AgentHostTelemetry iops={agentIops} events={windowsEvents} />
-        ) : null}
       </div>
     );
   }
@@ -1999,13 +1988,6 @@ export function RmmDevicesSection({
           </div>
         </div>
       )}
-      {mode === "servers" ? (
-        <AgentHostTelemetry
-          iops={agentIops}
-          events={windowsEvents}
-          focusHost={selected?.name || selected?.deviceId}
-        />
-      ) : null}
     </div>
   );
 }
@@ -2262,25 +2244,38 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
 }
 
 export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
-  return (
-    <div className="space-y-3">
-      <ChartCaption
-        title="Disk IOPS performance"
-        why="Windows disk performance counters. Pulseway Automation runs Pulseway-Collect-DiskIops.ps1 and POSTs here — the Pulseway API cannot return IOPS. The Assure agent is the other path. Empty means neither has sampled this customer."
-      />
-      <AgentHostTelemetry iops={data.rmm?.agentIops ?? []} events={[]} />
-    </div>
-  );
+  const rows = keepLiveIops(data.rmm?.agentIops ?? []);
+  if (!rows.length) {
+    return <p className="text-sm text-muted">No IOPS samples for this customer.</p>;
+  }
+  return <AgentHostTelemetry iops={rows} events={[]} />;
 }
 
 export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
+  const agent = data.rmm?.windowsEvents ?? [];
+  const fromAlerts = (data.rmm?.alerts ?? [])
+    .filter((a) => a.source !== "agent")
+    .map((a) => ({
+      hostName: a.deviceName || "",
+      timeCreatedUtc: a.raisedAt,
+      logName: "Pulseway",
+      eventId: 0,
+      levelName: a.severity || "Error",
+      providerName: "Pulseway",
+      message: [a.title, a.message].filter(Boolean).join(" — "),
+    }));
+  const events = agent.length ? agent : fromAlerts;
   return (
     <div className="space-y-3">
       <ChartCaption
         title="Windows event logs"
-        why="Critical and Error rows from Application and System logs on each host with an Assure agent. Click a row to read the full message."
+        why="Critical and Error rows from Application and System logs (Assure agent), plus Pulseway alerts when the agent has not posted yet."
       />
-      <AgentHostTelemetry iops={[]} events={data.rmm?.windowsEvents ?? []} />
+      {events.length === 0 ? (
+        <p className="text-sm text-muted">No event log rows for this customer yet.</p>
+      ) : (
+        <AgentHostTelemetry iops={[]} events={events} />
+      )}
     </div>
   );
 }

@@ -5275,7 +5275,7 @@ SELECT TOP 4000
   HostName, TimeCreatedUtc, LogName, EventId, LevelName, ProviderName, MessageText
 FROM dbo.Agent_EventLog WITH (NOLOCK)
 WHERE CustomerCode = @code
-  AND TimeCreatedUtc >= DATEADD(hour, -24, SYSUTCDATETIME())
+  AND TimeCreatedUtc >= DATEADD(day, -7, SYSUTCDATETIME())
 ORDER BY
   CASE WHEN LevelName = N'Critical' THEN 0 ELSE 1 END,
   TimeCreatedUtc DESC`);
