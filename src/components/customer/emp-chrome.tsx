@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 type RibbonItem = { label: string; full: string; rel: string; icon: LucideIcon };
-type RibbonGroup = { id: string; title: string; match: string; items: RibbonItem[] };
+type RibbonGroup = { id: string; title: string; match: string; color: string; items: RibbonItem[] };
 
 const GROUP_TITLE: Record<string, string> = {
   estate: "Customer Eco System",
@@ -51,6 +51,7 @@ const RIBBON: RibbonGroup[] = [
     id: "estate",
     title: GROUP_TITLE.estate,
     match: "",
+    color: "#0d9488",
     items: ECOSYSTEM_MODULES.map((m) => ({
       label: shortLabel(m.label),
       full: m.label,
@@ -62,6 +63,7 @@ const RIBBON: RibbonGroup[] = [
     id: p.id,
     title: GROUP_TITLE[p.id] ?? p.title,
     match: p.overview,
+    color: p.color,
     items: p.modules.map((m) => ({
       label: shortLabel(m.label),
       full: m.label,
@@ -184,6 +186,7 @@ export function EmpChrome({
                 href={href}
                 className={cn("rpma-emp-gtab", on && "is-on")}
                 data-rag={tone}
+                style={{ ["--emp-tab"]: g.color } as CSSProperties}
               >
                 {g.title}
               </SpaLink>

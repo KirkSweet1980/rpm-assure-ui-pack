@@ -511,6 +511,7 @@ function ReportsPage() {
             id: s.id,
             title: s.title,
             on: pack?.service === s.id,
+            color: s.color,
             items: s.modules.map((m) => {
               const fmt = (m.path.match(/format=([^&]+)/) || [])[1];
               return {

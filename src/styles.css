@@ -2247,23 +2247,30 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   font-size: 11px;
   font-weight: 800;
   line-height: 1.2;
-  color: #d7e4ee;
+  color: color-mix(in srgb, var(--emp-tab, #2ee6a6) 70%, #e8f4f8);
   text-decoration: none;
   border-right: 1px solid #14344a;
-  border-bottom: 3px solid transparent;
+  border-bottom: 3px solid color-mix(in srgb, var(--emp-tab, #14b8a6) 45%, transparent);
+  background: color-mix(in srgb, var(--emp-tab, #14b8a6) 14%, transparent);
   box-shadow: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .rpma-emp-gtab:last-child { border-right: 0; }
-.rpma-emp-gtab.is-on {
-  background: color-mix(in srgb, #14b8a6 14%, transparent);
+.rpma-emp-gtab:hover {
+  background: color-mix(in srgb, var(--emp-tab, #14b8a6) 26%, transparent);
   color: #fff;
-  border-bottom-color: #2ee6a6;
 }
-.rpma-emp-gtab[data-rag] { border-bottom-color: transparent; }
+.rpma-emp-gtab.is-on {
+  background: color-mix(in srgb, var(--emp-tab, #14b8a6) 32%, #0a1c2a);
+  color: #fff;
+  border-bottom-color: var(--emp-tab, #2ee6a6);
+  box-shadow: inset 0 -2px 0 var(--emp-tab, #2ee6a6);
+}
+.rpma-emp-gtab[data-rag] { /* keep group colour; RAG does not flatten tabs */ }
 .rpma-emp-gtab.is-on[data-rag="Green"],
 .rpma-emp-gtab.is-on[data-rag="Amber"],
 .rpma-emp-gtab.is-on[data-rag="Red"],
-.rpma-emp-gtab.is-on:not([data-rag]) { border-bottom-color: #2ee6a6; }
+.rpma-emp-gtab.is-on:not([data-rag]) { border-bottom-color: var(--emp-tab, #2ee6a6); }
 .rpma-emp-ribbon.is-opt6 .rpma-emp-tools {
   display: flex;
   flex-wrap: nowrap;
@@ -2676,14 +2683,21 @@ html[data-theme="light"] .rpma-emp-titles,
 html.snow .rpma-emp-titles { border-bottom-color: #c5d0da; }
 html[data-theme="light"] .rpma-emp-gtab,
 html.snow .rpma-emp-gtab {
-  color: #0b1a3a;
+  color: color-mix(in srgb, var(--emp-tab, #0d9488) 72%, #0b1a3a);
   border-right-color: #c5d0da;
+  background: color-mix(in srgb, var(--emp-tab, #0d9488) 16%, #fff);
+}
+html[data-theme="light"] .rpma-emp-gtab:hover,
+html.snow .rpma-emp-gtab:hover {
+  background: color-mix(in srgb, var(--emp-tab, #0d9488) 26%, #fff);
+  color: color-mix(in srgb, var(--emp-tab, #0d9488) 55%, #0b1a3a);
 }
 html[data-theme="light"] .rpma-emp-gtab.is-on,
 html.snow .rpma-emp-gtab.is-on {
-  background: color-mix(in srgb, #1bb8a6 14%, #fff);
-  color: #0b1a3a;
-  border-bottom-color: #0b7d70;
+  background: color-mix(in srgb, var(--emp-tab, #0d9488) 24%, #fff);
+  color: color-mix(in srgb, var(--emp-tab, #0d9488) 62%, #071018);
+  border-bottom-color: var(--emp-tab, #0b7d70);
+  box-shadow: inset 0 -2px 0 var(--emp-tab, #0b7d70);
 }
 html[data-theme="light"] .rpma-emp-group,
 html.snow .rpma-emp-group { border-right-color: #c5d0da; }
