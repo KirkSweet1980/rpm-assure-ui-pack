@@ -265,7 +265,7 @@ function ServiceVisuals({
       {tiles?.length ? (
         <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
           {tiles.map((t) => (
-            <SpaLink key={t.href} href={t.href} className="rpma-glass block px-2.5 py-2 hover:shadow-sm">
+            <SpaLink key={t.href} href={t.href} className="rpma-glass rpma-tile block px-2.5 py-2">
               <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">
                 <span className="inline-flex items-center gap-1">
                   {t.label}

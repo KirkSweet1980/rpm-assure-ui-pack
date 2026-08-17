@@ -1565,3 +1565,29 @@ h1, h2, h3, h4,
   letter-spacing: -0.015em;
 }
 
+.rpma-stat-card,
+a.rpma-glass,
+.rpma-tile,
+.rpma-modbtn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.rpma-stat-card:hover,
+a.rpma-glass:hover,
+.rpma-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-brand-teal);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-nav) 14%, transparent);
+  background: var(--color-surface);
+}
+.rpma-modbtn:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-brand-teal);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-nav) 12%, transparent);
+}
+.rpma-modbtn.is-cover:hover {
+  filter: brightness(1.06);
+}
+.rpma-modbtn.is-nocover:hover {
+  border-color: #9aa6b4;
+}
+
