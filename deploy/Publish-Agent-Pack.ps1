@@ -1,5 +1,6 @@
 # Publish agent files to C:\RPM-Assure\downloads.
-# Zip is a clean runtime pack only - no installer\ Git launchers (EPP flags those).
+# Zip is a clean runtime pack only - no installer Git launchers (EPP flags those).
+# Locked files (EPP / AV) are skipped so the pack still publishes.
 
 param(
   [string]$Root = 'C:\RPM-Assure',
@@ -22,6 +23,23 @@ foreach ($vf in @(
 }
 [IO.File]::WriteAllText((Join-Path $dl 'VERSION'), $ver)
 
+function Copy-ShareRead([string]$From, [string]$To) {
+  $in = $null; $out = $null
+  try {
+    $in = [IO.File]::Open($From, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+    New-Item -ItemType Directory -Force -Path (Split-Path $To) | Out-Null
+    $out = [IO.File]::Create($To)
+    $in.CopyTo($out)
+    return $true
+  } catch {
+    Write-Host ('SKIP locked ' + $From)
+    return $false
+  } finally {
+    if ($out) { $out.Dispose() }
+    if ($in) { $in.Dispose() }
+  }
+}
+
 foreach ($pair in @(
     @('Sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
     @('sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
@@ -29,13 +47,13 @@ foreach ($pair in @(
     @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1')
   )) {
   $src = Join-Path $Pack $pair[0]
-  if (Test-Path $src) { Copy-Item -Force -LiteralPath $src (Join-Path $dl $pair[1]) }
+  if (Test-Path $src) { [void](Copy-ShareRead $src (Join-Path $dl $pair[1])) }
 }
 
 $stage = Join-Path $env:TEMP ('rpma-pack-clean-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 $excludeDir = [regex]'\\installer\\|\\logs\\|\\\.git\\'
-$excludeName = [regex]'(?i)(Launch-From-Git|Launch-ABLE|Launch-Fresh-Wizard|Repair-Pack-And-Launch|Bootstrap-Customer-Agent|Replace-Old-Agent)\.ps1$'
+$excludeName = [regex]'(?i)(Launch-From-Git|Launch-ABLE|Launch-Fresh-Wizard|Repair-Pack-And-Launch|Bootstrap-Customer-Agent|Replace-Old-Agent|Onboard-IB-Syspro)\.ps1$'
 
 function Copy-Clean([string]$Rel) {
   $from = Join-Path $Pack $Rel
@@ -45,10 +63,7 @@ function Copy-Clean([string]$Rel) {
     if ($_.Name -match $excludeName) { return }
     $relFile = $_.FullName.Substring($from.Length).TrimStart('\')
     $dest = Join-Path (Join-Path $stage $Rel) $relFile
-    New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
-    try { [IO.File]::Copy($_.FullName, $dest, $true) } catch {
-      Write-Host ("SKIP locked " + $relFile)
-    }
+    [void](Copy-ShareRead $_.FullName $dest)
   }
   return $true
 }
@@ -59,30 +74,44 @@ foreach ($rel in @('Sql\agent', 'sql\agent', 'Sql\base\syspro-direct', 'sql\base
 }
 if (-not $any) { throw "No agent files under $Pack" }
 
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = Join-Path $dl 'rpm-assure-agent.zip'
-if (Test-Path $zip) { Remove-Item $zip -Force }
-$tar = Join-Path $env:WINDIR 'System32\tar.exe'
-if (-not (Test-Path $tar)) { $tar = 'tar' }
-$here = Get-Location
-Set-Location $stage
+$zipTmp = Join-Path $env:TEMP ('rpma-agent-' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.zip')
+if (Test-Path $zipTmp) { Remove-Item $zipTmp -Force }
+$skipped = 0
+$zf = [IO.Compression.ZipFile]::Open($zipTmp, [IO.Compression.ZipArchiveMode]::Create)
 try {
-  & $tar -a -c -f $zip *
-  if ($LASTEXITCODE -ne 0) { throw "tar zip failed $LASTEXITCODE" }
+  Get-ChildItem -LiteralPath $stage -Recurse -File | ForEach-Object {
+    $entry = $_.FullName.Substring($stage.Length).TrimStart('\').Replace('\', '/')
+    try {
+      $bytes = [IO.File]::ReadAllBytes($_.FullName)
+      $e = $zf.CreateEntry($entry, [IO.Compression.CompressionLevel]::Optimal)
+      $es = $e.Open()
+      try { $es.Write($bytes, 0, $bytes.Length) } finally { $es.Dispose() }
+    } catch {
+      $script:skipped++
+      Write-Host ('SKIP zip ' + $entry)
+    }
+  }
 } finally {
-  Set-Location $here
-  Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+  $zf.Dispose()
 }
+if (Test-Path $zip) { Remove-Item $zip -Force -ErrorAction SilentlyContinue }
+Move-Item -Force $zipTmp $zip
+Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 
 $len = (Get-Item $zip).Length
+if ($len -lt 1000) { throw "zip too small: $len" }
 foreach ($extra in @(
     (Join-Path $Pack 'public\downloads\Pulseway-Collect-DiskIops.ps1'),
     (Join-Path $Pack 'public\downloads\Deploy-Assure-Agent.ps1')
   )) {
-  if (Test-Path $extra) { Copy-Item -Force $extra (Join-Path $dl (Split-Path $extra -Leaf)) }
+  if (Test-Path $extra) { [void](Copy-ShareRead $extra (Join-Path $dl (Split-Path $extra -Leaf))) }
 }
 $caddy = Join-Path $PSScriptRoot 'Ensure-Caddy-Downloads.ps1'
 if (Test-Path $caddy) {
   try { & $caddy } catch { Write-Host ('WARN caddy downloads ' + $_.Exception.Message) }
 }
-Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len + ' (HTTPS pack, no Git)')
+Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len + ' skipped=' + $skipped)
 Get-ChildItem $dl | Select-Object Name, Length | Format-Table -AutoSize
