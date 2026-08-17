@@ -53,31 +53,38 @@ export function EmpWindow({
             </SpaLink>
           ))}
         </nav>
-        <div className="rpma-emp-ribbon" role="toolbar">
-          {groups.map((g) => (
-            <div key={g.id} className={cn("rpma-emp-group", g.on && "is-on")}>
-              <div className="rpma-emp-gtitle">{g.title}</div>
-              <div className="rpma-emp-tools">
-                {g.items.map((it) => {
-                  const Icon = it.icon;
-                  return (
-                    <SpaLink
-                      key={it.href + it.label}
-                      href={it.href}
-                      className={cn("rpma-emp-tool", it.active && "is-on")}
-                      data-rag={it.rag ?? "Off"}
-                      title={it.label}
-                    >
-                      <span className="rpma-emp-ico">
-                        <Icon className="size-5" />
-                      </span>
-                      <span>{it.label}</span>
-                    </SpaLink>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        <div className="rpma-emp-ribbon is-opt6" role="toolbar">
+          <div className="rpma-emp-titles">
+            {groups.map((g) => (
+              <SpaLink
+                key={g.id}
+                href={g.items[0]?.href ?? "#"}
+                className={cn("rpma-emp-gtab", g.on && "is-on")}
+                data-rag={g.items.find((i) => i.rag === "Red")?.rag ?? g.items.find((i) => i.rag === "Amber")?.rag ?? g.items[0]?.rag ?? "Off"}
+              >
+                {g.title}
+              </SpaLink>
+            ))}
+          </div>
+          <div className="rpma-emp-tools">
+            {(groups.find((g) => g.on) ?? groups[0])?.items.map((it) => {
+              const Icon = it.icon;
+              return (
+                <SpaLink
+                  key={it.href + it.label}
+                  href={it.href}
+                  className={cn("rpma-emp-tool", it.active && "is-on")}
+                  data-rag={it.rag ?? "Off"}
+                  title={it.label}
+                >
+                  <span className="rpma-emp-ico">
+                    <Icon className="size-5" />
+                  </span>
+                  <span>{it.label}</span>
+                </SpaLink>
+              );
+            })}
+          </div>
         </div>
         <div className={cn("rpma-emp-body", !flush && "is-pad")}>{children}</div>
       </div>

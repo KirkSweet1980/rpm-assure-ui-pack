@@ -86,6 +86,17 @@ function ragOf(
   return live?.pillars.eco?.rag ?? "Off";
 }
 
+function worstRag(
+  g: RibbonGroup,
+  live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
+): LiveTone {
+  const tones = g.items.map((it) => ragOf(it.rel, live));
+  if (tones.includes("Red")) return "Red";
+  if (tones.includes("Amber")) return "Amber";
+  if (tones.includes("Green")) return "Green";
+  return "Off";
+}
+
 export function EmpChrome({
   customerCode,
   customerName,
@@ -145,40 +156,49 @@ export function EmpChrome({
           Customer Service Overview
         </SpaLink>
       </nav>
-      <div className="rpma-emp-ribbon" role="toolbar">
-        {RIBBON.map((g) => {
-          const on =
-            g.match === ""
-              ? rest === "" || rest.startsWith("/ams")
-              : rest === g.match || rest.startsWith(`${g.match}/`);
-          return (
-            <div key={g.id} className={cn("rpma-emp-group", on && "is-on")}>
-              <div className="rpma-emp-gtitle">{g.title}</div>
-              <div className="rpma-emp-tools">
-                {g.items.map((it) => {
-                  const Icon = it.icon;
-                  const href = `${base}${it.rel}`;
-                  const active = (it.rel === "" && rest === "") || rest === it.rel;
-                  const rag = ragOf(it.rel, live);
-                  return (
-                    <SpaLink
-                      key={it.rel || "home"}
-                      href={href}
-                      className={cn("rpma-emp-tool", active && "is-on")}
-                      data-rag={rag}
-                      title={`${it.label} · ${rag}`}
-                    >
-                      <span className="rpma-emp-ico">
-                        <Icon className="size-5" />
-                      </span>
-                      <span>{it.label}</span>
-                    </SpaLink>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+      <div className="rpma-emp-ribbon is-opt6" role="toolbar">
+        <div className="rpma-emp-titles">
+          {RIBBON.map((g) => {
+            const on =
+              g.match === ""
+                ? rest === "" || rest.startsWith("/ams")
+                : rest === g.match || rest.startsWith(`${g.match}/`);
+            const href = `${base}${g.items[0]?.rel ?? g.match}`;
+            const tone = worstRag(g, live);
+            return (
+              <SpaLink
+                key={g.id}
+                href={href}
+                className={cn("rpma-emp-gtab", on && "is-on")}
+                data-rag={tone}
+              >
+                {g.title}
+              </SpaLink>
+            );
+          })}
+        </div>
+        <div className="rpma-emp-tools">
+          {group.items.map((it) => {
+            const Icon = it.icon;
+            const href = `${base}${it.rel}`;
+            const active = (it.rel === "" && rest === "") || rest === it.rel;
+            const rag = ragOf(it.rel, live);
+            return (
+              <SpaLink
+                key={it.rel || "home"}
+                href={href}
+                className={cn("rpma-emp-tool", active && "is-on")}
+                data-rag={rag}
+                title={`${it.label} · ${rag}`}
+              >
+                <span className="rpma-emp-ico">
+                  <Icon className="size-5" />
+                </span>
+                <span>{it.label}</span>
+              </SpaLink>
+            );
+          })}
+        </div>
       </div>
       <div className="rpma-emp-work">
         <div className="rpma-emp-body">{children}</div>
