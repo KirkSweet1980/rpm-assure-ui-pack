@@ -66,48 +66,57 @@ function HudCell({
   );
 }
 
-export function HeadsUpDisplay({
-  liveSql,
-  generatedAt,
-}: {
-  liveSql: boolean;
-  generatedAt?: string | Date | null;
-}) {
+function useClock() {
   const [now, setNow] = useState(() => partsOf(new Date()));
-
   useEffect(() => {
     const tick = () => setNow(partsOf(new Date()));
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, []);
+  return now;
+}
 
+export function HeadsUpDisplay({
+  liveSql,
+  generatedAt,
+  variant = "clock",
+}: {
+  liveSql: boolean;
+  generatedAt?: string | Date | null;
+  variant?: "clock" | "sql";
+}) {
+  const now = useClock();
   const dateStr = `${now.weekday} ${now.day} ${now.month} ${now.year}`;
   const timeStr = `${now.hour}:${now.minute}:${now.second}`;
   const sqlLabel = liveSql ? "Live SQL" : "Demo data";
   const sqlWhen = formatSastDateTime(generatedAt);
 
+  if (variant === "sql") {
+    return (
+      <div className="rpma-hud-sql">
+        <HudCell
+          icon={Database}
+          label={sqlLabel}
+          value={sqlWhen}
+          tone={liveSql ? "live" : "demo"}
+          tip={
+            liveSql
+              ? "Last successful read from the central Assure SQL. Live = not demo seed."
+              : "Showing packaged demo data. Connect SQL in Configuration to go live."
+          }
+        />
+      </div>
+    );
+  }
+
   return (
-    <>
-      <section className="rpma-hud" aria-label="System clock and SQL status">
-        <div className="rpma-hud-mid">
-          <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />
-          <div className="rpma-hud-rev" aria-hidden={false}>
-            <RpmRevCounter className="rpma-hud-rev-svg" />
-          </div>
-          <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} tip="Live clock in SAST. Collect age and SLA windows are measured against this." />
-        </div>
-        <div className="rpma-hud-sql">
-          <HudCell
-            icon={Database}
-            label={sqlLabel}
-            value={sqlWhen}
-            tone={liveSql ? "live" : "demo"}
-            tip={liveSql ? "Last successful read from the central Assure SQL. Live = not demo seed." : "Showing packaged demo data. Connect SQL in Configuration to go live."}
-          />
-        </div>
-      </section>
-      <div className="rpma-hud-spacer" aria-hidden />
-    </>
+    <div className="rpma-hud-mid" aria-label="System clock">
+      <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />
+      <div className="rpma-hud-rev">
+        <RpmRevCounter className="rpma-hud-rev-svg" />
+      </div>
+      <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} tip="Live clock in SAST. Collect age and SLA windows are measured against this." />
+    </div>
   );
 }

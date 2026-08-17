@@ -220,6 +220,11 @@ export function AppShell({
                 <span />
                 <span />
               </button>
+              <Link to="/" className="dk-brand" aria-label="RPM Assure home">
+                <span className="dk-brand-text">
+                  <strong>RPM Assure</strong>
+                </span>
+              </Link>
               <div
                 id="rpma-top-menu"
                 className={cn("dk-header-nav", !menuOpen && "is-collapsed")}
@@ -232,19 +237,15 @@ export function AppShell({
                 />
               </div>
             </div>
-            <Link to="/" className="dk-brand" aria-label="RPM Assure home">
-              <span className="dk-brand-text">
-                <strong>RPM Assure</strong>
-              </span>
-            </Link>
+            <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="clock" />
             <div className="dk-header-right">
+              <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="sql" />
               <DensityToggle />
               <ThemeToggle />
               <UserButton />
             </div>
           </div>
         </header>
-        <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} />
         <div className="dk-main">
           <main className="dk-content rpma-topnav-main">
             {title ? (
