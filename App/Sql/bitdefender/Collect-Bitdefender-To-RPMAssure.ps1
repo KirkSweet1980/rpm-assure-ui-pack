@@ -431,7 +431,7 @@ foreach ($co in $companyTargets) {
   $page = 1; $pages = 1
   do {
     try {
-      $params = @{ page = $page; perPage = 50 }
+      $params = @{ page = $page; perPage = 50; options = @{ includeScanLogs = $true } }
       if ($co.Id) { $params['parentId'] = $co.Id }
       $raw = Invoke-GzRpc -Service 'network' -Method 'getEndpointsList' -Params $params
       if ($page -eq 1 -and -not $co.Id) {
@@ -450,10 +450,13 @@ foreach ($co in $companyTargets) {
         $eid = [string]$it.id
         if (-not $eid) { continue }
         if (-not $epBag.ContainsKey($eid)) {
+          $scan = $null
+          try { if ($it.lastSuccessfulScan.date) { $scan = [string]$it.lastSuccessfulScan.date } } catch {}
           $epBag[$eid] = @{
             Ep          = $it
             CompanyId   = $co.Id
             CompanyName = $co.Name
+            LastScan    = $scan
           }
         } elseif ($co.Id -and -not $epBag[$eid].CompanyId) {
           $epBag[$eid].CompanyId = $co.Id
@@ -528,6 +531,7 @@ $epBag = $deduped
 $detailCap = 80
 $detailN = 0
 $detailOk = 0
+$detailErrLogged = 0
 foreach ($eid in @($epBag.Keys)) {
   $bag = $epBag[$eid]
   $ep = $bag.Ep
@@ -539,28 +543,29 @@ foreach ($eid in @($epBag.Keys)) {
       endpointId = [string]$eid
       options    = @{ includeScanLogs = $true }
     }
-    if ($rawD -match '"error"\s*:\s*\{') { continue }
-    $det = ($rawD | ConvertFrom-Json).result
-    if (-not $det) { continue }
-    $bag.LastSeen = $det.lastSeen
-    if ($det.lastSuccessfulScan) { $bag.LastScan = $det.lastSuccessfulScan.date }
-    if ($det.malwareStatus) {
-      $bag.MalwareDetected = $det.malwareStatus.detection
-      $bag.Infected = $det.malwareStatus.infected
+    if ($rawD -match '"error"\s*:\s*\{') {
+      if ($detailErrLogged -lt 2) {
+        $pre = $rawD
+        if ($pre.Length -gt 180) { $pre = $pre.Substring(0, 180) }
+        Write-Log ("detail err id=$eid prefix=$pre")
+        $detailErrLogged++
+      }
+      continue
     }
-    if ($det.agent) {
-      $bag.ProductOutdated = $det.agent.productOutdated
-      $bag.SignatureOutdated = $det.agent.signatureOutdated
-    }
-    if ($det.policy -and $det.policy.name -and -not $ep.policy) {
-      $ep | Add-Member -NotePropertyName policy -NotePropertyValue $det.policy -Force
-    }
+    $scanM = [regex]::Match($rawD, '"lastSuccessfulScan"\s*:\s*\{[^}]{0,400}?"date"\s*:\s*"([^"]+)"')
+    if ($scanM.Success) { $bag.LastScan = $scanM.Groups[1].Value }
+    $seenM = [regex]::Match($rawD, '"lastSeen"\s*:\s*"([^"]+)"')
+    if ($seenM.Success) { $bag.LastSeen = $seenM.Groups[1].Value }
+    if ($rawD -match '"detection"\s*:\s*true') { $bag.MalwareDetected = $true }
+    if ($rawD -match '"infected"\s*:\s*true') { $bag.Infected = $true }
+    if ($rawD -match '"productOutdated"\s*:\s*true') { $bag.ProductOutdated = $true }
+    if ($rawD -match '"signatureOutdated"\s*:\s*true') { $bag.SignatureOutdated = $true }
     $detailOk++
   } catch {
     Write-Log ("detail skip id=$eid err=$($_.Exception.Message)")
   }
 }
-Write-Log ("Endpoint detail enrich tried=$detailN ok=$detailOk")
+Write-Log ("Endpoint detail enrich tried=$detailN ok=$detailOk withScan=" + @($epBag.Values | Where-Object { $_.LastScan }).Count)
 
 $hasCoCols = $false
 try {
