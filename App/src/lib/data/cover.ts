@@ -21,6 +21,8 @@ export type CustomerCover = {
   epp?: boolean;
   csp?: boolean;
   tickets?: boolean;
+  /** Freshdesk-only / no agent — visible, not scored */
+  dormant?: boolean;
 };
 
 export const NO_COVER = "No Cover";
@@ -87,6 +89,8 @@ export type CoverInput = {
   cspMapped?: boolean | null;
   ticketCount?: number | null;
   ticketsMapped?: boolean | null;
+  /** Registered Assure agents — wakes a tickets-only tenant */
+  agentCount?: number | null;
 };
 
 /**
@@ -107,7 +111,8 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
   const rmmEvidence =
     (Number(input.pulsewayDeviceCount) || 0) > 0 ||
     (Number(input.rmmIopsCount) || 0) > 0 ||
-    (Number(input.rmmEventCount) || 0) > 0;
+    (Number(input.rmmEventCount) || 0) > 0 ||
+    (Number(input.agentCount) || 0) > 0;
   const coveEvidence = (Number(input.coveDeviceCount) || 0) > 0;
   const eppEvidence =
     (Number(input.eppDeviceCount) || 0) > 0 ||
@@ -125,7 +130,9 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     csp: resolveVendor(cspEvidence, input.cspMapped, input.pillarCsp),
     tickets: false,
   };
-  out.tickets = !isDormantCover(out);
+  const dormant = isDormantCover(out);
+  out.dormant = dormant;
+  out.tickets = !dormant;
   return out;
 }
 
@@ -155,6 +162,7 @@ export function coverFromRow(row: {
   cspMapped?: boolean | null;
   ticketCount?: number | null;
   ticketsMapped?: boolean | null;
+  agentCount?: number | null;
 }): CustomerCover {
   return inferCustomerCover({
     pillarSyspro: row.pillarSyspro,
@@ -180,6 +188,7 @@ export function coverFromRow(row: {
     cspMapped: row.cspMapped,
     ticketCount: row.ticketCount,
     ticketsMapped: row.ticketsMapped,
+    agentCount: row.agentCount,
   });
 }
 
@@ -211,6 +220,7 @@ export function coverFromDetail(data: {
     cspMapped?: boolean | null;
     ticketCount?: number | null;
     ticketsMapped?: boolean | null;
+    agentCount?: number | null;
   } | null;
   license?: unknown;
   sysproVersion?: unknown;
@@ -291,6 +301,10 @@ export function coverFromDetail(data: {
     cspMapped: Boolean(c?.cspMapped) || data.csp?.enabled === true,
     ticketCount: firstPositive(data.incidents?.length, c?.ticketCount),
     ticketsMapped: Boolean(c?.ticketsMapped) || (data.incidents?.length ?? 0) > 0,
+    agentCount: firstPositive(
+      (data as { agents?: unknown[] | null }).agents?.length,
+      c?.agentCount,
+    ),
   });
 }
 
@@ -302,9 +316,17 @@ export function isPillarCovered(
   return cover[pillar] === true;
 }
 
+export const DORMANT_SUMMARY =
+  "Dormant — Freshdesk only. No agent and no service cover. Tickets stay visible. SLA and RAG stay off until an agent or a covered service lands.";
+
 export function isDormantCover(c: CustomerCover | null | undefined): boolean {
   if (!c) return true;
   return !anyCover(c);
+}
+
+export function applyDormantCover(cover: CustomerCover): CustomerCover {
+  const dormant = isDormantCover(cover);
+  return { ...cover, dormant, tickets: !dormant };
 }
 
 export function anyCover(c: CustomerCover): boolean {

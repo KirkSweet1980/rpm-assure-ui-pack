@@ -16,7 +16,7 @@ import {
 } from "@/lib/data/service-sla";
 import { fetchCustomerSlaContract } from "@/lib/data/customer-sla-contract";
 import { kpisOnCover, withSlaKpis, type SlaKpiOverrides } from "@/lib/data/apply-sla-kpis";
-import { coverFromDetail, type CustomerCover } from "@/lib/data/cover";
+import { coverFromDetail, isDormantCover, type CustomerCover } from "@/lib/data/cover";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
 import {
   INDUSTRY_MEASURES,
@@ -78,6 +78,14 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
   );
   const [sel, setSel] = useState("contract");
 
+  if (isDormantCover(cover)) {
+    return (
+      <NoCoverPanel
+        service="SLA"
+        hint="Dormant customer — tickets only. No Assure agent and no SYSPRO, RMM, Backup, or EPP cover. SLA stays off until an agent or a covered service lands."
+      />
+    );
+  }
   if (!cover.syspro && !cover.rmm && !cover.cove && !cover.epp && !cover.tickets && !hasTickets) {
     return (
       <NoCoverPanel

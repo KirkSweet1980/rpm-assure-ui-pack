@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Star, XCircle } from "lucide-react";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
-import { coverFromDetail } from "@/lib/data/cover";
+import { coverFromDetail, isDormantCover } from "@/lib/data/cover";
 import { ticketStats } from "@/lib/data/ticket-feed";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
 import { SpaLink } from "@/components/nav/spa-link";
@@ -188,6 +188,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
   }, [customer, data]);
 
   const cover = coverFromDetail(data);
+  const dormant = isDormantCover(cover);
   const tix = ticketStats(data.incidents);
   const code = customer.customerCode;
   const base = `/customers/${code}`;
@@ -265,7 +266,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
   ];
 
   const kpis = [
-    { label: "Assurance", value: score != null ? `${score}%` : "—", href: `${base}/ams` },
+    { label: "Assurance", value: dormant || score == null ? "—" : `${score}%`, href: `${base}/ams` },
     { label: "Open tickets", value: tix.open, href: `${base}/tickets/open` },
     { label: "Open risks", value: openRisks.length, href: `${base}/ams/risks` },
     { label: "Job errors", value: cover.syspro ? jobs : "—", href: `${base}/syspro/jobs` },
@@ -283,12 +284,21 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
     <div className={cn("rpma-est", compact && "is-compact")}>
       <header className="rpma-eco-head">
         <div className="rpma-eco-head-row">
-          <RagBadge rag={customer.healthRag} title={customer.healthSummary} />
+          <RagBadge rag={dormant ? "Off" : customer.healthRag} title={customer.healthSummary} />
           <div>
             <h2>{customer.displayName}</h2>
             <p>Customer Eco System · last collect {formatSastDateTime(lastCollect)}</p>
           </div>
         </div>
+        {dormant ? (
+          <div className="rpma-dormant-banner" role="status">
+            <strong>Dormant customer</strong>
+            <span>
+              Tickets only — no Assure agent and no SYSPRO, RMM, Backup, or EPP cover.
+              SLA is not scored and RAG lights stay off until an agent or a covered service lands.
+            </span>
+          </div>
+        ) : null}
         <div className="rpma-eco-kpis">
           {kpis.map((k) => (
             <SpaLink key={k.label} href={k.href} className="rpma-eco-kpi">

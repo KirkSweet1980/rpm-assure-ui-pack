@@ -336,7 +336,7 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
   const major = incidents.filter((i) => i.isMajor && (i.status || "").toLowerCase() !== "closed");
 
   const oa = operationalAssurance;
-  const score = oa?.scorePct ?? (customer.healthRag === "Green" ? 88 : customer.healthRag === "Amber" ? 68 : 42);
+  const score = oa?.scorePct ?? (customer.healthRag === "Green" ? 88 : customer.healthRag === "Amber" ? 68 : customer.healthRag === "Off" ? null : 42);
 
   const activeOps = customer.activeUserCount;
   const totalOps = Math.max(customer.operatorCount, operators.length, 1);
@@ -2515,7 +2515,7 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
   const openInc = incidents.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const major = openInc.filter((i) => i.isMajor);
   const oa = data.operationalAssurance;
-  const score = oa?.scorePct ?? (c.healthRag === "Green" ? 88 : c.healthRag === "Amber" ? 68 : 42);
+  const score = oa?.scorePct ?? (c.healthRag === "Green" ? 88 : c.healthRag === "Amber" ? 68 : c.healthRag === "Off" ? null : 42);
   const slaPack = buildExcoPillarSla(slaInputFromDetail(effectiveCover(data), data));
   const slaBars = slaPack.pillars
     .filter((s) => s.covered && s.pct != null)

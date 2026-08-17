@@ -288,14 +288,15 @@ function deriveExcoFromRows(
       cove: false,
     };
     const healthScorePct =
-      row.healthRag === "Green" ? 88 : row.healthRag === "Amber" ? 58 : 28;
+      row.healthRag === "Green" ? 88 : row.healthRag === "Amber" ? 58 : row.healthRag === "Off" ? null : 28;
     const collectPart = cov.syspro ? (collectFresh ? 100 : 30) : 100;
     const jobsPart = cov.syspro ? (row.sysproJobErrorCount === 0 ? 100 : 40) : 100;
-    const assuranceScorePct = Math.round(
-      healthScorePct * 0.55 + collectPart * 0.25 + jobsPart * 0.2,
-    );
+    const assuranceScorePct =
+      healthScorePct == null
+        ? null
+        : Math.round(healthScorePct * 0.55 + collectPart * 0.25 + jobsPart * 0.2);
     const attentionReasons: string[] = [];
-    if (row.healthRag !== "Green") attentionReasons.push(`Health ${row.healthRag}`);
+    if (row.healthRag !== "Green" && row.healthRag !== "Off") attentionReasons.push(`Health ${row.healthRag}`);
     if (cov.syspro && !collectFresh)
       attentionReasons.push(
         collectAgeHours == null ? "No SYSPRO collect" : `SYSPRO collect stale (${collectAgeHours}h)`,
@@ -308,7 +309,7 @@ function deriveExcoFromRows(
       attentionReasons.push(`${row.pulsewayCriticalAlerts} RMM critical`);
     if (cov.rmm && (row.pulsewayOfflineCount ?? 0) > 0)
       attentionReasons.push(`${row.pulsewayOfflineCount} RMM offline`);
-    if (!cov.syspro && !cov.rmm && !cov.cove)
+    if (row.healthRag !== "Off" && !cov.syspro && !cov.rmm && !cov.cove)
       attentionReasons.push("No service cover");
     return {
       customerCode: row.customerCode,

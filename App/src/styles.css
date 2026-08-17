@@ -552,6 +552,7 @@ html[data-theme="dark"] .rpma-pillar-rail { background: var(--color-surface); bo
 .rpma-list-dot.is-green { background: var(--color-rag-green); }
 .rpma-list-dot.is-amber { background: var(--color-rag-amber); }
 .rpma-list-dot.is-red { background: var(--color-rag-red); }
+.rpma-list-dot.is-off { background: #94a3b8; box-shadow: none; }
 .rpma-list-empty { padding: 12px; color: var(--color-muted); font-size: 11px; }
 .rpma-d3-cover-glyphs { display: flex; align-items: center; gap: 3px; }
 .rpma-d3-cover-ico { width: 11px; height: 11px; color: #c5ccd4; flex: 0 0 auto; }
@@ -2455,6 +2456,35 @@ html.snow .rpma-emp-inspector {
 .rpma-emp-body.is-pad h3 { color: #e8edf3; }
 
 .rpma-est { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.rpma-dormant-banner {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #3d4d5c;
+  background: #1a2430;
+}
+.rpma-dormant-banner strong {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+}
+.rpma-dormant-banner span {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+html[data-theme="light"] .rpma-dormant-banner,
+html.snow .rpma-dormant-banner {
+  border-color: #c5d0da;
+  background: #eef2f6;
+}
+html[data-theme="light"] .rpma-dormant-banner strong,
+html.snow .rpma-dormant-banner strong { color: #334155; }
+html[data-theme="light"] .rpma-dormant-banner span,
+html.snow .rpma-dormant-banner span { color: #64748b; }
 .rpma-eco-head {
   display: grid;
   gap: 10px;

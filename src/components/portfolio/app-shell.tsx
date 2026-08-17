@@ -118,6 +118,7 @@ export function AppShell({
             code: r.customerCode,
             name: (r.displayName || r.customerCode).trim(),
             healthRag: (() => {
+              if (r.healthRag === "Off") return "Off";
               const sla = b?.slaOverallPct;
               const slaRag =
                 sla == null
@@ -132,7 +133,8 @@ export function AppShell({
               return r.healthRag;
             })(),
             needsAttention:
-              (b?.attentionReasons?.length ?? 0) > 0 || r.healthRag !== "Green",
+              r.healthRag !== "Off" &&
+              ((b?.attentionReasons?.length ?? 0) > 0 || r.healthRag !== "Green"),
             collectFresh: b?.collectFresh ?? !!r.lastImportAt,
             cover,
             jobErrorCount: r.sysproJobErrorCount,

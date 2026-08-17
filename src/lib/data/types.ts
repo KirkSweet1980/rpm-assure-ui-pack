@@ -10,7 +10,8 @@ export type CustomerCover = {
   /** Microsoft CSP / 365 licensing — future collect */
   csp?: boolean;
   /** Freshdesk customer tickets */
-  tickets?: boolean;
+  /** Freshdesk-only / no agent — visible, not scored */
+  dormant?: boolean;
 };
 
 
@@ -185,6 +186,7 @@ export type PortfolioSummary = {
   red: number;
   amber: number;
   green: number;
+  dormant?: number;
   totalActiveUsers: number;
   totalOperators: number;
   generatedAt: string;
@@ -391,7 +393,7 @@ export type OperationalAssurance = {
   jobErrorCount: number;
   activeUserRatioPct: number | null;
   dtrOutOfBalance: number;
-  scorePct: number;
+  scorePct: number | null;
   summary: string;
 };
 

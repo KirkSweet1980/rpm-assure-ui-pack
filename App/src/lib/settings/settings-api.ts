@@ -625,7 +625,7 @@ function emptyCustomerDetail(row: import("@/lib/data/types").PortfolioRow): impo
       jobErrorCount: row.sysproJobErrorCount,
       activeUserRatioPct: null,
       dtrOutOfBalance: row.sysproDtrVarianceLines,
-      scorePct: row.healthRag === "Green" ? 88 : row.healthRag === "Amber" ? 68 : 42,
+      scorePct: row.healthRag === "Green" ? 88 : row.healthRag === "Amber" ? 68 : row.healthRag === "Off" ? null : 42,
       summary: row.healthSummary || "Portfolio row only — detail collect incomplete.",
     },
     sqlBackups: [],

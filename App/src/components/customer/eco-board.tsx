@@ -20,7 +20,7 @@ import { RagBadge } from "@/components/portfolio/rag-badge";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { CoverTag } from "@/components/ui/status-robot";
-import { coverFromDetail, isPillarCovered } from "@/lib/data/cover";
+import { coverFromDetail, isDormantCover, isPillarCovered } from "@/lib/data/cover";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import { assuranceTone, floorScoreToRag } from "@/lib/data/rag-score";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
@@ -83,12 +83,14 @@ function Pane({
 export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const { customer, risks, issues, incidents, dtrLevel1, license, dayEnd, jobErrors, extraSummary, sysproHotfixes, operators } = data;
   const cover = coverFromDetail(data);
+  const dormant = isDormantCover(cover);
   const live = customerLiveStatus(customer.customerCode, customer, cover, data);
-  const tenantRag = live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
-  const rawScore =
-    data.operationalAssurance?.scorePct ??
-    (tenantRag === "Green" ? 88 : tenantRag === "Amber" ? 68 : 42);
-  const score = floorScoreToRag(rawScore, tenantRag);
+  const tenantRag = dormant ? "Off" : live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
+  const rawScore = dormant
+    ? 0
+    : data.operationalAssurance?.scorePct ??
+      (tenantRag === "Green" ? 88 : tenantRag === "Amber" ? 68 : 42);
+  const score = dormant ? 0 : floorScoreToRag(rawScore, tenantRag);
   const base = `/customers/${customer.customerCode}`;
   const [layout, setLayout] = useState<EcoWidgetLayout>(DEFAULT_ECO_WIDGET_LAYOUT);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -121,7 +123,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { name: "Cloud Backup", on: Boolean(cover.cove), href: `${base}/cove` },
     { name: "RPM EndPoint Protection", on: Boolean(cover.epp), href: `${base}/epp` },
     { name: "Microsoft CSP", on: Boolean(cover.csp), href: `${base}/csp` },
-    { name: "Tickets", on: true, href: `${base}/tickets` },
+    { name: "Tickets", on: Boolean(cover.tickets), href: `${base}/tickets` },
   ];
   const coverCount = serviceBars.filter((s) => s.on).length;
   const coverPie = [
@@ -241,6 +243,16 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
       ) : null}
 
 
+      {dormant ? (
+        <div className="rpma-dormant-banner" role="status">
+          <strong>Dormant customer</strong>
+          <span>
+            Tickets only — no Assure agent and no SYSPRO, RMM, Backup, or EPP cover.
+            SLA is not scored and RAG lights stay off until an agent or a covered service lands.
+          </span>
+        </div>
+      ) : null}
+
       <div className="rpma-eco-board">
         {show("hero") ? (
         <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3" {...wgt("hero")}>
@@ -254,7 +266,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           <div className="ml-auto grid grid-cols-3 gap-2">
             <StatCard
               label="Assurance"
-              value={`${score}%`}
+              value={dormant ? "—" : `${score}%`}
               tone={assuranceTone(score, tenantRag)}
             />
             <StatCard
@@ -435,10 +447,6 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           <Pane title="FinSight · out of balance" {...wgt("finsight")}>
             <p className="text-[12px] text-muted">No out-of-balance modules on the latest collect.</p>
           </Pane>
-        ) : (
-          <Pane title="FinSight · out of balance" {...wgt("finsight")}>
-            <p className="text-[12px] text-muted">No out-of-balance modules on the latest collect.</p>
-          </Pane>
         )
         ) : null}
 
@@ -447,7 +455,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           {[
             { label: "Incidents", href: `${base}/tickets/open`, n: tix.total, hint: `${tix.open} open · Freshdesk` },
             { label: "Risks", href: `${base}/ams/risks`, n: openRisks.length, hint: "Open items" },
-            { label: "SLA", href: `${base}/ams/sla`, n: `${score}%`, hint: "Assurance" },
+            { label: "SLA", href: `${base}/ams/sla`, n: dormant ? "—" : `${score}%`, hint: "Assurance" },
             { label: "Customer Assurance", href: `${base}/ams`, n: openIssues.length, hint: "Issues" },
           ].map((t) => (
             <SpaLink key={t.href} href={t.href} className="rpma-glass rpma-tile block px-3 py-2.5">

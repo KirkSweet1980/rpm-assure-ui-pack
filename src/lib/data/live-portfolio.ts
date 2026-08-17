@@ -59,7 +59,7 @@ import { coveHealthFor, eppHealthFor, finalizeEstateHealth, healthFor, healthSco
 import { floorScoreToRag } from "./rag-score";
 import { worstLiveRag } from "./live-status";
 import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } from "./day-end";
-import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfEvidence } from "./cover";
+import { averageCoveredScores, anyCover, applyDormantCover, inferCustomerCover, forceSysproCoverIfEvidence, isDormantCover, DORMANT_SUMMARY } from "./cover";
 import { buildExcoPillarSla, hasSlaCover } from "./exco-sla-stats";
 import { loadSlaKpiMap } from "./customer-sla-contract";
 import { kpisOnCover } from "./apply-sla-kpis";
@@ -358,7 +358,15 @@ function recomputeRowHealth(row: PortfolioRow): void {
   ) {
     cover2 = { ...cover2, csp: true };
   }
+  cover2 = applyDormantCover(cover2);
   row.cover = cover2;
+  if (isDormantCover(cover2)) {
+    row.healthRag = "Off";
+    row.healthSummary = DORMANT_SUMMARY;
+    row.pulsewayHealthRag = null;
+    row.pulsewayHealthSummary = "Dormant";
+    return;
+  }
   if (!cover2.syspro) {
     row.sysproJobErrorCount = 0;
     row.sysproDtrVarianceLines = 0;
@@ -3154,6 +3162,7 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
       red: rows.filter((r) => r.healthRag === "Red").length,
       amber: rows.filter((r) => r.healthRag === "Amber").length,
       green: rows.filter((r) => r.healthRag === "Green").length,
+      dormant: rows.filter((r) => r.healthRag === "Off" || isDormantCover(r.cover)).length,
       totalActiveUsers: rows.reduce((s, r) => s + r.activeUserCount, 0),
       totalOperators: rows.reduce((s, r) => s + r.operatorCount, 0),
       dataMode: "live",
@@ -7604,6 +7613,12 @@ ORDER BY UserPrincipalName, DisplayName`);
     if (csp.message?.toLowerCase().includes("no cover")) csp.message = null;
   }
   customer.cover = cover;
+  cover = applyDormantCover(cover);
+  customer.cover = cover;
+  if (isDormantCover(cover)) {
+    customer.healthRag = "Off";
+    customer.healthSummary = DORMANT_SUMMARY;
+  }
   if (!cover.syspro) {
     operators = [];
     jobErrors = [];
@@ -7659,6 +7674,10 @@ ORDER BY UserPrincipalName, DisplayName`);
       dtrLevel1,
       amsSlaSummary,
     });
+    if (isDormantCover(cover)) {
+      customer.healthRag = "Off";
+      customer.healthSummary = DORMANT_SUMMARY;
+    }
     operationalAssurance = buildOperationalAssurance({
       lastImportAt: customer.lastImportAt,
       jobErrorCount: customer.sysproJobErrorCount,

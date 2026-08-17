@@ -110,11 +110,14 @@ export function rmmHealthFor(input: {
 export function combineHealthRag(a: HealthRag, b: HealthRag): HealthRag {
   if (a === "Red" || b === "Red") return "Red";
   if (a === "Amber" || b === "Amber") return "Amber";
+  if (a === "Off" && b === "Off") return "Off";
+  if (a === "Off") return b;
+  if (b === "Off") return a;
   return "Green";
 }
 
 export function ragSortKey(rag: HealthRag): number {
-  return rag === "Red" ? 0 : rag === "Amber" ? 1 : 2;
+  return rag === "Red" ? 0 : rag === "Amber" ? 1 : rag === "Off" ? 3 : 2;
 }
 
 
@@ -134,8 +137,8 @@ export function finalizeEstateHealth(input: {
   if (input.cover.epp && input.epp) parts.push(input.epp);
   if (parts.length === 0) {
     return {
-      rag: "Amber",
-      summary: "No cover — no SYSPRO, RMM, Backup, or RPM EPP in scope for this customer.",
+      rag: "Off",
+      summary: "Dormant — Freshdesk only. No agent and no service cover. Not scored in SLA.",
     };
   }
   let rag: HealthRag = "Green";
@@ -224,7 +227,7 @@ export function ragToScorePct(rag: HealthRag | null | undefined): number | null 
 
 /** Availability estimate from RAG (covered legs only — call after finalize). */
 export function ragToAvailabilityPct(rag: HealthRag | null | undefined): number | null {
-  if (!rag) return null;
+  if (!rag || rag === "Off") return null;
   if (rag === "Green") return 99.7;
   if (rag === "Amber") return 99.2;
   return 98.5;
@@ -232,5 +235,5 @@ export function ragToAvailabilityPct(rag: HealthRag | null | undefined): number 
 
 /** Health score chip 0–100 from estate RAG. */
 export function healthScorePctFromRag(rag: HealthRag): number {
-  return rag === "Green" ? 88 : rag === "Amber" ? 68 : 42;
+  return rag === "Green" ? 88 : rag === "Amber" ? 68 : rag === "Off" ? 0 : 42;
 }

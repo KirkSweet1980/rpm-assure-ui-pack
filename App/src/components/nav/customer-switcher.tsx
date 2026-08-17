@@ -108,8 +108,8 @@ export function CustomerSwitcher({
       const ap = pinSet.has(a.code.toUpperCase()) ? 0 : 1;
       const bp = pinSet.has(b.code.toUpperCase()) ? 0 : 1;
       if (ap !== bp) return ap - bp;
-      const ar = a.healthRag === "Red" ? 0 : a.healthRag === "Amber" ? 1 : 2;
-      const br = b.healthRag === "Red" ? 0 : b.healthRag === "Amber" ? 1 : 2;
+      const ar = a.healthRag === "Red" ? 0 : a.healthRag === "Amber" ? 1 : a.healthRag === "Off" ? 3 : 2;
+      const br = b.healthRag === "Red" ? 0 : b.healthRag === "Amber" ? 1 : b.healthRag === "Off" ? 3 : 2;
       if (ar !== br) return ar - br;
       return a.name.localeCompare(b.name, "en-ZA");
     });
