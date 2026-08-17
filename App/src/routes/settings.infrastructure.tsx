@@ -12,7 +12,7 @@ import {
   type ConfigHealthItem,
   type ApiFeedSyncStatus,
 } from "@/lib/settings/settings-api";
-import { fetchInfraAgents, fetchEstateTelemetry, type InfraAgentRow, type EstateIopsRow, type EstateEventRow } from "@/lib/settings/infra-status";
+import { fetchInfraAgents, fetchEstateTelemetry, type InfraAgentRow, type EstateEventRow } from "@/lib/settings/infra-status";
 import type { LucideIcon } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
@@ -131,7 +131,6 @@ function InfrastructureStatusPage() {
   const [items, setItems] = useState<ConfigHealthItem[]>([]);
   const [conns, setConns] = useState<ConnRow[]>([]);
   const [agents, setAgents] = useState<InfraAgentRow[]>([]);
-  const [estateIops, setEstateIops] = useState<EstateIopsRow[]>([]);
   const [estateEvents, setEstateEvents] = useState<EstateEventRow[]>([]);
   const [openEvent, setOpenEvent] = useState<string | null>(null);
   const [agentMsg, setAgentMsg] = useState<string | null>(null);
@@ -155,7 +154,6 @@ function InfrastructureStatusPage() {
       setItems(h.items ?? []);
       setConns(i.rows ?? []);
       setAgents(a.rows ?? []);
-      setEstateIops(t.iops ?? []);
       setEstateEvents(t.events ?? []);
       setAgentMsg(a.ok ? null : a.message);
       setFeed(f);
@@ -575,75 +573,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
               )}
             </tbody>
           </table>
-      </section>
-
-      <section className="rpma-panel p-0">
-        <div className="rpma-settings-panel-head">
-          Estate Disk IOPS
-          <span className="rpma-settings-count">{estateIops.length} volume{estateIops.length === 1 ? "" : "s"}</span>
-        </div>
-        {estateIops.length === 0 ? (
-          <p className="px-3 py-3 text-[12px] text-muted">
-            No live IOPS yet. Pulseway REST v3 cannot return IOPS. Schedule Pulseway-Collect-DiskIops.ps1 in Pulseway Automation (POSTs to Assure), or install the Assure agent. Recheck does not invent IOPS.
-          </p>
-        ) : (
-          <table className="rpma-xls text-left">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Host</th>
-                <th>Drive</th>
-                <th>Media</th>
-                <th>Size</th>
-                <th>Used</th>
-                <th>Read</th>
-                <th>Write</th>
-                <th>Total IOPS</th>
-                <th>Queue</th>
-                <th>Sampled</th>
-              </tr>
-            </thead>
-            <tbody>
-              {estateIops.map((r, i) => {
-                const used = r.usedPct;
-                const usedCls =
-                  used != null && used >= 90
-                    ? "font-bold text-rag-red"
-                    : used != null && used >= 80
-                      ? "font-bold text-amber-400"
-                      : "";
-                const fmtI = (n: number | null | undefined) => {
-                  if (n == null) return "—";
-                  if (n < 0.5) return "idle";
-                  return n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString("en-ZA");
-                };
-                const size =
-                  r.totalGb != null
-                    ? `${r.freeGb != null ? `${r.freeGb.toFixed(0)} free / ` : ""}${r.totalGb.toFixed(0)} GB`
-                    : "—";
-                return (
-                <tr key={`${r.customerCode}-${r.hostName}-${r.driveLetter}-${i}`}>
-                  <td>
-                    <SpaLink href={`/customers/${encodeURIComponent(r.customerCode)}/rmm/iops`} className="font-bold text-fg no-underline hover:underline">
-                      {r.displayName}
-                    </SpaLink>
-                  </td>
-                  <td className="font-mono">{r.hostName}</td>
-                  <td className="font-mono">{r.driveLetter}</td>
-                  <td>{r.mediaType || "—"}</td>
-                  <td>{size}</td>
-                  <td className={usedCls}>{used != null ? `${used.toFixed(1)}%` : "—"}</td>
-                  <td>{fmtI(r.readIops)}</td>
-                  <td>{fmtI(r.writeIops)}</td>
-                  <td>{fmtI(r.totalIops)}</td>
-                  <td>{r.queueLen != null ? r.queueLen.toFixed(1) : "—"}</td>
-                  <td>{formatSastDateTime(r.snapshotUtc)}</td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
       </section>
 
       <section className="rpma-panel p-0">
