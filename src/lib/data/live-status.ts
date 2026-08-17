@@ -142,7 +142,6 @@ export function customerLiveStatus(
   const patchDevices =
     Number(
       row?.pulsewayPatchDevices ??
-        extra?.rmm?.summary?.patchDevices ??
         extra?.rmm?.summary?.patchDevicesReporting ??
         extra?.customer?.pulsewayPatchDevices ??
         0,

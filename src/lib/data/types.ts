@@ -10,6 +10,7 @@ export type CustomerCover = {
   /** Microsoft CSP / 365 licensing — future collect */
   csp?: boolean;
   /** Freshdesk customer tickets */
+  tickets?: boolean;
   /** Freshdesk-only / no agent — visible, not scored */
   dormant?: boolean;
 };
