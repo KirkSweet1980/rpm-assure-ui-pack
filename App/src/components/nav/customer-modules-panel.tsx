@@ -155,6 +155,7 @@ export const CUSTOMER_PILLARS: {
       { label: "MFA", path: "/csp/mfa", icon: KeyRound, color: "#2563eb" },
       { label: "Users", path: "/csp/users", icon: Users, color: "#0891b2" },
       { label: "Licences", path: "/csp/licenses", icon: KeyRound, color: "#7c3aed" },
+      { label: "Service SLA", path: "/csp/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
   {

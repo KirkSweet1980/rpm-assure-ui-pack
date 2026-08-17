@@ -74,16 +74,19 @@ function ragOf(
   live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
 ): LiveTone {
   const m = live?.modules[rel];
-  if (m?.rag) return m.rag;
-  if (rel.startsWith("/syspro")) return live?.pillars.syspro?.rag ?? "Off";
-  if (rel.startsWith("/rmm")) return live?.pillars.rmm?.rag ?? "Off";
-  if (rel.startsWith("/cove")) return live?.pillars.cove?.rag ?? "Off";
-  if (rel.startsWith("/epp")) return live?.pillars.epp?.rag ?? "Off";
-  if (rel.startsWith("/csp")) return live?.pillars.csp?.rag ?? "Off";
+  if (m?.rag && m.rag !== "Off") return m.rag;
+  if (m?.cover) return "Green";
+  if (rel.startsWith("/syspro")) return live?.pillars.syspro?.cover ? (live.pillars.syspro.rag === "Off" ? "Green" : live.pillars.syspro.rag) : "Off";
+  if (rel.startsWith("/rmm")) return live?.pillars.rmm?.cover ? (live.pillars.rmm.rag === "Off" ? "Green" : live.pillars.rmm.rag) : "Off";
+  if (rel.startsWith("/cove")) return live?.pillars.cove?.cover ? (live.pillars.cove.rag === "Off" ? "Green" : live.pillars.cove.rag) : "Off";
+  if (rel.startsWith("/epp")) return live?.pillars.epp?.cover ? (live.pillars.epp.rag === "Off" ? "Green" : live.pillars.epp.rag) : "Off";
+  if (rel.startsWith("/csp")) return live?.pillars.csp?.cover ? (live.pillars.csp.rag === "Off" ? "Green" : live.pillars.csp.rag) : "Off";
   if (rel.startsWith("/tickets") || rel.startsWith("/ams")) {
-    return live?.pillars.tickets?.rag ?? live?.pillars.ams?.rag ?? "Off";
+    const p = live?.pillars.tickets ?? live?.pillars.ams;
+    if (p?.cover) return p.rag === "Off" ? "Green" : p.rag;
+    return "Green";
   }
-  return live?.pillars.eco?.rag ?? "Off";
+  return live?.pillars.eco?.rag && live.pillars.eco.rag !== "Off" ? live.pillars.eco.rag : "Green";
 }
 
 function worstRag(

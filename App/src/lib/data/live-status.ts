@@ -325,10 +325,10 @@ export function customerLiveStatus(
       hint: "Customer SLA clocks only — not incidents",
     },
     "/tickets": {
-      rag: trueOpenInc > 0 ? "Amber" : extra?.incidents?.length ? "Green" : "Off",
-      cover: (extra?.incidents?.length ?? 0) > 0,
+      rag: trueOpenInc > 0 ? "Amber" : "Green",
+      cover: true,
       href: `${base}/tickets`,
-      hint: extra?.incidents?.length ? `${extra.incidents.length} ticket(s)` : "No tickets",
+      hint: extra?.incidents?.length ? `${extra.incidents.length} ticket(s)` : "No tickets for this customer",
     },
     "/tickets/open": {
       rag: trueOpenInc > 0 ? "Amber" : "Green",
@@ -350,7 +350,7 @@ export function customerLiveStatus(
     },
     "/tickets/sla": {
       rag: extra?.amsSlaSummary && (extra.amsSlaSummary.responsePct ?? 100) < 90 ? "Amber" : "Green",
-      cover: (extra?.incidents?.length ?? 0) > 0,
+      cover: true,
       href: `${base}/tickets/sla`,
       hint: "Ticket response and restore clocks",
     },
@@ -384,6 +384,7 @@ export function customerLiveStatus(
     "/syspro/operators": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/operators`, hint: "Operators" },
     "/syspro/security": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/security`, hint: "Security" },
     "/syspro/sql": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/sql`, hint: "SQL" },
+    "/syspro/sla": { rag: sysproRag === "Off" ? off(Boolean(c.syspro)) : sysproRag, cover: Boolean(c.syspro), href: `${base}/syspro/sla`, hint: "SYSPRO SLA" },
     "/rmm": { rag: off(Boolean(c.rmm) && srvN > 0), cover: Boolean(c.rmm) && srvN > 0, href: `${base}/rmm`, hint: srvN > 0 ? "RMM overview" : "No Cover for Devices" },
     "/rmm/devices": {
       rag: devicesRag,
@@ -411,16 +412,22 @@ export function customerLiveStatus(
     },
     "/rmm/sla": { rag: off(Boolean(c.rmm)), cover: Boolean(c.rmm), href: `${base}/rmm/sla`, hint: "RMM SLA" },
     "/rmm/iops": {
-      rag: off(Boolean(c.rmm) && srvN > 0),
-      cover: Boolean(c.rmm) && srvN > 0,
+      rag: !c.rmm ? "Off" : (extra?.rmm?.agentIops?.length ?? 0) > 0 || srvN > 0 ? "Green" : "Off",
+      cover: Boolean(c.rmm),
       href: `${base}/rmm/iops`,
-      hint: srvN > 0 ? "Disk IOPS" : "No Cover for Devices",
+      hint: (extra?.rmm?.agentIops?.length ?? 0) > 0 ? `${extra?.rmm?.agentIops?.length} IOPS volume(s)` : srvN > 0 ? "Disk IOPS" : "No Cover for Devices",
     },
     "/rmm/events": {
-      rag: off(Boolean(c.rmm)),
+      rag: !c.rmm
+        ? "Off"
+        : (extra?.rmm?.windowsEvents ?? []).some((e) => /crit/i.test(String(e.levelName ?? "")))
+          ? "Red"
+          : (extra?.rmm?.windowsEvents?.length ?? 0) > 0
+            ? "Green"
+            : off(Boolean(c.rmm)),
       cover: Boolean(c.rmm),
       href: `${base}/rmm/events`,
-      hint: "Event logs",
+      hint: (extra?.rmm?.windowsEvents?.length ?? 0) > 0 ? `${extra?.rmm?.windowsEvents?.length} event(s)` : "Event logs",
     },
     "/cove": { rag: off(coveDevCover), cover: coveDevCover, href: `${base}/cove`, hint: coveDevCover ? "Backup overview" : "No Cover for Devices" },
     "/cove/devices": {
@@ -469,6 +476,7 @@ export function customerLiveStatus(
     },
     "/csp/users": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/users`, hint: "Users" },
     "/csp/licenses": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/licenses`, hint: "Licences" },
+    "/csp/sla": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/sla`, hint: "Microsoft 365 SLA" },
   };
 
   return { pillars, modules };
