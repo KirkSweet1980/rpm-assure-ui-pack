@@ -1,4 +1,4 @@
-# Collect Bitdefender GravityZone endpoints → RPMAssure_App (EPP pillar)
+﻿# Collect Bitdefender GravityZone endpoints → RPMAssure_App (EPP pillar)
 # Auth: Basic base64(ApiKey + ":")
 # Map: Dim_Bitdefender_NameMap patterns against Name+Fqdn; optional default RPMINT for staff
 
@@ -12,7 +12,7 @@ foreach ($c in @(
   )) {
   if (Test-Path -LiteralPath $c) { $cfg = $c; break }
 }
-if (-not $cfg) { throw 'Missing Bitdefender.Config.ps1 — copy Bitdefender.Config.example.ps1 next to the collector and set $ApiKey' }
+if (-not $cfg) { throw 'Missing Bitdefender.Config.ps1 - copy Bitdefender.Config.example.ps1 next to the collector and set $ApiKey' }
 . $cfg
 
 # Optional SQL overrides in config; else local instance (do not use public 14333)
@@ -377,7 +377,7 @@ function Resolve-EndpointCode([string]$Name, [string]$Fqdn, [string]$CompanyName
   return $null
 }
 
-# Discover companies (MSP multi-tenant) — page until short
+# Discover companies (MSP multi-tenant) - page until short
 $companyTargets = New-Object System.Collections.Generic.List[object]
 try {
   $pg = 1; $pages = 1
@@ -546,7 +546,7 @@ Write-Log ("After host de-dupe=" + $deduped.Count + " (removed " + ($epBag.Count
 $epBag = $deduped
 
 # Enrich managed endpoints: last scan, malware, outdated (cap keeps collect under 15 min)
-# Parse JSON-RPC result (do NOT regex-match "error" — scan logs nest that word).
+# Parse JSON-RPC result (do NOT regex-match "error" - scan logs nest that word).
 $detailCap = 200
 $detailN = 0
 $detailOk = 0
