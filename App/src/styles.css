@@ -1325,23 +1325,23 @@ html[data-density="comfortable"] .rpma-xls th {
   align-items: center;
   gap: 2px;
   border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 10px;
-  padding: 3px;
+  border-radius: 8px;
+  padding: 2px;
   background: color-mix(in srgb, #fff 6%, transparent);
 }
 .rpma-nav-seg-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 0 12px;
+  width: 26px;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: rgba(255,255,255,0.72);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 750;
 }
 .rpma-nav-seg-btn-active {
   background: rgba(255,255,255,0.16);
