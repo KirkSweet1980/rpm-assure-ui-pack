@@ -1,9 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CalendarCheck, ClipboardList, Cloud, FileStack, Gauge, HardDrive, Layers, Loader2, Printer, RefreshCw, Server, Shield, ShieldCheck } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CalendarCheck, ClipboardList, Cloud, FileStack, Gauge, HardDrive, Layers, Loader2, Printer, RefreshCw, Server, Shield, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
-import { CorpPathTrail, CorpWorkspaceRail, type CorpService } from "@/components/nav/corp-workspace-rail";
+import { EmpWindow, type EmpGroup } from "@/components/chrome/emp-window";
+import type { CorpService } from "@/components/nav/corp-workspace-rail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { fetchPortfolio } from "@/lib/data/portfolio";
@@ -496,55 +497,31 @@ function ReportsPage() {
     return "On-demand pack";
   }, [format, selectedCount]);
 
-  const reportPath = format ? `/reports?format=${format}` : "/reports";
-  const reportSvc = REPORT_SERVICES.find((s) =>
-    s.modules.some((m) => m.path === reportPath),
-  );
-  const reportMod = reportSvc?.modules.find((m) => m.path === reportPath);
-
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-context-bar" role="navigation" aria-label="Reporting path">
-          <Button asChild type="button" variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
-            <Link to="/">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back
-            </Link>
-          </Button>
-          <CorpPathTrail
-            rootLabel="Reporting"
-            rootHref="/reports"
-            service={reportSvc?.title}
-            moduleLabel={reportMod?.label}
-          />
-          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
-            <Link to="/">Exco</Link>
-          </Button>
-          <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">Reporting</h2>
-          <span className="hidden text-[11px] text-muted sm:inline">
-            {reportMod?.label ?? reportSvc?.title ?? "Catalog"}
-          </span>
-        </div>
-        <div className="rpma-d3-workspace is-tool">
-          <CorpWorkspaceRail
-            heading="Reporting"
-            homeHref="/reports"
-            homeLabel="Catalog"
-            services={REPORT_SERVICES}
-            pathname={format ? `/reports?format=${format}` : "/reports"}
-            servicesHeading="Services"
-            modulesHeading="Service Modules"
-            stacked
-          />
-          <div className="rpma-d3-detail min-w-0">
-            <div className="rpma-pane-menubar" role="banner">
-              <h2 className="rpma-pane-menubar-title">
-                {pack?.title ?? reportMod?.label ?? "Report catalog"}
-              </h2>
-            </div>
-            <div className="rpma-d3-detail-body">
-
+        <EmpWindow
+          title="Reporting"
+          menu={[
+            { label: "Customer Ecosystem Home", href: "/" },
+            { label: "Customer Service Overview", href: "/reports?format=ams-monthly", on: true },
+          ]}
+          groups={REPORT_SERVICES.map((s): EmpGroup => ({
+            id: s.id,
+            title: s.title,
+            on: pack?.service === s.id,
+            items: s.modules.map((m) => {
+              const fmt = (m.path.match(/format=([^&]+)/) || [])[1];
+              return {
+                label: m.label,
+                href: m.path,
+                icon: m.icon,
+                rag: format && fmt === format ? "Green" : "Off",
+                active: Boolean(format && fmt === format),
+              };
+            }),
+          }))}
+        >
             {!pack ? (
               <section className="rpma-rpt-catalog">
                 <div className="rpma-rpt-hero">
@@ -755,9 +732,7 @@ function ReportsPage() {
                 </div>
               </>
             )}
-            </div>
-          </div>
-        </div>
+        </EmpWindow>
       </AppShell>
     </RequireAuth>
   );

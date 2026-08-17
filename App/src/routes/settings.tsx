@@ -1,9 +1,9 @@
 import { Link, Outlet, createFileRoute, Navigate, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, Bell, Database, FileText, KeyRound, LayoutDashboard, Mail, Palette, Plug, Server, Shield, Tags, Users } from "lucide-react";
+import { Bell, Database, FileText, KeyRound, LayoutDashboard, Mail, Palette, Plug, Server, Shield, Tags, Users } from "lucide-react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
-import { Button } from "@/components/ui/button";
-import { CorpPathTrail, CorpWorkspaceRail, type CorpService } from "@/components/nav/corp-workspace-rail";
+import { EmpWindow, type EmpGroup } from "@/components/chrome/emp-window";
+import type { CorpService } from "@/components/nav/corp-workspace-rail";
 import { USER_PROFILE_ENABLED, TWO_FACTOR_ENABLED, SETTINGS_MENU_ENABLED } from "@/lib/auth/features";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 
@@ -99,53 +99,27 @@ function SettingsLayout() {
             </p>
           </div>
         ) : (
-          <>
-            <div className="rpma-context-bar" role="navigation" aria-label="Configuration path">
-              <Button asChild type="button" variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
-                <Link to="/">
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Back
-                </Link>
-              </Button>
-              <CorpPathTrail
-                rootLabel="Configuration"
-                rootHref="/settings/infrastructure"
-                service={svc?.title}
-                moduleLabel={mod?.label}
-              />
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
-                <Link to="/">Exco</Link>
-              </Button>
-              <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
-                Configuration
-              </h2>
-              <span className="hidden text-[11px] text-muted sm:inline">
-                {mod?.label ?? svc?.title ?? "Overview"}
-              </span>
-            </div>
-            <div className="rpma-d3-workspace is-tool">
-              <CorpWorkspaceRail
-                heading="Configuration"
-                homeHref="/settings/infrastructure"
-                homeLabel="Overview"
-                services={CONFIG_SERVICES}
-                pathname={pathname}
-                servicesHeading="Services"
-                modulesHeading="Service Modules"
-                stacked
-              />
-              <div className="rpma-d3-detail min-w-0">
-                <div className="rpma-pane-menubar" role="banner">
-                  <h2 className="rpma-pane-menubar-title">
-                    {mod?.label ?? svc?.title ?? "Configuration"}
-                  </h2>
-                </div>
-                <div className="rpma-d3-detail-body rpma-settings-body">
-                  <Outlet />
-                </div>
-              </div>
-            </div>
-          </>
+          <EmpWindow
+            title="Configuration"
+            menu={[
+              { label: "Customer Ecosystem Home", href: "/", on: false },
+              { label: "Customer Service Overview", href: "/reports?format=ams-monthly" },
+            ]}
+            groups={CONFIG_SERVICES.map((s): EmpGroup => ({
+              id: s.id,
+              title: s.title,
+              on: svc?.id === s.id,
+              items: s.modules.map((m) => ({
+                label: m.label,
+                href: m.path,
+                icon: m.icon,
+                rag: pathname === m.path || pathname.startsWith(`${m.path}/`) ? "Green" : "Off",
+                active: pathname === m.path || pathname.startsWith(`${m.path}/`),
+              })),
+            }))}
+          >
+            <Outlet />
+          </EmpWindow>
         )}
       </AppShell>
     </RequireAuth>

@@ -12,10 +12,10 @@ import { buildExcoPillarSla, hasSlaCover } from "@/lib/data/exco-sla-stats";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { issueHrefForDrill } from "@/lib/data/live-status";
 import { cn } from "@/lib/utils";
-import { ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronRight, RefreshCw, LayoutDashboard, AlertTriangle, Scale, Gauge, Timer, FileStack, Server, Settings } from "lucide-react";
 import { HelpTip, HoverTip, MetricLabel, PaneHead } from "@/components/ui/help-tip";
 import { SpaLink } from "@/components/nav/spa-link";
-import { ExcoWorkspaceRail } from "@/components/exco/exco-workspace-rail";
+import { EmpWindow } from "@/components/chrome/emp-window";
 import { CustomizeWidgetsButton, CustomizeWidgetsPanel } from "@/components/exco/customize-widgets";
 import {
   DEFAULT_EXCO_WIDGET_LAYOUT,
@@ -35,6 +35,9 @@ import {
 } from "@/lib/estate-views";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    view: typeof s.view === "string" ? s.view : undefined,
+  }),
   loader: async () => {
     const [portfolio, source] = await Promise.all([
       fetchPortfolio(),
@@ -412,6 +415,8 @@ function deriveExcoFromRows(
 
 function ExcoInsightPage() {
   const loader = Route.useLoaderData();
+  const search = Route.useSearch();
+  const searchView = search.view;
   const navigate = useNavigate();
   const { profile } = useStaffProfile();
   const { dashboard: dash } = useDashboardConfig();
@@ -978,6 +983,12 @@ function ExcoInsightPage() {
     persistActiveEstateView(v.id);
   }
 
+  useEffect(() => {
+    if (!searchView) return;
+    const v = allEstateViews(customViews).find((x) => x.id === searchView);
+    if (v) applyView(v);
+  }, [searchView, customViews]);
+
   function saveCurrentView() {
     if (!drill) return;
     const label = window.prompt("Name this view", drillTitle || "My view");
@@ -1075,41 +1086,53 @@ function ExcoInsightPage() {
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-context-bar" role="navigation" aria-label="Exco path">
-          <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
-            Customer Eco-System
-          </h2>
-          <span className="hidden text-[11px] text-muted sm:inline">
-            {liveLabel} · SLA {slaAvg}%
-          </span>
-          <RagBadge rag={rag.overall} />
-          <span className="ml-auto text-[11px] text-muted">
-            {rag.red} red · {rag.amber} amber · {rag.green} green
-          </span>
-        </div>
-        <div className="rpma-d3-workspace is-tool is-exco">
-          <ExcoWorkspaceRail
-            views={allEstateViews(customViews)}
-            viewCounts={viewCounts}
-            activeView={activeView}
-            onView={applyView}
-            onRemoveView={removeView}
-            boards={scoreboard}
-            slaAvg={slaAvg}
-            estateRag={rag.overall}
-          />
-          <div className="rpma-d3-detail min-w-0">
-            <div className="rpma-pane-menubar" role="banner">
-              <h2 className="rpma-pane-menubar-title">Customer Eco-System</h2>
-              <div className="rpma-pane-coverline">
-                <CustomizeWidgetsButton
-                  open={customizeOpen}
-                  onClick={() => setCustomizeOpen((v) => !v)}
-                />
-              </div>
-            </div>
-            <div className="rpma-d3-detail-body">
-        <div className="rpma-exco space-y-4">
+        <EmpWindow
+          title="Customer Eco System"
+          menu={[
+            { label: "Customer Ecosystem Home", href: "/", on: !searchView || searchView === "all" },
+            { label: "Customer Service Overview", href: "/reports?format=ams-monthly" },
+          ]}
+          groups={[
+            {
+              id: "eco",
+              title: "Customer Eco System",
+              on: true,
+              items: [
+                { label: "All Customers", href: "/?view=all", icon: LayoutDashboard, rag: rag.overall, active: activeView === "all" },
+                { label: "Attention", href: "/?view=attention", icon: AlertTriangle, rag: rag.red || rag.amber ? "Amber" : "Green", active: activeView === "attention" },
+                { label: "FinSight", href: "/?view=finsight", icon: Scale, rag: finsightEstate.oobCustomers ? "Amber" : "Green", active: activeView === "finsight" },
+                { label: "SLA", href: "/?view=sla", icon: Gauge, rag: slaAvg < 90 ? "Red" : slaAvg < 95 ? "Amber" : "Green", active: activeView === "sla" },
+                { label: "Stale", href: "/?view=stale", icon: Timer, rag: "Off", active: activeView === "stale" },
+              ],
+            },
+            {
+              id: "rpt",
+              title: "Reporting",
+              items: [
+                { label: "Monthly Pack", href: "/reports?format=ams-monthly", icon: FileStack, rag: "Off" },
+                { label: "Weekly Digest", href: "/reports?format=ams-weekly", icon: FileStack, rag: "Off" },
+                { label: "Eco Overview", href: "/reports?format=estate", icon: LayoutDashboard, rag: "Off" },
+              ],
+            },
+            {
+              id: "cfg",
+              title: "Configuration",
+              items: [
+                { label: "Infrastructure", href: "/settings/infrastructure", icon: Server, rag: "Off" },
+                { label: "Collect", href: "/settings/collect", icon: RefreshCw, rag: "Off" },
+                { label: "Users", href: "/settings/users", icon: LayoutDashboard, rag: "Off" },
+                { label: "SMTP", href: "/settings/smtp", icon: Settings, rag: "Off" },
+              ],
+            },
+          ]}
+        >
+          <div className="rpma-exco space-y-4">
+          <div className="flex justify-end">
+            <CustomizeWidgetsButton
+              open={customizeOpen}
+              onClick={() => setCustomizeOpen((v) => !v)}
+            />
+          </div>
           {customizeOpen ? (
             <CustomizeWidgetsPanel
               layout={widgetLayout}
@@ -1537,9 +1560,7 @@ function ExcoInsightPage() {
             </section>
           </div>
         </div>
-            </div>
-          </div>
-        </div>
+        </EmpWindow>
       </AppShell>
     </RequireAuth>
   );
