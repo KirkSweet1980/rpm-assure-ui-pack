@@ -1,0 +1,22 @@
+RPM Assure Edge - one script, no wizard
+
+On the customer Windows host (Administrator PowerShell):
+
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KirkSweet1980/rpm-assure-ui-pack/main/Sql/agent/Deploy-Assure-Agent.ps1' -OutFile $env:TEMP\Deploy-Assure-Agent.ps1
+  powershell -NoProfile -ExecutionPolicy Bypass -File $env:TEMP\Deploy-Assure-Agent.ps1 -CustomerCode AHIC -AgentSecret '<website RPM_ASSURE_IOPS_SECRET>'
+
+What it does:
+  - installs Git if missing
+  - git clone/pull KirkSweet1980/rpm-assure-ui-pack
+  - copies Sql\agent to C:\RPM-Assure\Agent
+  - writes HTTPS URL https://assure.rpmresources.co.za + the secret
+  - installs Windows service RPMAssure-Edge
+  - first HTTPS heartbeat (Let's Encrypt)
+
+Re-run the same command to update. Keeps Agent.Config.ps1 and Agent.Secrets.bin.
+
+Optional:
+  -CentralSqlPassword  '...'     SQL fallback / SYSPRO collect
+  -RoleTags            'sql'
+  -SkipHeartbeat
