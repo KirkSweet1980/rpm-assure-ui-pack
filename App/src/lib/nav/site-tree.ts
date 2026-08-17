@@ -560,6 +560,14 @@ export function settingsTree(): NavNode {
           audience: "admin",
         },
         {
+          id: "set-nav-lab",
+          label: "Nav mockups",
+          blurb: "Six chrome options. C is live",
+          href: "/settings/nav-lab",
+          match: "exact",
+          audience: "admin",
+        },
+        {
           id: "set-theme",
           label: "Theme tokens",
           blurb: "CSS variables, light/dark, palettes",

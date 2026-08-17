@@ -31,6 +31,7 @@ import { Route as SettingsAgentsRouteImport } from './routes/settings.agents'
 import { Route as SettingsAlertsRouteImport } from './routes/settings.alerts'
 import { Route as SettingsAuditRouteImport } from './routes/settings.audit'
 import { Route as SettingsChromeRouteImport } from './routes/settings.chrome'
+import { Route as SettingsNavLabRouteImport } from './routes/settings.nav-lab'
 import { Route as SettingsCollectRouteImport } from './routes/settings.collect'
 import { Route as SettingsDashboardRouteImport } from './routes/settings.dashboard'
 import { Route as SettingsInfrastructureRouteImport } from './routes/settings.infrastructure'
@@ -222,6 +223,11 @@ const SettingsAuditRoute = SettingsAuditRouteImport.update({
 const SettingsChromeRoute = SettingsChromeRouteImport.update({
   id: '/chrome',
   path: '/chrome',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsNavLabRoute = SettingsNavLabRouteImport.update({
+  id: '/nav-lab',
+  path: '/nav-lab',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsCollectRoute = SettingsCollectRouteImport.update({
@@ -682,6 +688,7 @@ export interface FileRoutesByFullPath {
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
+  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
   '/settings/infrastructure': typeof SettingsInfrastructureRoute
@@ -786,6 +793,7 @@ export interface FileRoutesByTo {
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
+  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
   '/settings/infrastructure': typeof SettingsInfrastructureRoute
@@ -886,6 +894,7 @@ export interface FileRoutesById {
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
+  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
   '/settings/infrastructure': typeof SettingsInfrastructureRoute
@@ -994,6 +1003,7 @@ export interface FileRouteTypes {
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
+    | '/settings/nav-lab'
     | '/settings/collect'
     | '/settings/dashboard'
     | '/settings/infrastructure'
@@ -1098,6 +1108,7 @@ export interface FileRouteTypes {
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
+    | '/settings/nav-lab'
     | '/settings/collect'
     | '/settings/dashboard'
     | '/settings/infrastructure'
@@ -1197,6 +1208,7 @@ export interface FileRouteTypes {
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
+    | '/settings/nav-lab'
     | '/settings/collect'
     | '/settings/dashboard'
     | '/settings/infrastructure'
@@ -1464,6 +1476,13 @@ declare module '@tanstack/react-router' {
       path: '/chrome'
       fullPath: '/settings/chrome'
       preLoaderRoute: typeof SettingsChromeRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/nav-lab': {
+      id: '/settings/nav-lab'
+      path: '/nav-lab'
+      fullPath: '/settings/nav-lab'
+      preLoaderRoute: typeof SettingsNavLabRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/collect': {
@@ -2049,6 +2068,7 @@ interface SettingsRouteChildren {
   SettingsAlertsRoute: typeof SettingsAlertsRoute
   SettingsAuditRoute: typeof SettingsAuditRoute
   SettingsChromeRoute: typeof SettingsChromeRoute
+  SettingsNavLabRoute: typeof SettingsNavLabRoute
   SettingsCollectRoute: typeof SettingsCollectRoute
   SettingsDashboardRoute: typeof SettingsDashboardRoute
   SettingsInfrastructureRoute: typeof SettingsInfrastructureRoute
@@ -2073,6 +2093,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAlertsRoute: SettingsAlertsRoute,
   SettingsAuditRoute: SettingsAuditRoute,
   SettingsChromeRoute: SettingsChromeRoute,
+  SettingsNavLabRoute: SettingsNavLabRoute,
   SettingsCollectRoute: SettingsCollectRoute,
   SettingsDashboardRoute: SettingsDashboardRoute,
   SettingsInfrastructureRoute: SettingsInfrastructureRoute,

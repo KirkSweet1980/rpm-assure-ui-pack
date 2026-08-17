@@ -58,6 +58,7 @@ const CONFIG_SERVICES: CorpService[] = [
     modules: [
       { label: "Theme Tokens", path: "/settings/theme", icon: Palette, color: "#7c3aed" },
       { label: "Menu Style", path: "/settings/chrome", icon: LayoutDashboard, color: "#0d9488" },
+      { label: "Nav mockups", path: "/settings/nav-lab", icon: LayoutDashboard, color: "#14b8a6" },
       { label: "UI Labels", path: "/settings/labels", icon: Tags, color: "#d97706" },
       { label: "Dashboard Layout", path: "/settings/dashboard", icon: LayoutDashboard, color: "#2563eb" },
       { label: "Alert Rules", path: "/settings/alerts", icon: Bell, color: "#dc2626" },
