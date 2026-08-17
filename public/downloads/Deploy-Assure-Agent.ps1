@@ -13,7 +13,7 @@
 
 param(
   [string]$CustomerCode = '',
-  [string]$AgentSecret = '',
+  [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
   [string]$RepoUrl = 'https://github.com/KirkSweet1980/rpm-assure-ui-pack.git',
   [string]$Root = 'C:\RPM-Assure',
@@ -33,10 +33,7 @@ if (-not $CustomerCode) {
 }
 $CustomerCode = $CustomerCode.Trim().ToUpperInvariant()
 if (-not $CustomerCode) { throw 'CustomerCode is required' }
-if (-not $AgentSecret -or $AgentSecret -eq 'PASTE-SECRET-HERE') {
-  $AgentSecret = Read-Host 'Assure ingest secret (website RPM_ASSURE_IOPS_SECRET)'
-}
-if (-not $AgentSecret -or $AgentSecret -eq 'PASTE-SECRET-HERE') { throw 'AgentSecret is required (website RPM_ASSURE_IOPS_SECRET)' }
+if (-not $AgentSecret) { throw 'AgentSecret is required' }
 
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
   [Security.Principal.WindowsBuiltInRole]::Administrator)
