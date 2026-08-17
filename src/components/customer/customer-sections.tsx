@@ -1435,13 +1435,22 @@ function AgentHostTelemetry({
     : evs;
   const iopsShow = focus ? iopsView : rows;
   const evShow = focus ? evView : evs;
+  const iopsLatest = iopsShow.reduce<string | null>((best, r) => {
+    const t = r.snapshotUtc;
+    if (!t) return best;
+    if (!best) return t;
+    return new Date(t).getTime() > new Date(best).getTime() ? t : best;
+  }, null);
 
   return (
     <div className="space-y-3">
       <section className="rpma-panel p-0">
         <div className="rpma-settings-panel-head">
           Agent Disk IOPS
-          <span className="rpma-settings-count">{iopsShow.length} volume{iopsShow.length === 1 ? "" : "s"}</span>
+          <span className="rpma-settings-count">
+            {iopsShow.length} volume{iopsShow.length === 1 ? "" : "s"}
+            {iopsLatest ? ` · latest ${formatSastDateTime(iopsLatest)}` : ""}
+          </span>
         </div>
         {iopsShow.length === 0 ? (
           <p className="px-3 py-3 text-[12px] text-muted">
@@ -1460,7 +1469,6 @@ function AgentHostTelemetry({
                 <th>Write</th>
                 <th>Total IOPS</th>
                 <th>Queue</th>
-                <th>Sampled</th>
               </tr>
             </thead>
             <tbody>
@@ -1492,7 +1500,6 @@ function AgentHostTelemetry({
                   <td>{fmtI(r.writeIops)}</td>
                   <td>{fmtI(r.totalIops)}</td>
                   <td>{r.queueLen != null ? r.queueLen.toFixed(1) : "—"}</td>
-                  <td>{formatSastDateTime(r.snapshotUtc)}</td>
                 </tr>
                 );
               })}
