@@ -238,71 +238,41 @@ function ServiceVisuals({
   const pieData = (pie ?? []).filter((d) => d.value > 0);
   const barData = bars ?? [];
   return (
-    <div className="rpma-eco-visuals space-y-3">
-      <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
+    <div className="rpma-eco-visuals space-y-2">
+      <div className="rpma-glass flex flex-wrap items-center gap-2 px-3 py-2">
         <div className="min-w-0">
-          <p className="text-lg font-bold tracking-tight text-fg">{title}</p>
-          {subtitle ? <p className="text-[12px] text-muted">{subtitle}</p> : null}
+          <p className="text-base font-extrabold tracking-tight text-fg">{title}</p>
+          {subtitle ? <p className="text-[11px] text-muted">{subtitle}</p> : null}
         </div>
         {kpis.length ? (
-          <div className="ml-auto grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="ml-auto grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             {kpis.slice(0, 4).map((k) => (
               <StatCard key={k.label} label={k.label} value={k.value} tone={k.tone} />
             ))}
           </div>
         ) : null}
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {pieData.length ? (
-          <div className="rpma-glass p-3">
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Mix</p>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={46} outerRadius={68} paddingAngle={2} isAnimationActive={false}>
-                    {pieData.map((e) => (
-                      <Cell key={e.name} fill={e.fill} stroke="transparent" />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        ) : null}
-        {barData.length ? (
-          <div className="rpma-glass p-3">
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Signals</p>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 18 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} height={40} angle={-22} textAnchor="end" tickFormatter={(v) => axisLabel(v, 10)} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} width={28} tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={32} isAnimationActive={false}>
-                    {barData.map((e, i) => (
-                      <Cell key={i} fill={e.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      {pieData.length || barData.length ? (
+        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
+          {pieData.map((e) => (
+            <StatCard key={`p-${e.name}`} label={e.name} value={e.value} />
+          ))}
+          {barData.map((e) => (
+            <StatCard key={`b-${e.name}`} label={e.name} value={e.value} />
+          ))}
+        </div>
+      ) : null}
       {tiles?.length ? (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
           {tiles.map((t) => (
-            <SpaLink key={t.href} href={t.href} className="rpma-glass block px-3 py-2.5 hover:shadow-md">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+            <SpaLink key={t.href} href={t.href} className="rpma-glass block px-2.5 py-2 hover:shadow-sm">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">
                 <span className="inline-flex items-center gap-1">
                   {t.label}
                   {t.hint ? <HelpTip text={t.hint} /> : null}
                 </span>
               </p>
-              <p className="font-mono text-xl font-bold text-fg">{t.n}</p>
-              <p className="text-[11px] text-muted">{t.hint}</p>
+              <p className="font-mono text-lg font-extrabold text-fg">{t.n}</p>
             </SpaLink>
           ))}
         </div>
@@ -680,7 +650,6 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
         { label: "Event Logs", href: `${base}/events`, n: rmm?.windowsEvents?.length ?? 0, hint: "Errors" },
       ]}
     />
-    <AgentHostTelemetry iops={rmm?.agentIops ?? []} events={rmm?.windowsEvents ?? []} />
     </div>
   );
 }

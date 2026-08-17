@@ -267,27 +267,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         </div>
 
         <Pane title="Service cover" tip="Green chip = live collect in scope. Grey = No Cover (not scored)." {...wgt("cover")}>
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={coverPie}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={48}
-                  outerRadius={70}
-                  paddingAngle={2}
-                  isAnimationActive={false}
-                >
-                  {coverPie.map((e) => (
-                    <Cell key={e.name} fill={e.fill} stroke="transparent" />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-1 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {serviceBars.map((s) => (
               <SpaLink
                 key={s.name}
@@ -301,56 +281,18 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         </Pane>
 
         <Pane title="What needs attention" tip="Open signals across SYSPRO and AMS." {...wgt("attention")}>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={signalBars} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: CHART.axis, fontSize: 10 }}
-                  interval={0}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => axisLabel(v, 10)}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  width={28}
-                  tick={{ fill: CHART.axis, fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36} isAnimationActive={false}>
-                  {signalBars.map((e, i) => (
-                    <Cell key={i} fill={e.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-1.5">
+            {signalBars.map((e) => (
+              <StatCard key={e.name} label={e.name} value={e.value} />
+            ))}
           </div>
         </Pane>
 
         <Pane title={fleetTitle} {...wgt("fleet")}>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={fleetPie}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={48}
-                  outerRadius={70}
-                  paddingAngle={2}
-                  isAnimationActive={false}
-                >
-                  {fleetPie.map((e) => (
-                    <Cell key={e.name} fill={e.fill} stroke="transparent" />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-1.5">
+            {fleetPie.map((e) => (
+              <StatCard key={e.name} label={e.name} value={e.value} />
+            ))}
           </div>
         </Pane>
 
@@ -459,24 +401,10 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         {dtrBars.length > 0 ? (
           <Pane title="FinSight · out of balance" {...wgt("finsight")}>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dtrBars} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tick={{ fill: CHART.axis, fontSize: 10 }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={128}
-                    tick={{ fill: CHART.axis, fontSize: 10, fontWeight: 600 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => axisLabel(v, 18)}
-                  />
-                  <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
-                  <Bar dataKey="oob" fill={CHART.dtr} radius={[0, 6, 6, 0]} maxBarSize={16} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-1.5">
+              {dtrBars.slice(0, 6).map((e) => (
+                <StatCard key={e.name} label={e.name} value={e.oob} tone="amber" />
+              ))}
             </div>
           </Pane>
         ) : (

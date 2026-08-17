@@ -1554,3 +1554,14 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
   padding: 0.32rem 0.55rem;
 }
 
+h1, h2, h3, h4,
+.rpma-panel-heading,
+.rpma-pane-head,
+.rpma-pane-head-row,
+.rpma-context-bar,
+.rpma-d3-pane-title,
+.rpma-pillar-rail-head h2 {
+  font-weight: 800 !important;
+  letter-spacing: -0.015em;
+}
+
