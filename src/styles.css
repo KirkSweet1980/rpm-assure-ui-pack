@@ -656,11 +656,12 @@ html.dark .rpma-pane-head-row {
   flex: 0 0 auto;
   margin: 0;
   border: 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid color-mix(in srgb, #042f2e 22%, var(--color-brand-teal));
   border-radius: 0;
-  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-nav));
-  backdrop-filter: blur(14px) saturate(1.15);
-  box-shadow: 0 6px 16px color-mix(in srgb, #000 10%, transparent);
+  background: var(--color-brand-teal);
+  color: #042f2e;
+  backdrop-filter: none;
+  box-shadow: 0 4px 12px color-mix(in srgb, #042f2e 18%, transparent);
   overflow: hidden;
 }
 .rpma-hud-head {
@@ -675,7 +676,7 @@ html.dark .rpma-pane-head-row {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   text-align: center;
-  color: var(--color-fg);
+  color: #042f2e;
   background: transparent;
   border-bottom: 0;
 }
@@ -701,11 +702,11 @@ html.dark .rpma-pane-head-row {
   gap: 10px;
   min-width: 0;
   padding: 8px 16px 10px;
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid color-mix(in srgb, #042f2e 18%, var(--color-brand-teal));
 }
 .rpma-hud-cell:last-child { border-right: 0; }
 .rpma-hud-cell > div { min-width: 0; text-align: center; }
-.rpma-hud-ico { width: 20px; height: 20px; flex: 0 0 auto; color: var(--color-brand-teal); }
+.rpma-hud-ico { width: 20px; height: 20px; flex: 0 0 auto; color: #042f2e; }
 .rpma-hud-k {
   margin: 0;
   display: inline-flex;
@@ -715,7 +716,7 @@ html.dark .rpma-pane-head-row {
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--color-subtle);
+  color: color-mix(in srgb, #042f2e 78%, #fff);
 }
 .rpma-hud-v {
   margin: 3px 0 0;
@@ -723,21 +724,24 @@ html.dark .rpma-pane-head-row {
   font-size: 16px;
   font-weight: 750;
   letter-spacing: -0.02em;
-  color: var(--color-fg);
+  color: #042f2e;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.rpma-hud-v.is-live { color: #16a34a; }
-.rpma-hud-v.is-demo { color: var(--color-rag-amber); }
+.rpma-hud-v.is-live { color: #064e3b; }
+.rpma-hud-v.is-demo { color: #7c2d12; }
 @media (max-width: 720px) {
   .rpma-hud-grid { grid-template-columns: 1fr; }
   .rpma-hud-cell { border-right: 0; border-bottom: 1px solid var(--color-border); }
   .rpma-hud-cell:last-child { border-bottom: 0; }
 }
 html[data-theme="dark"] .rpma-hud-head,
-html.dark .rpma-hud-head {
-  background: color-mix(in srgb, var(--color-nav) 45%, #10151c);
+html.dark .rpma-hud-head,
+html[data-theme="dark"] .rpma-hud,
+html.dark .rpma-hud {
+  background: var(--color-brand-teal);
+  color: #042f2e;
 }
 .rpma-viewbar {
   display: flex;
