@@ -23,10 +23,9 @@ import { SpaLink } from "@/components/nav/spa-link";
 import { keepLiveIops } from "@/lib/data/agent-iops";
 import {
   iopsBand,
-  classifyDrive,
+  resolveDriveKind,
   DRIVE_STATS,
   inferDriveBus,
-  busToKind,
 } from "@/lib/data/drive-stats";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
@@ -1507,15 +1506,19 @@ function AgentHostTelemetry({
                   <td className="font-mono">{r.hostName || "—"}</td>
                   <td className="font-mono">{r.driveLetter || "—"}</td>
                   <td>
-                    {r.mediaType || "—"}
                     {(() => {
-                      const bus = inferDriveBus({
+                      const hk = classifyServerHardware({
+                        name: r.hostName,
+                        disks: [{ mediaType: r.mediaType }],
+                      });
+                      const kind = resolveDriveKind({
                         media: r.mediaType,
+                        hostKind: hk,
                         totalIops: r.totalIops,
                         readLatencyMs: r.readLatencyMs,
                         writeLatencyMs: r.writeLatencyMs,
                       });
-                      return bus ? <span className="rpma-drive-chip" data-bus={bus}> {bus}</span> : null;
+                      return <span className="rpma-drive-chip" data-kind={kind}>{DRIVE_STATS[kind].label}</span>;
                     })()}
                   </td>
                   <td>{size}</td>
@@ -2218,9 +2221,11 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
 function IopsPerfMatrix({
   rows,
   host,
+  hostKind,
 }: {
   rows: NonNullable<CustomerDetailPayload["rmm"]>["agentIops"];
   host: string;
+  hostKind: "virtual" | "physical" | "unknown";
 }) {
   const list = rows ?? [];
   if (!list.length) return null;
@@ -2229,7 +2234,8 @@ function IopsPerfMatrix({
       <header>
         <h3>Performance vs expected</h3>
         <p>
-          {host} — graph is scaled to the identified drive type (NVMe / SATA / SAS × SSD or HDD, or Virtual).
+          {host} — {hostKind === "virtual" ? "virtual server" : hostKind === "physical" ? "physical server" : "server"} ·
+          graph scaled to drive type (NVMe / SATA / SAS × SSD or HDD, or Virtual).
         </p>
         <ul className="rpma-drive-legend">
           {(Object.keys(DRIVE_STATS) as (keyof typeof DRIVE_STATS)[])
@@ -2245,14 +2251,20 @@ function IopsPerfMatrix({
       <div className="rpma-iops-matrix-rows">
         {list.map((r, i) => {
           const actual = Number(r.totalIops) || 0;
-          const reported = classifyDrive(r.mediaType);
-          const bus = inferDriveBus({
+          const kind = resolveDriveKind({
             media: r.mediaType,
+            hostKind,
             totalIops: r.totalIops,
             readLatencyMs: r.readLatencyMs,
             writeLatencyMs: r.writeLatencyMs,
           });
-          const kind = busToKind(bus, reported);
+          const bus = inferDriveBus({
+            media: r.mediaType || (kind === "virtual" ? "Virtual" : r.mediaType),
+            totalIops: r.totalIops,
+            readLatencyMs: r.readLatencyMs,
+            writeLatencyMs: r.writeLatencyMs,
+          });
+          const busLabel = bus || (kind === "virtual" ? "Virtual" : DRIVE_STATS[kind].label);
           const stat = DRIVE_STATS[kind];
           const expected = stat.iops;
           const expectedLat = stat.latencyMs;
@@ -2273,13 +2285,11 @@ function IopsPerfMatrix({
               <div className="rpma-iops-k">
                 <strong>{r.driveLetter || "?"}</strong>
                 <span className="rpma-drive-chips">
-                  {reported === "virtual" || /virtual/i.test(r.mediaType || "") ? (
-                    <span className="rpma-drive-chip" data-kind="virtual">Virtual</span>
-                  ) : (
-                    <span className="rpma-drive-chip" data-kind={reported}>{DRIVE_STATS[reported].label}</span>
-                  )}
-                  <span className="rpma-drive-chip" data-bus={bus || "unk"}>
-                    Drive type {bus || "—"}
+                  <span className="rpma-drive-chip" data-kind={kind}>
+                    {DRIVE_STATS[kind].label}
+                  </span>
+                  <span className="rpma-drive-chip" data-bus={busLabel}>
+                    Drive type {busLabel}
                   </span>
                 </span>
               </div>
@@ -2342,6 +2352,19 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
   }
   const focus = sel || hosts[0];
   const hostRows = rows.filter((r) => (r.hostName || "").toLowerCase() === focus.toLowerCase());
+  const devices = data.rmm?.devices ?? [];
+  const matchDev = devices.find((d) => (d.name || "").toLowerCase() === focus.toLowerCase())
+    ?? devices.find((d) => {
+      const a = (d.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const b = focus.toLowerCase().replace(/[^a-z0-9]/g, "");
+      return a && b && (a === b || a.startsWith(b) || b.startsWith(a));
+    });
+  const hostKind = classifyServerHardware({
+    name: focus,
+    osName: matchDev?.osName,
+    deviceType: matchDev?.deviceType,
+    disks: matchDev?.disks ?? hostRows.map((r) => ({ mediaType: r.mediaType })),
+  });
   return (
     <StickyPickSplit
       title="Hosts"
@@ -2349,7 +2372,7 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
       selected={focus}
       onSelect={setSel}
     >
-      <IopsPerfMatrix rows={hostRows} host={focus} />
+      <IopsPerfMatrix rows={hostRows} host={focus} hostKind={hostKind} />
       <AgentHostTelemetry iops={rows} events={[]} focusHost={focus} />
     </StickyPickSplit>
   );

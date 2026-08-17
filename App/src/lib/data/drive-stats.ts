@@ -26,6 +26,29 @@ export function classifyDrive(media: string | null | undefined): DriveKind {
   if (ssd) return "sata-ssd";
   if (hdd) return "sata-hdd";
   if (sata) return "sata-hdd";
+  if (/fixed hard disk/.test(m)) return "sata-hdd";
+  return "unknown";
+}
+
+/** Host-aware kind for IOPS chips when the volume has no media string. */
+export function resolveDriveKind(opts: {
+  media?: string | null;
+  hostKind?: "virtual" | "physical" | "unknown" | null;
+  totalIops?: number | null;
+  readLatencyMs?: number | null;
+  writeLatencyMs?: number | null;
+}): DriveKind {
+  const reported = classifyDrive(opts.media);
+  if (reported !== "unknown") return reported;
+  const bus = inferDriveBus({
+    media: opts.media,
+    totalIops: opts.totalIops,
+    readLatencyMs: opts.readLatencyMs,
+    writeLatencyMs: opts.writeLatencyMs,
+  });
+  if (bus) return busToKind(bus, opts.hostKind === "virtual" ? "virtual" : "unknown");
+  if (opts.hostKind === "virtual") return "virtual";
+  if (opts.hostKind === "physical") return "sata-ssd";
   return "unknown";
 }
 

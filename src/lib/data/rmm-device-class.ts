@@ -119,30 +119,30 @@ export function classifyServerHardware(d: {
 }): ServerHardwareKind {
   const { name, os, type, media, disks } = blobOf(d);
   const compact = name.replace(/[-_\s]/g, "");
+  const blob = `${name} ${os} ${type} ${media}`;
 
   // Hypervisor / host boxes are physical machines
   if (
-    /hvhost|hyperv|esxi|vcenter|proxmox|xenhost/.test(compact) &&
-    !/guest|virtual machine/.test(`${os} ${media}`)
+    /hvhost|hyperv|esxi|vcenter|proxmox|xenhost|bare[- ]?metal/.test(`${compact} ${blob}`)
   ) {
     return "physical";
   }
 
   // Disk media from IOPS / Pulseway is the strongest guest signal
   if (
-    /msft virtual|microsoft virtual|virtual disk|virtual hd|vmware virtual|pvscsi|vmdk|vhdx|\bvhd\b|hyper-v virtual/.test(
+    /msft virtual|microsoft virtual|virtual disk|virtual hd|vmware virtual|pvscsi|vmdk|vhdx|\bvhd\b|hyper-v virtual|\bvirtual\b/.test(
       media,
     )
   ) {
     return "virtual";
   }
-  if (disks.length > 0 && disks.every((x) => /virtual/i.test(x.mediaType || ""))) {
+  if (disks.length > 0 && disks.some((x) => /virtual/i.test(x.mediaType || ""))) {
     return "virtual";
   }
 
   if (
-    /vmware virtual platform|virtual machine|hyper-v guest|kvm|qemu|xen|virtualbox/.test(
-      `${os} ${type} ${media}`,
+    /vmware virtual platform|virtual machine|hyper-v guest|\bkvm\b|\bqemu\b|\bxen\b|virtualbox|hyper-v/.test(
+      blob,
     )
   ) {
     return "virtual";
@@ -150,17 +150,39 @@ export function classifyServerHardware(d: {
 
   if (
     /proliant|poweredge|thinksystem|supermicro|optiplex|precision|idrac|\bilo\b|\bperc\b|\braid\b/.test(
-      `${name} ${os} ${media}`,
+      blob,
     )
   ) {
     return "physical";
   }
 
+  // Lab / named bare metal (RPMINT)
+  if (/^(ironman|thor|hulk|vision|rpmunify|unifyosserver)$/.test(compact)) {
+    return "physical";
+  }
+
   if (
-    disks.some((x) => /ssd|nvme|sas|sata|hdd|solid state|fixed hard/i.test(x.mediaType || "")) &&
+    disks.some((x) => /ssd|nvme|sas|sata|hdd|solid state/i.test(x.mediaType || "")) &&
     !/virtual/i.test(media)
   ) {
     return "physical";
+  }
+
+  // Role names in this estate are Hyper-V guests (SQL / SYSPRO / file / DC / app)
+  if (
+    /ssql|syspro|fsapp|fsdb|prodev|sqlsrv|-sql|[-_]app|[-_]web|[-_]dc|adc01|rds|ts01|prod-0/.test(
+      compact,
+    )
+  ) {
+    return "virtual";
+  }
+  if (/\b(sql|syspro|file|app|web|dc)\b/.test(name) && /server/.test(os)) {
+    return "virtual";
+  }
+
+  // Windows Server without a hypervisor/host name is a guest in this fleet
+  if (/windows server/.test(os) && !/hyper-v|esxi/.test(compact)) {
+    return "virtual";
   }
 
   return "unknown";

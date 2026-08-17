@@ -17,7 +17,8 @@ function W([string]$m) {
 }
 
 function Sql-Lit([string]$s) {
-  if ($null -eq $s -or $s.Trim() -eq "" -or $s -match "^(Unspecified|Unknown|Fixed hard disk)") { return "NULL" }
+  if ($null -eq $s -or $s.Trim() -eq "") { return "NULL" }
+  if ($s -match "^(Unspecified|Unknown)$") { return "NULL" }
   return "N'" + ($s.Replace("'", "''")) + "'"
 }
 function Sql-Dec($v) {
@@ -356,6 +357,16 @@ if (@($ldisks.Values | Where-Object { $_.Media }).Count -eq 0) {
     }
   } catch {}
 }
+
+try {
+  $cs = Get-CimInstance Win32_ComputerSystem -EA SilentlyContinue
+  $csBlob = (([string]$cs.Model) + " " + ([string]$cs.Manufacturer))
+  if ($csBlob -match "Virtual|Hyper-V|VMware|KVM|Xen|VirtualBox") {
+    foreach ($k in @($ldisks.Keys)) {
+      if (-not $ldisks[$k].Media) { $ldisks[$k].Media = "Virtual" }
+    }
+  }
+} catch {}
 
 $snap = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss")
 $rows = New-Object System.Collections.Generic.List[string]

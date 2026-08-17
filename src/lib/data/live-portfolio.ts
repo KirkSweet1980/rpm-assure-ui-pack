@@ -5027,7 +5027,8 @@ WHERE d.CustomerCode = @code
               .input("code", sql.NVarChar(50), code)
               .query(`
 SELECT d.HostName, d.DriveLetter, d.TotalGb, d.FreeGb, d.UsedPct, d.MediaType,
-       d.ReadIops, d.WriteIops, d.TotalIops, d.QueueLen, d.SnapshotUtc
+       d.ReadIops, d.WriteIops, d.TotalIops, d.QueueLen, d.SnapshotUtc,
+       d.ReadLatencyMs, d.WriteLatencyMs
 FROM dbo.Agent_DiskIops AS d WITH (NOLOCK)
 INNER JOIN (
   SELECT CustomerCode, HostName, MAX(SnapshotUtc) AS mx
@@ -5053,6 +5054,8 @@ INNER JOIN (
               TotalIops?: number | null;
               QueueLen?: number | null;
               SnapshotUtc?: Date | string | null;
+              ReadLatencyMs?: number | null;
+              WriteLatencyMs?: number | null;
             }>;
             rmm.agentIops = iopsRows
               .filter((row) => {
@@ -5062,7 +5065,7 @@ INNER JOIN (
               .map((row) => {
               const mediaRaw = row.MediaType ? String(row.MediaType) : "";
               const media =
-                !mediaRaw || /unspecified|unknown|fixed hard disk/i.test(mediaRaw)
+                !mediaRaw || /^(unspecified|unknown)$/i.test(mediaRaw.trim())
                   ? null
                   : mediaRaw;
               return {
@@ -5097,8 +5100,14 @@ INNER JOIN (
                 row.QueueLen != null && Number.isFinite(Number(row.QueueLen))
                   ? Number(row.QueueLen)
                   : null,
-              readLatencyMs: null,
-              writeLatencyMs: null,
+              readLatencyMs:
+                row.ReadLatencyMs != null && Number.isFinite(Number(row.ReadLatencyMs))
+                  ? Number(row.ReadLatencyMs)
+                  : null,
+              writeLatencyMs:
+                row.WriteLatencyMs != null && Number.isFinite(Number(row.WriteLatencyMs))
+                  ? Number(row.WriteLatencyMs)
+                  : null,
               snapshotUtc: toIso(row.SnapshotUtc ?? null),
             };
             });
