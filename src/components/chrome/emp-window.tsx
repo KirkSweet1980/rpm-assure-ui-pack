@@ -56,6 +56,7 @@ export function EmpWindow({
         <div className="rpma-emp-ribbon" role="toolbar">
           {groups.map((g) => (
             <div key={g.id} className={cn("rpma-emp-group", g.on && "is-on")}>
+              <div className="rpma-emp-gtitle">{g.title}</div>
               <div className="rpma-emp-tools">
                 {g.items.map((it) => {
                   const Icon = it.icon;
@@ -68,14 +69,13 @@ export function EmpWindow({
                       title={it.label}
                     >
                       <span className="rpma-emp-ico">
-                        <Icon className="size-4" />
+                        <Icon className="size-5" />
                       </span>
                       <span>{it.label}</span>
                     </SpaLink>
                   );
                 })}
               </div>
-              <div className="rpma-emp-gtitle">{g.title}</div>
             </div>
           ))}
         </div>

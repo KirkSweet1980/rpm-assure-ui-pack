@@ -172,6 +172,7 @@ export function EmpChrome({
               : rest === g.match || rest.startsWith(`${g.match}/`);
           return (
             <div key={g.id} className={cn("rpma-emp-group", on && "is-on")}>
+              <div className="rpma-emp-gtitle">{g.title}</div>
               <div className="rpma-emp-tools">
                 {g.items.map((it) => {
                   const Icon = it.icon;
@@ -187,14 +188,13 @@ export function EmpChrome({
                       title={`${it.label} · ${rag}`}
                     >
                       <span className="rpma-emp-ico">
-                        <Icon className="size-4" />
+                        <Icon className="size-5" />
                       </span>
                       <span>{it.label}</span>
                     </SpaLink>
                   );
                 })}
               </div>
-              <div className="rpma-emp-gtitle">{g.title}</div>
             </div>
           );
         })}

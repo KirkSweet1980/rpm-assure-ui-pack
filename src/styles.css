@@ -2027,8 +2027,24 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 .rpma-emp-group {
   flex: 1 1 0;
   min-width: 0;
-  padding: 5px 4px 3px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 10px 6px 10px;
   border-right: 1px solid #14344a;
+}
+.rpma-emp-gtitle {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: #d7e4ee;
+  line-height: 1.2;
+  white-space: normal;
+  padding: 0 4px 8px;
+  border-bottom: 1px solid color-mix(in srgb, #14b8a6 28%, #14344a);
 }
 .rpma-emp-group.is-on { background: color-mix(in srgb, #14b8a6 8%, transparent); }
 .rpma-emp-tools { display: flex; justify-content: space-evenly; gap: 0; }
@@ -2060,9 +2076,9 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 .rpma-emp-ico {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
 }
 .rpma-emp-tool[data-rag="Green"] .rpma-emp-ico {
   color: #34d399;
@@ -2078,18 +2094,6 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 }
 .rpma-emp-tool[data-rag="Off"] {
   opacity: 0.48;
-}
-.rpma-emp-gtitle {
-  margin-top: 5px;
-  text-align: center;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: none;
-  color: #d7e4ee;
-  line-height: 1.15;
-  white-space: normal;
-  padding: 0 2px;
 }
 .rpma-emp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #07141e; }
 .rpma-emp-body.is-pad {
@@ -2272,7 +2276,10 @@ html.snow .rpma-emp-tool.is-on {
   background: color-mix(in srgb, #1bb8a6 16%, #fff);
 }
 html[data-theme="light"] .rpma-emp-gtitle,
-html.snow .rpma-emp-gtitle { color: #0b1a3a; }
+html.snow .rpma-emp-gtitle {
+  color: #0b1a3a;
+  border-bottom-color: color-mix(in srgb, #1bb8a6 30%, #c5d0da);
+}
 html[data-theme="light"] .rpma-emp-body,
 html.snow .rpma-emp-body { background: #f4f6f8; }
 html[data-theme="light"] .rpma-emp-body.is-pad,
