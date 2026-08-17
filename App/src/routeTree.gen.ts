@@ -24,6 +24,7 @@ import { Route as ApiPatchesRouteImport } from './routes/api/patches'
 import { Route as ApiPortfolioRefreshRouteImport } from './routes/api/portfolio-refresh'
 import { Route as ApiReportPreviewRouteImport } from './routes/api/report-preview'
 import { Route as CustomersCodeRouteImport } from './routes/customers.$code'
+import { Route as DownloadsSplatRouteImport } from './routes/downloads.$'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAboutRouteImport } from './routes/settings.about'
 import { Route as SettingsAgentsRouteImport } from './routes/settings.agents'
@@ -48,6 +49,7 @@ import { Route as SettingsUsersRouteImport } from './routes/settings.users'
 import { Route as ApiAgentPackCodeRouteImport } from './routes/api/agent-pack.$code'
 import { Route as ApiAgentHeartbeatRouteImport } from './routes/api/agent/heartbeat'
 import { Route as ApiAgentOnboardRouteImport } from './routes/api/agent/onboard'
+import { Route as ApiAgentPackRouteImport } from './routes/api/agent/pack'
 import { Route as ApiAgentSyncRouteImport } from './routes/api/agent/sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCronWeeklyReportRouteImport } from './routes/api/cron/weekly-report'
@@ -187,6 +189,11 @@ const CustomersCodeRoute = CustomersCodeRouteImport.update({
   path: '/customers/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DownloadsSplatRoute = DownloadsSplatRouteImport.update({
+  id: '/downloads/$',
+  path: '/downloads/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -305,6 +312,11 @@ const ApiAgentHeartbeatRoute = ApiAgentHeartbeatRouteImport.update({
 const ApiAgentOnboardRoute = ApiAgentOnboardRouteImport.update({
   id: '/api/agent/onboard',
   path: '/api/agent/onboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentPackRoute = ApiAgentPackRouteImport.update({
+  id: '/api/agent/pack',
+  path: '/api/agent/pack',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAgentSyncRoute = ApiAgentSyncRouteImport.update({
@@ -664,6 +676,7 @@ export interface FileRoutesByFullPath {
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/customers/$code': typeof CustomersCodeRouteWithChildren
+  '/downloads/$': typeof DownloadsSplatRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/agents': typeof SettingsAgentsRoute
   '/settings/alerts': typeof SettingsAlertsRoute
@@ -688,6 +701,7 @@ export interface FileRoutesByFullPath {
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
+  '/api/agent/pack': typeof ApiAgentPackRoute
   '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
@@ -766,6 +780,7 @@ export interface FileRoutesByTo {
   '/api/patches': typeof ApiPatchesRoute
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
   '/api/report-preview': typeof ApiReportPreviewRoute
+  '/downloads/$': typeof DownloadsSplatRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/agents': typeof SettingsAgentsRoute
   '/settings/alerts': typeof SettingsAlertsRoute
@@ -790,6 +805,7 @@ export interface FileRoutesByTo {
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
+  '/api/agent/pack': typeof ApiAgentPackRoute
   '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
@@ -864,6 +880,7 @@ export interface FileRoutesById {
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
   '/api/report-preview': typeof ApiReportPreviewRoute
   '/customers/$code': typeof CustomersCodeRouteWithChildren
+  '/downloads/$': typeof DownloadsSplatRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/agents': typeof SettingsAgentsRoute
   '/settings/alerts': typeof SettingsAlertsRoute
@@ -888,6 +905,7 @@ export interface FileRoutesById {
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
+  '/api/agent/pack': typeof ApiAgentPackRoute
   '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
@@ -970,6 +988,7 @@ export interface FileRouteTypes {
     | '/api/portfolio-refresh'
     | '/api/report-preview'
     | '/customers/$code'
+    | '/downloads/$'
     | '/settings/about'
     | '/settings/agents'
     | '/settings/alerts'
@@ -994,6 +1013,7 @@ export interface FileRouteTypes {
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
     | '/api/agent/onboard'
+    | '/api/agent/pack'
     | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
@@ -1072,6 +1092,7 @@ export interface FileRouteTypes {
     | '/api/patches'
     | '/api/portfolio-refresh'
     | '/api/report-preview'
+    | '/downloads/$'
     | '/settings/about'
     | '/settings/agents'
     | '/settings/alerts'
@@ -1096,6 +1117,7 @@ export interface FileRouteTypes {
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
     | '/api/agent/onboard'
+    | '/api/agent/pack'
     | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
@@ -1169,6 +1191,7 @@ export interface FileRouteTypes {
     | '/api/portfolio-refresh'
     | '/api/report-preview'
     | '/customers/$code'
+    | '/downloads/$'
     | '/settings/about'
     | '/settings/agents'
     | '/settings/alerts'
@@ -1193,6 +1216,7 @@ export interface FileRouteTypes {
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
     | '/api/agent/onboard'
+    | '/api/agent/pack'
     | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
@@ -1274,9 +1298,11 @@ export interface RootRouteChildren {
   ApiPortfolioRefreshRoute: typeof ApiPortfolioRefreshRoute
   ApiReportPreviewRoute: typeof ApiReportPreviewRoute
   CustomersCodeRoute: typeof CustomersCodeRouteWithChildren
+  DownloadsSplatRoute: typeof DownloadsSplatRoute
   ApiAgentPackCodeRoute: typeof ApiAgentPackCodeRoute
   ApiAgentHeartbeatRoute: typeof ApiAgentHeartbeatRoute
   ApiAgentOnboardRoute: typeof ApiAgentOnboardRoute
+  ApiAgentPackRoute: typeof ApiAgentPackRoute
   ApiAgentSyncRoute: typeof ApiAgentSyncRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronWeeklyReportRoute: typeof ApiCronWeeklyReportRoute
@@ -1389,6 +1415,13 @@ declare module '@tanstack/react-router' {
       path: '/customers/$code'
       fullPath: '/customers/$code'
       preLoaderRoute: typeof CustomersCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/downloads/$': {
+      id: '/downloads/$'
+      path: '/downloads/$'
+      fullPath: '/downloads/$'
+      preLoaderRoute: typeof DownloadsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -1557,6 +1590,13 @@ declare module '@tanstack/react-router' {
       path: '/api/agent/onboard'
       fullPath: '/api/agent/onboard'
       preLoaderRoute: typeof ApiAgentOnboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/pack': {
+      id: '/api/agent/pack'
+      path: '/api/agent/pack'
+      fullPath: '/api/agent/pack'
+      preLoaderRoute: typeof ApiAgentPackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/agent/sync': {
@@ -2260,9 +2300,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPortfolioRefreshRoute: ApiPortfolioRefreshRoute,
   ApiReportPreviewRoute: ApiReportPreviewRoute,
   CustomersCodeRoute: CustomersCodeRouteWithChildren,
+  DownloadsSplatRoute: DownloadsSplatRoute,
   ApiAgentPackCodeRoute: ApiAgentPackCodeRoute,
   ApiAgentHeartbeatRoute: ApiAgentHeartbeatRoute,
   ApiAgentOnboardRoute: ApiAgentOnboardRoute,
+  ApiAgentPackRoute: ApiAgentPackRoute,
   ApiAgentSyncRoute: ApiAgentSyncRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronWeeklyReportRoute: ApiCronWeeklyReportRoute,
