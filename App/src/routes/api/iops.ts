@@ -175,9 +175,11 @@ BEGIN
     ReadLatencyMs  decimal(18,2) NULL,
     WriteLatencyMs decimal(18,2) NULL,
     SampleSec      decimal(6,2)  NULL,
+    Source         nvarchar(40)  NULL,
     ImportedAt     datetime2(3)  NOT NULL CONSTRAINT DF_Agent_DiskIops_Imp DEFAULT SYSUTCDATETIME(),
     CONSTRAINT PK_Agent_DiskIops PRIMARY KEY (SnapshotUtc, CustomerCode, HostName, DriveLetter)
   );
+END
 IF COL_LENGTH(N'dbo.Agent_DiskIops', N'Source') IS NULL
   ALTER TABLE dbo.Agent_DiskIops ADD Source nvarchar(40) NULL;
 `);
@@ -185,6 +187,8 @@ IF COL_LENGTH(N'dbo.Agent_DiskIops', N'Source') IS NULL
           const snap = new Date();
           snap.setMilliseconds(0);
           let n = 0;
+          const dec = (p: number, s: number, v: number | null) =>
+            v == null ? null : Number(Number(v).toFixed(s));
           for (const v of volumesRaw) {
             const letter = str(v.driveLetter ?? v.letter, 16).toUpperCase();
             if (!letter) continue;
@@ -192,25 +196,24 @@ IF COL_LENGTH(N'dbo.Agent_DiskIops', N'Source') IS NULL
             const write = num(v.writeIops);
             let total = num(v.totalIops);
             if (total == null && (read != null || write != null)) total = (read ?? 0) + (write ?? 0);
-            await pool
-              .request()
-              .input("snap", sql.DateTime2, snap)
-              .input("c", sql.NVarChar(32), customerCode)
-              .input("h", sql.NVarChar(128), hostName)
-              .input("l", sql.NVarChar(16), letter)
-              .input("tot", sql.Decimal(18, 2), num(v.totalGb))
-              .input("free", sql.Decimal(18, 2), num(v.freeGb))
-              .input("used", sql.Decimal(6, 2), num(v.usedPct))
-              .input("media", sql.NVarChar(40), str(v.mediaType, 40) || null)
-              .input("r", sql.Decimal(18, 2), read)
-              .input("w", sql.Decimal(18, 2), write)
-              .input("t", sql.Decimal(18, 2), total)
-              .input("q", sql.Decimal(18, 2), num(v.queueLen))
-              .input("lr", sql.Decimal(18, 2), num(v.readLatencyMs))
-              .input("lw", sql.Decimal(18, 2), num(v.writeLatencyMs))
-              .input("sec", sql.Decimal(6, 2), sampleSec)
-              .input("src", sql.NVarChar(40), source)
-              .query(`
+            const req = pool.request();
+            req.input("snap", sql.DateTime2, snap);
+            req.input("c", sql.NVarChar(32), customerCode);
+            req.input("h", sql.NVarChar(128), hostName);
+            req.input("l", sql.NVarChar(16), letter);
+            req.input("tot", sql.Float, dec(18, 2, num(v.totalGb)));
+            req.input("free", sql.Float, dec(18, 2, num(v.freeGb)));
+            req.input("used", sql.Float, dec(6, 2, num(v.usedPct)));
+            req.input("media", sql.NVarChar(40), str(v.mediaType, 40) || null);
+            req.input("r", sql.Float, dec(18, 2, read));
+            req.input("w", sql.Float, dec(18, 2, write));
+            req.input("t", sql.Float, dec(18, 2, total));
+            req.input("q", sql.Float, dec(18, 2, num(v.queueLen)));
+            req.input("lr", sql.Float, dec(18, 2, num(v.readLatencyMs)));
+            req.input("lw", sql.Float, dec(18, 2, num(v.writeLatencyMs)));
+            req.input("sec", sql.Float, dec(6, 2, sampleSec));
+            req.input("src", sql.NVarChar(40), source);
+            await req.query(`
 MERGE dbo.Agent_DiskIops AS tgt
 USING (SELECT @snap SnapshotUtc, @c CustomerCode, @h HostName, @l DriveLetter) AS src
 ON tgt.SnapshotUtc = src.SnapshotUtc AND tgt.CustomerCode = src.CustomerCode

@@ -125,6 +125,17 @@ if (Test-Path $agentHttps) {
   if ($LASTEXITCODE -eq 0) { W Green 'Agent HTTPS columns OK' } else { W Yellow 'Agent HTTPS columns warned.' }
 }
 
+$iopsSrc = Join-Path $PSScriptRoot '443_Agent_DiskIops_Source.sql'
+if (-not (Test-Path $iopsSrc)) { $iopsSrc = 'C:\RPM-Assure\Sql\central\443_Agent_DiskIops_Source.sql' }
+if (Test-Path $iopsSrc) {
+  W Cyan '--- Agent_DiskIops.Source column ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $iopsSrc @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'Agent_DiskIops.Source OK' } else { W Yellow 'Agent_DiskIops.Source warned.' }
+}
+
 $iopsPurge = Join-Path $PSScriptRoot '441_Purge_Sample_Iops.sql'
 if (-not (Test-Path $iopsPurge)) { $iopsPurge = 'C:\RPM-Assure\Sql\central\441_Purge_Sample_Iops.sql' }
 if (Test-Path $iopsPurge) {
