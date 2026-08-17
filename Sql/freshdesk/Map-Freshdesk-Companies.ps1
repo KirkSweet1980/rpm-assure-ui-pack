@@ -1,5 +1,5 @@
 # Map-Freshdesk-Companies.ps1
-# Pull Freshdesk companies, map ONLY to existing Dim_Customer rows. Never create customers.
+# Map Freshdesk companies ONLY to existing Dim_Customer rows. Never create customers.
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\Sql\freshdesk\Map-Freshdesk-Companies.ps1
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +17,23 @@ function Norm([string]$s) {
   $t = [regex]::Replace($t, '\(pty\)\.?\s*ltd\.?|\bpty\.?\s*ltd\.?|\blimited\b|\binc\.?\b', ' ')
   $t = [regex]::Replace($t, '[^a-z0-9]+', ' ')
   return $t.Trim()
+}
+
+function One-Val($v) {
+  if ($null -eq $v) { return $null }
+  if ($v -is [System.Array]) {
+    if ($v.Length -eq 0) { return $null }
+    return $v[0]
+  }
+  return $v
+}
+
+function To-Int64OrNull($v) {
+  $v = One-Val $v
+  if ($null -eq $v) { return $null }
+  $n = [int64]0
+  if ([int64]::TryParse(([string]$v), [ref]$n)) { return $n }
+  return $null
 }
 
 $aliases = @(
@@ -108,9 +125,9 @@ function Resolve-Code([string]$fdName) {
 $mapped = New-Object System.Collections.Generic.List[object]
 $unmapped = New-Object System.Collections.Generic.List[object]
 foreach ($co in $companies) {
-  $name = [string]$co.name
+  $name = [string](One-Val $co.name)
   $code = Resolve-Code $name
-  $row = [pscustomobject]@{ CompanyId = $co.id; CompanyName = $name; CustomerCode = $code }
+  $row = [pscustomobject]@{ CompanyId = (To-Int64OrNull $co.id); CompanyName = $name; CustomerCode = $code }
   if ($code) { [void]$mapped.Add($row) } else { [void]$unmapped.Add($row) }
 }
 
@@ -125,36 +142,49 @@ if ($mapped.Count -eq 0) {
   return
 }
 
-$sb = New-Object System.Text.StringBuilder
-[void]$sb.AppendLine('SET NOCOUNT ON;')
-foreach ($m in $mapped) {
-  $nm = ([string]$m.CompanyName).Replace("'", "''")
-  $cd = ([string]$m.CustomerCode).Replace("'", "''")
-  $id = $m.CompanyId
-  $idSql = 'NULL'
-  if ($id) { $idSql = [string]$id }
-  [void]$sb.AppendLine(@"
-IF NOT EXISTS (SELECT 1 FROM dbo.Dim_Customer WHERE CustomerCode = N'$cd')
-  PRINT N'skip $nm - $cd not in Dim_Customer';
-ELSE IF EXISTS (SELECT 1 FROM dbo.Dim_Freshdesk_CompanyMap WHERE CompanyName = N'$nm')
-  UPDATE dbo.Dim_Freshdesk_CompanyMap SET CustomerCode = N'$cd', CompanyId = $idSql, Active = 1 WHERE CompanyName = N'$nm';
+$csb = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
+$csb['Data Source'] = $FreshdeskSqlServer
+$csb['Initial Catalog'] = $FreshdeskSqlDatabase
+$csb['Integrated Security'] = $true
+$csb['TrustServerCertificate'] = $true
+$cnn = New-Object System.Data.SqlClient.SqlConnection $csb.ConnectionString
+$cnn.Open()
+try {
+  foreach ($m in $mapped) {
+    $cmd = $cnn.CreateCommand()
+    $cmd.CommandText = @'
+IF NOT EXISTS (SELECT 1 FROM dbo.Dim_Customer WHERE CustomerCode = @code)
+  PRINT N'skip - customer not in Dim_Customer';
+ELSE IF EXISTS (SELECT 1 FROM dbo.Dim_Freshdesk_CompanyMap WHERE CompanyName = @name)
+  UPDATE dbo.Dim_Freshdesk_CompanyMap
+    SET CustomerCode = @code, CompanyId = @id, Active = 1
+    WHERE CompanyName = @name;
 ELSE
   INSERT INTO dbo.Dim_Freshdesk_CompanyMap (CompanyId, CompanyName, CustomerCode, Notes)
-  VALUES ($idSql, N'$nm', N'$cd', N'auto map existing customer only');
-"@)
-}
-[void]$sb.AppendLine(@"
+  VALUES (@id, @name, @code, N'auto map existing customer only');
+'@
+    [void]$cmd.Parameters.Add('@code', [Data.SqlDbType]::NVarChar, 32).Value = [string]$m.CustomerCode
+    [void]$cmd.Parameters.Add('@name', [Data.SqlDbType]::NVarChar, 200).Value = [string]$m.CompanyName
+    $pId = $cmd.Parameters.Add('@id', [Data.SqlDbType]::BigInt)
+    if ($null -eq $m.CompanyId) { $pId.Value = [DBNull]::Value } else { $pId.Value = [int64]$m.CompanyId }
+    [void]$cmd.ExecuteNonQuery()
+  }
+
+  $upd = $cnn.CreateCommand()
+  $upd.CommandText = @'
 UPDATE t SET t.CustomerCode = m.CustomerCode
 FROM dbo.Freshdesk_Tickets t
-JOIN dbo.Dim_Freshdesk_CompanyMap m ON m.Active = 1 AND LTRIM(RTRIM(m.CompanyName)) = LTRIM(RTRIM(t.CompanyName))
+JOIN dbo.Dim_Freshdesk_CompanyMap m ON m.Active = 1
+ AND LTRIM(RTRIM(m.CompanyName)) = LTRIM(RTRIM(t.CompanyName))
 WHERE t.CustomerCode IS NULL OR t.CustomerCode <> m.CustomerCode;
-SELECT CompanyName, CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 ORDER BY CustomerCode;
-"@)
+'@
+  [void]$upd.ExecuteNonQuery()
+} finally {
+  $cnn.Close()
+}
 
-$sqlFile = Join-Path $here ('logs\freshdesk_map_{0}.sql' -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
-New-Item -ItemType Directory -Force -Path (Join-Path $here 'logs') | Out-Null
-[IO.File]::WriteAllText($sqlFile, $sb.ToString())
-& $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $sqlFile
-if ($LASTEXITCODE -ne 0) { throw ('sqlcmd failed ' + $LASTEXITCODE) }
+Write-Host ''
+Write-Host '=== Dim_Freshdesk_CompanyMap now ==='
+& $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -W -s ',' -Q "SET NOCOUNT ON; SELECT CompanyName, CustomerCode, CompanyId FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 ORDER BY CustomerCode;"
 Write-Host ('Mapped=' + $mapped.Count + ' Unmapped=' + $unmapped.Count)
-Write-Host 'Merlog and any other non-Assure company stay unmapped.'
+Write-Host 'Non-Assure companies (e.g. Merlog) stay unmapped.'
