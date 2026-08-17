@@ -2,16 +2,18 @@
 # No wizard. Administrator PowerShell on the customer host.
 # Git clone/pull, install RPMAssure-Edge, HTTPS heartbeat (Let's Encrypt).
 #
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Deploy-Assure-Agent.ps1 `
-#     -CustomerCode AHIC `
-#     -AgentSecret '<same as RPM_ASSURE_IOPS_SECRET on the website>'
+#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Deploy-Assure-Agent.ps1
+#   (prompts for customer code and ingest secret)
+#
+# Or pass them:
+#   ...\Deploy-Assure-Agent.ps1 -CustomerCode AHIC -AgentSecret '...'
 #
 # Optional: -CentralSqlPassword for SYSPRO collect / SQL fallback.
 # Re-run anytime to pull git and refresh the agent (keeps Agent.Config.ps1 and secrets).
 
 param(
-  [Parameter(Mandatory = $true)][string]$CustomerCode,
-  [Parameter(Mandatory = $true)][string]$AgentSecret,
+  [string]$CustomerCode = '',
+  [string]$AgentSecret = '',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
   [string]$RepoUrl = 'https://github.com/KirkSweet1980/rpm-assure-ui-pack.git',
   [string]$Root = 'C:\RPM-Assure',
@@ -25,8 +27,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $CustomerCode) {
+  Write-Host 'Customer codes: AHIC RSR RSS UVSS HYDRA ABLE SBS BHF SIRF RPMINT IB METSI YLJ MEDIPOS VAULT PCNS'
+  $CustomerCode = Read-Host 'Customer code'
+}
 $CustomerCode = $CustomerCode.Trim().ToUpperInvariant()
 if (-not $CustomerCode) { throw 'CustomerCode is required' }
+if (-not $AgentSecret -or $AgentSecret -eq 'PASTE-SECRET-HERE') {
+  $AgentSecret = Read-Host 'Assure ingest secret (website RPM_ASSURE_IOPS_SECRET)'
+}
 if (-not $AgentSecret -or $AgentSecret -eq 'PASTE-SECRET-HERE') { throw 'AgentSecret is required (website RPM_ASSURE_IOPS_SECRET)' }
 
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
