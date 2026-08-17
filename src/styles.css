@@ -3200,3 +3200,53 @@ html.snow .rpma-vision input { background: #f4f6f8; color: #1d2630; border-color
 .rpma-sla-viewer header strong { font-size: 13px; }
 .rpma-sla-viewer iframe { flex: 1; width: 100%; border: 0; background: #fff; }
 .rpma-sla-viewer p { padding: 24px; color: #8aa0b0; }
+
+
+.rpma-rmm-split {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) minmax(0, 3fr);
+  gap: 12px;
+  align-items: start;
+}
+.rpma-rmm-list {
+  position: sticky;
+  top: 0;
+  max-height: calc(100dvh - var(--pc-header-height) - 168px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #143044;
+  border-radius: 12px;
+  background: #081722;
+}
+.rpma-rmm-list-h {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-bottom: 1px solid #143044;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8aa0b0;
+}
+.rpma-rmm-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+}
+.rpma-rmm-detail {
+  min-width: 0;
+  border: 1px solid #143044;
+  border-radius: 12px;
+  background: #07141e;
+  padding: 12px 14px;
+}
+html[data-theme="light"] .rpma-rmm-list,
+html.snow .rpma-rmm-list,
+html[data-theme="light"] .rpma-rmm-detail,
+html.snow .rpma-rmm-detail {
+  background: #f4f7fa;
+  border-color: #c5d0da;
+}

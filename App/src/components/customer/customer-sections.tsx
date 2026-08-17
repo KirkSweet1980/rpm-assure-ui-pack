@@ -1648,13 +1648,12 @@ export function RmmDevicesSection({
             : "No servers on the latest snapshot for this customer. Laptops and PCs appear under Workstations."}
         </p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-5">
-          {/* List */}
-          <div className="overflow-hidden rounded-xl border border-border lg:col-span-2">
-            <div className="border-b border-border bg-muted/40 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-muted">
+        <div className="rpma-rmm-split">
+          <aside className="rpma-rmm-list">
+            <div className="rpma-rmm-list-h">
               {estateLabel} ({devices.length})
             </div>
-            <ul className="max-h-[28rem] divide-y divide-border/70 overflow-y-auto">
+            <ul>
               {devices.map((d) => {
                 const active = d.deviceId === selectedId;
                 return (
@@ -1705,10 +1704,9 @@ export function RmmDevicesSection({
                 );
               })}
             </ul>
-          </div>
+          </aside>
 
-          {/* Detail */}
-          <div className="rounded-xl border border-border bg-surface p-4 lg:col-span-3">
+          <div className="rpma-rmm-detail">
             {!selected ? (
               <p className="text-sm text-muted">Select a device to view stats.</p>
             ) : (
