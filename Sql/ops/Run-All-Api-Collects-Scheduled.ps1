@@ -181,10 +181,10 @@ if ($restamp) {
       W ("RESTAMP fail " + $_.Exception.Message)
     }
   } else {
-    W "RESTAMP skip — sqlcmd not found"
+    W "RESTAMP skip - sqlcmd not found"
   }
 } else {
-  W "RESTAMP skip — 440_Restamp_Cove_Epp_CustomerCodes.sql not found"
+  W "RESTAMP skip - 440_Restamp_Cove_Epp_CustomerCodes.sql not found"
 }
 
 $state.running = $false
