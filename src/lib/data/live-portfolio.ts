@@ -5533,6 +5533,43 @@ ORDER BY
         message: String(r.MessageText ?? ""),
       }));
       rmm.windowsEvents = windowsEvents;
+      if (!windowsEvents.length) {
+        try {
+          const nReq = pool.request().input("code", sql.NVarChar(50), code);
+          hosts.forEach((h, i) => nReq.input(`nh${i}`, sql.NVarChar(200), h));
+          const nameOr = hosts.length
+            ? `OR UPPER(LTRIM(RTRIM(DeviceName))) IN (${hosts.map((_, i) => `UPPER(@nh${i})`).join(", ")})`
+            : "";
+          const nRes = await nReq.query(`
+SELECT TOP 2000 DeviceName, RaisedAt, Severity, Title, Message
+FROM dbo.Pulseway_Notifications WITH (NOLOCK)
+WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Notifications WITH (NOLOCK))
+  AND (
+    UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(@code)
+    ${nameOr}
+  )
+ORDER BY
+  CASE UPPER(ISNULL(Severity,N'')) WHEN N'CRITICAL' THEN 0 WHEN N'ELEVATED' THEN 1 ELSE 2 END,
+  RaisedAt DESC`);
+          rmm.windowsEvents = (nRes.recordset ?? []).map((r: {
+            DeviceName?: string;
+            RaisedAt?: Date | string | null;
+            Severity?: string;
+            Title?: string;
+            Message?: string;
+          }) => ({
+            hostName: String(r.DeviceName ?? ""),
+            timeCreatedUtc: toIso(r.RaisedAt ?? null),
+            logName: "RPM RMM",
+            eventId: 0,
+            levelName: String(r.Severity ?? "Error"),
+            providerName: "RPM RMM",
+            message: [r.Title, r.Message].filter(Boolean).join(" — "),
+          }));
+        } catch {
+          /* notifications optional */
+        }
+      }
       for (const ev of windowsEvents) {
         const crit = ev.levelName.toLowerCase() === "critical";
         rmm.alerts.push({

@@ -2221,7 +2221,7 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
   const fromAlerts = (data.rmm?.alerts ?? [])
     .filter((a) => a.source !== "agent")
     .map((a) => ({
-      hostName: a.deviceName || "",
+      hostName: a.deviceName || a.deviceId || "Estate",
       timeCreatedUtc: a.raisedAt,
       logName: "RPM RMM",
       eventId: 0,
@@ -2229,31 +2229,52 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
       providerName: "RPM RMM",
       message: [a.title, a.message].filter(Boolean).join(" — "),
     }));
-  const events = [...agent, ...fromAlerts];
-  const hosts = [...new Set(events.map((e) => e.hostName).filter(Boolean))];
+  const seen = new Set<string>();
+  const events = [...agent, ...fromAlerts].filter((e) => {
+    const k = `${e.hostName}|${e.timeCreatedUtc}|${e.message}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  const deviceHosts = [...new Set((data.rmm?.devices ?? []).map((d) => d.name).filter(Boolean))] as string[];
+  const hosts = [...new Set([...events.map((e) => e.hostName).filter(Boolean), ...deviceHosts])];
   const [sel, setSel] = useState(hosts[0] ?? "");
   return (
     <div className="space-y-3">
       <ChartCaption
         title="RMM | Infrastructure Management · Event Logs"
-        why="Windows Critical/Error from Assure agents (7 days) plus RMM notifications for this tenant. Empty list means none on file — not No Cover."
+        why="Windows Critical/Error from Assure agents plus RPM RMM notifications for this tenant. A quiet host is not No Cover."
       />
-      {events.length === 0 ? (
-        <p className="text-sm text-muted">No event log rows for this customer yet.</p>
+      {hosts.length === 0 ? (
+        <p className="text-sm text-muted">No hosts on the latest RMM snapshot for this customer.</p>
       ) : (
         <StickyPickSplit
           title="Hosts"
-          items={hosts.map((h) => ({ id: h, label: h, tone: "amber" as const }))}
+          items={hosts.map((h) => {
+            const n = events.filter((e) => (e.hostName || "").toLowerCase() === h.toLowerCase()).length;
+            return {
+              id: h,
+              label: h,
+              meta: n ? `${n} row(s)` : "quiet",
+              tone: n ? "amber" : "off",
+            };
+          })}
           selected={sel || hosts[0]}
           onSelect={setSel}
         >
-          <AgentHostTelemetry iops={[]} events={events} focusHost={sel || hosts[0]} />
+          {events.some((e) => (e.hostName || "").toLowerCase() === (sel || hosts[0]).toLowerCase()) ? (
+            <AgentHostTelemetry iops={[]} events={events} focusHost={sel || hosts[0]} />
+          ) : (
+            <p className="text-sm text-muted">
+              {sel || hosts[0]} is quiet — no Critical/Error or RMM notification on the last collect.
+            </p>
+          )}
         </StickyPickSplit>
       )}
     </div>
   );
 }
-
+  const agent = data.rmm?.windowsEvents ?? [];
 export function RmmMappingSection({ data }: { data: CustomerDetailPayload }) {
   const rmm = data.rmm;
   const maps = rmm?.mapping ?? [];
