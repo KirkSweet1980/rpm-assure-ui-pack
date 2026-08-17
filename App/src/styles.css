@@ -500,6 +500,39 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
 html[data-theme="dark"] .rpma-context-bar,
 html.dark .rpma-context-bar {
   background: color-mix(in srgb, var(--color-surface) 88%, #000);
+  color: #e8edf3;
+}
+html[data-theme="dark"] .rpma-crumb-a,
+html.dark .rpma-crumb-a {
+  color: #d7dee7;
+}
+html[data-theme="dark"] .rpma-crumb-now,
+html.dark .rpma-crumb-now {
+  color: #f4f7fb;
+}
+html[data-theme="dark"] .rpma-crumb-arr,
+html[data-theme="dark"] .rpma-crumb-muted,
+html.dark .rpma-crumb-arr,
+html.dark .rpma-crumb-muted {
+  color: #a8b3c0;
+}
+html[data-theme="dark"] .rpma-context-bar,
+html.dark .rpma-context-bar {
+  color: #e8edf3;
+}
+html[data-theme="dark"] .rpma-context-bar h2,
+html.dark .rpma-context-bar h2 {
+  color: #f4f7fb;
+}
+html[data-theme="dark"] .rpma-context-bar .text-muted,
+html.dark .rpma-context-bar .text-muted {
+  color: #c5cdd6;
+}
+html[data-theme="dark"] .rpma-context-bar button,
+html[data-theme="dark"] .rpma-context-bar a,
+html.dark .rpma-context-bar button,
+html.dark .rpma-context-bar a {
+  color: #e8edf3;
 }
 .rpma-d3-detail {
   display: flex;
