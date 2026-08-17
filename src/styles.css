@@ -2164,6 +2164,6 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 .rpma-est-compact { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 860px) {
   .rpma-emp-title em { display: none; }
-  .rpma-emp-tool { min-width: 52px; font-size: 9px; }
+  .rpma-emp-tool { font-size: 8px; }
 }
 
