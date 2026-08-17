@@ -1731,14 +1731,7 @@ export function RmmDevicesSection({
                         {" · "}
                         {d.ipAddress ?? "no IP"}
                       </span>
-                      {mode === "servers" && d.diskIopsMax != null ? (
-                        <span className="font-mono text-[10px] text-subtle">
-                          IOPS {Math.round(d.diskIopsMax).toLocaleString("en-ZA")}
-                          {d.isOnline === false && d.offlineHoursCurrent != null
-                            ? ` · offline ${formatOfflineHours(d.offlineHoursCurrent)}`
-                            : ""}
-                        </span>
-                      ) : mode === "servers" && d.isOnline === false && d.offlineHoursCurrent != null ? (
+                      {mode === "servers" && d.isOnline === false && d.offlineHoursCurrent != null ? (
                         <span className="font-mono text-[10px] text-subtle">
                           Offline {formatOfflineHours(d.offlineHoursCurrent)}
                         </span>
@@ -1876,15 +1869,6 @@ export function RmmDevicesSection({
                         ? "amber"
                         : "default"
                     }
-                  />
-                  <StatCard
-                    label="Disk IOPS (peak)"
-                    value={
-                      selected.diskIopsMax != null
-                        ? Math.round(selected.diskIopsMax).toLocaleString("en-ZA")
-                        : "Not reported"
-                    }
-                    hint="From the Assure Edge Agent on this host. Pulseway API does not send IOPS."
                   />
                   <StatTile
                     label="CPU usage"
