@@ -87,10 +87,7 @@ export function HeadsUpDisplay({
   const sqlWhen = formatSastDateTime(generatedAt);
 
   return (
-    <section className="rpma-hud" aria-label="Heads Up Display">
-      <div className="rpma-hud-head">
-        <h2>Heads Up Display</h2>
-      </div>
+    <section className="rpma-hud" aria-label="System clock and SQL status">
       <div className="rpma-hud-grid">
         <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />
         <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} tip="Live clock in SAST. Collect age and SLA windows are measured against this." />
