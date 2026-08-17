@@ -95,6 +95,13 @@ foreach ($c in $customers) { $valid[$c.Code.ToUpperInvariant()] = $true }
 $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${FreshdeskApiKey}:X"))
 $hdr = @{ Authorization = "Basic $b64"; 'Content-Type' = 'application/json'; Accept = 'application/json' }
 
+try {
+  $me = Invoke-RestMethod -Uri "https://$FreshdeskDomain/api/v2/agents/me" -Headers $hdr -TimeoutSec 30
+  Write-Host ('API key agent=' + $me.contact.name + ' scope=' + $me.ticket_scope)
+} catch {
+  Write-Host ('API key agent=UNKNOWN ' + $_.Exception.Message)
+}
+
 $companies = New-Object System.Collections.Generic.List[object]
 $page = 1
 do {
@@ -106,6 +113,9 @@ do {
   $page++
 } while ($page -le 50 -and $batch.Count -eq 100)
 Write-Host ('Freshdesk companies=' + $companies.Count)
+if ($companies.Count -lt 10) {
+  Write-Host 'WARN: expected ~79 companies (Janine). This key is scoped or config was overwritten. Check Freshdesk.Config.ps1'
+}
 
 function Resolve-Code([string]$fdName, $fdId) {
   $idKey = [string](One-Val $fdId)
@@ -150,19 +160,18 @@ $mapped | Format-Table CompanyName, CustomerCode, CompanyId -AutoSize
 Write-Host '=== UNMAPPED (left out on purpose) ==='
 $unmapped | Format-Table CompanyName, CompanyId -AutoSize
 
-Write-Host '=== SEARCH missing Assure names in Freshdesk ==='
+Write-Host '=== SEARCH missing Assure names (autocomplete) ==='
 $wanted = @(
-  @{ q = 'Redsun'; c = 'RSR' },
-  @{ q = 'Hydra'; c = 'HYDRA' },
-  @{ q = 'Able Tracer'; c = 'ABLE' },
-  @{ q = 'Board of Health'; c = 'BHF' },
+  @{ q = 'Redsun Raisins'; c = 'RSR' },
+  @{ q = 'Hydrasales'; c = 'HYDRA' },
+  @{ q = 'Able Tracers'; c = 'ABLE' },
+  @{ q = 'Board of Healthcare Funders'; c = 'BHF' },
   @{ q = 'Sir Fruit'; c = 'SIRF' },
-  @{ q = 'Metsi'; c = 'METSI' },
-  @{ q = 'YLJ'; c = 'YLJ' },
+  @{ q = 'Metsiwater'; c = 'METSI' },
+  @{ q = 'YLJ Health'; c = 'YLJ' },
   @{ q = 'ORATouch'; c = 'YLJ' },
   @{ q = 'Vault-Tech'; c = 'VAULT' },
-  @{ q = 'Vault Tech'; c = 'VAULT' },
-  @{ q = 'Simply Bright'; c = 'SBS' }
+  @{ q = 'Simply Bright Solutions'; c = 'SBS' }
 )
 foreach ($w in $wanted) {
   $already = @($mapped | Where-Object { $_.CustomerCode -eq $w.c })
@@ -170,26 +179,28 @@ foreach ($w in $wanted) {
     Write-Host ('HAVE  ' + $w.c + ' via ' + (($already | ForEach-Object { $_.CompanyName }) -join ', '))
     continue
   }
-  $qs = 'name:''' + $w.q + ''''
-  $url = "https://$FreshdeskDomain/api/v2/search/companies?query=" + [uri]::EscapeDataString($qs)
+  $url = "https://$FreshdeskDomain/api/v2/companies/autocomplete?name=" + [uri]::EscapeDataString($w.q)
   try {
     $sr = Invoke-RestMethod -Uri $url -Headers $hdr -TimeoutSec 30
-    $hits = @($sr.results)
-    if (-not $hits -and $sr) { $hits = @($sr) | Where-Object { $_.name } }
+    $hits = @()
+    if ($sr.companies) { $hits = @($sr.companies) }
+    elseif ($sr.results) { $hits = @($sr.results) }
+    else { $hits = @($sr) | Where-Object { $_.name } }
     if ($hits.Count -eq 0) {
-      Write-Host ('MISS  ' + $w.c + ' search="' + $w.q + '"')
+      Write-Host ('MISS  ' + $w.c + ' q="' + $w.q + '"')
     } else {
       foreach ($h in $hits) {
-        Write-Host ('HIT   ' + $w.c + ' -> ' + $h.name + ' id=' + $h.id)
-        $code = Resolve-Code ([string]$h.name) $h.id
+        $hn = [string](One-Val $h.name)
+        Write-Host ('HIT   ' + $w.c + ' -> ' + $hn + ' id=' + $h.id)
+        $code = Resolve-Code $hn $h.id
         if (-not $code) { $code = $w.c }
         if ($valid.ContainsKey($code.ToUpperInvariant())) {
           $dup = $false
-          foreach ($m in $mapped) { if ($m.CompanyName -eq $h.name) { $dup = $true } }
+          foreach ($m in $mapped) { if ($m.CompanyName -eq $hn) { $dup = $true } }
           if (-not $dup) {
             [void]$mapped.Add([pscustomobject]@{
               CompanyId = (To-Int64OrNull $h.id)
-              CompanyName = [string]$h.name
+              CompanyName = $hn
               CustomerCode = $code
             })
           }
