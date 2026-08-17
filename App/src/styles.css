@@ -115,12 +115,14 @@ body {
 .rpma-glass .text-lg, .rpma-exco .text-lg, .rpma-eco-visuals .text-lg { font-size: 14px !important; overflow-wrap: anywhere; }
 
 .dk-shell { display: flex; flex-direction: column; min-height: 100dvh; padding-top: var(--pc-header-height); background: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-sans); --rpma-hud-h: 3.4rem; }
-.dk-brand { height: var(--pc-header-height); display: flex; align-items: center; gap: 12px; padding: 0 20px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-brand { height: var(--pc-header-height); display: flex; align-items: center; gap: 8px; padding: 0 20px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-rev { flex: 0 0 auto; display: block; }
 .dk-brand-mark { display: none; }
-.dk-brand-text { display: flex; flex-direction: column; line-height: 1.15; position: relative; padding-bottom: 7px; }
+.dk-brand-text { display: flex; flex-direction: column; line-height: 1.05; position: relative; padding-bottom: 7px; }
 .dk-brand-text strong {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: transparent;
   background: var(--dk-brand-1);
   -webkit-background-clip: text;

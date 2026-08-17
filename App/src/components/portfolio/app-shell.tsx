@@ -23,6 +23,7 @@ import {
   type MasterCustomer,
 } from "@/lib/nav/customer-list-context";
 import { inferCustomerCover } from "@/lib/data/cover";
+import { RpmRevCounter } from "@/components/brand/rpm-rev-counter";
 import { cn } from "@/lib/utils";
 
 /**
@@ -219,7 +220,8 @@ export function AppShell({
               <span />
               <span />
             </button>
-            <Link to="/" className="dk-brand">
+            <Link to="/" className="dk-brand" aria-label="RPM Assure home">
+              <RpmRevCounter className="dk-rev" />
               <span className="dk-brand-text">
                 <strong>RPM Assure</strong>
               </span>
