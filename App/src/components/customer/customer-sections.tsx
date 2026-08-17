@@ -819,7 +819,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   const rmm = data.rmm;
   const s = rmm?.summary;
   const cover = effectiveCover(data);
-  if (!cover.rmm) {
+  if (!cover.rmm && !(rmm?.devices ?? []).length) {
     return (
       <NoCoverPanel
         service="RPM Remote Management · Server Patch Management"
@@ -930,7 +930,15 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   const cutoffMs = Date.now() - 30 * 86400000;
   const namedForView = (mode: "installed" | "missing" | "recent" | "all", deviceId: string | null) => {
     let rows = namedAll;
-    if (deviceId) rows = rows.filter((p) => p.deviceId === deviceId);
+    if (deviceId) {
+      const host = devices.find((d) => d.deviceId === deviceId);
+      const nm = (host?.name || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      rows = rows.filter(
+        (p) =>
+          p.deviceId === deviceId ||
+          (nm && (p.deviceName || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === nm),
+      );
+    }
     if (mode === "installed") rows = rows.filter((p) => p.status === "installed");
     else if (mode === "missing") rows = rows.filter((p) => p.status === "missing" || p.status === "pending");
     else if (mode === "recent") {

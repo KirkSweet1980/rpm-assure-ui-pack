@@ -5248,76 +5248,8 @@ INNER JOIN (
         rmm.summary.patchDevicesReporting = pDev || null;
       }
 
-      try {
-        const pr = await pool
-          .request()
-          .input("code", sql.NVarChar(50), code)
-          .query(`
-          SELECT TOP 8000
-            DeviceId, DeviceName, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode
-          FROM dbo.Pulseway_DevicePatches WITH (NOLOCK)
-          WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_DevicePatches WITH (NOLOCK))
-            AND (
-              CustomerCode = @code
-              OR DeviceId IN (
-                SELECT d.DeviceId FROM dbo.Pulseway_Devices d WITH (NOLOCK)
-                WHERE d.CustomerCode = @code
-                  AND d.SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
-              )
-            )
-          ORDER BY
-            CASE WHEN Status = N'installed' THEN 0 WHEN Status = N'missing' THEN 1 ELSE 2 END,
-            InstalledUtc DESC, Title`);
-        const items = (pr.recordset as Array<Record<string, unknown>>).map((r) => {
-          const st = String(r.Status ?? "unknown").toLowerCase();
-          const status =
-            st === "installed" || st === "missing" || st === "pending" ? st : "unknown";
-          return {
-            deviceId: String(r.DeviceId ?? ""),
-            deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
-            title: String(r.Title ?? ""),
-            kb: r.KbArticle != null ? String(r.KbArticle) : null,
-            status: status as "installed" | "missing" | "pending" | "unknown",
-            installedAt: r.InstalledUtc ? new Date(r.InstalledUtc as string).toISOString() : null,
-            classification: r.Classification != null ? String(r.Classification) : null,
-          };
-        });
-        rmm.patches = items;
-        const byDev = new Map<string, typeof items>();
-        const byName = new Map<string, typeof items>();
-        const normH = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
-        for (const it of items) {
-          const list = byDev.get(it.deviceId) ?? [];
-          list.push(it);
-          byDev.set(it.deviceId, list);
-          const nm = normH(it.deviceName || "");
-          if (nm) {
-            const nl = byName.get(nm) ?? [];
-            nl.push(it);
-            byName.set(nm, nl);
-          }
-        }
-        for (const d of rmm.devices) {
-          const fromId = byDev.get(d.deviceId) ?? [];
-          const fromName = byName.get(normH(d.name || "")) ?? [];
-          const seen = new Set<string>();
-          const merged = [];
-          for (const p of fromId.concat(fromName)) {
-            const k = `${p.title}|${p.status}`;
-            if (seen.has(k)) continue;
-            seen.add(k);
-            merged.push(p);
-          }
-          d.patches = merged;
-        }
-        const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
-        const recent = items.filter(
-          (p) => p.status === "installed" && p.installedAt && new Date(p.installedAt).getTime() >= cutoff,
-        );
-        if (rmm.summary) rmm.summary.patchInstalledRecent = recent.length;
-      } catch {
-        rmm.patches = [];
-      }
+      // Named patches loaded after ownership filter (below)
+      rmm.patches = rmm.patches ?? [];
     } catch {
       rmm.devices = [];
     }
@@ -5325,6 +5257,118 @@ INNER JOIN (
     rmm.devices = rmm.devices.filter((d) =>
       rmmDeviceBelongsToCustomer(code, d.name, null),
     );
+
+    try {
+      const normH = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const ids = [...new Set(rmm.devices.map((d) => d.deviceId).filter(Boolean))].slice(0, 200);
+      const names = [...new Set(rmm.devices.map((d) => String(d.name ?? "").trim()).filter(Boolean))].slice(0, 200);
+      const tables = ["dbo.Pulseway_DevicePatches", "dbo.[RMM patch list]"];
+      let items: NonNullable<typeof rmm.patches> = [];
+      for (const tbl of tables) {
+        try {
+          const req = pool.request().input("code", sql.NVarChar(50), code);
+          ids.forEach((id, i) => req.input(`pid${i}`, sql.NVarChar(100), id));
+          names.forEach((n, i) => req.input(`pn${i}`, sql.NVarChar(200), n));
+          const own = [
+            "UPPER(LTRIM(RTRIM(CustomerCode))) = UPPER(@code)",
+            ids.length ? `DeviceId IN (${ids.map((_, i) => `@pid${i}`).join(", ")})` : "",
+            names.length ? `UPPER(LTRIM(RTRIM(DeviceName))) IN (${names.map((_, i) => `UPPER(@pn${i})`).join(", ")})` : "",
+          ]
+            .filter(Boolean)
+            .join(" OR ");
+          const pr = await req.query(`
+SELECT TOP 8000
+  DeviceId, DeviceName, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode
+FROM ${tbl} WITH (NOLOCK)
+WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM ${tbl} WITH (NOLOCK))
+  AND (${own})
+ORDER BY
+  CASE WHEN Status = N'installed' THEN 0 WHEN Status = N'missing' THEN 1 ELSE 2 END,
+  InstalledUtc DESC, Title`);
+          items = (pr.recordset as Array<Record<string, unknown>>).map((r) => {
+            const st = String(r.Status ?? "unknown").toLowerCase();
+            const status =
+              st === "installed" || st === "missing" || st === "pending" ? st : "unknown";
+            return {
+              deviceId: String(r.DeviceId ?? ""),
+              deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
+              title: String(r.Title ?? ""),
+              kb: r.KbArticle != null ? String(r.KbArticle) : null,
+              status: status as "installed" | "missing" | "pending" | "unknown",
+              installedAt: r.InstalledUtc ? new Date(r.InstalledUtc as string).toISOString() : null,
+              classification: r.Classification != null ? String(r.Classification) : null,
+            };
+          });
+          if (items.length) break;
+        } catch {
+          /* try next table */
+        }
+      }
+      items = items.filter(
+        (p) =>
+          rmm.devices.some(
+            (d) =>
+              (p.deviceId && d.deviceId === p.deviceId) ||
+              (p.deviceName && normH(d.name || "") === normH(p.deviceName)),
+          ) || rmmDeviceBelongsToCustomer(code, p.deviceName, null),
+      );
+      rmm.patches = items;
+      const byDev = new Map<string, typeof items>();
+      const byName = new Map<string, typeof items>();
+      for (const it of items) {
+        if (it.deviceId) {
+          const list = byDev.get(it.deviceId) ?? [];
+          list.push(it);
+          byDev.set(it.deviceId, list);
+        }
+        const nm = normH(it.deviceName || "");
+        if (nm) {
+          const nl = byName.get(nm) ?? [];
+          nl.push(it);
+          byName.set(nm, nl);
+        }
+      }
+      for (const d of rmm.devices) {
+        const fromId = byDev.get(d.deviceId) ?? [];
+        const fromName = byName.get(normH(d.name || "")) ?? [];
+        const seen = new Set<string>();
+        const merged = [];
+        for (const p of fromId.concat(fromName)) {
+          const k = `${p.title}|${p.status}`;
+          if (seen.has(k)) continue;
+          seen.add(k);
+          merged.push(p);
+        }
+        d.patches = merged;
+        if (merged.length && d.patchMissing == null && d.patchInstalled == null) {
+          d.patchInstalled = merged.filter((p) => p.status === "installed").length;
+          d.patchMissing = merged.filter((p) => p.status === "missing").length;
+          d.patchPending = merged.filter((p) => p.status === "pending").length;
+        }
+      }
+      const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+      const recent = items.filter(
+        (p) => p.status === "installed" && p.installedAt && new Date(p.installedAt).getTime() >= cutoff,
+      );
+      if (rmm.summary) rmm.summary.patchInstalledRecent = recent.length;
+      if (rmm.summary) {
+        let pInst = 0, pMiss = 0, pPend = 0, pDev = 0;
+        for (const d of rmm.devices) {
+          if (d.patchInstalled != null || d.patchMissing != null || d.patchPending != null) {
+            pDev++;
+            pInst += d.patchInstalled ?? 0;
+            pMiss += d.patchMissing ?? 0;
+            pPend += d.patchPending ?? 0;
+          }
+        }
+        rmm.summary.patchInstalled = pDev ? pInst : rmm.summary.patchInstalled;
+        rmm.summary.patchMissing = pDev ? pMiss : rmm.summary.patchMissing;
+        rmm.summary.patchPending = pDev ? pPend : rmm.summary.patchPending;
+        rmm.summary.patchDevicesReporting = pDev || rmm.summary.patchDevicesReporting;
+      }
+    } catch {
+      rmm.patches = rmm.patches ?? [];
+    }
 
     try {
       const ids = rmm.devices.map((d) => d.deviceId).filter(Boolean);
