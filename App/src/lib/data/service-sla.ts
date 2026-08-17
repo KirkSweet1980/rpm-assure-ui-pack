@@ -13,6 +13,8 @@ import {
   type IndustryPillarKey,
 } from "./sla-metrics";
 import type { CustomerDetailPayload } from "./types";
+import { slaKpiFor } from "./sla-kpis";
+export { withSlaKpis, type SlaKpiOverrides } from "./sla-kpis";
 
 export type ServiceSlaLine = {
   id: string;
@@ -61,12 +63,14 @@ function line(
   extra?: { excluded?: boolean; badge?: string },
 ): ServiceSlaLine {
   const def = INDUSTRY_SLA_LINES[pillar].find((d) => d.id === defId);
-  const targetPct = def?.targetPct ?? null;
+  const custom = slaKpiFor(pillar);
+  const targetPct = custom ?? def?.targetPct ?? null;
   const excluded = Boolean(extra?.excluded);
   return {
     id: defId,
     metric: def?.metric ?? defId,
-    targetLabel: def?.targetLabel ?? "—",
+    targetLabel:
+      custom != null ? `Custom SLA ${custom}%` : def?.targetLabel ?? "—",
     targetPct,
     actualPct,
     actualLabel,
@@ -89,6 +93,12 @@ function overallOf(lines: ServiceSlaLine[]): number | null {
   const scored = lines.filter((l) => l.measured && l.actualPct != null && l.contractual);
   if (!scored.length) return null;
   return clamp(scored.reduce((s, l) => s + (l.actualPct as number), 0) / scored.length);
+}
+
+function stamp(pack: ServiceSlaPack): ServiceSlaPack {
+  const c = slaKpiFor(pack.pillar);
+  if (c != null) pack.headline = `Custom SLA ${c}% · this customer, on-cover only`;
+  return pack;
 }
 
 export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
@@ -155,7 +165,7 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     line("rmm-disk", "rmm", diskPct, diskLabel, slaCover && diskPct != null),
   ];
 
-  return {
+  return stamp({
     pillar: "rmm",
     title: INDUSTRY_MEASURES.rmm.label,
     covered: slaCover,
@@ -198,7 +208,7 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
     line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
   ];
 
-  return {
+  return stamp({
     pillar: "cove",
     title: INDUSTRY_MEASURES.cove.label,
     covered: slaCover,
@@ -261,7 +271,7 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     line("epp-open", "epp", openPct, openLabel, slaCover && openPct != null),
   ];
 
-  return {
+  return stamp({
     pillar: "epp",
     title: INDUSTRY_MEASURES.epp.label,
     covered: slaCover,
@@ -292,7 +302,7 @@ export function buildSysproServiceSla(data: CustomerDetailPayload): ServiceSlaPa
     line("syspro-finsight", "syspro", finPct, `${oob} FinSight OOB line(s)`, cover && finPct != null),
     line("syspro-collect", "syspro", collectPct, collectLabel, cover && collectPct != null),
   ];
-  return {
+  return stamp({
     pillar: "syspro",
     title: INDUSTRY_MEASURES.syspro.label,
     covered: cover,
@@ -338,7 +348,7 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
       slaCover && seats != null,
     ),
   ];
-  return {
+  return stamp({
     pillar: "csp",
     title: INDUSTRY_MEASURES.csp.label,
     covered: slaCover,
@@ -376,7 +386,7 @@ export function buildTicketsServiceSla(data: CustomerDetailPayload): ServiceSlaP
     ),
     line("tickets-open", "tickets", openPct, `${pack.open} open now`, cover && openPct != null),
   ];
-  return {
+  return stamp({
     pillar: "tickets",
     title: INDUSTRY_MEASURES.tickets.label,
     covered: cover && rows.length > 0,

@@ -1,6 +1,23 @@
 import type { CustomerCover } from "@/lib/data/cover";
 import type { IndustryPillarKey } from "@/lib/data/sla-metrics";
-import type { SlaKpiOverrides } from "@/lib/data/service-sla";
+
+export type SlaKpiOverrides = Partial<Record<IndustryPillarKey, number>>;
+
+let kpiOverrides: SlaKpiOverrides | undefined;
+
+export function withSlaKpis<T>(kpis: SlaKpiOverrides | undefined, fn: () => T): T {
+  const prev = kpiOverrides;
+  kpiOverrides = kpis;
+  try {
+    return fn();
+  } finally {
+    kpiOverrides = prev;
+  }
+}
+
+export function slaKpiFor(pillar: IndustryPillarKey): number | undefined {
+  return kpiOverrides?.[pillar];
+}
 
 export function kpisOnCover(
   cover: CustomerCover,
