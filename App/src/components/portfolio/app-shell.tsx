@@ -208,35 +208,37 @@ export function AppShell({
       <div className={cn("dk-shell rpma-d3-shell is-topnav", menuOpen && "is-menu-open")}>
         <header className="dk-header dk-header-one">
           <div className="dk-header-row">
-            <button
-              type="button"
-              className={cn("dk-burger", menuOpen && "is-open")}
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={menuOpen}
-              aria-controls="rpma-top-menu"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
+            <div className="dk-header-left">
+              <button
+                type="button"
+                className={cn("dk-burger", menuOpen && "is-open")}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+                aria-controls="rpma-top-menu"
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+              <div
+                id="rpma-top-menu"
+                className={cn("dk-header-nav", !menuOpen && "is-collapsed")}
+              >
+                <DkSidebarNav
+                  pathname={pathname}
+                  customers={switcherCustomers}
+                  currentCode={currentCustomerCode}
+                  layout="top"
+                />
+              </div>
+            </div>
             <Link to="/" className="dk-brand" aria-label="RPM Assure home">
               <RpmRevCounter className="dk-rev" />
               <span className="dk-brand-text">
                 <strong>RPM Assure</strong>
               </span>
             </Link>
-            <div
-              id="rpma-top-menu"
-              className={cn("dk-header-nav", !menuOpen && "is-collapsed")}
-            >
-              <DkSidebarNav
-                pathname={pathname}
-                customers={switcherCustomers}
-                currentCode={currentCustomerCode}
-                layout="top"
-              />
-            </div>
             <div className="dk-header-right">
               <DensityToggle />
               <ThemeToggle />

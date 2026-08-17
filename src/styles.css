@@ -174,17 +174,30 @@ body {
   color: var(--pc-sidebar-color);
 }
 .dk-header-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: center;
-  gap: 22px;
+  gap: 16px;
   min-height: 80px;
   flex: 1;
   min-width: 0;
 }
-.dk-header-one .dk-brand, .dk-header-tall .dk-brand { height: 80px; padding: 0 10px 0 0; }
-.dk-header-nav { display: flex; align-items: center; justify-content: center; flex: 0 1 auto; min-width: 0; }
-.dk-nav.is-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; padding: 0; }
+.dk-header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  gap: 8px;
+}
+.dk-header-one .dk-brand, .dk-header-tall .dk-brand {
+  height: 80px;
+  padding: 0 8px;
+  justify-self: center;
+  align-items: center;
+}
+.dk-header-nav { display: flex; align-items: center; justify-content: flex-start; flex: 1; min-width: 0; }
+.dk-nav.is-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 4px; padding: 0; }
+.dk-header-right { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-shrink: 0; }
 .dk-shell.is-topnav { --pc-header-height: 80px; }
 .dk-shell.is-topnav.is-menu-open { --pc-header-height: 80px; }
 .dk-header-one .dk-iconbtn, .dk-header-tall .dk-iconbtn { color: #ced4dc; background: transparent; border: 0; width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; }
@@ -198,12 +211,12 @@ body {
 @media (max-width: 1023px) {
   .dk-burger { display: grid; }
   .dk-header-one, .dk-header-tall { flex-wrap: wrap; height: auto; }
+  .dk-header-row { grid-template-columns: auto 1fr auto; }
   .dk-header-nav { flex: 1 1 100%; justify-content: center; }
   .dk-header-nav.is-collapsed { display: none; }
   .dk-shell.is-topnav.is-menu-open { --pc-header-height: 140px; }
 }
 .dk-header-mid { flex: 1; min-width: 0; }
-.dk-header-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 
 .rpma-theme-switch {
   display: inline-flex;
