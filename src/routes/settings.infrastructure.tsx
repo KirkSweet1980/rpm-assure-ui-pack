@@ -47,10 +47,10 @@ function syncToneOf(
   if (phase === "done") return { label: "OK", tone: "green" };
   const last = (row.lastStatus ?? "").toUpperCase();
   const health = row.healthStatus.toUpperCase();
+  if (health === "ONLINE") return { label: "OK", tone: "green" };
   if (last === "QUEUED" || last === "SYNCING" || last === "UPDATE" || last === "UPDATING") {
     return { label: "Syncing", tone: "amber" };
   }
-  if (health === "ONLINE") return { label: "OK", tone: "green" };
   if (health === "NOT_INSTALLED" || health === "NEVER") return { label: "N/A", tone: "muted" };
   return { label: "Offline", tone: "red" };
 }

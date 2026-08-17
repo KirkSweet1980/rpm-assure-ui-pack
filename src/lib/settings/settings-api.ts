@@ -1820,7 +1820,16 @@ FROM (
     CASE
       WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
       WHEN r.LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
-      WHEN r.LastStatus IN (N'QUEUED', N'SYNCING') THEN r.LastStatus
+      WHEN r.LastStatus IN (N'QUEUED', N'SYNCING')
+        AND r.LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME())
+        AND (
+          r.LastJobUtc IS NULL
+          OR r.LastJobUtc >= DATEADD(minute, -12, SYSUTCDATETIME())
+        )
+        THEN r.LastStatus
+      WHEN r.LastStatus IN (N'QUEUED', N'SYNCING')
+        AND r.LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME())
+        THEN N'ONLINE'
       ELSE N'ONLINE'
     END AS HealthStatus,
     DATEDIFF(minute, r.LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat
@@ -1860,7 +1869,13 @@ SELECT CustomerCode, HostName, InstanceName, AgentVersion,
        CASE
          WHEN LastHeartbeatUtc IS NULL THEN N'NEVER'
          WHEN LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
-         WHEN LastStatus IN (N'QUEUED', N'SYNCING') THEN LastStatus
+         WHEN LastStatus IN (N'QUEUED', N'SYNCING')
+           AND LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME())
+           AND (LastJobUtc IS NULL OR LastJobUtc >= DATEADD(minute, -12, SYSUTCDATETIME()))
+           THEN LastStatus
+         WHEN LastStatus IN (N'QUEUED', N'SYNCING')
+           AND LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME())
+           THEN N'ONLINE'
          ELSE N'ONLINE'
        END AS HealthStatus,
        DATEDIFF(minute, LastHeartbeatUtc, SYSUTCDATETIME()) AS MinutesSinceHeartbeat
