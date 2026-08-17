@@ -169,6 +169,9 @@ function Epoch-ToSql([string]$epoch) {
   # ms vs seconds (ms epochs are ~1e12+)
   if ($n -gt 100000000000) {
     $dt = [DateTimeOffset]::FromUnixTimeMilliseconds($n).UtcDateTime
+  } elseif ($n -lt 1577836800) {
+    # too small to be a 2020+ unix second (avoids treating status codes as dates)
+    return 'NULL'
   } else {
     $dt = [DateTimeOffset]::FromUnixTimeSeconds($n).UtcDateTime
   }
@@ -343,7 +346,7 @@ do {
         PartnerId         = [int]$rootPartnerId
         RecordsCount      = [int]$pageSize
         StartRecordNumber = [int]$start
-        Columns           = @('AU','AR','AN','MN','CD','TS','TL','US','TB','PN','OP','OV','FR','SR','HR','ZR','WR','NR','XR','PR','I80','I81','F19','F00','RV0','RVJ','RVQ','RVO','RVL','RVK','RV7','T07')
+        Columns           = @('AU','AR','AN','MN','CD','TS','TL','US','TB','PN','OP','OV','FR','SR','HR','ZR','WR','NR','XR','PR','I80','I81','I82','F19','F00','F18','RV0','RVJ','RVQ','RVO','RVL','RVK','RV7','RVA','T07')
         Filter            = ''
       }
     }
@@ -414,10 +417,14 @@ foreach ($row in $planDevices) {
   $probeN++
   $got = $null
   foreach ($try in @(
-      @{ M = 'EnumerateSessions'; P = @{ accountId = [long]$auId; recordsCount = 25 } },
-      @{ M = 'EnumerateSessions'; P = @{ AccountId = [long]$auId; RecordsCount = 25 } },
+      @{ M = 'EnumerateSessions'; P = @{ accountId = [long]$auId; recordsCount = 50 } },
+      @{ M = 'EnumerateSessions'; P = @{ AccountId = [long]$auId; RecordsCount = 50 } },
+      @{ M = 'EnumerateRestoreSessions'; P = @{ accountId = [long]$auId; recordsCount = 25 } },
+      @{ M = 'EnumerateRestoreSessions'; P = @{ AccountId = [long]$auId } },
       @{ M = 'GetAccountInfo'; P = @{ accountId = [long]$auId } },
-      @{ M = 'GetAccountInfo'; P = @{ AccountId = [long]$auId } }
+      @{ M = 'GetAccountInfo'; P = @{ AccountId = [long]$auId } },
+      @{ M = 'GetRecoveryTestingInfo'; P = @{ accountId = [long]$auId } },
+      @{ M = 'EnumerateRecoverySessions'; P = @{ accountId = [long]$auId } }
     )) {
     $js = Invoke-CoveMethod $try.M $try.P
     if (-not $js) { continue }
@@ -607,8 +614,11 @@ foreach ($row in $allRows) {
   # Last test time: prefer completed session RVO, else successful RVL
   $rvo = Get-Setting $row 'RVO'
   $rvl = Get-Setting $row 'RVL'
+  $i82 = Get-Setting $row 'I82'
+  $f00 = Get-Setting $row 'F00'
+  $f18 = Get-Setting $row 'F18'
   $lastTestSql = 'NULL'
-  foreach ($ep in @($rvo, $rvl)) {
+  foreach ($ep in @($rvo, $rvl, $i82, $f00, $f18)) {
     if ($ep -and "$ep" -ne '' -and "$ep" -ne '0') {
       $lastTestSql = Epoch-ToSql ([string]$ep)
       if ($lastTestSql -ne 'NULL') { break }

@@ -4834,7 +4834,7 @@ function formatRecoveryTestStatus(
     return lastTest ? "Result not reported" : "No test recorded";
   }
   if (s === "NotInPlan") return "Not in plan";
-  if (s === "NotStarted") return "Awaiting first test";
+  if (s === "NotStarted") return lastTest ? "In plan" : "In plan";
   if (s === "InProgress") return "In progress";
   if (s === "Success" || s === "Passed" || s === "OK") return "Success";
   if (s === "Failed" || s === "Fail" || s === "Error") return "Failed";
@@ -5030,13 +5030,26 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
   };
   const devicesLatest = (data.cove?.devices ?? []).filter(isRecoveryRow);
   const historyRows = history.filter(isRecoveryRow);
-  // Prefer multi-day history when it has plan/test rows; else latest snapshot
-  const devices = historyRows.length > 0 ? historyRows : devicesLatest;
+  const latestOf = (
+    rows: typeof devicesLatest,
+  ): typeof devicesLatest => {
+    const seen = new Set<string>();
+    const out: typeof devicesLatest = [];
+    for (const d of rows) {
+      const k = String(d.accountId || d.deviceName || d.machineName || "");
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push(d);
+    }
+    return out;
+  };
+  // One row per device (latest snapshot). 7 collect days ≠ 7 recovery tests.
+  const devices = latestOf(historyRows.length > 0 ? historyRows : devicesLatest);
   return (
     <div className="space-y-4">
       <ChartCaption
         title="Backup Recovery Testing"
-        why="Cove automated recovery testing (VDR boot/restore). Plan type I80 (1=Recovery Testing, 2=Standby Image); result from RV0/RVK/RVO/RVL. Last 7 days of plan membership and test outcomes below."
+        why="Devices on a Recovery Testing or Standby Image plan (I80). Last test time only appears when the statistics API publishes RVO/RVL — the Cove console Continuity report can show tests that are not on this feed."
       />
       {rec ? (
         <>
@@ -5063,8 +5076,9 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
             </p>
           ) : (
             <p className="text-[12px] text-muted">
-              No VDR restore session timestamp yet (RVO/RVL empty). Re-run Cloud Backup collect after the
-              RV* columns pack; plan membership still comes from I80.
+              On plan. Last test time is not on the statistics API (RVO/RVL empty). Tests you see in the
+              Cove console Recovery Testing report are Continuity sessions — re-run collect after the
+              next pack if we add a Continuity method.
             </p>
           )}
         </>
@@ -5076,7 +5090,7 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
       <CoveRecentDaysPanel
         days={recentDays}
         title="Backup Recovery Testing — last 7 days"
-        why="Daily totals for Recovery Testing / Standby Image plans and verification success vs fail across collect snapshots."
+        why="Daily count of devices on a Recovery Testing / Standby Image plan (collect snapshots). This is plan membership, not a test-run log."
       />
 
       {devices.length === 0 ? (
@@ -5090,7 +5104,7 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
           <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
               <tr>
-                <th className="px-3 py-2">Day</th>
+                <th className="px-3 py-2">As of</th>
                 <th className="px-3 py-2">Device</th>
                 <th className="px-3 py-2">Plan</th>
                 <th className="px-3 py-2">Test status</th>
@@ -5136,10 +5150,7 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
                     className="max-w-[280px] truncate px-3 py-2 text-xs text-muted"
                     title={d.recoveryVerification || undefined}
                   >
-                    {d.recoveryVerification ||
-                      ((d.recoveryPlanType ?? 0) > 0 && !d.lastRecoveryTestAt
-                        ? "Awaiting first automated restore"
-                        : "—")}
+                    {d.recoveryVerification || "—"}
                   </td>
                 </tr>
               ))}
