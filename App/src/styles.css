@@ -213,14 +213,14 @@ body {
   align-items: center;
 }
 .dk-nav.is-top { display: contents; }
-.dk-shell.is-topnav { --pc-header-height: 160px; --rpma-hud-h: 0px; }
-.dk-shell.is-topnav.is-menu-open { --pc-header-height: 160px; }
+.dk-shell.is-topnav { --pc-header-height: 184px; --rpma-hud-h: 0px; }
+.dk-shell.is-topnav.is-menu-open { --pc-header-height: 184px; }
 .dk-header-navrow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
   min-height: 52px;
-  margin-top: 0;
+  margin-top: 16px;
   background: #0a1c2a;
   border-top: 1px solid #14344a;
 }
