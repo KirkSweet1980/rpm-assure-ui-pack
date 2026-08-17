@@ -6,8 +6,8 @@ import { AppShell } from "@/components/portfolio/app-shell";
 import { RagBadge } from "@/components/portfolio/rag-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CustomerMasterRail } from "@/components/nav/customer-master-rail";
-import { CustomerPillarRail, CustomerPathTrail, customerPathParts } from "@/components/nav/customer-modules-panel";
+import { customerPathParts } from "@/components/nav/customer-modules-panel";
+import { AmxTopBar } from "@/components/customer/amx-chrome";
 import { useSpaNavigate } from "@/components/nav/spa-link";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
@@ -326,100 +326,62 @@ function CustomerLayout() {
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-context-bar" role="navigation" aria-label="Customer path">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-[12px]"
-            onClick={() => {
-              const bits = customerPathParts(pathname, customer.customerCode);
-              if (bits.isDeepModule) {
-                go(bits.overviewHref);
-                return;
-              }
-              if (bits.pillar) {
-                go(bits.base);
-                return;
-              }
-              go("/");
-            }}
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </Button>
-          <CustomerPathTrail
-            code={customer.customerCode}
-            pathname={pathname}
-          />
-          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[12px]">
-            <Link to="/">Exco</Link>
-          </Button>
-          <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
-            {customer.displayName}
-          </h2>
-          <span className="hidden text-[11px] text-muted sm:inline">{pageTitle}</span>
-          <RagBadge rag={tenantRag} title={tenantHint} />
-          <Badge
-            variant={
-              data.dataMode === "demo" || missing ? "amber" : "green"
-            }
-          >
-            {missing
-              ? "Unresolved"
-              : data.dataMode === "demo"
-                ? "Demo data"
-                : "Live SQL"}
-          </Badge>
-          {customer.lastImportAt ? (
-            <span className="ml-auto text-[11px] text-muted">
-              Last collect{" "}
-              {new Date(customer.lastImportAt).toLocaleString("en-ZA", {
-                hour12: false,
-              })}
-            </span>
-          ) : null}
-        </div>
-
-        <div className="rpma-d3-workspace">
+        <div className="rpma-amx-workspace">
           <SyncRailHealth
             code={customer.customerCode}
             healthRag={tenantRag}
             name={customer.displayName}
           />
-          <CustomerMasterRail currentCode={customer.customerCode} />
-
-          <CustomerPillarRail
-            code={customer.customerCode}
-            cover={pageCover}
-            live={live}
+          <AmxTopBar
+            customerCode={customer.customerCode}
+            customerName={customer.displayName}
+            kicker={
+              pathPillar
+                ? `Assurance matrix · ${pageTitle}`
+                : "Assurance matrix · Customer"
+            }
           />
-
-          <div className="rpma-d3-detail min-w-0">
-            <div className="rpma-pane-menubar" role="banner">
-              <h2 className="rpma-pane-menubar-title">{pageTitle}</h2>
-              <div className="rpma-pane-coverline">
-                {pageCoverOn != null ? <CoverTag on={pageCoverOn} /> : null}
-                {noDeviceCover ? (
-                  <span className="rpma-pane-nocover">{noDeviceCover}</span>
-                ) : null}
-              </div>
+          <div className="rpma-amx-backrow">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[12px]"
+              onClick={() => {
+                const bits = customerPathParts(pathname, customer.customerCode);
+                if (bits.isDeepModule) {
+                  go(bits.overviewHref);
+                  return;
+                }
+                if (bits.pillar) {
+                  go(bits.base);
+                  return;
+                }
+                go("/");
+              }}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back
+            </Button>
+            <RagBadge rag={tenantRag} title={tenantHint} />
+            <Badge variant={data.dataMode === "demo" || missing ? "amber" : "green"}>
+              {missing ? "Unresolved" : data.dataMode === "demo" ? "Demo data" : "Live SQL"}
+            </Badge>
+            {pageCoverOn != null ? <CoverTag on={pageCoverOn} /> : null}
+          </div>
+          {missing ? (
+            <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
+              <p className="font-semibold">Customer code not resolved</p>
+              <p className="mt-1 text-muted">
+                URL code <span className="font-mono">{customer.customerCode}</span> was not found.
+              </p>
             </div>
-            {missing ? (
-              <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
-                <p className="font-semibold">Customer code not resolved</p>
-                <p className="mt-1 text-muted">
-                  URL code{" "}
-                  <span className="font-mono">{customer.customerCode}</span> was
-                  not found in Dim_Customer / portfolio. Use the customer{" "}
-                  <strong>code</strong> (e.g.{" "}
-                  <span className="font-mono">AHIC</span>), not the display name.
-                </p>
-              </div>
-            ) : null}
-            <div className="rpma-saas-customer-body rpma-d3-detail-body min-w-0">
-              <Outlet />
-            </div>
+          ) : null}
+          {noDeviceCover ? (
+            <p className="rpma-pane-nocover mb-2">{noDeviceCover}</p>
+          ) : null}
+          <div className="rpma-amx-canvas">
+            <Outlet />
           </div>
         </div>
       </AppShell>

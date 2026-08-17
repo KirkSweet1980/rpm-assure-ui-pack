@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TicketsHubSection } from "@/components/customer/tickets-sections";
+import { ServiceModuleMatrix } from "@/components/customer/service-module-matrix";
 import { Route as PillarRoute } from "./customers.$code.tickets";
 
 export const Route = createFileRoute("/customers/$code/tickets/")({
@@ -12,6 +12,6 @@ export const Route = createFileRoute("/customers/$code/tickets/")({
         </p>
       );
     }
-    return <TicketsHubSection data={data} />;
+    return <ServiceModuleMatrix data={data} pillar="tickets" />;
   },
 });
