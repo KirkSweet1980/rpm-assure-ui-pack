@@ -40,22 +40,33 @@ $hdr = @{
   Accept         = 'application/json'
 }
 
-function Invoke-FdGet([string]$PathQuery) {
-  $url = "https://$FreshdeskDomain/api/v2/$($PathQuery.TrimStart('/'))"
+function Invoke-FdGet([string]$Url) {
+  if ($Url -notmatch '^https://') {
+    $Url = "https://$FreshdeskDomain/api/v2/$($Url.TrimStart('/'))"
+  }
   $attempt = 0
   while ($true) {
     $attempt++
     try {
-      return Invoke-RestMethod -Uri $url -Headers $hdr -Method GET -TimeoutSec 120
+      $r = Invoke-WebRequest -Uri $Url -Headers $hdr -Method GET -TimeoutSec 120 -UseBasicParsing
+      if (-not $r.Content) { return $null }
+      return ($r.Content | ConvertFrom-Json)
     } catch {
       $code = $null
+      $body = ''
       try { $code = [int]$_.Exception.Response.StatusCode } catch {}
+      try {
+        $sr = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())
+        $body = $sr.ReadToEnd()
+      } catch {}
       if ($code -eq 429 -and $attempt -lt 5) {
         $wait = [Math]::Min(60, 5 * $attempt)
         Write-Log ('rate limit 429 - sleep ' + $wait + 's')
         Start-Sleep -Seconds $wait
         continue
       }
+      Write-Log ('HTTP ' + $code + ' ' + $Url)
+      if ($body) { Write-Log ('body ' + $body.Substring(0, [Math]::Min(300, $body.Length))) }
       throw
     }
   }
@@ -156,12 +167,13 @@ foreach ($line in @($idsTxt)) {
 Write-Log ('mapped companies with id=' + $maps.Count)
 
 foreach ($m in $maps) {
-  $q = 'company_id:' + $m.Id + " AND updated_at:>'" + $sinceDay + "'"
+  # Same quoting style as the working scan: query="company_id:123"
   $page = 1
   do {
-    $urlPath = 'search/tickets?page=' + $page + '&query=' + [uri]::EscapeDataString('"' + $q + '"')
+    $q = '"company_id:' + $m.Id + '"'
+    $url = "https://$FreshdeskDomain/api/v2/search/tickets?page=$page&query=" + [uri]::EscapeDataString($q)
     try {
-      $sr = Invoke-FdGet $urlPath
+      $sr = Invoke-FdGet $url
     } catch {
       Write-Log ('search fail ' + $m.Code + ' page=' + $page + ' ' + $_.Exception.Message)
       break
@@ -169,7 +181,14 @@ foreach ($m in $maps) {
     $rows = @()
     if ($sr.results) { $rows = @($sr.results) }
     elseif ($sr -is [System.Array]) { $rows = @($sr) }
-    Add-Tickets $rows ('search ' + $m.Code + ' p' + $page + ' apiTotal=' + $sr.total)
+    $keep = @()
+    foreach ($t in $rows) {
+      $u = $null
+      try { $u = [datetime]::Parse([string]$t.updated_at).ToUniversalTime() } catch {}
+      if ($u -and $u -lt $since) { continue }
+      $keep += $t
+    }
+    Add-Tickets $keep ('search ' + $m.Code + ' p' + $page + ' apiTotal=' + $sr.total + ' inWindow=' + $keep.Count)
     $page++
     Start-Sleep -Milliseconds 300
   } while ($page -le 10 -and $rows.Count -ge 30)
