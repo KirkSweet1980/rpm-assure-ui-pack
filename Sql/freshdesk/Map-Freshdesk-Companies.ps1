@@ -163,10 +163,14 @@ ELSE
   INSERT INTO dbo.Dim_Freshdesk_CompanyMap (CompanyId, CompanyName, CustomerCode, Notes)
   VALUES (@id, @name, @code, N'auto map existing customer only');
 '@
-    [void]$cmd.Parameters.Add('@code', [Data.SqlDbType]::NVarChar, 32).Value = [string]$m.CustomerCode
-    [void]$cmd.Parameters.Add('@name', [Data.SqlDbType]::NVarChar, 200).Value = [string]$m.CompanyName
-    $pId = $cmd.Parameters.Add('@id', [Data.SqlDbType]::BigInt)
-    if ($null -eq $m.CompanyId) { $pId.Value = [DBNull]::Value } else { $pId.Value = [int64]$m.CompanyId }
+    [void]$cmd.Parameters.AddWithValue('@code', [string]$m.CustomerCode)
+    [void]$cmd.Parameters.AddWithValue('@name', [string]$m.CompanyName)
+    if ($null -eq $m.CompanyId) {
+      $pId = $cmd.Parameters.Add('@id', [Data.SqlDbType]::BigInt)
+      $pId.Value = [DBNull]::Value
+    } else {
+      [void]$cmd.Parameters.AddWithValue('@id', [int64]$m.CompanyId)
+    }
     [void]$cmd.ExecuteNonQuery()
   }
 
