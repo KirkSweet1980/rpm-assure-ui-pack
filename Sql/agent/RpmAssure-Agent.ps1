@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.8.2"
+$AgentVersion = "2.8.3"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -120,6 +120,21 @@ function Invoke-AdoSql {
 
 function Invoke-CentralSql {
   param([string]$SqlText, [switch]$Tsv)
+  if ($PreferHttps -or (Test-Path (Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'))) {
+    if (Get-Command Invoke-RpmaAssureHttps -ErrorAction SilentlyContinue) {
+      try {
+        $hr = Invoke-RpmaAssureHttps -Path '/api/agent/sql' -Method POST -TimeoutSec 120 -Body @{
+          sql = $SqlText; tsv = [bool]$Tsv; customerCode = $CustomerCode; hostName = $HostName
+        }
+        if ($hr.Json -and $hr.Json.ok) { return @{ ExitCode = 0; Text = [string]$hr.Json.text } }
+        if ($PreferHttps) {
+          return @{ ExitCode = 1; Text = $(if ($hr.Json.error) { [string]$hr.Json.error } else { [string]$hr.Text }) }
+        }
+      } catch {
+        if ($PreferHttps) { return @{ ExitCode = 1; Text = $_.Exception.Message } }
+      }
+    }
+  }
   $ado = Invoke-AdoSql -Server $CentralDataSource -Db $CentralDatabase -User $CentralSqlUser -Pass $CentralSqlPassword -SqlText $SqlText -Tsv:$Tsv
   if ($ado.ExitCode -eq 0) { return $ado }
 

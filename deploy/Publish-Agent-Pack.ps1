@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 $dl = Join-Path $Root 'downloads'
 New-Item -ItemType Directory -Force -Path $dl | Out-Null
 
-$ver = '2.8.2'
+$ver = '2.8.3'
 foreach ($vf in @(
     (Join-Path $Pack 'Sql\agent\VERSION'),
     (Join-Path $Pack 'sql\agent\VERSION')
