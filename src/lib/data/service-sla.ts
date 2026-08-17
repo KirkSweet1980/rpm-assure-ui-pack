@@ -13,7 +13,6 @@ import {
   type IndustryPillarKey,
 } from "./sla-metrics";
 import type { CustomerDetailPayload } from "./types";
-import { coverFromDetail } from "./cover";
 
 export type ServiceSlaLine = {
   id: string;
