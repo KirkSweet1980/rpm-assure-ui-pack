@@ -1084,56 +1084,25 @@ function ExcoInsightPage() {
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-context-bar" role="navigation" aria-label="Exco path">
-          <h2 className="text-[15px] font-bold tracking-tight text-fg sm:text-base">
-            Customer Eco-System
-          </h2>
-          <span className="hidden text-[11px] text-muted sm:inline">
-            {liveLabel} · SLA {slaAvg}%
-          </span>
-          <RagBadge rag={rag.overall} />
-          <span className="ml-auto text-[11px] text-muted">
-            {rag.red} red · {rag.amber} amber · {rag.green} green
-          </span>
-          <CustomizeWidgetsButton
-            open={customizeOpen}
-            onClick={() => setCustomizeOpen((v) => !v)}
-          />
-        </div>
-          <div className="rpma-exco space-y-4">
-          {customizeOpen ? (
-            <CustomizeWidgetsPanel
-              layout={widgetLayout}
-              onChange={setWidgetLayout}
-              onClose={() => setCustomizeOpen(false)}
-            />
-          ) : null}
-          <div className="rpma-exco-board">
-          <section className={cn("rpma-pane is-tile", `is-${estateTone}`)} id="exco-brief" {...wgt("brief")}>
-            <PaneHead tip="Each KPI tile lights Green / Amber / Red. Click an amber tile to open that customer's amber issues (or the amber list if several).">
-              Executive Brief
-            </PaneHead>
-            <div className="rpma-pane-body">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="text-[15px] font-extrabold tracking-tight text-fg">
-                  Customer Eco-System is{" "}
-                  <span className={rag.overall === "Green" ? "text-rag-green" : rag.overall === "Amber" ? "text-rag-amber" : "text-rag-red"}>
-                    {rag.overall}
-                  </span>
-                  <span className="ml-2 text-[12px] font-semibold text-muted">
-                    {rag.red} red · {rag.amber} amber · {rag.green} green · {attention.length} attention
-                  </span>
-                </h3>
-              </div>
-              <p className="text-[12px] text-muted">{liveLabel} · SLA {slaAvg}%</p>
+        <div className="rpma-brief">
+          <div className="rpma-brief-head">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h1>
+                Customer Eco-System is{" "}
+                <span className={rag.overall === "Green" ? "text-rag-green" : rag.overall === "Amber" ? "text-rag-amber" : "text-rag-red"}>
+                  {rag.overall}
+                </span>
+              </h1>
+              <CustomizeWidgetsButton open={customizeOpen} onClick={() => setCustomizeOpen((v) => !v)} />
             </div>
-            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+            <p>
+              {rag.red} red · {rag.amber} amber · {rag.green} green · {attention.length} attention · {liveLabel} · SLA {slaAvg}%
+            </p>
+            <ul className="rpma-brief-fresh">
               {collectFreshness.map((x) => (
-                <li key={x.k} className="flex items-center gap-1.5 text-[12px]">
-                  <span className="font-semibold text-muted">{x.k}</span>
+                <li key={x.k}>
+                  <b>{x.k}</b>
                   <span className={cn(
-                    "font-medium",
                     x.tone === "green" && "text-rag-green",
                     x.tone === "amber" && "text-rag-amber",
                     x.tone === "red" && "text-rag-red",
@@ -1142,391 +1111,96 @@ function ExcoInsightPage() {
                 </li>
               ))}
             </ul>
-            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-12">
-              {[
-                { k: "rag-red" as DrillKind, l: "Red", v: rag.red, t: "red" as const, tip: "Customers whose overall health is Red. Open one to see which service is failing." },
-                { k: "rag-amber" as DrillKind, l: "Amber", v: rag.amber, t: "amber" as const, tip: "Customers on Amber — usually one pillar degraded or collect ageing." },
-                { k: "attention" as DrillKind, l: "Attention", v: attention.length, t: "amber" as const, tip: "Needs an owner this week: health, SLA, stale collect or open incidents." },
-                { k: "incidents" as DrillKind, l: "Incidents", v: incidents.length, t: "red" as const, tip: "Open major incidents across the estate." },
-                { k: "jobs" as DrillKind, l: "Job Errors", v: scoreboard.filter((b) => (b.jobErrorCount || 0) > 0).length, t: "red" as const, tip: "SYSPRO companies with failed or errored jobs on the last collect." },
-                { k: "finsight" as DrillKind, l: "FinSight OOB", v: finsightEstate.oobCustomers, t: "amber" as const, tip: "Customers with out-of-balance FinSight control lines." },
-                { k: "rmm-offline" as DrillKind, l: "Servers Off", v: scoreboard.filter((b) => (b.pulsewayServerOffline || 0) > 0).length, t: "red" as const, tip: "Customers with at least one RPM RMM server offline." },
-                { k: "rmm-critical" as DrillKind, l: "RMM Critical", v: scoreboard.filter((b) => (b.pulsewayCriticalAlerts || 0) > 0).length, t: "red" as const, tip: "Customers with RPM RMM critical alerts still open." },
-                { k: "backup" as DrillKind, l: "Backup Issues", v: exco.backupUnhealthyCount, t: "amber" as const, tip: "Customers with failed or stale Cove backups on the latest collect." },
-                { k: "stale" as DrillKind, l: "Stale Collect", v: exco.collectStaleCount, t: "amber" as const, tip: "Last SYSPRO / agent collect is older than 24 hours." },
-                { k: "risks" as DrillKind, l: "Open Risks", v: exco.openRisksTotal, t: "amber" as const, tip: "Open Customer Assurance risks that still need a mitigation owner." },
-                { k: "attention" as DrillKind, l: "SLA Avg", v: `${slaAvg}%`, t: slaAvg >= 80 ? ("green" as const) : slaAvg >= 55 ? ("amber" as const) : ("red" as const), tip: "Average SLA across covered services. Target blend is 80%+ green." },
-              ].map((x, i) => (
-                <button
-                  key={`${x.l}-${i}`}
-                  type="button"
-                  onClick={() => openTile((Number(x.v) > 0 || String(x.v).includes("%")) ? x.t : "green", x.k)}
-                  className={cn("rpma-kpi-tile rpma-hovertip", `is-${(Number(x.v) > 0 || x.t === "green") ? x.t : "green"}`, drill === x.k && "is-on")}
+          </div>
+
+          {customizeOpen ? (
+            <CustomizeWidgetsPanel layout={widgetLayout} onChange={setWidgetLayout} onClose={() => setCustomizeOpen(false)} />
+          ) : null}
+
+          <div className="rpma-brief-kpis">
+            {([
+              { k: "rag-red" as DrillKind, l: "Red", v: rag.red, t: rag.red ? "red" : "green" },
+              { k: "rag-amber" as DrillKind, l: "Amber", v: rag.amber, t: rag.amber ? "amber" : "green" },
+              { k: "attention" as DrillKind, l: "Attention", v: attention.length, t: attention.length ? "amber" : "green" },
+              { k: "sla" as DrillKind, l: "SLA avg", v: `${slaAvg}%`, t: slaAvg >= 80 ? "green" : slaAvg >= 55 ? "amber" : "red" },
+            ] as const).map((x) => (
+              <button
+                key={x.k}
+                type="button"
+                className={cn("rpma-brief-kpi", `is-${x.t}`, drill === x.k && "is-on")}
+                onClick={() => openTile(x.t, x.k)}
+              >
+                <span>{x.l}</span>
+                <b>{x.v}</b>
+              </button>
+            ))}
+          </div>
+
+          <div className="rpma-brief-svcs">
+            {([
+              { name: "SYSPRO", href: "/?view=finsight", pct: slaByService.syspro, n: coverStats.syspro, target: 90, note: "jobs miss" },
+              { name: "RMM", href: "/?view=all", pct: slaByService.rmm, n: coverStats.rmm, target: 99, note: `${serversOnline} online` },
+              { name: "Cloud Backup", href: "/?view=attention", pct: slaByService.cove, n: coverStats.cove, target: 99, note: "SLA miss" },
+              { name: "End Point", href: "/?view=all", pct: slaByService.epp, n: coverStats.epp, target: 98, note: "on cover" },
+            ]).map((s) => {
+              const pct = s.pct;
+              const tone = pct == null ? "muted" : pct >= s.target ? "green" : pct >= s.target - 5 ? "amber" : "red";
+              const bar = tone === "green" ? "#8fce4a" : tone === "amber" ? "#ffa21d" : tone === "red" ? "#ea4d4d" : "#536170";
+              return (
+                <SpaLink key={s.name} href={s.href} className="rpma-brief-svc">
+                  <em>{s.name}</em>
+                  <strong className={cn(tone === "green" && "text-rag-green", tone === "amber" && "text-rag-amber", tone === "red" && "text-rag-red")}>
+                    {pct == null ? "—" : `${pct}%`}
+                  </strong>
+                  <div className="rpma-brief-bar"><i style={{ width: `${pct ?? 0}%`, background: bar }} /></div>
+                  <p>{s.n} of {coverStats.n} on cover{pct != null && pct < s.target ? ` · ${s.note}` : ""}</p>
+                </SpaLink>
+              );
+            })}
+          </div>
+
+          <div className="rpma-brief-pills">
+            {[...scoreboard]
+              .sort((a, b) => {
+                const rank = (r: string) => (r === "Red" ? 0 : r === "Amber" ? 1 : 2);
+                return rank(a.healthRag) - rank(b.healthRag) || a.displayName.localeCompare(b.displayName);
+              })
+              .map((b) => (
+                <SpaLink
+                  key={b.customerCode}
+                  href={customerIssueTo(b.customerCode, b.healthRag)}
+                  className="rpma-brief-pill"
+                  data-rag={b.healthRag}
                 >
-                  <MetricLabel tip={x.tip} showIcon={false}>{x.l}</MetricLabel>
-                  <p className={cn("font-mono text-[15px] font-bold tabular-nums leading-tight",
-                    x.t === "red" && Number(x.v) > 0 ? "text-rag-red" :
-                    x.t === "amber" && Number(x.v) > 0 ? "text-rag-amber" :
-                    x.t === "green" ? "text-rag-green" : "text-fg")}>{x.v}</p>
-                  <span role="tooltip" className="rpma-help-bubble is-top">
-                    {x.l}: {x.v}. {x.tip}
-                    {(x.t === "amber" || x.t === "red") && Number(x.v) > 0
-                      ? " Click to open the customer's amber/red issues."
-                      : ""}
-                  </span>
-                </button>
+                  <i />
+                  {b.displayName} · {b.healthRag}
+                </SpaLink>
               ))}
-            </div>
-            </div>
-          </section>
+          </div>
 
-          <section className={cn("rpma-pane is-tile", coverStats.n && (coverStats.syspro + coverStats.rmm + coverStats.cove + coverStats.epp + coverStats.csp) / (coverStats.n * 5) < 0.4 ? "is-amber" : "is-green")} id="exco-cover" {...wgt("cover")}>
-              <PaneHead tip="Scope only — not live health. Chip on the tenant rail is Cover / No Cover. This tile lights amber if estate cover is thin.">
-                Services On Cover
-              </PaneHead>
-              <ul className="rpma-pane-body space-y-2">
-                {[
-                  ["SYSPRO", coverStats.syspro],
-                  ["Remote Management", coverStats.rmm],
-                  ["Cloud Backup", coverStats.cove],
-                  ["RPM EndPoint Protection", coverStats.epp],
-                  ["Microsoft 365 CSP", coverStats.csp],
-                ].map(([name, n]) => (
-                  <li key={String(name)}>
-                    <HoverTip
-                      className="flex w-full items-center gap-2 text-[12px]"
-                      text={`${name}: ${n} of ${coverStats.n} customers on cover (${coverStats.n ? Math.round((Number(n) / coverStats.n) * 100) : 0}%). Scope only — not live health.`}
-                    >
-                      <span className="min-w-0 flex-1 truncate font-medium text-fg">{name}</span>
-                      <span className="font-mono text-[12px] font-bold tabular-nums">{n}</span>
-                      <span className="w-16 text-right text-[10px] text-muted">of {coverStats.n}</span>
-                      <span className="rpma-impact-track !h-1.5 w-16">
-                        <span className="rpma-impact-bar is-green" style={{ width: `${coverStats.n ? Math.round((Number(n) / coverStats.n) * 100) : 0}%` }} />
-                      </span>
-                    </HoverTip>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className={cn("rpma-pane is-tile is-click", slaAvg >= 80 ? "is-green" : slaAvg >= 55 ? "is-amber" : "is-red")} id="exco-sla" {...wgt("sla")} onClick={() => openTile(slaAvg >= 80 ? "green" : slaAvg >= 55 ? "amber" : "red", "sla")}>
-              <PaneHead tip="Live SLA for covered services. Amber/red tile opens the customers missing target.">
-                SLA By Service
-              </PaneHead>
-              <ul className="rpma-pane-body space-y-2">
-                {[
-                  ["SYSPRO", slaByService.syspro],
-                  ["Remote Management", slaByService.rmm],
-                  ["Cloud Backup", slaByService.cove],
-                  ["RPM EndPoint Protection", slaByService.epp],
-                ].map(([name, pct]) => {
-                  const n = pct as number | null;
-                  const target =
-                    name === "Remote Management" ? 99.9 : name === "Cloud Backup" ? 99.5 : name === "RPM EndPoint Protection" ? 98 : 90;
-                  const tone = n == null ? "" : n >= target ? "text-rag-green" : n >= target - 5 ? "text-rag-amber" : "text-rag-red";
-                  const bar = n == null ? "" : n >= target ? "is-green" : n >= target - 5 ? "is-amber" : "is-red";
-                  return (
-                    <li key={String(name)}>
-                      <HoverTip
-                        className="flex w-full items-center gap-2 text-[12px]"
-                        text={`${name} SLA ${n == null ? "not scored (no cover)" : n + "%"}. Target ${target}%. ${n == null ? "" : n >= target ? "On target." : n >= target - 5 ? "Amber — within 5 points of target." : "Red — below target."}`}
-                      >
-                        <span className="min-w-0 flex-1 truncate font-medium text-fg">{name}</span>
-                        <span className={cn("font-mono text-[12px] font-bold tabular-nums", tone)}>{n == null ? "—" : `${n}%`}</span>
-                        <span className="rpma-impact-track !h-1.5 w-20">
-                          <span className={cn("rpma-impact-bar", bar)} style={{ width: `${n ?? 0}%` }} />
-                        </span>
-                      </HoverTip>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-            <section className={cn("rpma-pane is-tile", (serversOffline > 0 || (exco.coveFailedTotal ?? 0) > 0) ? "is-red" : ((exco.coveStaleTotal ?? 0) > 0 || (exco.rmmDiskHighTotal ?? 0) > 0 || (exco.eppUnmanagedTotal ?? 0) > 0) ? "is-amber" : "is-green")} {...wgt("pulse")}>
-              <PaneHead tip="Operations pulse. The tile glows the worst live signal. Click an amber KPI above to jump to that customer's issue.">
-                Operations Pulse
-              </PaneHead>
-              <div className="rpma-pane-body grid grid-cols-2 gap-2">
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="RPM RMM servers reporting online on the latest collect.">Online</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Online: RPM RMM servers reporting online on the latest collect.</span>
-                  <p className="font-mono text-[15px] font-bold text-rag-green">{serversOnline}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="RPM RMM servers that have not checked in. Any count above 0 is red.">Servers Offline</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Servers Offline: RPM RMM servers that have not checked in. Any count above 0 is red.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", serversOffline > 0 ? "text-rag-red" : "text-fg")}>{serversOffline}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Online servers ÷ (online + offline). Target 99.9%. Below 99% is amber.">Server Availability</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Server Availability: Online servers ÷ (online + offline). Target 99.9%. Below 99% is amber.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", (exco.rmmServerAvailabilityPct ?? 100) < 99 ? "text-rag-amber" : "text-rag-green")}>
-                    {exco.rmmServerAvailabilityPct == null ? "—" : `${exco.rmmServerAvailabilityPct}%`}
-                  </p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Share of servers with current OS patches. Below 90% is amber.">Patch Compliance</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Patch Compliance: Share of servers with current OS patches. Below 90% is amber.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", (exco.rmmPatchCompliancePct ?? 100) < 90 ? "text-rag-amber" : "text-rag-green")}>
-                    {exco.rmmPatchCompliancePct == null ? "—" : `${exco.rmmPatchCompliancePct}%`}
-                  </p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Servers with a volume over the disk-risk threshold (typically 85%+ used).">Disk At Risk</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Disk At Risk: Servers with a volume over the disk-risk threshold (typically 85%+ used).</span>
-                  <p className={cn("font-mono text-[15px] font-bold", (exco.rmmDiskHighTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
-                    {exco.rmmDiskHighTotal ?? 0}
-                  </p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Cloud Backup devices whose last backup failed or has no success in 72 hours.">Backup Failed</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Failed: Cloud Backup devices whose last backup failed or has no success in 72 hours.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", (exco.coveFailedTotal ?? 0) > 0 ? "text-rag-red" : "text-fg")}>
-                    {exco.coveFailedTotal ?? 0}
-                  </p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Cloud Backup devices whose last successful backup is older than 36 hours.">Backup Stale</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Backup Stale: Cloud Backup devices whose last successful backup is older than 36 hours.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", (exco.coveStaleTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
-                    {exco.coveStaleTotal ?? 0}
-                  </p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="RPM EndPoint Protection endpoints not under a managed policy, versus all mapped endpoints.">EPP Unmanaged</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">EPP Unmanaged: RPM EndPoint Protection endpoints not under a managed policy, versus all mapped endpoints.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", (exco.eppUnmanagedTotal ?? 0) > 0 ? "text-rag-amber" : "text-fg")}>
-                    {exco.eppUnmanagedTotal ?? 0}
-                    <span className="ml-1 text-[10px] font-semibold text-muted">/ {exco.eppEndpointTotal ?? 0}</span>
-                  </p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Customers whose last SYSPRO / agent collect is within 24 hours.">Collect Fresh</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Collect Fresh: Customers whose last SYSPRO / agent collect is within 24 hours.</span>
-                  <p className="font-mono text-[15px] font-bold text-rag-green">{exco.collectFreshCount}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Customers whose last collect is older than 24 hours. Check the edge agent.">Collect Stale</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Collect Stale: Customers whose last collect is older than 24 hours. Check the edge agent.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", exco.collectStaleCount > 0 ? "text-rag-amber" : "text-fg")}>{exco.collectStaleCount}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="SYSPRO companies with no FinSight out-of-balance lines on the latest close.">FinSight Clear</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">FinSight Clear: SYSPRO companies with no FinSight out-of-balance lines on the latest close.</span>
-                  <p className="font-mono text-[15px] font-bold text-rag-green">{finsightEstate.clearCustomers}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Total out-of-balance FinSight control lines across the estate. Each line needs a finance owner.">OOB Lines</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">OOB Lines: Total out-of-balance FinSight control lines across the estate. Each line needs a finance owner.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", finsightEstate.totalOobLines > 0 ? "text-rag-amber" : "text-fg")}>{finsightEstate.totalOobLines}</p>
-                </div>
+          {drill ? (
+            <div className="rpma-brief-drill">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <strong>{drillTitle}</strong>
+                <button type="button" className="text-[12px] font-bold" style={{ color: "#1bb8a6" }} onClick={() => setDrill(null)}>Clear</button>
               </div>
-            </section>
-
-            <section className={cn("rpma-pane is-tile", (matrixCells.get("High|High") ?? []).length ? "is-red" : (matrixCells.get("High|Medium") ?? []).length || (matrixCells.get("Medium|High") ?? []).length ? "is-amber" : "is-green")} {...wgt("matrix")}>
-              <PaneHead tip="Impact versus likelihood. Click a cell. Amber/red cells with one customer open that tenant's issues.">
-                Risk Matrix
-              </PaneHead>
-              <div className="rpma-pane-body">
-              <div className="rpma-heat">
-                <span className="rpma-heat-ylab">Impact</span>
-                <div className="rpma-heat-grid">
-                  <span />
-                  <span className="rpma-heat-axis">Low</span>
-                  <span className="rpma-heat-axis">Med</span>
-                  <span className="rpma-heat-axis">High</span>
-                  {(["High", "Medium", "Low"] as RiskAxis[]).map((impact) => (
-                    <div key={impact} className="contents">
-                      <span className="rpma-heat-axis is-y">{impact}</span>
-                      {(["Low", "Medium", "High"] as RiskAxis[]).map((likelihood) => {
-                        const pts = matrixCells.get(`${impact}|${likelihood}`) ?? [];
-                        const tone = matrixTone(impact, likelihood);
-                        const key = `matrix-${impact}-${likelihood}` as DrillKind;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => toggleDrill(key)}
-                            className={cn("rpma-heat-cell rpma-hovertip", `is-${tone}`, drill === key && "is-on")}
-                          >
-                            <span className="rpma-heat-n">{pts.length}</span>
-                            <span role="tooltip" className="rpma-help-bubble is-top">
-                              Impact {impact} · Likelihood {likelihood}: {pts.length} customer{pts.length === 1 ? "" : "s"}
-                              {pts.length ? ` — ${pts.slice(0, 3).map((x) => x.displayName).join(", ")}` : ""}.
-                              {tone !== "green" && pts.length === 1 ? " Click opens that customer's issues." : ""}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              </div>
-            </section>
-
-            <section className={cn("rpma-pane is-tile", riskPoints.some((p) => p.healthRag === "Red") ? "is-red" : riskPoints.some((p) => p.healthRag === "Amber") ? "is-amber" : "is-green")} {...wgt("impact")}>
-              <PaneHead tip="Customers ranked by impact. Click an amber/red name to open that customer's issues.">
-                Impact
-              </PaneHead>
-              <ol className="rpma-impact rpma-pane-body">
-                {[...riskPoints]
-                  .sort((a, b) => b.impactScore - a.impactScore || b.likeScore - a.likeScore)
-                  .slice(0, 7)
-                  .map((p) => {
-                    const max = Math.max(1, ...riskPoints.map((x) => x.impactScore));
-                    const pct = Math.round((p.impactScore / max) * 100);
-                    return (
-                      <li key={p.customerCode}>
-                        <SpaLink href={customerIssueTo(p.customerCode, p.healthRag)} className="rpma-impact-row rpma-hovertip">
-                          <span className="rpma-impact-name">{p.displayName}</span>
-                          <span className="rpma-impact-track">
-                            <span className={cn("rpma-impact-bar",
-                              p.healthRag === "Red" && "is-red",
-                              p.healthRag === "Amber" && "is-amber",
-                              p.healthRag === "Green" && "is-green")}
-                              style={{ width: `${Math.max(8, pct)}%` }} />
-                          </span>
-                          <span className="rpma-impact-score">{p.impactScore}</span>
-                          <span role="tooltip" className="rpma-help-bubble is-top">
-                            {p.displayName} is {p.healthRag}. Impact {p.impactScore}. {p.drivers.slice(0, 3).join(" · ") || "No drivers"}.
-                            {p.healthRag !== "Green" ? " Click to open amber/red issues." : ""}
-                          </span>
-                        </SpaLink>
-                      </li>
-                    );
-                  })}
-              </ol>
-            </section>
-
-            <section className={cn("rpma-pane is-tile", m365Estate.mfaGap > 0 || m365Estate.highGa > 0 ? "is-amber" : "is-green")} {...wgt("m365")}>
-              <PaneHead tip="Microsoft 365 CSP estate posture. Amber means MFA gaps or too many Global Admins.">
-                Microsoft 365 CSP
-              </PaneHead>
-              <div className="rpma-pane-body">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Customers with an active Microsoft 365 CSP tenant mapped in Assure.">Tenants</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Tenants: Customers with an active Microsoft 365 CSP tenant mapped in Assure.</span>
-                  <p className="font-mono text-[15px] font-bold">{m365Estate.tenants}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Average Microsoft Secure Score across mapped tenants. Higher is better.">Secure Score</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">Secure Score: Average Microsoft Secure Score across mapped tenants. Higher is better.</span>
-                  <p className="font-mono text-[15px] font-bold">{m365Estate.avgScore == null ? "—" : `${m365Estate.avgScore}%`}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Licensed users who are not registered for MFA. Each one is a credential-risk conversation.">MFA Gaps</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">MFA Gaps: Licensed users who are not registered for MFA. Each one is a credential-risk conversation.</span>
-                  <p className={cn("font-mono text-[15px] font-bold", m365Estate.mfaGap > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.mfaGap}</p>
-                </div>
-                <div className="rpma-metric-cell rpma-hovertip rounded-md bg-surface-2 px-2 py-1.5">
-                  <MetricLabel showIcon={false} tip="Tenants with more Global Admins than the agreed control (typically more than 4).">High GA Count</MetricLabel>
-                  <span role="tooltip" className="rpma-help-bubble is-top">High GA Count: Tenants with more Global Admins than the agreed control (typically more than 4).</span>
-                  <p className={cn("font-mono text-[15px] font-bold", m365Estate.highGa > 0 ? "text-rag-amber" : "text-fg")}>{m365Estate.highGa}</p>
-                </div>
-              </div>
-              <p className="mt-3 text-[12px] text-muted">
-                Seats {m365Estate.assigned} / {m365Estate.seats || "—"} assigned
-              </p>
-              </div>
-            </section>
-
-            <section className={cn("rpma-pane is-tile", (drill ? drillRows : attention).some((b) => b.healthRag === "Red") ? "is-red" : (drill ? drillRows : attention).length ? "is-amber" : "is-green")} id="exco-decisions" {...wgt("decisions")}>
-              <PaneHead tip="Who needs a decision. Click an amber customer to go straight to their amber issues.">
-                {drill ? drillTitle : "Who Needs A Decision"}
-              </PaneHead>
-              <div className="rpma-pane-body">
-              {(drill ? drillRows : attention).length === 0 ? (
-                <p className="text-[12px] text-muted">
-                  {drill ? "No customers in this view." : "Customer Eco-System is clear."}
-                </p>
+              {drillRows.length === 0 ? (
+                <p className="text-[12px] text-muted">No customers in this view.</p>
               ) : (
                 <ul className="space-y-1">
-                  {(drill ? drillRows : attention).slice(0, 8).map((b) => (
+                  {drillRows.slice(0, 10).map((b) => (
                     <li key={b.customerCode}>
-                      <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
+                      <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)} className="flex items-center gap-2 rounded px-1 py-1">
                         <RagBadge rag={b.healthRag} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[12px] font-semibold text-fg">{b.displayName}</span>
-                          <span className="line-clamp-1 text-[10px] text-muted">{b.attentionReasons.slice(0, 2).join(" · ")}</span>
-                        </span>
-                        <span className="font-mono text-[10px] text-muted">{b.slaOverallPct != null ? `${b.slaOverallPct}%` : "—"}</span>
-                      </SpaLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              </div>
-            </section>
-
-            <section className={cn("rpma-pane is-tile", incidents.some((i) => i.severity === "Red") ? "is-red" : incidents.length ? "is-amber" : "is-green")} {...wgt("incidents")}>
-              <div className="rpma-pane-head-row">
-                <h2 className="rpma-pane-head">
-                  <span className="rpma-pane-head-inner">
-                    {drill ? drillTitle : "Major Incidents"}
-                    <HelpTip text="P1/P2 style incidents from Customer Assurance. Click a row to open that tenant. Use Clear after a KPI drill." />
-                  </span>
-                </h2>
-                {drill ? (
-                  <button type="button" onClick={() => setDrill(null)} className="text-[11px] font-bold text-fg">Clear</button>
-                ) : null}
-              </div>
-              <div className="rpma-pane-body">
-              {!drill ? (
-                incidents.length === 0 ? (
-                  <p className="text-[12px] text-muted">No major incidents.</p>
-                ) : (
-                  <ul className="space-y-1">
-                    {incidents.slice(0, 7).map((it, i) => (
-                      <li key={`${it.customerCode}-${i}`}>
-                        <Link to={it.to} className="flex items-center gap-1.5 rounded px-1 py-1 text-[12px] hover:bg-surface-2">
-                          <Badge variant={it.severity === "Red" ? "red" : "amber"}>{it.severity}</Badge>
-                          <span className="min-w-0 truncate font-semibold text-fg">{it.displayName}</span>
-                          <span className="min-w-0 truncate text-muted">{it.text}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )
-              ) : drillRows.length === 0 ? (
-                <p className="text-[12px] text-muted">Nothing in this slice.</p>
-              ) : (
-                <ul className="max-h-56 space-y-1 overflow-y-auto">
-                  {drillRows.map((b) => (
-                    <li key={b.customerCode}>
-                      <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)} className="rpma-exco-row flex items-center gap-2 rounded px-1.5 py-1">
-                        <RagBadge rag={b.healthRag} />
-                        <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{b.displayName}</span>
-                      </SpaLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              </div>
-            </section>
-
-            <section className={cn("rpma-pane is-tile is-click", finsightEstate.oobCustomers ? "is-amber" : "is-green")} {...wgt("finsight")} onClick={() => openTile(finsightEstate.oobCustomers ? "amber" : "green", "finsight")}>
-              <PaneHead tip="FinSight close. Amber tile opens the customer with out-of-balance lines (or the list if several).">
-                FinSight Close
-              </PaneHead>
-              <div className="rpma-pane-body">
-              {finsightEstate.worst.length === 0 ? (
-                <p className="text-[12px] text-muted">Control accounts clear on covered SYSPRO tenants.</p>
-              ) : (
-                <ul className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                  {finsightEstate.worst.map((b) => (
-                    <li key={b.customerCode}>
-                      <Link to="/customers/$code/syspro/dtr" params={{ code: b.customerCode }} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] hover:bg-surface-2">
                         <span className="min-w-0 flex-1 truncate font-semibold">{b.displayName}</span>
-                        <span className="font-mono text-[11px] font-bold text-rag-amber">{b.dtrVarianceLines}</span>
-                      </Link>
+                        <span className="font-mono text-[11px] text-muted">{b.slaOverallPct != null ? `${b.slaOverallPct}%` : "—"}</span>
+                      </SpaLink>
                     </li>
                   ))}
                 </ul>
               )}
-              </div>
-            </section>
-          </div>
+            </div>
+          ) : null}
         </div>
       </AppShell>
     </RequireAuth>

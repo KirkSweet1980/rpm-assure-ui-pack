@@ -2395,4 +2395,101 @@ html.snow .rpma-est-star { color: #8aa0b0; }
 html[data-theme="light"] .rpma-est-empty,
 html.snow .rpma-est-empty { color: #536170; }
 
+/* Command Brief — Exco home */
+.rpma-brief { display: flex; flex-direction: column; gap: 14px; }
+.rpma-brief-head h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--color-fg);
+}
+.rpma-brief-head p { margin: 6px 0 0; color: var(--color-muted); font-size: 13px; font-weight: 650; }
+.rpma-brief-fresh { display: flex; flex-wrap: wrap; gap: 14px 18px; margin: 10px 0 0; padding: 0; list-style: none; }
+.rpma-brief-fresh li { display: flex; gap: 6px; font-size: 12px; }
+.rpma-brief-fresh b { font-weight: 800; color: var(--color-muted); }
+.rpma-brief-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.rpma-brief-kpi {
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, #07111f);
+  padding: 14px 16px;
+  min-height: 88px;
+}
+.rpma-brief-kpi span {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.rpma-brief-kpi b { display: block; margin-top: 4px; font-size: 32px; font-weight: 800; letter-spacing: -0.03em; }
+.rpma-brief-kpi.is-red { box-shadow: inset 0 0 0 1px color-mix(in srgb, #ea4d4d 55%, transparent); }
+.rpma-brief-kpi.is-red b { color: #ea4d4d; }
+.rpma-brief-kpi.is-amber { box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffa21d 55%, transparent); }
+.rpma-brief-kpi.is-amber b { color: #ffa21d; }
+.rpma-brief-kpi.is-green { box-shadow: inset 0 0 0 1px color-mix(in srgb, #8fce4a 50%, transparent); }
+.rpma-brief-kpi.is-green b { color: #8fce4a; }
+.rpma-brief-kpi.is-on { outline: 2px solid #1bb8a6; }
+.rpma-brief-svcs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.rpma-brief-svc {
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, #07111f);
+  padding: 16px 16px 14px;
+  text-align: left;
+  color: inherit;
+  text-decoration: none;
+}
+.rpma-brief-svc em { font-style: normal; font-size: 12px; font-weight: 750; color: var(--color-muted); }
+.rpma-brief-svc strong { display: block; margin: 6px 0 10px; font-size: 36px; font-weight: 800; letter-spacing: -0.04em; }
+.rpma-brief-bar { height: 6px; border-radius: 99px; background: #1a2834; overflow: hidden; }
+.rpma-brief-bar i { display: block; height: 100%; border-radius: 99px; }
+.rpma-brief-svc p { margin: 10px 0 0; font-size: 12px; color: var(--color-muted); }
+.rpma-brief-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.rpma-brief-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 99px;
+  background: #142028;
+  border: 1px solid #1c2c40;
+  color: var(--color-fg);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rpma-brief-pill i { width: 7px; height: 7px; border-radius: 99px; display: block; }
+.rpma-brief-pill[data-rag="Red"] i { background: #ea4d4d; }
+.rpma-brief-pill[data-rag="Amber"] i { background: #ffa21d; }
+.rpma-brief-pill[data-rag="Green"] i { background: #8fce4a; }
+.rpma-brief-drill {
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, #07111f);
+  padding: 12px 14px;
+}
+html[data-theme="light"] .rpma-brief-kpi,
+html[data-theme="light"] .rpma-brief-svc,
+html[data-theme="light"] .rpma-brief-drill,
+html.snow .rpma-brief-kpi,
+html.snow .rpma-brief-svc,
+html.snow .rpma-brief-drill { background: #fff; }
+html[data-theme="light"] .rpma-brief-pill,
+html.snow .rpma-brief-pill { background: #eef2f6; border-color: #c5d0da; }
+html[data-theme="light"] .rpma-brief-bar,
+html.snow .rpma-brief-bar { background: #e2e8ee; }
+@media (max-width: 960px) {
+  .rpma-brief-kpis, .rpma-brief-svcs { grid-template-columns: 1fr 1fr; }
+  .rpma-brief-head h1 { font-size: 20px; }
+}
+@media (max-width: 560px) {
+  .rpma-brief-kpis, .rpma-brief-svcs { grid-template-columns: 1fr; }
+}
+
+
 
