@@ -1,27 +1,45 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
-/** Animated tach — CSS needle sweep + live readout. RPM teal / lime / redline. */
+const CX = 40;
+const CY = 42;
+const R = 30;
+const START = -210;
+const SWEEP = 240;
+const MAX = 8000;
+
+function degFor(rpm: number) {
+  return START + (Math.max(0, Math.min(MAX, rpm)) / MAX) * SWEEP;
+}
+
+/** Needle is driven by SVG transform — not CSS — so it always moves. */
 export function RpmRevCounter({ className }: { className?: string }) {
   const uid = useId().replace(/:/g, "");
+  const needleRef = useRef<SVGGElement | null>(null);
   const [shown, setShown] = useState(1850);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     let t = 0;
-    const id = window.setInterval(() => {
-      t += 0.12;
-      const idle = 1700 + Math.sin(t * 1.7) * 220 + Math.sin(t * 4.1) * 90;
-      const blip = Math.max(0, Math.sin(t * 0.38) - 0.68) * 7800;
-      setShown(Math.round(Math.max(800, Math.min(7600, idle + blip)) / 50) * 50);
-    }, 80);
-    return () => window.clearInterval(id);
+    let raf = 0;
+    let lastNum = 0;
+    const tick = (now: number) => {
+      t += 0.028;
+      const idle = 1750 + Math.sin(t * 2.2) * 280 + Math.sin(t * 5.6) * 90;
+      const blip = Math.max(0, Math.sin(t * 0.55) - 0.55) * 7200;
+      const rpm = Math.max(700, Math.min(7600, idle + blip));
+      const g = needleRef.current;
+      if (g) g.setAttribute("transform", `rotate(${degFor(rpm) - degFor(2000)} ${CX} ${CY})`);
+      if (now - lastNum > 90) {
+        lastNum = now;
+        setShown(Math.round(rpm / 50) * 50);
+      }
+      raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
   }, []);
 
-  const cx = 40;
-  const cy = 42;
-  const r = 30;
-  const start = -210;
-  const sweep = 240;
+  const rest = polar(CX, CY, R - 6, degFor(2000));
 
   return (
     <svg
@@ -31,6 +49,7 @@ export function RpmRevCounter({ className }: { className?: string }) {
       viewBox="0 0 80 66"
       role="img"
       aria-label={`Rev counter ${shown} RPM`}
+      overflow="visible"
     >
       <defs>
         <linearGradient id={`${uid}-arc`} x1="0%" y1="100%" x2="100%" y2="0%">
@@ -48,9 +67,9 @@ export function RpmRevCounter({ className }: { className?: string }) {
           </feMerge>
         </filter>
       </defs>
-      <circle cx={cx} cy={cy} r={r + 4} fill="var(--rev-face, #0b1a3a)" stroke="var(--rev-ring, #1a3a4e)" strokeWidth="1.2" />
+      <circle cx={CX} cy={CY} r={R + 4} fill="var(--rev-face, #0b1a3a)" stroke="var(--rev-ring, #1a3a4e)" strokeWidth="1.2" />
       <path
-        d={arcPath(cx, cy, r, start, start + sweep)}
+        d={arcPath(CX, CY, R, START, START + SWEEP)}
         fill="none"
         stroke={`url(#${uid}-arc)`}
         strokeWidth="5"
@@ -58,9 +77,9 @@ export function RpmRevCounter({ className }: { className?: string }) {
         filter={`url(#${uid}-glow)`}
       />
       {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((n) => {
-        const a = start + (n / 8) * sweep;
-        const outer = polar(cx, cy, r - 1, a);
-        const inner = polar(cx, cy, r - (n % 2 === 0 ? 7 : 4.5), a);
+        const a = START + (n / 8) * SWEEP;
+        const outer = polar(CX, CY, R - 1, a);
+        const inner = polar(CX, CY, R - (n % 2 === 0 ? 7 : 4.5), a);
         return (
           <line
             key={n}
@@ -73,23 +92,23 @@ export function RpmRevCounter({ className }: { className?: string }) {
           />
         );
       })}
-      <g className="rpma-rev-needle" style={{ transformOrigin: `${cx}px ${cy}px` }}>
+      <g ref={needleRef}>
         <line
-          x1={cx}
-          y1={cy}
-          x2={polar(cx, cy, r - 6, start + 70).x}
-          y2={polar(cx, cy, r - 6, start + 70).y}
+          x1={CX}
+          y1={CY}
+          x2={rest.x}
+          y2={rest.y}
           stroke="#8fce4a"
-          strokeWidth="2.2"
+          strokeWidth="2.4"
           strokeLinecap="round"
           filter={`url(#${uid}-glow)`}
         />
-        <circle cx={cx} cy={cy} r="4" fill="#1bb8a6" />
-        <circle cx={cx} cy={cy} r="1.8" fill="#e8edf3" />
+        <circle cx={CX} cy={CY} r="4" fill="#1bb8a6" />
+        <circle cx={CX} cy={CY} r="1.8" fill="#e8edf3" />
       </g>
       <text
-        x={cx}
-        y={cy + 15}
+        x={CX}
+        y={CY + 15}
         textAnchor="middle"
         fill="#8fce4a"
         fontFamily="Inter, ui-monospace, monospace"
@@ -99,8 +118,8 @@ export function RpmRevCounter({ className }: { className?: string }) {
         {shown}
       </text>
       <text
-        x={cx}
-        y={cy + 23}
+        x={CX}
+        y={CY + 23}
         textAnchor="middle"
         fill="var(--rev-readout, #2d6a8a)"
         fontFamily="Inter, sans-serif"
