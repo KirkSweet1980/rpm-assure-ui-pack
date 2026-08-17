@@ -410,6 +410,18 @@ export function customerLiveStatus(
       hint: crit ? `${crit} critical` : "No critical alerts",
     },
     "/rmm/sla": { rag: off(Boolean(c.rmm)), cover: Boolean(c.rmm), href: `${base}/rmm/sla`, hint: "RMM SLA" },
+    "/rmm/iops": {
+      rag: off(Boolean(c.rmm) && srvN > 0),
+      cover: Boolean(c.rmm) && srvN > 0,
+      href: `${base}/rmm/iops`,
+      hint: srvN > 0 ? "Disk IOPS" : "No Cover for Devices",
+    },
+    "/rmm/events": {
+      rag: off(Boolean(c.rmm)),
+      cover: Boolean(c.rmm),
+      href: `${base}/rmm/events`,
+      hint: "Event logs",
+    },
     "/cove": { rag: off(coveDevCover), cover: coveDevCover, href: `${base}/cove`, hint: coveDevCover ? "Backup overview" : "No Cover for Devices" },
     "/cove/devices": {
       rag: coveDevRag,

@@ -2020,13 +2020,14 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   display: flex;
   width: 100%;
   gap: 0;
-  overflow: hidden;
+  overflow-x: auto;
   background: #0a1c2a;
   border-bottom: 1px solid #14344a;
 }
 .rpma-emp-group {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: max-content;
+
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -2047,15 +2048,15 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   border-bottom: 1px solid color-mix(in srgb, #14b8a6 28%, #14344a);
 }
 .rpma-emp-group.is-on { background: color-mix(in srgb, #14b8a6 8%, transparent); }
-.rpma-emp-tools { display: flex; justify-content: space-evenly; gap: 0; }
+.rpma-emp-tools { display: flex; justify-content: space-evenly; gap: 2px; }
 .rpma-emp-tool {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   gap: 2px;
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width: 46px;
   padding: 3px 1px 2px;
   border-radius: 6px;
   color: #c9d6e0;

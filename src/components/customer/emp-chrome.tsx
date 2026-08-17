@@ -1,111 +1,72 @@
 import type { ReactNode } from "react";
-import {
-  Activity,
-  AlertTriangle,
-  Archive,
-  Ban,
-  Bell,
-  ClipboardList,
-  Cloud,
-  Gauge,
-  HardDrive,
-  KeyRound,
-  LayoutDashboard,
-  Monitor,
-  Package,
-  RotateCcw,
-  Scale,
-  Server,
-  Shield,
-  ShieldCheck,
-  Siren,
-  Ticket,
-  type LucideIcon,
-} from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CustomerSwitcher } from "@/components/nav/customer-switcher";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
+import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
 import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
 import { EmpInspector } from "@/components/chrome/emp-inspector";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
 type RibbonItem = { label: string; rel: string; icon: LucideIcon };
 type RibbonGroup = { id: string; title: string; match: string; items: RibbonItem[] };
 
+const GROUP_TITLE: Record<string, string> = {
+  estate: "Customer Eco System",
+  syspro: "SYSPRO Landscape",
+  rmm: "RMM | Infrastructure Management",
+  cove: "RPM Cloud Backup",
+  epp: "RPM End Point Protection",
+  csp: "Microsoft 365",
+  tickets: "RPM Service Desk",
+};
+
+const SHORT: Record<string, string> = {
+  "Tenant Overview": "Overview",
+  "Customer Assurance": "Assurance",
+  "Customer Incidents": "Incidents",
+  "Customer Risks": "Risks",
+  "Customer SLA": "SLA",
+  "Job Logging": "Jobs",
+  "Patch Compliance": "Patch",
+  "Disk IOPS": "IOPS",
+  "Event Logs": "Events",
+  "Service SLA": "SLA",
+  "Backup Devices": "Devices",
+  "Security Incidents": "Incidents",
+  "Open Tickets": "Open",
+  "Resolved Tickets": "Resolved",
+  "Closed Tickets": "Closed",
+  "Secure Score": "Score",
+  "Global Admins": "Admins",
+};
+
+function shortLabel(label: string) {
+  return SHORT[label] ?? label;
+}
+
 const RIBBON: RibbonGroup[] = [
   {
     id: "estate",
-    title: "Customer Eco System",
+    title: GROUP_TITLE.estate,
     match: "",
-    items: [
-      { label: "Overview", rel: "", icon: LayoutDashboard },
-      { label: "Assurance", rel: "/ams", icon: ShieldCheck },
-      { label: "Incidents", rel: "/ams/incidents", icon: AlertTriangle },
-      { label: "Risks", rel: "/ams/risks", icon: Activity },
-      { label: "SLA", rel: "/ams/sla", icon: Gauge },
-    ],
+    items: ECOSYSTEM_MODULES.map((m) => ({
+      label: shortLabel(m.label),
+      rel: m.path,
+      icon: m.icon,
+    })),
   },
-  {
-    id: "syspro",
-    title: "SYSPRO Landscape",
-    match: "/syspro",
-    items: [
-      { label: "Overview", rel: "/syspro", icon: LayoutDashboard },
-      { label: "FinSight", rel: "/syspro/dtr", icon: Scale },
-      { label: "Licence", rel: "/syspro/license", icon: KeyRound },
-      { label: "Jobs", rel: "/syspro/jobs", icon: ClipboardList },
-      { label: "Health", rel: "/syspro/health", icon: Activity },
-    ],
-  },
-  {
-    id: "rmm",
-    title: "RMM | Infrastructure Management",
-    match: "/rmm",
-    items: [
-      { label: "Overview", rel: "/rmm", icon: Server },
-      { label: "Servers", rel: "/rmm/devices", icon: Server },
-      { label: "Workstations", rel: "/rmm/workstations", icon: Monitor },
-      { label: "Patch", rel: "/rmm/patch", icon: Package },
-      { label: "Alerts", rel: "/rmm/alerts", icon: Bell },
-    ],
-  },
-  {
-    id: "backup",
-    title: "RPM Cloud Backup",
-    match: "/cove",
-    items: [
-      { label: "Overview", rel: "/cove", icon: Cloud },
-      { label: "Devices", rel: "/cove/devices", icon: HardDrive },
-      { label: "Recovery", rel: "/cove/recovery", icon: RotateCcw },
-      { label: "Retention", rel: "/cove/retention", icon: Archive },
-      { label: "SLA", rel: "/cove/sla", icon: Gauge },
-    ],
-  },
-  {
-    id: "epp",
-    title: "RPM End Point Protection",
-    match: "/epp",
-    items: [
-      { label: "Overview", rel: "/epp", icon: Shield },
-      { label: "Endpoints", rel: "/epp/endpoints", icon: Monitor },
-      { label: "Policies", rel: "/epp/modules", icon: KeyRound },
-      { label: "Incidents", rel: "/epp/incidents", icon: Siren },
-      { label: "Quarantine", rel: "/epp/quarantine", icon: Ban },
-    ],
-  },
-  {
-    id: "tickets",
-    title: "RPM Service Desk",
-    match: "/tickets",
-    items: [
-      { label: "Overview", rel: "/tickets", icon: Ticket },
-      { label: "Open", rel: "/tickets/open", icon: AlertTriangle },
-      { label: "Resolved", rel: "/tickets/resolved", icon: ClipboardList },
-      { label: "Closed", rel: "/tickets/closed", icon: Archive },
-      { label: "SLA", rel: "/tickets/sla", icon: Gauge },
-    ],
-  },
+  ...CUSTOMER_PILLARS.map((p) => ({
+    id: p.id,
+    title: GROUP_TITLE[p.id] ?? p.title,
+    match: p.overview,
+    items: p.modules.map((m) => ({
+      label: shortLabel(m.label),
+      rel: m.path,
+      icon: m.icon,
+    })),
+  })),
 ];
 
 function ragOf(
@@ -118,7 +79,10 @@ function ragOf(
   if (rel.startsWith("/rmm")) return live?.pillars.rmm?.rag ?? "Off";
   if (rel.startsWith("/cove")) return live?.pillars.cove?.rag ?? "Off";
   if (rel.startsWith("/epp")) return live?.pillars.epp?.rag ?? "Off";
-  if (rel.startsWith("/tickets") || rel.startsWith("/ams")) return live?.pillars.tickets?.rag ?? live?.pillars.ams?.rag ?? "Off";
+  if (rel.startsWith("/csp")) return live?.pillars.csp?.rag ?? "Off";
+  if (rel.startsWith("/tickets") || rel.startsWith("/ams")) {
+    return live?.pillars.tickets?.rag ?? live?.pillars.ams?.rag ?? "Off";
+  }
   return live?.pillars.eco?.rag ?? "Off";
 }
 
@@ -143,7 +107,7 @@ export function EmpChrome({
     RIBBON.find((g) => g.match && (rest === g.match || rest.startsWith(`${g.match}/`))) ??
     RIBBON[0];
   const item =
-    group.items.find((it) => it.rel && (rest === it.rel || rest.startsWith(`${it.rel}/`))) ??
+    [...group.items].reverse().find((it) => it.rel && (rest === it.rel || rest.startsWith(`${it.rel}/`))) ??
     group.items[0];
   const flag = live?.modules[item.rel] ?? live?.modules[rest] ?? live?.pillars[group.id];
   const ctx = {
