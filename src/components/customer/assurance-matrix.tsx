@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
+import { CUSTOMER_PILLARS } from "@/components/nav/customer-modules-panel";
 import { coverFromDetail, isPillarCovered, type PillarId } from "@/lib/data/cover";
 import { customerLiveStatus, type LiveTone } from "@/lib/data/live-status";
 import { ticketStats } from "@/lib/data/ticket-feed";
@@ -111,6 +112,18 @@ export function AssuranceMatrix({ data }: { data: CustomerDetailPayload }) {
           <h2>{customer.displayName}</h2>
           <p>Assurance matrix drill-down</p>
         </header>
+        <nav className="rpma-amx-chips" aria-label="Services">
+          {rows.map((r) => (
+            <SpaLink
+              key={r.id}
+              href={`${base}${r.href}`}
+              className={cn("rpma-amx-chip", sel === r.id && "is-on")}
+              onClick={() => setSel(r.id)}
+            >
+              {r.name}
+            </SpaLink>
+          ))}
+        </nav>
         <div className="rpma-amx-table-wrap">
           <table className="rpma-amx-table">
             <thead>
@@ -118,9 +131,9 @@ export function AssuranceMatrix({ data }: { data: CustomerDetailPayload }) {
                 <th>Cover</th>
                 <th>Health</th>
                 <th>Jobs</th>
-                <th>Patch</th>
-                <th>Backup success</th>
-                <th>Open tickets</th>
+                <th className="hide-sm">Patch</th>
+                <th className="hide-sm">Backup</th>
+                <th>Tickets</th>
               </tr>
             </thead>
             <tbody>
@@ -135,13 +148,23 @@ export function AssuranceMatrix({ data }: { data: CustomerDetailPayload }) {
                     <td>
                       <SpaLink href={`${base}${r.href}`} className="rpma-amx-svc">
                         <span className="rpma-amx-ico">
-                          <Icon className="size-4" />
+                          <Icon className="size-3.5" />
                         </span>
                         <span>
                           <strong>{r.name}</strong>
                           <em>{r.sub}</em>
                         </span>
                       </SpaLink>
+                      <div className="rpma-amx-fly" role="menu">
+                        {(CUSTOMER_PILLARS.find((p) => p.id === r.id)?.modules ?? [])
+                          .filter((m) => m.path !== r.href)
+                          .slice(0, 8)
+                          .map((m) => (
+                            <SpaLink key={m.path} href={`${base}${m.path}`} className="rpma-amx-fly-a">
+                              {m.label}
+                            </SpaLink>
+                          ))}
+                      </div>
                     </td>
                     <td>
                       <span className={cn("rpma-amx-pill", r.on ? "is-cover" : "is-off")}>
@@ -155,8 +178,8 @@ export function AssuranceMatrix({ data }: { data: CustomerDetailPayload }) {
                       {r.health.text}
                     </td>
                     <td>{r.jobs}</td>
-                    <td>{r.patch}</td>
-                    <td>{r.backup}</td>
+                    <td className="hide-sm">{r.patch}</td>
+                    <td className="hide-sm">{r.backup}</td>
                     <td>
                       <span className={cn(r.open > 0 && r.id === "tickets" && "text-amber-300")}>
                         {r.id === "tickets" || r.open > 0 ? `${r.open} open` : "—"}
