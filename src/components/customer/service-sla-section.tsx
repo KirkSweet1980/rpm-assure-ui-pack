@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { NoCoverPanel } from "@/components/ui/no-cover";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { buildServiceSla, type ServiceSlaPack } from "@/lib/data/service-sla";
 import { INDUSTRY_SLA_DOC } from "@/lib/data/sla-metrics";
+import { TenantTree } from "@/components/customer/tenant-tree";
 import type { IndustryPillarKey } from "@/lib/data/sla-metrics";
 import type { CustomerDetailPayload } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
@@ -170,7 +172,46 @@ export function ServiceSlaSection({
         <h2 className="text-[15px] font-bold text-fg">{TITLES[pillar]}</h2>
         <p className="text-[12px] text-muted">{pack.headline}</p>
       </div>
-      <ServiceSlaTable pack={pack} />
+      <ServiceSlaTree pack={pack} />
     </div>
+  );
+}
+
+function ServiceSlaTree({ pack }: { pack: ServiceSlaPack }) {
+  const [sel, setSel] = useState(pack.lines[0]?.id ?? "");
+  const line = pack.lines.find((l) => l.id === sel) ?? pack.lines[0];
+  return (
+    <TenantTree
+      title="Metrics"
+      items={pack.lines.map((l) => ({
+        id: l.id,
+        label: l.metric,
+        meta: l.actualPct != null ? `${l.actualPct}%` : l.badge ?? "—",
+        tone: l.tone === "green" || l.tone === "amber" || l.tone === "red" ? l.tone : "off",
+      }))}
+      selected={line?.id ?? ""}
+      onSelect={setSel}
+    >
+      {line ? (
+        <Card>
+          <CardHead>{line.metric}</CardHead>
+          <CardContent className="space-y-2 text-[12px]">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <StatCard label="Target" value={line.targetLabel} />
+              <StatCard
+                label="Actual"
+                value={line.actualPct != null ? `${line.actualPct}%` : "—"}
+                tone={line.tone === "default" ? "default" : line.tone}
+                hint={line.actualLabel}
+              />
+              <StatCard label="Status" value={line.measured ? line.tone : (line.badge ?? "Not scored")} />
+            </div>
+            <p className="text-muted">{line.how}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <ServiceSlaTable pack={pack} />
+      )}
+    </TenantTree>
   );
 }

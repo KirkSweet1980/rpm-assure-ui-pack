@@ -2702,6 +2702,74 @@ html.snow .rpma-brief-bar { background: #e2e8ee; }
   .rpma-emp-titles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+.rpma-ttree {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 0;
+}
+.rpma-ttree-nav {
+  position: sticky;
+  top: 0;
+  border: 1px solid #1c2c40;
+  border-radius: 10px;
+  background: #0c1828;
+  padding: 10px 8px;
+  max-height: calc(100dvh - var(--pc-header-height) - 90px);
+  overflow: auto;
+}
+.rpma-ttree-nav h2 {
+  margin: 0 6px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8aa0b0;
+}
+.rpma-ttree-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rpma-ttree-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: #d7e4ee;
+  border-radius: 7px;
+  padding: 7px 8px;
+  cursor: pointer;
+}
+.rpma-ttree-item i {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 99px;
+  background: #4b5d6c;
+  flex: 0 0 auto;
+}
+.rpma-ttree-item i[data-tone="green"] { background: #8fce4a; box-shadow: 0 0 8px #8fce4a99; }
+.rpma-ttree-item i[data-tone="amber"] { background: #ffa21d; box-shadow: 0 0 8px #ffa21d99; }
+.rpma-ttree-item i[data-tone="red"] { background: #ea4d4d; box-shadow: 0 0 8px #ea4d4d99; }
+.rpma-ttree-item span { display: grid; gap: 1px; min-width: 0; }
+.rpma-ttree-item strong { font-size: 12px; font-weight: 750; }
+.rpma-ttree-item em { font-style: normal; font-size: 10px; color: #8aa0b0; }
+.rpma-ttree-item.is-on { background: color-mix(in srgb, #14b8a6 16%, transparent); }
+.rpma-ttree-pane { min-width: 0; }
+@media (max-width: 860px) {
+  .rpma-ttree { grid-template-columns: 1fr; }
+  .rpma-ttree-nav { position: static; max-height: none; }
+}
+html[data-theme="light"] .rpma-ttree-nav,
+html.snow .rpma-ttree-nav { background: #eef2f6; border-color: #c5d0da; }
+html[data-theme="light"] .rpma-ttree-item,
+html.snow .rpma-ttree-item { color: #1b2836; }
+html[data-theme="light"] .rpma-ttree-nav h2,
+html.snow .rpma-ttree-nav h2,
+html[data-theme="light"] .rpma-ttree-item em,
+html.snow .rpma-ttree-item em { color: #5b6b79; }
+
 .rpma-sla-banner {
   display: flex;
   flex-direction: column;
