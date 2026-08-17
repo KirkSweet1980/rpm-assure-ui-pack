@@ -20,7 +20,14 @@ import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type 
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { SpaLink } from "@/components/nav/spa-link";
-import { keepLiveIops, iopsBand, classifyDrive, DRIVE_STATS } from "@/lib/data/agent-iops";
+import {
+  keepLiveIops,
+  iopsBand,
+  classifyDrive,
+  DRIVE_STATS,
+  expectedIopsForMedia,
+  expectedLatencyMsForMedia,
+} from "@/lib/data/agent-iops";
 import { useDashboardConfig } from "@/lib/settings/use-dashboard-config";
 import {
   Bar,
@@ -2229,8 +2236,8 @@ function IopsPerfMatrix({
           const actual = Number(r.totalIops) || 0;
           const kind = classifyDrive(r.mediaType);
           const stat = DRIVE_STATS[kind];
-          const expected = stat.iops;
-          const expectedLat = stat.latencyMs;
+          const expected = expectedIopsForMedia(r.mediaType) || stat.iops;
+          const expectedLat = expectedLatencyMsForMedia(r.mediaType) || stat.latencyMs;
           const band = iopsBand(actual, expected, r.queueLen);
           const scale = Math.max(expected * 1.4, actual, 1);
           const actPct = Math.min(100, (actual / scale) * 100);
