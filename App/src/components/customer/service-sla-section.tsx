@@ -76,7 +76,7 @@ export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
                   </td>
                   <td className="px-2 py-1.5">
                     {!l.measured ? (
-                      <Badge variant="muted">{l.excluded ? "Not in plan" : "Not scored"}</Badge>
+                      <Badge variant="muted">{l.badge ?? (l.excluded ? "No plan" : "Not scored")}</Badge>
                     ) : l.tone === "green" ? (
                       <Badge variant="green">Met</Badge>
                     ) : l.tone === "amber" ? (

@@ -26,6 +26,7 @@ export type ServiceSlaLine = {
   contractual: boolean;
   how: string;
   excluded?: boolean;
+  badge?: string;
 };
 
 export type ServiceSlaPack = {
@@ -57,7 +58,7 @@ function line(
   actualPct: number | null,
   actualLabel: string,
   measured: boolean,
-  extra?: { excluded?: boolean },
+  extra?: { excluded?: boolean; badge?: string },
 ): ServiceSlaLine {
   const def = INDUSTRY_SLA_LINES[pillar].find((d) => d.id === defId);
   const targetPct = def?.targetPct ?? null;
@@ -80,6 +81,7 @@ function line(
     contractual: Boolean(def?.contractual),
     how: def?.how ?? "",
     excluded,
+    badge: extra?.badge,
   };
 }
 
@@ -196,51 +198,68 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
   const tFail = rec?.testFailedCount ?? 0;
   const tDen = tOk + tFail;
   const devices = data.cove?.devices ?? [];
-  const inPlan =
-    (rec?.recoveryTestingCount ?? 0) + (rec?.standbyImageCount ?? 0) ||
-    devices.filter((d) => (d.recoveryPlanType ?? 0) >= 1).length;
+  const rt =
+    rec?.recoveryTestingCount ??
+    devices.filter((d) => (d.recoveryPlanType ?? 0) === 1).length;
+  const si =
+    rec?.standbyImageCount ??
+    devices.filter((d) => (d.recoveryPlanType ?? 0) === 2).length;
+  const inPlan = rt + si;
+  const lastTest = rec?.lastRecoveryTestAt ?? s?.recovery?.lastRecoveryTestAt ?? null;
+  const lastLbl = lastTest
+    ? `last test ${new Date(lastTest).toISOString().slice(0, 10)}`
+    : "last test not on last collect";
+  const planStats = `${rt} Recovery Testing · ${si} Standby Image · ${lastLbl}`;
+
   let restore: number | null = null;
-  let restoreLabel = "No recovery plan on this tenant — not scored";
+  let restoreLabel = "No Recovery Testing on this tenant";
   let restoreExcluded = false;
   let restoreMeasured = false;
+  let restoreBadge: string | undefined;
   if (tDen > 0) {
     restore = clamp((tOk / tDen) * 100);
-    restoreLabel = `${tOk}/${tDen} test restores passed`;
+    restoreLabel = `${tOk}/${tDen} tests passed · ${planStats}`;
     restoreMeasured = slaCover;
   } else if (inPlan > 0) {
-    restore = null;
-    restoreLabel = `${inPlan} device(s) in Recovery Testing · last session is not on the statistics API (emails still fire). Not scored as a miss.`;
+    restoreLabel = planStats;
     restoreExcluded = slaCover;
-    restoreMeasured = false;
+    restoreBadge = "In plan";
   } else {
     restoreExcluded = slaCover;
+    restoreBadge = "No plan";
   }
 
-  const lastTest = rec?.lastRecoveryTestAt ?? s?.recovery?.lastRecoveryTestAt ?? null;
   const ageH = hoursAgo(lastTest);
   let freq: number | null = null;
-  let freqLabel = "No recovery plan on this tenant — not scored";
+  let freqLabel = "No Recovery Testing on this tenant";
   let freqExcluded = false;
   let freqMeasured = false;
+  let freqBadge: string | undefined;
   if (ageH != null) {
     const days = ageH / 24;
-    freq = days <= 31 ? 100 : days <= 93 ? 70 : 35;
-    freqLabel = `Last test ${Math.round(days)} day(s) ago`;
+    freq = days <= 21 ? 100 : days <= 31 ? 70 : 35;
+    freqLabel = `Last test ${Math.round(days)} day(s) ago · biweekly target`;
     freqMeasured = slaCover;
   } else if (inPlan > 0) {
-    freq = null;
-    freqLabel = `${inPlan} in Recovery Testing · session time not published by EnumerateAccountStatistics`;
+    freqLabel = planStats;
     freqExcluded = slaCover;
-    freqMeasured = false;
+    freqBadge = "In plan";
   } else {
     freqExcluded = slaCover;
+    freqBadge = "No plan";
   }
 
   const lines: ServiceSlaLine[] = [
     line("cove-success", "cove", success, successLabel, slaCover && success != null),
     line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
-    line("cove-restore", "cove", restore, restoreLabel, restoreMeasured, { excluded: restoreExcluded }),
-    line("cove-test-freq", "cove", freq, freqLabel, freqMeasured, { excluded: freqExcluded }),
+    line("cove-restore", "cove", restore, restoreLabel, restoreMeasured, {
+      excluded: restoreExcluded,
+      badge: restoreBadge,
+    }),
+    line("cove-test-freq", "cove", freq, freqLabel, freqMeasured, {
+      excluded: freqExcluded,
+      badge: freqBadge,
+    }),
   ];
 
   return {

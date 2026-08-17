@@ -251,7 +251,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 95–99% of test restores",
       contractual: true,
       measurable: true,
-      how: "Passed recovery tests ÷ (passed + failed) when the last session time is on the device. In Recovery Testing with no API timestamp is excluded — not a miss. Cove emails prove tests run; statistics API does not publish RVO/RVL.",
+      how: "Recovery Testing / Standby Image counts from last collect. Pass rate scores when a last-test time is stored.",
     },
     {
       id: "cove-test-freq",
@@ -260,7 +260,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "Monthly (critical) / quarterly (others)",
       contractual: true,
       measurable: true,
-      how: "Age of last recovery test on devices that have a plan. In plan with no test = miss. No plan = excluded.",
+      how: "Days since last stored recovery test. Biweekly target: green ≤ 21 days. Plan on with no stored date shows as In plan.",
     },
   ],
   epp: [
