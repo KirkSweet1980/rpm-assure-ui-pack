@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Star, XCircle } from "lucide-react";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
+import { coverFromDetail } from "@/lib/data/cover";
+import { ticketStats } from "@/lib/data/ticket-feed";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
+import { SpaLink } from "@/components/nav/spa-link";
+import { RagBadge } from "@/components/portfolio/rag-badge";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
 const PAGE = 11;
@@ -183,6 +187,92 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
     return out;
   }, [customer, data]);
 
+  const cover = coverFromDetail(data);
+  const tix = ticketStats(data.incidents);
+  const code = customer.customerCode;
+  const base = `/customers/${code}`;
+  const lastCollect = [
+    customer.lastImportAt,
+    customer.pulsewayLastImportAt,
+    customer.coveLastImportAt,
+    customer.eppLastImportAt,
+    customer.cspLastImportAt,
+  ].reduce<string | null>((best, v) => {
+    if (!v) return best;
+    if (!best) return v;
+    return new Date(v).getTime() > new Date(best).getTime() ? v : best;
+  }, null);
+  const score = data.operationalAssurance?.scorePct;
+  const openRisks = (data.risks ?? []).filter((r) => !/closed/i.test(String(r.status ?? "")));
+  const jobs = customer.sysproJobErrorCount ?? 0;
+  const dtr = customer.sysproDtrVarianceLines ?? 0;
+  const srvOn = customer.pulsewayServerOnline ?? 0;
+  const srvOff = customer.pulsewayServerOffline ?? 0;
+  const coveFail = (customer.coveFailedDeviceCount ?? 0) + (customer.coveStaleDeviceCount ?? 0);
+  const coveN = customer.coveDeviceCount ?? data.cove?.devices?.length ?? 0;
+  const eppN = customer.eppDeviceCount ?? data.epp?.devices?.length ?? 0;
+  const infected = customer.bdInfectedCount ?? 0;
+  const iopsN = data.rmm?.agentIops?.length ?? 0;
+
+  const services = [
+    {
+      on: cover.syspro,
+      name: "SYSPRO Landscape",
+      href: `${base}/syspro`,
+      bits: [
+        `${customer.operatorCount || data.operators?.length || 0} operators`,
+        `${jobs} job error${jobs === 1 ? "" : "s"}`,
+        `${dtr} FinSight OOB`,
+      ],
+    },
+    {
+      on: cover.rmm,
+      name: "RMM | Infrastructure",
+      href: `${base}/rmm`,
+      bits: [
+        `${srvOn} server online`,
+        `${srvOff} offline`,
+        `${iopsN} IOPS volume${iopsN === 1 ? "" : "s"}`,
+      ],
+    },
+    {
+      on: cover.cove,
+      name: "RPM Cloud Backup",
+      href: `${base}/cove`,
+      bits: [`${coveN} device${coveN === 1 ? "" : "s"}`, `${coveFail} failed / stale`],
+    },
+    {
+      on: Boolean(cover.epp),
+      name: "RPM End Point Protection",
+      href: `${base}/epp`,
+      bits: [`${eppN} endpoint${eppN === 1 ? "" : "s"}`, infected ? `${infected} infected` : "clean"],
+    },
+    {
+      on: Boolean(cover.csp),
+      name: "Microsoft 365",
+      href: `${base}/csp`,
+      bits: [
+        `${customer.cspUserCount ?? data.csp?.users?.length ?? 0} users`,
+        `${customer.cspLicenseSkuCount ?? data.csp?.licenses?.length ?? 0} SKUs`,
+      ],
+    },
+    {
+      on: true,
+      name: "RPM Service Desk",
+      href: `${base}/tickets`,
+      bits: [`${tix.open} open`, `${tix.total} total`, tix.breaches ? `${tix.breaches} clock miss` : "clocks ok"],
+    },
+  ];
+
+  const kpis = [
+    { label: "Assurance", value: score != null ? `${score}%` : "—", href: `${base}/ams` },
+    { label: "Open tickets", value: tix.open, href: `${base}/tickets/open` },
+    { label: "Open risks", value: openRisks.length, href: `${base}/ams/risks` },
+    { label: "Job errors", value: cover.syspro ? jobs : "—", href: `${base}/syspro/jobs` },
+    { label: "Servers offline", value: cover.rmm ? srvOff : "—", href: `${base}/rmm/devices` },
+    { label: "Backup issues", value: cover.cove ? coveFail : "—", href: `${base}/cove/devices` },
+  ];
+
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const safe = Math.min(page, pages);
   const slice = rows.slice((safe - 1) * PAGE, safe * PAGE);
@@ -191,6 +281,35 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <div className={cn("rpma-est", compact && "is-compact")}>
+      <header className="rpma-eco-head">
+        <div className="rpma-eco-head-row">
+          <RagBadge rag={customer.healthRag} title={customer.healthSummary} />
+          <div>
+            <h2>{customer.displayName}</h2>
+            <p>Customer Eco System · last collect {formatSastDateTime(lastCollect)}</p>
+          </div>
+        </div>
+        <div className="rpma-eco-kpis">
+          {kpis.map((k) => (
+            <SpaLink key={k.label} href={k.href} className="rpma-eco-kpi">
+              <em>{k.label}</em>
+              <strong>{k.value}</strong>
+            </SpaLink>
+          ))}
+        </div>
+        <div className="rpma-eco-svcs">
+          {services.map((s) => (
+            <SpaLink
+              key={s.name}
+              href={s.href}
+              className={cn("rpma-eco-svc", s.on ? "is-on" : "is-off")}
+            >
+              <strong>{s.name}</strong>
+              <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
+            </SpaLink>
+          ))}
+        </div>
+      </header>
       <div className="rpma-est-scroll">
         <table className="rpma-est-table">
           <thead>
