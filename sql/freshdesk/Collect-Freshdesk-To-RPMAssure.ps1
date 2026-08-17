@@ -30,6 +30,9 @@ if (-not $FreshdeskLookbackDays) { $FreshdeskLookbackDays = 30 }
 Write-Log '=== Freshdesk collect start ==='
 Write-Log ('domain=' + $FreshdeskDomain + ' lookbackDays=' + $FreshdeskLookbackDays)
 
+$sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
+if (-not (Test-Path $sqlcmd)) { $sqlcmd = 'sqlcmd' }
+
 $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${FreshdeskApiKey}:X"))
 $hdr = @{
   Authorization  = "Basic $b64"
@@ -107,18 +110,70 @@ function Sql-Json($obj) {
   } catch { return 'NULL' }
 }
 
-$since = (Get-Date).ToUniversalTime().AddDays(-[int]$FreshdeskLookbackDays).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+$since = (Get-Date).ToUniversalTime().AddDays(-[int]$FreshdeskLookbackDays)
+$sinceDay = $since.ToString('yyyy-MM-dd')
 $all = New-Object System.Collections.Generic.List[object]
-$page = 1
-do {
-  $path = "tickets?per_page=100&page=$page&updated_since=$since&order_by=updated_at&order_type=asc"
-  $batch = @(Invoke-FdGet $path)
-  if ($batch.Count -eq 0) { break }
-  foreach ($t in $batch) { [void]$all.Add($t) }
-  Write-Log ('page=' + $page + ' got=' + $batch.Count + ' total=' + $all.Count)
-  $page++
-  Start-Sleep -Milliseconds 250
-} while ($page -le 300 -and $batch.Count -eq 100)
+$seen = @{}
+
+function Add-Tickets($items, [string]$src) {
+  $n = 0
+  foreach ($t in @($items)) {
+    $tid = One-Val $t.id
+    if (-not $tid) { continue }
+    $key = [string]$tid
+    if ($seen.ContainsKey($key)) { continue }
+    $seen[$key] = $true
+    [void]$all.Add($t)
+    $n++
+  }
+  if ($n -gt 0) { Write-Log ('add ' + $src + ' +' + $n + ' total=' + $all.Count) }
+}
+
+# 1) Recent list (last ~30 days, default view) — extra safety net
+try {
+  $page = 1
+  do {
+    $batch = @(Invoke-FdGet ("tickets?per_page=100&page=$page&order_by=updated_at&order_type=desc"))
+    if ($batch.Count -eq 0) { break }
+    Add-Tickets $batch ('list page=' + $page)
+    $page++
+    Start-Sleep -Milliseconds 200
+  } while ($page -le 10 -and $batch.Count -eq 100)
+} catch {
+  Write-Log ('list tickets warn ' + $_.Exception.Message)
+}
+
+# 2) Search per mapped company (this is the real pull — list API is scoped)
+$idsTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -s '|' -Q "SET NOCOUNT ON; SELECT DISTINCT CompanyId, CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WHERE Active = 1 AND CompanyId IS NOT NULL;"
+$maps = @()
+foreach ($line in @($idsTxt)) {
+  if ([string]::IsNullOrWhiteSpace($line)) { continue }
+  $p = $line.Split('|')
+  if ($p.Length -lt 2) { continue }
+  $id = $p[0].Trim(); $code = $p[1].Trim()
+  if ($id -match '^\d+$') { $maps += [pscustomobject]@{ Id = $id; Code = $code } }
+}
+Write-Log ('mapped companies with id=' + $maps.Count)
+
+foreach ($m in $maps) {
+  $q = 'company_id:' + $m.Id + " AND updated_at:>'" + $sinceDay + "'"
+  $page = 1
+  do {
+    $urlPath = 'search/tickets?page=' + $page + '&query=' + [uri]::EscapeDataString('"' + $q + '"')
+    try {
+      $sr = Invoke-FdGet $urlPath
+    } catch {
+      Write-Log ('search fail ' + $m.Code + ' page=' + $page + ' ' + $_.Exception.Message)
+      break
+    }
+    $rows = @()
+    if ($sr.results) { $rows = @($sr.results) }
+    elseif ($sr -is [System.Array]) { $rows = @($sr) }
+    Add-Tickets $rows ('search ' + $m.Code + ' p' + $page + ' apiTotal=' + $sr.total)
+    $page++
+    Start-Sleep -Milliseconds 300
+  } while ($page -le 10 -and $rows.Count -ge 30)
+}
 
 Write-Log ('tickets pulled=' + $all.Count)
 
@@ -179,7 +234,9 @@ foreach ($t in $all) {
   $cfJson = Sql-Json $t.custom_fields
 
   $codeExpr = 'NULL'
-  if ($coName) {
+  if ($coId) {
+    $codeExpr = '(SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND CompanyId = ' + (Sql-Num $coId) + ')'
+  } elseif ($coName) {
     $codeExpr = '(SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND LTRIM(RTRIM(CompanyName)) = LTRIM(RTRIM(' + (Sql-Esc $coName) + ')) )'
   }
 
@@ -228,9 +285,6 @@ END
 $sqlFile = Join-Path $logDir ("freshdesk_load_{0}.sql" -f $stamp)
 [IO.File]::WriteAllText($sqlFile, $sb.ToString())
 Write-Log ('SQL written ' + $sqlFile)
-
-$sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
-if (-not (Test-Path $sqlcmd)) { $sqlcmd = 'sqlcmd' }
 
 & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $sqlFile
 if ($LASTEXITCODE -ne 0) {
