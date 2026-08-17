@@ -40,12 +40,21 @@ GO
 
 UPDATE t SET t.CustomerCode = m.CustomerCode
 FROM dbo.Freshdesk_Tickets t
+JOIN dbo.Dim_Freshdesk_TicketMap m ON m.Active = 1 AND m.TicketId = t.TicketId
+WHERE t.CustomerCode IS NULL OR t.CustomerCode <> m.CustomerCode;
+
+UPDATE t SET t.CustomerCode = m.CustomerCode
+FROM dbo.Freshdesk_Tickets t
 JOIN dbo.Dim_Freshdesk_CompanyMap m ON m.Active = 1
  AND (
       (t.CompanyId IS NOT NULL AND m.CompanyId IS NOT NULL AND t.CompanyId = m.CompanyId)
    OR LTRIM(RTRIM(ISNULL(t.CompanyName,N''))) = LTRIM(RTRIM(m.CompanyName))
  )
-WHERE t.CustomerCode IS NULL OR t.CustomerCode <> m.CustomerCode;
+WHERE (t.CustomerCode IS NULL OR t.CustomerCode <> m.CustomerCode)
+  AND NOT EXISTS (
+    SELECT 1 FROM dbo.Dim_Freshdesk_TicketMap x
+    WHERE x.Active = 1 AND x.TicketId = t.TicketId
+  );
 
 ;WITH latest AS (
   SELECT MAX(SnapshotDate) AS Snap FROM dbo.Freshdesk_Tickets

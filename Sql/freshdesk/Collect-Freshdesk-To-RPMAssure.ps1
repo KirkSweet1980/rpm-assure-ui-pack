@@ -249,6 +249,35 @@ foreach ($m in $maps) {
 
 Write-Log ('tickets pulled=' + $all.Count)
 
+# 3) Force-get tickets pinned in Dim_Freshdesk_TicketMap (BHF test 16248, etc.)
+$forceTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -Q "SET NOCOUNT ON; IF OBJECT_ID(N'dbo.Dim_Freshdesk_TicketMap') IS NULL SELECT 16248 ELSE SELECT TicketId FROM dbo.Dim_Freshdesk_TicketMap WHERE Active = 1 UNION SELECT 16248;"
+$forceIds = @()
+foreach ($line in @($forceTxt)) {
+  if ($line -match '^\s*(\d+)\s*$') { $forceIds += [int64]$Matches[1] }
+}
+if ($forceIds -notcontains 16248) { $forceIds += 16248 }
+$haveIds = @{}
+foreach ($t in $all) {
+  $hid = One-Val $t.id
+  if ($hid) { $haveIds[[string]$hid] = $true }
+}
+foreach ($fid in $forceIds) {
+  if ($haveIds.ContainsKey([string]$fid)) {
+    Write-Log ('force ticket already in set id=' + $fid)
+    continue
+  }
+  try {
+    $full = Invoke-FdGet ("tickets/{0}?include=stats,requester,company" -f $fid)
+    if ($full) {
+      Add-Tickets @($full) ('force-id ' + $fid)
+      $haveIds[[string]$fid] = $true
+    }
+  } catch {
+    Write-Log ('force-id fail ' + $fid + ' ' + $_.Exception.Message)
+  }
+  Start-Sleep -Milliseconds 200
+}
+
 $maxStats = [Math]::Min(400, $all.Count)
 $statsOk = 0
 for ($i = 0; $i -lt $maxStats; $i++) {
@@ -308,12 +337,13 @@ foreach ($t in $all) {
   $tagsJson = Sql-Json $t.tags
   $cfJson = Sql-Json $t.custom_fields
 
-  $codeExpr = 'NULL'
+  $codeExpr = 'COALESCE((SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_TicketMap WITH (NOLOCK) WHERE Active = 1 AND TicketId = ' + (Sql-Num $tid) + ')'
   if ($coId) {
-    $codeExpr = '(SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND CompanyId = ' + (Sql-Num $coId) + ')'
+    $codeExpr += ', (SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND CompanyId = ' + (Sql-Num $coId) + ')'
   } elseif ($coName) {
-    $codeExpr = '(SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND LTRIM(RTRIM(CompanyName)) = LTRIM(RTRIM(' + (Sql-Esc $coName) + ')) )'
+    $codeExpr += ', (SELECT TOP 1 CustomerCode FROM dbo.Dim_Freshdesk_CompanyMap WITH (NOLOCK) WHERE Active = 1 AND LTRIM(RTRIM(CompanyName)) = LTRIM(RTRIM(' + (Sql-Esc $coName) + ')) )'
   }
+  $codeExpr += ')'
 
   $line = 'INSERT INTO dbo.Freshdesk_Tickets (SnapshotDate, TicketId, CustomerCode, Subject, StatusId, StatusName, PriorityId, PriorityName, SourceId, TypeName, RequesterId, RequesterEmail, ResponderId, GroupId, CompanyId, CompanyName, CreatedAtUtc, UpdatedAtUtc, DueByUtc, FirstRespondedAtUtc, ResolvedAtUtc, ClosedAtUtc, TagsJson, CustomFieldsJson, ImportedAt) VALUES (@Snap, ' +
     (Sql-Num $tid) + ', ' +
