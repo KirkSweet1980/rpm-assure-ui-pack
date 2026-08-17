@@ -36,39 +36,25 @@ function To-Int64OrNull($v) {
   return $null
 }
 
+# Prefer Freshdesk company id (exact). Never invent customers. Never map SBS Tanks -> SBS.
+$idMaps = @{
+  '48001891723' = 'AHIC'     # AHI Carrier
+  '48002537448' = 'RSS'      # Remote Site Solutions
+  '48002073040' = 'UVSS'     # UVSS
+  '48002532561' = 'IB'       # Interbrand
+  '48002600047' = 'MEDIPOS'  # Medipos
+  '48001751035' = 'RPMINT'   # RPM Resources
+  '48002584815' = 'RPMINT'   # RPM Resources (UK)
+}
+
 $aliases = @(
   @{ n = 'ahi carrier'; c = 'AHIC' },
-  @{ n = 'ahi carriers'; c = 'AHIC' },
-  @{ n = 'ahic'; c = 'AHIC' },
-  @{ n = 'redsun raisins'; c = 'RSR' },
-  @{ n = 'redsun'; c = 'RSR' },
-  @{ n = 'rsr'; c = 'RSR' },
   @{ n = 'remote site solutions'; c = 'RSS' },
-  @{ n = 'rss'; c = 'RSS' },
   @{ n = 'unique ventilation'; c = 'UVSS' },
-  @{ n = 'uvss'; c = 'UVSS' },
-  @{ n = 'hydra sales'; c = 'HYDRA' },
-  @{ n = 'hydrasales'; c = 'HYDRA' },
-  @{ n = 'hydra'; c = 'HYDRA' },
-  @{ n = 'able tracers'; c = 'ABLE' },
-  @{ n = 'able traces'; c = 'ABLE' },
-  @{ n = 'simply bright'; c = 'SBS' },
-  @{ n = 'sbs'; c = 'SBS' },
-  @{ n = 'board of healthcare funders'; c = 'BHF' },
-  @{ n = 'bhf'; c = 'BHF' },
-  @{ n = 'pcns'; c = 'BHF' },
-  @{ n = 'sirf'; c = 'SIRF' },
-  @{ n = 'rpm resources'; c = 'RPMINT' },
-  @{ n = 'rpm internal'; c = 'RPMINT' },
-  @{ n = 'rpmint'; c = 'RPMINT' },
   @{ n = 'interbrand'; c = 'IB' },
-  @{ n = 'metsiwater'; c = 'METSI' },
-  @{ n = 'metsi'; c = 'METSI' },
-  @{ n = 'ylj health'; c = 'YLJ' },
-  @{ n = 'ylj'; c = 'YLJ' },
   @{ n = 'medipos'; c = 'MEDIPOS' },
-  @{ n = 'vault tech'; c = 'VAULT' },
-  @{ n = 'vault-tech'; c = 'VAULT' }
+  @{ n = 'rpm resources uk'; c = 'RPMINT' },
+  @{ n = 'rpm resources'; c = 'RPMINT' }
 )
 
 $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
@@ -104,20 +90,22 @@ do {
 } while ($page -le 50 -and $batch.Count -eq 100)
 Write-Host ('Freshdesk companies=' + $companies.Count)
 
-function Resolve-Code([string]$fdName) {
+function Resolve-Code([string]$fdName, $fdId) {
+  $idKey = [string](One-Val $fdId)
+  if ($idKey -and $idMaps.ContainsKey($idKey)) {
+    $up = $idMaps[$idKey].ToUpperInvariant()
+    if ($valid.ContainsKey($up)) { return $up }
+  }
   $n = Norm $fdName
   if (-not $n) { return $null }
   foreach ($c in $customers) {
     if ($n -eq $c.Norm -or $n -eq $c.CodeNorm) { return $c.Code }
   }
   foreach ($a in $aliases) {
-    if ($n -eq $a.n -or $n.Contains($a.n) -or $a.n.Contains($n)) {
+    if ($n -eq $a.n -or ($a.n.Length -ge 8 -and $n.Contains($a.n))) {
       $up = $a.c.ToUpperInvariant()
       if ($valid.ContainsKey($up)) { return $up }
     }
-  }
-  foreach ($c in $customers) {
-    if ($c.Norm.Length -ge 4 -and ($n.Contains($c.Norm) -or $c.Norm.Contains($n))) { return $c.Code }
   }
   return $null
 }
@@ -126,7 +114,7 @@ $mapped = New-Object System.Collections.Generic.List[object]
 $unmapped = New-Object System.Collections.Generic.List[object]
 foreach ($co in $companies) {
   $name = [string](One-Val $co.name)
-  $code = Resolve-Code $name
+  $code = Resolve-Code $name $co.id
   $row = [pscustomobject]@{ CompanyId = (To-Int64OrNull $co.id); CompanyName = $name; CustomerCode = $code }
   if ($code) { [void]$mapped.Add($row) } else { [void]$unmapped.Add($row) }
 }
