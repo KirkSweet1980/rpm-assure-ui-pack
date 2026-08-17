@@ -269,7 +269,7 @@ function NavLabPage() {
     <div className="space-y-4">
       <ConfigPageHead
         title="Navigation mockups"
-        blurb="Six chrome options. C is live. Click a card to enlarge."
+        description="Six chrome options. C is live. Click a card to enlarge."
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {OPTIONS.map((o) => {
