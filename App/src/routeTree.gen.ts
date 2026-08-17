@@ -108,6 +108,7 @@ import { Route as CustomersCodeTicketsIndexRouteImport } from './routes/customer
 import { Route as CustomersCodeTicketsClosedRouteImport } from './routes/customers.$code.tickets.closed'
 import { Route as CustomersCodeTicketsOpenRouteImport } from './routes/customers.$code.tickets.open'
 import { Route as CustomersCodeTicketsResolvedRouteImport } from './routes/customers.$code.tickets.resolved'
+import { Route as CustomersCodeTicketsSlaRouteImport } from './routes/customers.$code.tickets.sla'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -629,6 +630,11 @@ const CustomersCodeTicketsResolvedRoute =
     path: '/resolved',
     getParentRoute: () => CustomersCodeTicketsRoute,
   } as any)
+const CustomersCodeTicketsSlaRoute = CustomersCodeTicketsSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
+  getParentRoute: () => CustomersCodeTicketsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -723,6 +729,7 @@ export interface FileRoutesByFullPath {
   '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
   '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
   '/customers/$code/tickets/resolved': typeof CustomersCodeTicketsResolvedRoute
+  '/customers/$code/tickets/sla': typeof CustomersCodeTicketsSlaRoute
   '/customers/$code/ams/': typeof CustomersCodeAmsIndexRoute
   '/customers/$code/cove/': typeof CustomersCodeCoveIndexRoute
   '/customers/$code/csp/': typeof CustomersCodeCspIndexRoute
@@ -815,6 +822,7 @@ export interface FileRoutesByTo {
   '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
   '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
   '/customers/$code/tickets/resolved': typeof CustomersCodeTicketsResolvedRoute
+  '/customers/$code/tickets/sla': typeof CustomersCodeTicketsSlaRoute
   '/customers/$code/ams': typeof CustomersCodeAmsIndexRoute
   '/customers/$code/cove': typeof CustomersCodeCoveIndexRoute
   '/customers/$code/csp': typeof CustomersCodeCspIndexRoute
@@ -917,6 +925,7 @@ export interface FileRoutesById {
   '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
   '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
   '/customers/$code/tickets/resolved': typeof CustomersCodeTicketsResolvedRoute
+  '/customers/$code/tickets/sla': typeof CustomersCodeTicketsSlaRoute
   '/customers/$code/ams/': typeof CustomersCodeAmsIndexRoute
   '/customers/$code/cove/': typeof CustomersCodeCoveIndexRoute
   '/customers/$code/csp/': typeof CustomersCodeCspIndexRoute
@@ -1020,6 +1029,7 @@ export interface FileRouteTypes {
     | '/customers/$code/tickets/closed'
     | '/customers/$code/tickets/open'
     | '/customers/$code/tickets/resolved'
+    | '/customers/$code/tickets/sla'
     | '/customers/$code/ams/'
     | '/customers/$code/cove/'
     | '/customers/$code/csp/'
@@ -1112,6 +1122,7 @@ export interface FileRouteTypes {
     | '/customers/$code/tickets/closed'
     | '/customers/$code/tickets/open'
     | '/customers/$code/tickets/resolved'
+    | '/customers/$code/tickets/sla'
     | '/customers/$code/ams'
     | '/customers/$code/cove'
     | '/customers/$code/csp'
@@ -1213,6 +1224,7 @@ export interface FileRouteTypes {
     | '/customers/$code/tickets/closed'
     | '/customers/$code/tickets/open'
     | '/customers/$code/tickets/resolved'
+    | '/customers/$code/tickets/sla'
     | '/customers/$code/ams/'
     | '/customers/$code/cove/'
     | '/customers/$code/csp/'
@@ -1942,6 +1954,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersCodeTicketsResolvedRouteImport
       parentRoute: typeof CustomersCodeTicketsRoute
     }
+    '/customers/$code/tickets/sla': {
+      id: '/customers/$code/tickets/sla'
+      path: '/sla'
+      fullPath: '/customers/$code/tickets/sla'
+      preLoaderRoute: typeof CustomersCodeTicketsSlaRouteImport
+      parentRoute: typeof CustomersCodeTicketsRoute
+    }
   }
 }
 
@@ -2143,6 +2162,7 @@ interface CustomersCodeTicketsRouteChildren {
   CustomersCodeTicketsClosedRoute: typeof CustomersCodeTicketsClosedRoute
   CustomersCodeTicketsOpenRoute: typeof CustomersCodeTicketsOpenRoute
   CustomersCodeTicketsResolvedRoute: typeof CustomersCodeTicketsResolvedRoute
+  CustomersCodeTicketsSlaRoute: typeof CustomersCodeTicketsSlaRoute
   CustomersCodeTicketsIndexRoute: typeof CustomersCodeTicketsIndexRoute
 }
 
@@ -2150,6 +2170,7 @@ const CustomersCodeTicketsRouteChildren: CustomersCodeTicketsRouteChildren = {
   CustomersCodeTicketsClosedRoute: CustomersCodeTicketsClosedRoute,
   CustomersCodeTicketsOpenRoute: CustomersCodeTicketsOpenRoute,
   CustomersCodeTicketsResolvedRoute: CustomersCodeTicketsResolvedRoute,
+  CustomersCodeTicketsSlaRoute: CustomersCodeTicketsSlaRoute,
   CustomersCodeTicketsIndexRoute: CustomersCodeTicketsIndexRoute,
 }
 

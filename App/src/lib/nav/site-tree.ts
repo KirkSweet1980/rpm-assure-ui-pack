@@ -390,6 +390,14 @@ export function customerTree(code: string, displayName: string): NavNode {
             match: "exact",
             audience: "ops",
           },
+          {
+            id: `${code}-tickets-sla`,
+            label: "Service SLA",
+            blurb: "Ticket response and restore clocks",
+            href: `${base}/tickets/sla`,
+            match: "exact",
+            audience: "ops",
+          },
         ],
       },
       {

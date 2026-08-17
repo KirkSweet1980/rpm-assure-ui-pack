@@ -153,6 +153,7 @@ const ticketsLeaves = [
   { label: "Open Tickets", path: "open" },
   { label: "Resolved Tickets", path: "resolved" },
   { label: "Closed Tickets", path: "closed" },
+  { label: "Service SLA", path: "sla" },
 ];
 
 const amsLeaves = [

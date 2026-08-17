@@ -4332,7 +4332,7 @@ export function RisksSection({ data }: { data: CustomerDetailPayload }) {
 export function SlaSection({ data }: { data: CustomerDetailPayload }) {
   const cover = effectiveCover(data);
   const hasTickets = (data.incidents ?? []).length > 0 || (data.amsSlaSummary?.incidentCount30d ?? 0) > 0;
-  if (!cover.syspro && !cover.rmm && !cover.cove && !cover.epp && !hasTickets) {
+  if (!cover.syspro && !cover.rmm && !cover.cove && !cover.epp && !cover.tickets && !hasTickets) {
     return (
       <NoCoverPanel
         service="SLA"
@@ -4352,7 +4352,7 @@ export function SlaSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-4">
       <ChartCaption
         title={`RPM SLA Rev ${RPM_SLA_REVISION} · operational posture`}
-        why={`${RPM_SLA_TITLE} (${RPM_SLA_DATE}). Contract clocks are Business Hours only. Freshdesk tickets scored on Customer Incidents feed Layer A. RMM, Backup and EPP use industry measures — they are not in this contract.`}
+        why={`${RPM_SLA_TITLE} (${RPM_SLA_DATE}). Contract clocks are Business Hours only. Freshdesk tickets now score as the Tickets pillar (Layer A). RMM, Backup and EPP use industry measures — they are not in this contract.`}
       />
 
       <div className="rounded-xl border border-border bg-surface-2 px-3 py-2 text-[12px] leading-relaxed text-fg">

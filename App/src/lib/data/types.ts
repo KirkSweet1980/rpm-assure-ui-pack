@@ -84,6 +84,8 @@ export type PortfolioRow = {
   cspMapped?: boolean | null;
   ticketCount?: number | null;
   ticketsMapped?: boolean | null;
+  ticketResponsePct?: number | null;
+  ticketResolvePct?: number | null;
 };
 
 export type OperatorRow = {
@@ -732,7 +734,7 @@ export type RmmPayload = {
 };
 
 /** Per-pillar SLA (M365 excluded; null when No Cover) */
-export type ExcoPillarSlaKey = "syspro" | "rmm" | "cove" | "epp";
+export type ExcoPillarSlaKey = "syspro" | "rmm" | "cove" | "epp" | "tickets";
 
 export type ExcoPillarSla = {
   pillar: ExcoPillarSlaKey;

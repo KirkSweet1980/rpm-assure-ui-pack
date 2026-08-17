@@ -9,6 +9,9 @@ import {
   type TicketBucket,
 } from "@/lib/data/ticket-feed";
 import { NoCoverPanel } from "@/components/ui/no-cover";
+import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
+import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
+import { coverFromDetail } from "@/lib/data/cover";
 
 function slaChip(met: boolean | null | undefined) {
   if (met === true) {
@@ -196,4 +199,79 @@ export function ticketBucketFromPath(path: string): TicketBucket {
   if (path.includes("/resolved")) return "resolved";
   if (path.includes("/closed")) return "closed";
   return "open";
+}
+
+export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
+  const cover = coverFromDetail(data);
+  if (!cover.tickets) {
+    return (
+      <NoCoverPanel
+        service="Customer Tickets · SLA"
+        hint="No Cover — SLA is not scored until this customer has live Freshdesk tickets."
+      />
+    );
+  }
+  const sla = buildExcoPillarSla(slaInputFromDetail(cover, data));
+  const ticket = sla.pillars.find((p) => p.pillar === "tickets");
+  const s = ticketStats(data.incidents);
+  const sum = data.amsSlaSummary;
+  return (
+    <div className="space-y-3">
+      <div className="rpma-glass px-4 py-3">
+        <p className="text-lg font-bold tracking-tight text-fg">Customer Tickets · SLA</p>
+        <p className="text-[12px] text-muted">
+          Layer A contract clocks. Score is the average of response-met % and restore-met % (90% monthly target).
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <StatCard
+          label="Tickets SLA"
+          value={ticket?.pct != null ? `${ticket.pct}%` : "—"}
+          tone={
+            ticket?.pct == null ? "default" : ticket.pct >= 90 ? "green" : ticket.pct >= 70 ? "amber" : "red"
+          }
+          hint={ticket?.note ?? ""}
+        />
+        <StatCard
+          label="Response 30d"
+          value={sum?.responsePct != null ? `${sum.responsePct}%` : "—"}
+          tone={(sum?.responsePct ?? 100) < 90 ? "amber" : "green"}
+        />
+        <StatCard
+          label="Restore 30d"
+          value={sum?.resolvePct != null ? `${sum.resolvePct}%` : "—"}
+          tone={(sum?.resolvePct ?? 100) < 90 ? "amber" : "green"}
+        />
+        <StatCard label="Open now" value={s.open} tone={s.open > 0 ? "amber" : "green"} />
+      </div>
+      <div className="rpma-glass overflow-x-auto p-3">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">
+          Signed clocks — Acknowledge / Remote / Restore
+        </p>
+        <table className="w-full text-left text-[12px]">
+          <thead className="rpma-table-head">
+            <tr>
+              <th className="px-2 py-1.5">Priority</th>
+              <th className="px-2 py-1.5">Acknowledge</th>
+              <th className="px-2 py-1.5">Remote</th>
+              <th className="px-2 py-1.5">Restore</th>
+            </tr>
+          </thead>
+          <tbody>
+            {RPM_CONTRACT_CLOCKS.map((row) => (
+              <tr key={row.priority} className="border-t border-border">
+                <td className="px-2 py-1.5 font-semibold">{row.priority} {row.name}</td>
+                <td className="px-2 py-1.5">{row.acknowledge}</td>
+                <td className="px-2 py-1.5">{row.remote}</td>
+                <td className="px-2 py-1.5">{row.restore}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 text-[11px] text-subtle">
+          {RPM_CONTRACT_RULES.businessHours} {RPM_CONTRACT_RULES.measuredAs}
+        </p>
+      </div>
+    </div>
+  );
 }

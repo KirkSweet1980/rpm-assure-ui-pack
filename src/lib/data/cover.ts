@@ -327,6 +327,7 @@ export function averageCoveredScores(
     rmm?: number | null;
     cove?: number | null;
     epp?: number | null;
+    tickets?: number | null;
   },
 ): number | null {
   const parts: number[] = [];
@@ -341,6 +342,9 @@ export function averageCoveredScores(
   }
   if (cover.epp && scores.epp != null && Number.isFinite(scores.epp)) {
     parts.push(Number(scores.epp));
+  }
+  if (cover.tickets && scores.tickets != null && Number.isFinite(scores.tickets)) {
+    parts.push(Number(scores.tickets));
   }
   if (parts.length === 0) return null;
   return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;

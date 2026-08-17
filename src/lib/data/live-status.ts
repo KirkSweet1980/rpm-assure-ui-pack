@@ -332,6 +332,12 @@ export function customerLiveStatus(
       href: `${base}/tickets/closed`,
       hint: "Closed tickets",
     },
+    "/tickets/sla": {
+      rag: extra?.amsSlaSummary && (extra.amsSlaSummary.responsePct ?? 100) < 90 ? "Amber" : "Green",
+      cover: (extra?.incidents?.length ?? 0) > 0,
+      href: `${base}/tickets/sla`,
+      hint: "Ticket response and restore clocks",
+    },
     "/syspro": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro`, hint: "SYSPRO overview" },
     "/syspro/dtr": {
       rag: dtrRag,

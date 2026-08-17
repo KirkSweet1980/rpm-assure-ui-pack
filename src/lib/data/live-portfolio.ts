@@ -1249,11 +1249,30 @@ WHERE ISNULL(Active,1) = 1
   } catch {
     /* map optional */
   }
+  const slaPct = new Map<string, { resp: number | null; reso: number | null }>();
+  try {
+    const sla = await pool.request().query(`
+SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode,
+  SlaResponsePct, SlaResolvePct
+FROM dbo.vw_Ams_SlaCompliance_30d WITH (NOLOCK)
+WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''`);
+    for (const r of sla.recordset ?? []) {
+      slaPct.set(String(r.CustomerCode).toUpperCase(), {
+        resp: r.SlaResponsePct == null ? null : Number(r.SlaResponsePct),
+        reso: r.SlaResolvePct == null ? null : Number(r.SlaResolvePct),
+      });
+    }
+  } catch {
+    /* view optional */
+  }
   for (const row of rows) {
     const k = row.customerCode.toUpperCase();
     const n = counts.get(k) ?? 0;
+    const s = slaPct.get(k);
     row.ticketCount = n;
     row.ticketsMapped = mapped.has(k);
+    row.ticketResponsePct = s?.resp ?? null;
+    row.ticketResolvePct = s?.reso ?? null;
     row.cover = {
       ...(row.cover ?? { syspro: false, rmm: false, cove: false }),
       tickets: n > 0,
@@ -2893,6 +2912,9 @@ FROM dbo.vw_Kpi_Syspro_HotfixGap_Summary WITH (NOLOCK)`);
         eppDeviceCount: row2?.eppDeviceCount ?? 0,
         eppManagedCount: row2?.eppManagedCount ?? null,
         healthRag: b.healthRag,
+        ticketCount: row2?.ticketCount ?? 0,
+        ticketResponsePct: row2?.ticketResponsePct ?? null,
+        ticketResolvePct: row2?.ticketResolvePct ?? null,
       });
       b.pillarSla = sla.pillars;
       b.slaOverallPct = sla.overallPct;

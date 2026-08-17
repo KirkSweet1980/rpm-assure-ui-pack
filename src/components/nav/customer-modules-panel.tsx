@@ -169,6 +169,7 @@ export const CUSTOMER_PILLARS: {
       { label: "Open Tickets", path: "/tickets/open", icon: AlertTriangle, color: "#d97706" },
       { label: "Resolved Tickets", path: "/tickets/resolved", icon: ClipboardList, color: "#2563eb" },
       { label: "Closed Tickets", path: "/tickets/closed", icon: Archive, color: "#334155" },
+      { label: "Service SLA", path: "/tickets/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
 ];

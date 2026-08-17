@@ -29,6 +29,9 @@ export type ExcoSlaInput = {
   eppManagedCount?: number | null;
   eppUnmanagedCount?: number | null;
   healthRag?: HealthRag;
+  ticketCount?: number | null;
+  ticketResponsePct?: number | null;
+  ticketResolvePct?: number | null;
 };
 
 function clampPct(n: number): number {
@@ -137,6 +140,33 @@ function scoreEpp(i: ExcoSlaInput): { pct: number | null; note: string } {
     return { pct: null, note: "No EPP endpoints (not scored)" };
   }
   return { pct: 95, note: `${n} endpoint(s) mapped` };
+}
+
+function scoreTickets(i: ExcoSlaInput): { pct: number | null; note: string } {
+  const n = i.ticketCount || 0;
+  if (n <= 0 && i.ticketResponsePct == null && i.ticketResolvePct == null) {
+    return { pct: null, note: "No tickets (not scored)" };
+  }
+  const parts: number[] = [];
+  const notes: string[] = [];
+  if (i.ticketResponsePct != null && Number.isFinite(i.ticketResponsePct)) {
+    parts.push(Number(i.ticketResponsePct));
+    notes.push(`response ${Math.round(Number(i.ticketResponsePct))}%`);
+  }
+  if (i.ticketResolvePct != null && Number.isFinite(i.ticketResolvePct)) {
+    parts.push(Number(i.ticketResolvePct));
+    notes.push(`resolve ${Math.round(Number(i.ticketResolvePct))}%`);
+  }
+  if (parts.length === 0) {
+    return {
+      pct: 70,
+      note: `${n} ticket(s) on feed · clocks not closed yet (held at 70%)`,
+    };
+  }
+  const pct = parts.reduce((a, b) => a + b, 0) / parts.length;
+  if (notes.length === 0) notes.push(`${n} ticket(s)`);
+  else notes.unshift(`${n} ticket(s)`);
+  return { pct: clampPct(pct), note: notes.join(" · ") };
 }
 
 import { INDUSTRY_MEASURES } from "./sla-metrics";
@@ -248,6 +278,30 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
     });
   }
 
+  // Customer Tickets (Layer A — Freshdesk clocks)
+  if (cov.tickets) {
+    const s = scoreTickets(input);
+    pillars.push({
+      pillar: "tickets",
+      label: "Tickets",
+      covered: true,
+      pct: s.pct,
+      note: s.note,
+      industryTargetPct: 90,
+      industryMetric: "Response + restore met % vs Dim_SlaPolicy (90% monthly target)",
+    });
+  } else {
+    pillars.push({
+      pillar: "tickets",
+      label: "Tickets",
+      covered: false,
+      pct: null,
+      note: "No Cover",
+      industryTargetPct: 90,
+      industryMetric: "Response + restore met % vs Dim_SlaPolicy (90% monthly target)",
+    });
+  }
+
   // M365 intentionally omitted from SLA
 
   const scored = pillars.filter((p) => p.covered && p.pct != null);
@@ -264,7 +318,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
 /** True if any non-M365 pillar is on cover (SLA can be computed). */
 export function hasSlaCover(c: CustomerCover | null | undefined): boolean {
   if (!c) return false;
-  return Boolean(c.syspro || c.rmm || c.cove || c.epp);
+  return Boolean(c.syspro || c.rmm || c.cove || c.epp || c.tickets);
 }
 
 export function slaInputFromDetail(
@@ -333,5 +387,17 @@ export function slaInputFromDetail(
     eppManagedCount: data.epp?.summary?.managedCount ?? null,
     eppUnmanagedCount: data.epp?.summary?.unmanagedCount ?? null,
     healthRag: data.customer?.healthRag,
+    ticketCount:
+      data.incidents?.length ??
+      data.customer?.ticketCount ??
+      0,
+    ticketResponsePct:
+      data.amsSlaSummary?.responsePct ??
+      data.customer?.ticketResponsePct ??
+      null,
+    ticketResolvePct:
+      data.amsSlaSummary?.resolvePct ??
+      data.customer?.ticketResolvePct ??
+      null,
   };
 }
