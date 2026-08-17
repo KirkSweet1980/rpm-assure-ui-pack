@@ -94,6 +94,7 @@ import {
   transitionAmsIncident,
 } from "@/lib/data/ams-incident-api";
 import type { FactIncidentRow } from "@/lib/data/types";
+import { ticketStats, ticketsForPillar, type TicketPillar } from "@/lib/data/ticket-feed";
 
 function axisLabel(v: unknown, max = 14) {
   const s = String(v ?? "").trim();
@@ -244,8 +245,8 @@ function ServiceVisuals({
           {subtitle ? <p className="text-[12px] text-muted">{subtitle}</p> : null}
         </div>
         {kpis.length ? (
-          <div className="ml-auto grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {kpis.slice(0, 3).map((k) => (
+          <div className="ml-auto grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {kpis.slice(0, 4).map((k) => (
               <StatCard key={k.label} label={k.label} value={k.value} tone={k.tone} />
             ))}
           </div>
@@ -306,6 +307,29 @@ function ServiceVisuals({
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+export function TicketStrip({
+  data,
+  pillar,
+}: {
+  data: CustomerDetailPayload;
+  pillar: TicketPillar;
+}) {
+  const rows = ticketsForPillar(data.incidents, pillar);
+  const s = ticketStats(rows);
+  const href = `/customers/${data.customer.customerCode}/ams/incidents`;
+  return (
+    <div className="rpma-glass flex flex-wrap items-center gap-3 px-3 py-2">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Freshdesk tickets</p>
+      <StatCard label="30d" value={s.total} />
+      <StatCard label="Open" value={s.open} tone={s.open > 0 ? "amber" : "green"} />
+      <StatCard label="SLA breach" value={s.breaches} tone={s.breaches > 0 ? "red" : "green"} />
+      <SpaLink href={href} className="ml-auto text-[12px] font-semibold text-primary hover:underline">
+        Customer Incidents
+      </SpaLink>
     </div>
   );
 }
@@ -565,13 +589,16 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
   const totalOps = Math.max(c.operatorCount, ops.length, 1);
   const idleOps = Math.max(0, totalOps - activeOps);
   return (
-    <ServiceVisuals
+    <div className="space-y-3">
+      <TicketStrip data={data} pillar="syspro" />
+      <ServiceVisuals
       title="SYSPRO"
       subtitle={`${c.displayName} · last collect ${formatSastDateTime(c.lastImportAt)}`}
       kpis={[
         { label: "Active Users", value: activeOps, tone: activeOps > 0 ? "green" : "amber" },
         { label: "Job Logging", value: c.sysproJobErrorCount, tone: c.sysproJobErrorCount > 0 ? "amber" : "green" },
         { label: "FinSight OOB", value: c.sysproDtrVarianceLines, tone: c.sysproDtrVarianceLines > 0 ? "amber" : "green" },
+        { label: "Tickets", value: ticketStats(ticketsForPillar(data.incidents, "syspro")).total },
       ]}
       pie={[
         { name: "Active", value: activeOps, fill: "#17c666" },
@@ -589,6 +616,7 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
         { label: "Operators", href: `${base}/operators`, n: totalOps, hint: "Accounts" },
       ]}
     />
+    </div>
   );
 }
 
@@ -671,6 +699,7 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
   }
   return (
     <div className="space-y-4">
+      <TicketStrip data={data} pillar="rmm" />
       <ChartCaption
         title="RPM Remote Management overview"
         why="Day snapshot from Pulseway (RPM Remote Management). RAG: Red if critical alerts or 5+ offline; Amber if any offline / elevated / disk pressure."
@@ -2370,6 +2399,7 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <div className="rpma-eco-visuals space-y-3">
+      <TicketStrip data={data} pillar="ams" />
       <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
         <RagBadge rag={c.healthRag} title={c.healthSummary} />
         <div className="min-w-0">
@@ -4723,7 +4753,12 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
-  return <CoveEsrPanel data={data} />;
+  return (
+    <div className="space-y-3">
+      <TicketStrip data={data} pillar="cove" />
+      <CoveEsrPanel data={data} />
+    </div>
+  );
 }
 
 export function CoveOverviewSection({ data }: { data: CustomerDetailPayload }) {
@@ -4758,7 +4793,10 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   const incidents = epp?.incidents?.length ?? 0;
   const infected = devices.filter((d) => d.infected || d.malwareDetected).length;
   const outdated = devices.filter((d) => d.productOutdated || d.signatureOutdated).length;
+  const fdTickets = ticketStats(ticketsForPillar(data.incidents, "epp"));
   return (
+    <div className="space-y-3">
+      <TicketStrip data={data} pillar="epp" />
     <ServiceVisuals
       title="RPM EPP"
       subtitle={data.customer.displayName}
@@ -4766,8 +4804,7 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
         { label: "Endpoints", value: s?.deviceCount ?? devices.length },
         { label: "Managed", value: managed, tone: "green" },
         { label: "Infected", value: infected, tone: infected > 0 ? "red" : "green" },
-        { label: "Outdated", value: outdated, tone: outdated > 0 ? "amber" : "green" },
-        { label: "Incidents", value: incidents, tone: incidents > 0 ? "red" : "green" },
+        { label: "Tickets", value: fdTickets.total, tone: fdTickets.open > 0 ? "amber" : "green" },
       ]}
       pie={[
         { name: "Managed", value: managed, fill: "#17c666" },
@@ -4785,6 +4822,7 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
         { label: "Quarantine", href: `/customers/${code}/epp/quarantine`, n: epp?.quarantine?.length ?? 0, hint: "Items" },
       ]}
     />
+    </div>
   );
 }
 
@@ -5366,6 +5404,7 @@ export function CspTenantHealthSection({ data }: { data: CustomerDetailPayload }
 
   return (
     <div className="space-y-4">
+      <TicketStrip data={data} pillar="csp" />
       <ServiceVisuals
         title="Microsoft 365 CSP"
         subtitle={t?.displayName || t?.primaryDomain || data.customer.displayName}

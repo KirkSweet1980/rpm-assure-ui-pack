@@ -3849,7 +3849,7 @@ ORDER BY
   let amsSlaSummary: CustomerDetailPayload["amsSlaSummary"] = null;
 
   // P0: AMS / SLA / exec facts in one round-trip fan-out (lazy leg)
-  if (want("ams")) {
+  if (want("ams") || want("shell")) {
     const codeQ = async (q: string) => {
       try {
         return await pool.request().input("code", sql.NVarChar(50), code).query(q);

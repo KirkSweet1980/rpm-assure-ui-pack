@@ -325,10 +325,11 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Log ('=== Freshdesk collect done tickets=' + $all.Count + ' log=' + $log + ' ===')
 
-$sync = Join-Path $here '513_Sync_Freshdesk_To_Fact_Incident.sql'
-if (Test-Path -LiteralPath $sync) {
-  Write-Log 'SQL 513 Fact_Incident sync'
+foreach ($sqlName in @('514_Fuzzy_Map_Freshdesk_Companies.sql', '513_Sync_Freshdesk_To_Fact_Incident.sql')) {
+  $sync = Join-Path $here $sqlName
+  if (-not (Test-Path -LiteralPath $sync)) { continue }
+  Write-Log ('SQL ' + $sqlName)
   & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -b -i $sync
-  if ($LASTEXITCODE -ne 0) { Write-Log ('513 warned exit=' + $LASTEXITCODE) }
-  else { Write-Log '513 Fact_Incident sync OK' }
+  if ($LASTEXITCODE -ne 0) { Write-Log ($sqlName + ' warned exit=' + $LASTEXITCODE) }
+  else { Write-Log ($sqlName + ' OK') }
 }

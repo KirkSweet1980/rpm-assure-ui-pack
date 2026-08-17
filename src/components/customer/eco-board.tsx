@@ -34,6 +34,8 @@ import {
   type EcoWidgetLayout,
 } from "@/lib/eco-widgets";
 import type { CustomerDetailPayload } from "@/lib/data/types";
+import { ticketStats } from "@/lib/data/ticket-feed";
+import { TicketStrip } from "@/components/customer/customer-sections";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
 function axisLabel(v: unknown, max = 14) {
@@ -99,6 +101,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const openIssues = issues.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const openIncidents = incidents.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const major = openIncidents.filter((i) => i.isMajor);
+  const tix = ticketStats(incidents);
 
   const lastCollect = [
     customer.lastImportAt,
@@ -129,7 +132,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
     { name: "Jobs", value: customer.sysproJobErrorCount, fill: CHART.jobs },
     { name: "FinSight", value: customer.sysproDtrVarianceLines, fill: CHART.dtr },
     { name: "Risks", value: openRisks.length, fill: CHART.amber },
-    { name: "Incidents", value: major.length || openIncidents.length, fill: CHART.red },
+    { name: "Incidents", value: tix.total, fill: CHART.red },
   ];
 
   const rmmSum = data.rmm?.summary;
@@ -231,6 +234,8 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           onClose={() => setCustomizeOpen(false)}
         />
       ) : null}
+
+      <TicketStrip data={data} pillar="eco" />
 
       <div className="rpma-eco-board">
         <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3" {...wgt("hero")}>
@@ -469,7 +474,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" {...wgt("jumps")}>
           {[
-            { label: "Incidents", href: `${base}/ams/incidents`, n: major.length || openIncidents.length, hint: "Assure register" },
+            { label: "Incidents", href: `${base}/ams/incidents`, n: tix.total, hint: `${tix.open} open · Freshdesk` },
             { label: "Risks", href: `${base}/ams/risks`, n: openRisks.length, hint: "Open items" },
             { label: "SLA", href: `${base}/ams/sla`, n: `${score}%`, hint: "Assurance" },
             { label: "Customer Assurance", href: `${base}/ams`, n: openIssues.length, hint: "Issues" },
@@ -489,14 +494,17 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
           ))}
         </div>
 
-        <Pane title="Open incidents" {...wgt("incidents")}>
-          {openIncidents.length === 0 ? (
-            <p className="text-[12px] text-muted">No open incidents.</p>
+        <Pane title="Tickets (30d)" {...wgt("incidents")}>
+          {incidents.length === 0 ? (
+            <p className="text-[12px] text-muted">No Freshdesk tickets mapped to this customer yet.</p>
           ) : (
             <ul className="space-y-1.5">
-              {openIncidents.slice(0, 6).map((i, idx) => (
+              {incidents.slice(0, 8).map((i, idx) => (
                 <li key={String(i.incidentId ?? i.title ?? idx)} className="flex justify-between gap-2 text-[12px]">
-                  <span className="truncate text-fg">{i.title || "Untitled"}</span>
+                  <span className="truncate text-fg">
+                    {i.externalRef ? `${i.externalRef} · ` : ""}
+                    {i.title || "Untitled"}
+                  </span>
                   <span className="shrink-0 text-muted">{i.status}</span>
                 </li>
               ))}
