@@ -103,6 +103,17 @@ if (Test-Path $coveRights) {
   if ($LASTEXITCODE -eq 0) { W Green 'Cove collect rights OK' } else { W Yellow 'Cove collect rights warned.' }
 }
 
+$eppRights = Join-Path $PSScriptRoot '..\bitdefender\456_Epp_Collect_Rights.sql'
+if (-not (Test-Path $eppRights)) { $eppRights = 'C:\RPM-Assure\Sql\bitdefender\456_Epp_Collect_Rights.sql' }
+if (Test-Path $eppRights) {
+  W Cyan '--- EPP collect rights (Rpm_collect INSERT, no ALTER) ---'
+  $extra = @()
+  if ($user -and $pass -and $server) { $extra = @('-U', $user, '-P', $pass) } else { $extra = @('-E') }
+  $target = if ($server) { $server } else { '.\RPMREPORTS' }
+  & $sqlcmd -S $target -d $db -C -b -i $eppRights @extra
+  if ($LASTEXITCODE -eq 0) { W Green 'EPP collect rights OK' } else { W Yellow 'EPP collect rights warned.' }
+}
+
 $agentHttps = Join-Path $PSScriptRoot '..\agent\443_Agent_Https.sql'
 if (-not (Test-Path $agentHttps)) { $agentHttps = 'C:\RPM-Assure\Sql\agent\443_Agent_Https.sql' }
 if (Test-Path $agentHttps) {
