@@ -206,6 +206,15 @@ if (Test-Path -LiteralPath $centralSrc) {
   }
 }
 
+$patchTbl = Join-Path $Root 'Sql\rmm\pulseway\462_Ensure_Pulseway_DevicePatches.sql'
+if (Test-Path -LiteralPath $patchTbl) {
+  W Cyan '--- Pulseway_DevicePatches (Windows auth) ---'
+  $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
+  if (-not (Test-Path $sqlcmd)) { $sqlcmd = 'sqlcmd' }
+  & $sqlcmd -S '.\RPMREPORTS' -d RPMAssure_App -E -C -b -i $patchTbl
+  if ($LASTEXITCODE -eq 0) { W Green 'Pulseway_DevicePatches OK' } else { W Yellow 'Pulseway_DevicePatches warned' }
+}
+
 if ($svcObj) {
   Start-Service -Name $SvcName
   Start-Sleep -Seconds 4

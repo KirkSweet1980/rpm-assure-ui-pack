@@ -206,6 +206,15 @@ if (Test-Path -LiteralPath $centralSrc) {
   }
 }
 
+$patchTbl = Join-Path $Root 'Sql\rmm\pulseway\462_Ensure_Pulseway_DevicePatches.sql'
+if (Test-Path -LiteralPath $patchTbl) {
+  W Cyan '--- Pulseway_DevicePatches (Windows auth) ---'
+  $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
+  if (-not (Test-Path $sqlcmd)) { $sqlcmd = 'sqlcmd' }
+  & $sqlcmd -S '.\RPMREPORTS' -d RPMAssure_App -E -C -b -i $patchTbl
+  if ($LASTEXITCODE -eq 0) { W Green 'Pulseway_DevicePatches OK' } else { W Yellow 'Pulseway_DevicePatches warned' }
+}
+
 if ($svcObj) {
   Start-Service -Name $SvcName
   Start-Sleep -Seconds 4
@@ -267,7 +276,11 @@ foreach ($name in @(
     'Diagnose-SSL.ps1',
     'Start-RpmAssure-App.ps1',
     'Renew-Assure-Https.ps1',
-    'Install-Https-Renew-Task.ps1'
+    'Install-Https-Renew-Task.ps1',
+    'Harden-Production-Now.ps1',
+    'Harden-Https-Only.ps1',
+    'Apply-Sql-Allow-Ips.ps1',
+    'sql-allow-ips.txt'
   )) {
   $from = Join-Path $Pack ('deploy\' + $name)
   if (-not (Test-Path -LiteralPath $from)) { $from = Join-Path $Pack $name }
