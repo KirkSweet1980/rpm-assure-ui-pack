@@ -14,7 +14,7 @@ export const VISION_CORPUS: VisionChunk[] = [
     source: "sla",
     title: "Signed SLA import",
     keys: ["sla", "signed", "import", "contract", "provisional", "browse", "scan", "kpi"],
-    text: "Cover is Provisional (orange) until a signed SLA is on file. Open Customer Eco System → SLA → Import Signed SLA. Browse for the PDF or Word file, Scan it, then confirm the signature. Tenant KPI targets only apply after Confirm signed SLA.",
+    text: "Cover is Provisional (orange) until a signed SLA is on file. Open Customer Eco System → SLA → Import Signed SLA. Browse for the PDF or Word file, then confirm. Custom SLA targets apply only to this customer’s covered services.",
   },
   {
     id: "sla-clocks",

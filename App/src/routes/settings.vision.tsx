@@ -77,7 +77,7 @@ function VisionSettingsPage() {
         <CardHead>Vision retrieval</CardHead>
         <CardContent className="space-y-4 text-[12px]">
           <p className="text-muted">
-            Vision answers from ranked chunks — not a public LLM. Turn sources on, set how many chunks to use, then test a question.
+            Vision answers from ranked help chunks plus a live tenant snapshot (tickets, servers, backup, EPP, last collect). No public LLM. On a customer page it reads that customer only.
           </p>
           <label className="flex items-center gap-2 font-semibold">
             <input

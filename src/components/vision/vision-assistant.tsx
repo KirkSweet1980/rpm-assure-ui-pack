@@ -18,6 +18,23 @@ export function VisionAssistant() {
     end.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const code = pathname.match(/\/customers\/([^/]+)/)?.[1];
+    if (!code) return;
+    let live = true;
+    void askVision({ data: { message: "", path: pathname, customer: code } }).then((r) => {
+      if (!live || !r.text) return;
+      setMsgs((m) => {
+        if (m.length === 1 && m[0]?.role === "vision") return [{ role: "vision", text: r.text }];
+        return m;
+      });
+    });
+    return () => {
+      live = false;
+    };
+  }, [open, pathname]);
+
   async function send() {
     const text = input.trim();
     if (!text || busy) return;

@@ -75,18 +75,19 @@ export function composeVisionAnswer(
   customer?: string,
   includePath?: boolean,
   includeCustomer?: boolean,
+  live?: string | null,
 ) {
-  if (!hits.length) {
-    return "I did not retrieve a strong match. Try SLA import, tickets, IOPS, EPP last scan, Cloud Backup, SYSPRO, cover, or agent deploy — or turn on more sources under Configuration → Vision.";
-  }
-  const body = hits
-    .map((h, i) => `${i === 0 ? h.text : `${SOURCE_LABEL[h.source]} · ${h.title}: ${h.text}`}`)
-    .join("\n\n");
+  const help = hits.length
+    ? hits
+        .map((h, i) => (i === 0 ? h.text : `${SOURCE_LABEL[h.source]} · ${h.title}: ${h.text}`))
+        .join("\n\n")
+    : "I did not retrieve a strong match. Try SLA import, tickets, IOPS, EPP last scan, Cloud Backup, SYSPRO, cover, or agent deploy — or turn on more sources under Configuration → Vision.";
   const ctx = [
-    includeCustomer && customer ? `Customer ${customer}.` : "",
+    live || "",
+    includeCustomer && customer && !live ? `Customer ${customer}.` : "",
     includePath && path ? `You are on ${path}.` : "",
   ]
     .filter(Boolean)
-    .join(" ");
-  return ctx ? `${body}\n\n${ctx}` : body;
+    .join("\n\n");
+  return ctx ? `${help}\n\n${ctx}` : help;
 }
