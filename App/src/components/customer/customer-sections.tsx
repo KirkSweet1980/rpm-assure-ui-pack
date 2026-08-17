@@ -1667,7 +1667,7 @@ export function RmmDevicesSection({
                     >
                       <span className="flex items-center justify-between gap-2">
                         <span className="flex min-w-0 items-center gap-2">
-                          {mode === "servers" ? <ServerKindIcon device={d} size={26} /> : null}
+                          {mode === "servers" ? <ServerKindIcon device={d} size={32} showLabel /> : null}
                           <span className="truncate text-sm font-semibold text-fg">
                             {d.name ?? d.deviceId}
                           </span>

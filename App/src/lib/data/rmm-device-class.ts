@@ -84,32 +84,73 @@ export function isRmmWorkstation(d: {
 
 export type ServerHardwareKind = "virtual" | "physical" | "unknown";
 
+function blobOf(d: {
+  name?: string | null;
+  osName?: string | null;
+  deviceType?: string | null;
+  disks?: { mediaType?: string | null }[] | null;
+}): { name: string; os: string; type: string; media: string; disks: { mediaType?: string | null }[] } {
+  const disks = d.disks ?? [];
+  return {
+    name: (d.name || "").toLowerCase(),
+    os: (d.osName || "").toLowerCase(),
+    type: (d.deviceType || "").toLowerCase(),
+    media: disks.map((x) => x.mediaType || "").join(" ").toLowerCase(),
+    disks,
+  };
+}
+
 export function classifyServerHardware(d: {
   name?: string | null;
   osName?: string | null;
   deviceType?: string | null;
   disks?: { mediaType?: string | null }[] | null;
 }): ServerHardwareKind {
-  const media = (d.disks ?? []).map((x) => x.mediaType || "").join(" ");
-  const blob = `${d.name || ""} ${d.osName || ""} ${d.deviceType || ""} ${media}`.toLowerCase();
+  const { name, os, type, media, disks } = blobOf(d);
+  const compact = name.replace(/[-_\s]/g, "");
+
+  // Hypervisor / host boxes are physical machines
   if (
-    /virtual|hyper-?v|hyperv|vmware|vcenter|xen|kvm|qemu|virtualbox|msft virtual|vhdx|\bvhd\b|hyper-v guest/.test(
-      blob,
+    /hvhost|hyperv|esxi|vcenter|proxmox|xenhost/.test(compact) &&
+    !/guest|virtual machine/.test(`${os} ${media}`)
+  ) {
+    return "physical";
+  }
+
+  // Disk media from IOPS / Pulseway is the strongest guest signal
+  if (
+    /msft virtual|microsoft virtual|virtual disk|virtual hd|vmware virtual|pvscsi|vmdk|vhdx|\bvhd\b|hyper-v virtual/.test(
+      media,
     )
   ) {
     return "virtual";
   }
+  if (disks.length > 0 && disks.every((x) => /virtual/i.test(x.mediaType || ""))) {
+    return "virtual";
+  }
+
   if (
-    /proliant|poweredge|thinksystem|supermicro|optiplex|precision|hpe |hp |dell |lenovo |raid|perc|idrac|ilo |physical server/.test(
-      blob,
+    /vmware virtual platform|virtual machine|hyper-v guest|kvm|qemu|xen|virtualbox/.test(
+      `${os} ${type} ${media}`,
+    )
+  ) {
+    return "virtual";
+  }
+
+  if (
+    /proliant|poweredge|thinksystem|supermicro|optiplex|precision|idrac|\bilo\b|\bperc\b|\braid\b/.test(
+      `${name} ${os} ${media}`,
     )
   ) {
     return "physical";
   }
-  const disks = d.disks ?? [];
-  if (disks.length && disks.every((x) => /virtual/i.test(x.mediaType || ""))) return "virtual";
-  if (disks.some((x) => /ssd|nvme|sas|sata|hdd|solid state|fixed hard/i.test(x.mediaType || "")) && !/virtual/i.test(media)) {
+
+  if (
+    disks.some((x) => /ssd|nvme|sas|sata|hdd|solid state|fixed hard/i.test(x.mediaType || "")) &&
+    !/virtual/i.test(media)
+  ) {
     return "physical";
   }
+
   return "unknown";
 }

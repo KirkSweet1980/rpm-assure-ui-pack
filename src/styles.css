@@ -1643,14 +1643,20 @@ html:not([data-theme="dark"]):not(.dark) .rpma-crumb-arr {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 8px;
+  overflow: hidden;
   background: color-mix(in srgb, var(--color-nav) 8%, #fff);
   line-height: 0;
 }
-.rpma-srv-kind.is-virtual { background: color-mix(in srgb, var(--color-brand-teal) 18%, #fff); }
-.rpma-srv-kind.is-physical { background: color-mix(in srgb, var(--color-nav) 12%, #fff); }
+.rpma-srv-kind.is-virtual { background: #ccfbf1; }
+.rpma-srv-kind.is-physical { background: #dbe4ee; }
+.rpma-srv-kind.is-unknown { background: #e5e7eb; }
 html[data-theme="dark"] .rpma-srv-kind,
 html.dark .rpma-srv-kind { background: #1a212c; }
+html[data-theme="dark"] .rpma-srv-kind.is-virtual,
+html.dark .rpma-srv-kind.is-virtual { background: #134e4a; }
+html[data-theme="dark"] .rpma-srv-kind.is-physical,
+html.dark .rpma-srv-kind.is-physical { background: #1e2936; }
 .rpma-modbtn.is-nocover:hover {
   border-color: #9aa6b4;
 }
