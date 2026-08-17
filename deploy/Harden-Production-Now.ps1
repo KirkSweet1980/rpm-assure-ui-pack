@@ -97,7 +97,12 @@ Set-RpmaFw 'RPMAssure HTTPS 443' {
 Set-RpmaFw 'RPMAssure block 8081 public' {
   New-NetFirewallRule -DisplayName 'RPMAssure block 8081 public' -Direction Inbound -Action Block -Protocol TCP -LocalPort 8081 -Profile Public | Out-Null
 }
-& (Join-Path $PSScriptRoot 'Harden-Https-Only.ps1') -ErrorAction SilentlyContinue
+$httpsOnly = Join-Path $PSScriptRoot 'Harden-Https-Only.ps1'
+if (Test-Path -LiteralPath $httpsOnly) {
+  & $httpsOnly
+} else {
+  Write-Host 'Harden-Https-Only.ps1 not on disk — 443/8081 rules already applied.'
+}
 
 Write-Host '=== 4. SQL 14333 allow-list ===' -ForegroundColor Cyan
 if (-not (Test-Path $CfgDir)) { New-Item -ItemType Directory -Force -Path $CfgDir | Out-Null }
