@@ -249,7 +249,7 @@ foreach ($m in $maps) {
 
 Write-Log ('tickets pulled=' + $all.Count)
 
-$maxStats = [Math]::Min(80, $all.Count)
+$maxStats = [Math]::Min(400, $all.Count)
 $statsOk = 0
 for ($i = 0; $i -lt $maxStats; $i++) {
   $t = $all[$i]

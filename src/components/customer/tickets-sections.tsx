@@ -10,8 +10,7 @@ import {
 } from "@/lib/data/ticket-feed";
 import { NoCoverPanel } from "@/components/ui/no-cover";
 import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
-import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
-import { coverFromDetail } from "@/lib/data/cover";
+import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
 
 function slaChip(met: boolean | null | undefined) {
   if (met === true) {
@@ -77,8 +76,8 @@ function TicketTable({ rows, empty }: { rows: FactIncidentRow[]; empty: string }
                 <td className="px-2 py-1.5">{i.priority || i.severity || "—"}</td>
                 <td className="px-2 py-1.5">{i.status}</td>
                 <td className="whitespace-nowrap px-2 py-1.5 text-muted">{formatSastDateTime(i.openedAt)}</td>
-                <td className="px-2 py-1.5">{slaChip(i.responseSlaMet)}</td>
-                <td className="px-2 py-1.5">{slaChip(i.resolveSlaMet)}</td>
+                <td className="px-2 py-1.5">{slaChip(scoreTicket(i).response)}</td>
+                <td className="px-2 py-1.5">{slaChip(scoreTicket(i).resolve)}</td>
               </tr>
             );
           })}
@@ -92,7 +91,7 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   const code = data.customer.customerCode;
   const rows = data.incidents ?? [];
   const s = ticketStats(rows);
-  const sla = data.amsSlaSummary;
+  const sla = s.sla;
   if (s.total === 0) {
     return (
       <NoCoverPanel
@@ -140,16 +139,18 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <StatCard
             label="Response"
-            value={sla?.responsePct != null ? `${sla.responsePct}%` : "—"}
-            tone={(sla?.responsePct ?? 100) < 90 ? "amber" : "green"}
+            value={sla.responsePct != null ? `${sla.responsePct}%` : "—"}
+            tone={(sla.responsePct ?? 100) < 90 ? "amber" : "green"}
+            hint={`${sla.responseMet}/${sla.responseScored} scored`}
           />
           <StatCard
             label="Resolve"
-            value={sla?.resolvePct != null ? `${sla.resolvePct}%` : "—"}
-            tone={(sla?.resolvePct ?? 100) < 90 ? "amber" : "green"}
+            value={sla.resolvePct != null ? `${sla.resolvePct}%` : "—"}
+            tone={(sla.resolvePct ?? 100) < 90 ? "amber" : "green"}
+            hint={`${sla.resolveMet}/${sla.resolveScored} scored`}
           />
-          <StatCard label="Tickets 30d" value={sla?.incidentCount30d ?? s.total} />
-          <StatCard label="Open now" value={sla?.openCount ?? s.open} tone={s.open > 0 ? "amber" : "green"} />
+          <StatCard label="Tickets 30d" value={sla.last30d} hint={`${sla.total} on feed`} />
+          <StatCard label="Open now" value={sla.open} tone={sla.open > 0 ? "amber" : "green"} />
         </div>
       </div>
 
@@ -202,8 +203,8 @@ export function ticketBucketFromPath(path: string): TicketBucket {
 }
 
 export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
-  const cover = coverFromDetail(data);
-  if (!cover.tickets) {
+  const pack = scoreTicketSet(data.incidents);
+  if (pack.total === 0) {
     return (
       <NoCoverPanel
         service="Customer Tickets · SLA"
@@ -211,61 +212,73 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
-  const sla = buildExcoPillarSla(slaInputFromDetail(cover, data));
-  const ticket = sla.pillars.find((p) => p.pillar === "tickets");
-  const s = ticketStats(data.incidents);
-  const sum = data.amsSlaSummary;
   return (
     <div className="space-y-3">
       <div className="rpma-glass px-4 py-3">
         <p className="text-lg font-bold tracking-tight text-fg">Customer Tickets · SLA</p>
         <p className="text-[12px] text-muted">
-          Layer A contract clocks. Score is the average of response-met % and restore-met % (90% monthly target).
+          Layer A · SAST business hours 08:00–17:00. Score = average of response-met % and restore-met % (90% target).
+          Open clocks are not misses. P4 restore is by agreement and is not scored.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <StatCard
           label="Tickets SLA"
-          value={ticket?.pct != null ? `${ticket.pct}%` : "—"}
+          value={pack.overallPct != null ? `${pack.overallPct}%` : "70%"}
           tone={
-            ticket?.pct == null ? "default" : ticket.pct >= 90 ? "green" : ticket.pct >= 70 ? "amber" : "red"
+            pack.overallPct == null ? "amber" : pack.overallPct >= 90 ? "green" : pack.overallPct >= 70 ? "amber" : "red"
           }
-          hint={ticket?.note ?? ""}
+          hint={pack.overallPct == null ? "Clocks not closed yet — held at 70%" : `${pack.last30d} tickets in 30d`}
         />
         <StatCard
           label="Response 30d"
-          value={sum?.responsePct != null ? `${sum.responsePct}%` : "—"}
-          tone={(sum?.responsePct ?? 100) < 90 ? "amber" : "green"}
+          value={pack.responsePct != null ? `${pack.responsePct}%` : "—"}
+          tone={(pack.responsePct ?? 100) < 90 ? "amber" : "green"}
+          hint={`${pack.responseMet} met · ${pack.responseBreach} breach`}
         />
         <StatCard
           label="Restore 30d"
-          value={sum?.resolvePct != null ? `${sum.resolvePct}%` : "—"}
-          tone={(sum?.resolvePct ?? 100) < 90 ? "amber" : "green"}
+          value={pack.resolvePct != null ? `${pack.resolvePct}%` : "—"}
+          tone={(pack.resolvePct ?? 100) < 90 ? "amber" : "green"}
+          hint={`${pack.resolveMet} met · ${pack.resolveBreach} breach`}
         />
-        <StatCard label="Open now" value={s.open} tone={s.open > 0 ? "amber" : "green"} />
+        <StatCard label="Open now" value={pack.open} tone={pack.open > 0 ? "amber" : "green"} />
       </div>
       <div className="rpma-glass overflow-x-auto p-3">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">
-          Signed clocks — Acknowledge / Remote / Restore
+          Actual vs signed clock (30 days)
         </p>
         <table className="w-full text-left text-[12px]">
           <thead className="rpma-table-head">
             <tr>
               <th className="px-2 py-1.5">Priority</th>
-              <th className="px-2 py-1.5">Acknowledge</th>
-              <th className="px-2 py-1.5">Remote</th>
+              <th className="px-2 py-1.5">Tickets</th>
+              <th className="px-2 py-1.5">Ack target</th>
+              <th className="px-2 py-1.5">Response</th>
+              <th className="px-2 py-1.5">Restore target</th>
               <th className="px-2 py-1.5">Restore</th>
             </tr>
           </thead>
           <tbody>
-            {RPM_CONTRACT_CLOCKS.map((row) => (
-              <tr key={row.priority} className="border-t border-border">
-                <td className="px-2 py-1.5 font-semibold">{row.priority} {row.name}</td>
-                <td className="px-2 py-1.5">{row.acknowledge}</td>
-                <td className="px-2 py-1.5">{row.remote}</td>
-                <td className="px-2 py-1.5">{row.restore}</td>
-              </tr>
-            ))}
+            {RPM_CONTRACT_CLOCKS.map((row) => {
+              const a = pack.byPriority.find((p) => p.priority === row.priority);
+              return (
+                <tr key={row.priority} className="border-t border-border">
+                  <td className="px-2 py-1.5 font-semibold">
+                    {row.priority} {row.name}
+                  </td>
+                  <td className="px-2 py-1.5">{a?.n ?? 0}</td>
+                  <td className="px-2 py-1.5 text-muted">{row.acknowledge}</td>
+                  <td className="px-2 py-1.5 font-medium">
+                    {a?.responsePct != null ? `${a.responsePct}%` : "—"}
+                  </td>
+                  <td className="px-2 py-1.5 text-muted">{row.restore}</td>
+                  <td className="px-2 py-1.5 font-medium">
+                    {a?.resolvePct != null ? `${a.resolvePct}%` : "—"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <p className="mt-2 text-[11px] text-subtle">

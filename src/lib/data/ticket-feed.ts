@@ -1,4 +1,5 @@
 import type { FactIncidentRow } from "./types";
+import { scoreTicketSet } from "./ticket-sla";
 
 export type TicketPillar = "syspro" | "rmm" | "cove" | "epp" | "csp" | "ams" | "eco" | "tickets";
 export type TicketBucket = "open" | "resolved" | "closed";
@@ -37,14 +38,15 @@ export function ticketStats(incidents: FactIncidentRow[] | null | undefined) {
   const open = rows.filter((i) => ticketBucket(i) === "open");
   const resolved = rows.filter((i) => ticketBucket(i) === "resolved");
   const closed = rows.filter((i) => ticketBucket(i) === "closed");
+  const sla = scoreTicketSet(rows);
   return {
     total: rows.length,
     open: open.length,
     resolved: resolved.length,
     closed: closed.length,
     major: open.filter((i) => i.isMajor).length,
-    breaches:
-      rows.filter((i) => i.responseSlaMet === false || i.resolveSlaMet === false).length,
+    breaches: sla.breaches,
+    sla,
   };
 }
 

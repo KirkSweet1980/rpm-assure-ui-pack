@@ -85,6 +85,7 @@ export const CUSTOMER_PILLARS: {
       { label: "Health", path: "/syspro/health", icon: HeartPulse, color: "#16a34a" },
       { label: "Security", path: "/syspro/security", icon: Lock, color: "#334155" },
       { label: "SQL", path: "/syspro/sql", icon: Database, color: "#0891b2" },
+      { label: "Service SLA", path: "/syspro/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
   {

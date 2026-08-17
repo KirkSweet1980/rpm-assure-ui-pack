@@ -75,8 +75,8 @@ src AS (
       ELSE N'Low'
     END AS Priority,
     COALESCE(t.CreatedAtUtc, t.UpdatedAtUtc, SYSUTCDATETIME()) AS OpenedAt,
-    t.FirstRespondedAtUtc AS FirstResponseAt,
-    t.ResolvedAtUtc AS ResolvedAt,
+    COALESCE(t.FirstRespondedAtUtc, CASE WHEN t.StatusName IN (N'Resolved', N'Closed') THEN t.UpdatedAtUtc END) AS FirstResponseAt,
+    COALESCE(t.ResolvedAtUtc, t.ClosedAtUtc, CASE WHEN t.StatusName IN (N'Resolved', N'Closed') THEN t.UpdatedAtUtc END) AS ResolvedAt,
     t.ClosedAtUtc AS ClosedAt,
     CASE WHEN t.PriorityId = 4 OR t.PriorityName IN (N'Urgent', N'Critical') THEN CONVERT(bit, 1) ELSE CONVERT(bit, 0) END AS IsMajor,
     N'FD-' + CAST(t.TicketId AS nvarchar(20)) AS ExternalRef,

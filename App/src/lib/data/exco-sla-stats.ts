@@ -170,6 +170,7 @@ function scoreTickets(i: ExcoSlaInput): { pct: number | null; note: string } {
 }
 
 import { INDUSTRY_MEASURES } from "./sla-metrics";
+import { scoreTicketSet } from "./ticket-sla";
 
 /**
  * Build per-pillar SLA. Microsoft 365 (csp) is never included.
@@ -358,6 +359,7 @@ export function slaInputFromDetail(
       with30.reduce((s, d) => s + (d.offlineHours30d ?? 0) * 60, 0) / with30.length;
     serverUptime30d = Math.max(0, Math.min(100, ((minutes - avgOff) / minutes) * 100));
   }
+  const tix = scoreTicketSet(data.incidents);
   return {
     cover,
     collectFresh: collectAgeHours != null && collectAgeHours <= 24,
@@ -387,17 +389,8 @@ export function slaInputFromDetail(
     eppManagedCount: data.epp?.summary?.managedCount ?? null,
     eppUnmanagedCount: data.epp?.summary?.unmanagedCount ?? null,
     healthRag: data.customer?.healthRag,
-    ticketCount:
-      data.incidents?.length ??
-      data.customer?.ticketCount ??
-      0,
-    ticketResponsePct:
-      data.amsSlaSummary?.responsePct ??
-      data.customer?.ticketResponsePct ??
-      null,
-    ticketResolvePct:
-      data.amsSlaSummary?.resolvePct ??
-      data.customer?.ticketResolvePct ??
-      null,
+    ticketCount: tix.total || data.customer?.ticketCount || 0,
+    ticketResponsePct: tix.responsePct ?? data.amsSlaSummary?.responsePct ?? data.customer?.ticketResponsePct ?? null,
+    ticketResolvePct: tix.resolvePct ?? data.amsSlaSummary?.resolvePct ?? data.customer?.ticketResolvePct ?? null,
   };
 }

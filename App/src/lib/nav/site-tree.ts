@@ -130,6 +130,14 @@ export function customerTree(code: string, displayName: string): NavNode {
             match: "exact",
             audience: "tech",
           },
+          {
+            id: `${code}-syspro-sla`,
+            label: "Service SLA",
+            blurb: "SYSPRO + AMS contract clocks",
+            href: `${base}/syspro/sla`,
+            match: "exact",
+            audience: "ops",
+          },
         ],
       },
       {

@@ -61,6 +61,7 @@ import { worstLiveRag } from "./live-status";
 import { buildDayEndSnapshot, isDayEndText, isJobFailed, type DayEndSnapshot } from "./day-end";
 import { averageCoveredScores, anyCover, inferCustomerCover, forceSysproCoverIfEvidence } from "./cover";
 import { buildExcoPillarSla, hasSlaCover } from "./exco-sla-stats";
+import { scoreTicketSet } from "./ticket-sla";
 import { auditPortfolioRows } from "./pillar-audit";
 import { getPool, sql } from "./sql-pool";
 import { vendorNameHits } from "./vendor-name-match";
@@ -4040,6 +4041,25 @@ ORDER BY
         responseBreach: incidents.filter((i) => i.responseSlaMet === false).length,
         resolveBreach: incidents.filter((i) => i.resolveSlaMet === false).length,
       };
+    }
+
+    try {
+      const scored = scoreTicketSet(incidents);
+      if (scored.total > 0) {
+        amsSlaSummary = {
+          incidentCount30d: scored.last30d || scored.total,
+          openCount: scored.open,
+          majorOpenCount: incidents.filter(
+            (i) => i.isMajor && !/closed|cancelled/i.test(i.status),
+          ).length,
+          responsePct: scored.responsePct,
+          resolvePct: scored.resolvePct,
+          responseBreach: scored.responseBreach,
+          resolveBreach: scored.resolveBreach,
+        };
+      }
+    } catch {
+      /* keep view-based summary */
     }
 
     problems = ((fpRes?.recordset ?? []) as Array<{

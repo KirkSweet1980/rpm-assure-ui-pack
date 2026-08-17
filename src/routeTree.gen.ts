@@ -103,6 +103,7 @@ import { Route as CustomersCodeSysproJobsRouteImport } from './routes/customers.
 import { Route as CustomersCodeSysproLicenseRouteImport } from './routes/customers.$code.syspro.license'
 import { Route as CustomersCodeSysproOperatorsRouteImport } from './routes/customers.$code.syspro.operators'
 import { Route as CustomersCodeSysproSecurityRouteImport } from './routes/customers.$code.syspro.security'
+import { Route as CustomersCodeSysproSlaRouteImport } from './routes/customers.$code.syspro.sla'
 import { Route as CustomersCodeSysproSqlRouteImport } from './routes/customers.$code.syspro.sql'
 import { Route as CustomersCodeTicketsIndexRouteImport } from './routes/customers.$code.tickets.index'
 import { Route as CustomersCodeTicketsClosedRouteImport } from './routes/customers.$code.tickets.closed'
@@ -601,6 +602,11 @@ const CustomersCodeSysproSecurityRoute =
     path: '/security',
     getParentRoute: () => CustomersCodeSysproRoute,
   } as any)
+const CustomersCodeSysproSlaRoute = CustomersCodeSysproSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
+  getParentRoute: () => CustomersCodeSysproRoute,
+} as any)
 const CustomersCodeSysproSqlRoute = CustomersCodeSysproSqlRouteImport.update({
   id: '/sql',
   path: '/sql',
@@ -725,6 +731,7 @@ export interface FileRoutesByFullPath {
   '/customers/$code/syspro/license': typeof CustomersCodeSysproLicenseRoute
   '/customers/$code/syspro/operators': typeof CustomersCodeSysproOperatorsRoute
   '/customers/$code/syspro/security': typeof CustomersCodeSysproSecurityRoute
+  '/customers/$code/syspro/sla': typeof CustomersCodeSysproSlaRoute
   '/customers/$code/syspro/sql': typeof CustomersCodeSysproSqlRoute
   '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
   '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
@@ -818,6 +825,7 @@ export interface FileRoutesByTo {
   '/customers/$code/syspro/license': typeof CustomersCodeSysproLicenseRoute
   '/customers/$code/syspro/operators': typeof CustomersCodeSysproOperatorsRoute
   '/customers/$code/syspro/security': typeof CustomersCodeSysproSecurityRoute
+  '/customers/$code/syspro/sla': typeof CustomersCodeSysproSlaRoute
   '/customers/$code/syspro/sql': typeof CustomersCodeSysproSqlRoute
   '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
   '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
@@ -921,6 +929,7 @@ export interface FileRoutesById {
   '/customers/$code/syspro/license': typeof CustomersCodeSysproLicenseRoute
   '/customers/$code/syspro/operators': typeof CustomersCodeSysproOperatorsRoute
   '/customers/$code/syspro/security': typeof CustomersCodeSysproSecurityRoute
+  '/customers/$code/syspro/sla': typeof CustomersCodeSysproSlaRoute
   '/customers/$code/syspro/sql': typeof CustomersCodeSysproSqlRoute
   '/customers/$code/tickets/closed': typeof CustomersCodeTicketsClosedRoute
   '/customers/$code/tickets/open': typeof CustomersCodeTicketsOpenRoute
@@ -1025,6 +1034,7 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro/license'
     | '/customers/$code/syspro/operators'
     | '/customers/$code/syspro/security'
+    | '/customers/$code/syspro/sla'
     | '/customers/$code/syspro/sql'
     | '/customers/$code/tickets/closed'
     | '/customers/$code/tickets/open'
@@ -1118,6 +1128,7 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro/license'
     | '/customers/$code/syspro/operators'
     | '/customers/$code/syspro/security'
+    | '/customers/$code/syspro/sla'
     | '/customers/$code/syspro/sql'
     | '/customers/$code/tickets/closed'
     | '/customers/$code/tickets/open'
@@ -1220,6 +1231,7 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro/license'
     | '/customers/$code/syspro/operators'
     | '/customers/$code/syspro/security'
+    | '/customers/$code/syspro/sla'
     | '/customers/$code/syspro/sql'
     | '/customers/$code/tickets/closed'
     | '/customers/$code/tickets/open'
@@ -1919,6 +1931,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersCodeSysproSecurityRouteImport
       parentRoute: typeof CustomersCodeSysproRoute
     }
+    '/customers/$code/syspro/sla': {
+      id: '/customers/$code/syspro/sla'
+      path: '/sla'
+      fullPath: '/customers/$code/syspro/sla'
+      preLoaderRoute: typeof CustomersCodeSysproSlaRouteImport
+      parentRoute: typeof CustomersCodeSysproRoute
+    }
     '/customers/$code/syspro/sql': {
       id: '/customers/$code/syspro/sql'
       path: '/sql'
@@ -2138,6 +2157,7 @@ interface CustomersCodeSysproRouteChildren {
   CustomersCodeSysproLicenseRoute: typeof CustomersCodeSysproLicenseRoute
   CustomersCodeSysproOperatorsRoute: typeof CustomersCodeSysproOperatorsRoute
   CustomersCodeSysproSecurityRoute: typeof CustomersCodeSysproSecurityRoute
+  CustomersCodeSysproSlaRoute: typeof CustomersCodeSysproSlaRoute
   CustomersCodeSysproSqlRoute: typeof CustomersCodeSysproSqlRoute
   CustomersCodeSysproIndexRoute: typeof CustomersCodeSysproIndexRoute
 }
@@ -2151,6 +2171,7 @@ const CustomersCodeSysproRouteChildren: CustomersCodeSysproRouteChildren = {
   CustomersCodeSysproLicenseRoute: CustomersCodeSysproLicenseRoute,
   CustomersCodeSysproOperatorsRoute: CustomersCodeSysproOperatorsRoute,
   CustomersCodeSysproSecurityRoute: CustomersCodeSysproSecurityRoute,
+  CustomersCodeSysproSlaRoute: CustomersCodeSysproSlaRoute,
   CustomersCodeSysproSqlRoute: CustomersCodeSysproSqlRoute,
   CustomersCodeSysproIndexRoute: CustomersCodeSysproIndexRoute,
 }
