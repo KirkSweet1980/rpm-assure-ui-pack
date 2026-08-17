@@ -42,7 +42,9 @@ USING (VALUES
   (N'BITDEFENDER', N'RPM EPP',                    N'Epp',       N'Active',
    N'RPM EPP — endpoints, policies, incidents, quarantine'),
   (N'MS_CSP',      N'Microsoft 365 Tenant',       N'Licensing', N'Configured',
-   N'M365 / CSP pilot (RPMINT seed) — tenant health, licenses, users; expand estate later')
+   N'M365 / CSP pilot (RPMINT seed) — tenant health, licenses, users; expand estate later'),
+  (N'FRESHDESK',   N'Freshdesk Tickets',          N'Ams',       N'Configured',
+   N'Helpdesk ticket pull for AMS / contract SLA clocks')
 ) AS s(ConnectionCode, DisplayName, SourceKind, Status, Notes)
 ON t.ConnectionCode = s.ConnectionCode
 WHEN MATCHED THEN UPDATE SET
