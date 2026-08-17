@@ -1,5 +1,5 @@
-# Run on the Assure app server only. Git stays here.
-# Publishes the Edge agent zip for customer hosts (no Git / no GitHub).
+# Run on the Assure app server only. Writes C:\RPM-Assure\downloads\*
+# Windows paths are case-insensitive — copy each physical folder once.
 
 param(
   [string]$Root = 'C:\RPM-Assure',
@@ -7,74 +7,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.IO.Compression
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-function Copy-TreeShare([string]$From, [string]$To) {
-  New-Item -ItemType Directory -Force -Path $To | Out-Null
-  Get-ChildItem -LiteralPath $From -Recurse -File | ForEach-Object {
-    $rel = $_.FullName.Substring($From.Length).TrimStart('\')
-    if ($rel -match '\\logs\\|Agent\.Secrets\.bin$|status\.json$|\.log$') { return }
-    $dest = Join-Path $To $rel
-    New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
-    $in = [IO.File]::Open($_.FullName, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
-    try {
-      $out = [IO.File]::Create($dest)
-      try { $in.CopyTo($out) } finally { $out.Dispose() }
-    } finally { $in.Dispose() }
-  }
-}
-
-function Write-ZipFromFolder([string]$Folder, [string]$ZipPath) {
-  if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
-  $zip = [IO.Compression.ZipFile]::Open($ZipPath, [IO.Compression.ZipArchiveMode]::Create)
-  try {
-    $root = (Resolve-Path $Folder).Path.TrimEnd('\')
-    Get-ChildItem -LiteralPath $Folder -Recurse -File | ForEach-Object {
-      $entry = $_.FullName.Substring($root.Length + 1).Replace('\', '/')
-      $e = $zip.CreateEntry($entry, [IO.Compression.CompressionLevel]::Optimal)
-      $in = [IO.File]::Open($_.FullName, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
-      try {
-        $es = $e.Open()
-        try { $in.CopyTo($es) } finally { $es.Dispose() }
-      } finally { $in.Dispose() }
-    }
-  } finally { $zip.Dispose() }
-}
-
-$dlDirs = @(
-  (Join-Path $Root 'downloads'),
-  (Join-Path $Root 'App\public\downloads'),
-  (Join-Path $Root 'deploy\ui-pack\public\downloads'),
-  (Join-Path $Root 'deploy\ui-pack\App\public\downloads')
-) | Select-Object -Unique
-foreach ($d in $dlDirs) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
-$dl = $dlDirs[0]
+New-Item -ItemType Directory -Force -Path (Join-Path $Root 'downloads') | Out-Null
+$dl = Join-Path $Root 'downloads'
 
 $ver = '2.8.0'
-foreach ($vf in @(
-    (Join-Path $Pack 'Sql\agent\VERSION'),
-    (Join-Path $Pack 'sql\agent\VERSION')
-  )) {
+foreach ($vf in @((Join-Path $Pack 'Sql\agent\VERSION'), (Join-Path $Pack 'sql\agent\VERSION'))) {
   if (Test-Path $vf) { $ver = (Get-Content $vf -Raw).Trim(); break }
 }
-
-$stage = Join-Path $env:TEMP ('rpma-agent-pack-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-New-Item -ItemType Directory -Force -Path $stage | Out-Null
-foreach ($rel in @('Sql\agent', 'sql\agent', 'Sql\base\syspro-direct', 'sql\base\syspro-direct', 'Sql\customers', 'sql\customers')) {
-  $from = Join-Path $Pack $rel
-  if (Test-Path $from) { Copy-TreeShare $from (Join-Path $stage $rel) }
-}
-Set-Content -LiteralPath (Join-Path $stage 'VERSION') -Value $ver -Encoding ASCII
-
-$zip = Join-Path $dl 'rpm-assure-agent.zip'
-Write-ZipFromFolder $stage $zip
-Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
-
-foreach ($d in $dlDirs) {
-  Set-Content -LiteralPath (Join-Path $d 'VERSION') -Value $ver -Encoding ASCII
-  if ($d -ne $dl) { Copy-Item -Force $zip (Join-Path $d 'rpm-assure-agent.zip') }
-}
+Set-Content -LiteralPath (Join-Path $dl 'VERSION') -Value $ver -Encoding ASCII
 
 foreach ($name in @('Deploy-Assure-Agent.ps1', 'Onboard-IB-Syspro.ps1')) {
   $src = @(
@@ -83,14 +23,32 @@ foreach ($name in @('Deploy-Assure-Agent.ps1', 'Onboard-IB-Syspro.ps1')) {
     (Join-Path $Pack ('Sql\customers\IB\' + $name)),
     (Join-Path $Pack ('sql\customers\IB\' + $name))
   ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-  if ($src) {
-    foreach ($d in $dlDirs) { Copy-Item -Force $src (Join-Path $d $name) }
-  }
+  if ($src) { Copy-Item -Force -LiteralPath $src (Join-Path $dl $name) }
 }
 
+$seen = @{}
+$stage = Join-Path $env:TEMP ('rpma-pack-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+New-Item -ItemType Directory -Force -Path $stage | Out-Null
+Set-Content -LiteralPath (Join-Path $stage 'VERSION') -Value $ver -Encoding ASCII
+
+foreach ($rel in @('Sql\agent', 'Sql\base\syspro-direct', 'Sql\customers')) {
+  $from = Join-Path $Pack $rel
+  if (-not (Test-Path $from)) { $from = Join-Path $Pack ($rel.ToLower()) }
+  if (-not (Test-Path $from)) { continue }
+  $key = (Resolve-Path $from).Path.ToLowerInvariant()
+  if ($seen.ContainsKey($key)) { continue }
+  $seen[$key] = $true
+  $to = Join-Path $stage $rel
+  New-Item -ItemType Directory -Force -Path $to | Out-Null
+  robocopy $from $to /E /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np /XF *.log Agent.Secrets.bin status.json | Out-Null
+}
+
+$zip = Join-Path $dl 'rpm-assure-agent.zip'
+if (Test-Path $zip) { Remove-Item $zip -Force }
+Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force
+Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+
 $len = (Get-Item $zip).Length
-if ($len -lt 50000) { Write-Host ('WARN zip is small (' + $len + ' bytes) - check pack folders exist under ' + $Pack) }
-Write-Host ('PUBLISHED agent pack v' + $ver + ' ' + $len + ' bytes')
-Write-Host ' https://assure.rpmresources.co.za/downloads/VERSION'
-Write-Host ' https://assure.rpmresources.co.za/downloads/rpm-assure-agent.zip'
-Write-Host ' https://assure.rpmresources.co.za/downloads/Deploy-Assure-Agent.ps1'
+Write-Host ('PUBLISHED v' + $ver + ' zip=' + $len + ' bytes -> ' + $dl)
+Get-ChildItem $dl | Select-Object Name, Length | Format-Table -AutoSize
+if ($len -lt 20000) { Write-Host 'WARN zip still small' }
