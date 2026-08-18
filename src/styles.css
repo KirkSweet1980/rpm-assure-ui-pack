@@ -148,10 +148,30 @@ html.rpma-crisp .font-extrabold {
 html.rpma-crisp .rpma-crumb,
 html.rpma-crisp .rpma-list-name,
 html.rpma-crisp .rpma-list-title,
+html.rpma-crisp .rpma-list-count,
+html.rpma-crisp .rpma-list-empty,
 html.rpma-crisp th,
-html.rpma-crisp .rpma-dd-status {
+html.rpma-crisp .rpma-dd-status,
+html.rpma-crisp .dk-brand-text em,
+html.rpma-crisp .rpma-theme-switch-label,
+html.rpma-crisp .rpma-pillar-rail-head h2,
+html.rpma-crisp .rpma-rpt-toolbar label span,
+html.rpma-crisp .rpma-amx-svc span,
+html.rpma-crisp .text-xs,
+html.rpma-crisp .text-\[10px\],
+html.rpma-crisp .text-\[11px\] {
   font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
   font-optical-sizing: auto;
+}
+html.rpma-crisp .rpma-heat-n,
+html.rpma-crisp .dk-pagehead h1,
+html.rpma-crisp .rpma-rpt-hero h1,
+html.rpma-crisp .text-2xl,
+html.rpma-crisp .text-3xl,
+html.rpma-crisp .text-4xl {
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
 }
 .antialiased {
   -webkit-font-smoothing: inherit !important;
