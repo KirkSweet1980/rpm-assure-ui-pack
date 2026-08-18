@@ -193,7 +193,7 @@ body {
 }
 .dk-header-row {
   display: grid;
-  grid-template-columns: auto minmax(72px, 1fr) auto minmax(72px, 1fr) auto;
+  grid-template-columns: auto 1fr 1fr auto;
   align-items: center;
   justify-items: stretch;
   gap: 10px;
@@ -298,7 +298,7 @@ body {
   .dk-header-one, .dk-header-tall { flex-wrap: wrap; height: auto; }
   .dk-header-row { display: flex; }
   .dk-header-left, .dk-header-right { max-width: none; }
-  .rpma-hud-mid { position: static; transform: none; margin: 0 auto; }
+  .rpma-hud-mid { gap: 8px; }
   .dk-header-navrow { grid-template-columns: 1fr 1fr; }
   .dk-header-navrow.is-collapsed { display: none; }
   .dk-shell.is-topnav { --pc-header-height: 112px; }
@@ -877,27 +877,33 @@ html.dark .rpma-pane-head-row {
 .rpma-hud,
 .rpma-hud-spacer { display: none; }
 .rpma-hud-mid {
-  position: static;
-  left: auto;
-  top: auto;
-  transform: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  z-index: 2;
+  z-index: 4;
   pointer-events: auto;
 }
 .rpma-hud-rev {
   display: grid;
   place-items: center;
-  width: 92px;
-  flex: 0 0 92px;
+  width: 80px;
+  height: 80px;
+  flex: 0 0 80px;
 }
 .rpma-hud-mid .rpma-hud-cell {
   min-width: 0;
 }
-.rpma-hud-rev-svg { width: 92px !important; height: 76px !important; display: block; overflow: visible; }
+.rpma-hud-rev-svg {
+  width: 80px !important;
+  height: 80px !important;
+  display: block;
+  margin: 0;
+}
 .rpma-hud-sql { display: flex; align-items: center; }
 .rpma-sql-digital {
   position: static;

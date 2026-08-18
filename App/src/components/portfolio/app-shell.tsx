@@ -231,7 +231,6 @@ export function AppShell({
             </div>
             <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="sql" />
             <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="clock" />
-            <div className="dk-header-gap" aria-hidden="true" />
             <div className="dk-header-right">
               <DensityToggle />
               <ThemeToggle />

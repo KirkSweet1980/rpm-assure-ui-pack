@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 const CX = 40;
-const CY = 42;
+const CY = 40;
 const R = 30;
 const START = -210;
 const SWEEP = 240;
@@ -44,9 +44,9 @@ export function RpmRevCounter({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width={84}
-      height={68}
-      viewBox="0 0 80 66"
+      width={80}
+      height={80}
+      viewBox="0 0 80 80"
       role="img"
       aria-label={`Rev counter ${shown} RPM`}
       overflow="visible"
