@@ -10,8 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "noline-20260818";
-const HERO = "/brand/login-assure.mp4";
+const LOGIN_BUILD = "corporate-20260818";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -64,50 +63,50 @@ function LoginPage() {
   }
 
   return (
-    <div className="rpma-gl" data-login-build={LOGIN_BUILD}>
-      <style>{GLASS_CSS}</style>
+    <div className="rpma-co" data-login-build={LOGIN_BUILD}>
+      <style>{CSS}</style>
 
-      <div className="rpma-gl-scene" aria-hidden="true">
-        <video
-          className="rpma-gl-still"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-        >
-          <source src="/brand/login-assure.webm" type="video/webm" />
-          <source src={HERO} type="video/mp4" />
-        </video>
-        <div className="rpma-gl-mark" />
-      </div>
+      <aside className="rpma-co-brand" aria-hidden="true">
+        <div className="rpma-co-brand-inner">
+          <p className="rpma-co-kicker">RPM Resources</p>
+          <h1>RPM Assure</h1>
+          <p className="rpma-co-line">Assurance Delivered</p>
+          <ul>
+            <li>Single source of truth</li>
+            <li>Live estate, backup and protection</li>
+            <li>Executive-ready SLA evidence</li>
+          </ul>
+        </div>
+      </aside>
 
-      <main className="rpma-gl-stage">
-        <section className="rpma-gl-card">
+      <main className="rpma-co-main">
+        <section className="rpma-co-card">
+          <h2>Sign in</h2>
+          <p className="rpma-co-sub">Use your RPM Assure account.</p>
           <IdleLogoutBanner />
 
           {!authEnabled ? (
-            <p className="rpma-gl-error">Auth is disabled.</p>
+            <p className="rpma-co-error">Auth is disabled.</p>
           ) : (
-            <form className="rpma-gl-form" onSubmit={onSubmit}>
-              <label className="rpma-gl-field">
+            <form className="rpma-co-form" onSubmit={onSubmit}>
+              <label>
                 <span>Username</span>
-                <span className="rpma-gl-wrap">
-                  <User size={14} aria-hidden />
+                <span className="rpma-co-wrap">
+                  <User size={16} aria-hidden />
                   <input
                     type="text"
                     required
                     autoComplete="username"
-                    placeholder="Username"
+                    placeholder="Username or email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </span>
               </label>
-              <label className="rpma-gl-field">
+              <label>
                 <span>Password</span>
-                <span className="rpma-gl-wrap">
-                  <Lock size={14} aria-hidden />
+                <span className="rpma-co-wrap">
+                  <Lock size={16} aria-hidden />
                   <input
                     type={showPw ? "text" : "password"}
                     required
@@ -119,204 +118,193 @@ function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="rpma-gl-eye"
+                    className="rpma-co-eye"
                     onClick={() => setShowPw((v) => !v)}
                     aria-label={showPw ? "Hide password" : "Show password"}
                     tabIndex={-1}
                   >
-                    {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </span>
               </label>
-              <button type="submit" className="rpma-gl-submit" disabled={busy}>
-                {busy ? "Signing in..." : "Sign in"}
+              {error ? <p className="rpma-co-error">{error}</p> : null}
+              <button type="submit" disabled={busy}>
+                {busy ? "Signing in…" : "Sign in"}
               </button>
-              {error ? <p className="rpma-gl-error">{error}</p> : null}
             </form>
           )}
-
-          <p className="rpma-gl-tag">Assurance Delivered</p>
         </section>
+        <p className="rpma-co-foot">© RPM Resources · Confidential</p>
       </main>
     </div>
   );
 }
 
-const GLASS_CSS = `
-.rpma-gl {
-  position: relative;
-  isolation: isolate;
+const CSS = `
+.rpma-co {
   min-height: 100dvh;
-  width: 100%;
-  overflow: hidden;
-  background: #000;
-  color: #f3f7fb;
+  display: grid;
+  grid-template-columns: minmax(280px, 42%) minmax(0, 1fr);
+  background: #f4f6f8;
+  color: #12202c;
   font-family: "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-.rpma-gl-scene {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-bottom: 4.5rem;
-}
-.rpma-gl-still {
-  display: block;
-  width: min(50vw, 52vh);
-  height: auto;
-  object-fit: contain;
-  object-position: center center;
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  mix-blend-mode: screen;
-}
-.rpma-gl-mark {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  background-image:
-    repeating-linear-gradient(
-      -28deg,
-      transparent 0,
-      transparent 92px,
-      rgba(255,255,255,0.045) 92px,
-      rgba(255,255,255,0.045) 93px
-    );
-}
-.rpma-gl-mark::before {
-  content: "RPM ASSURE";
-  position: absolute;
-  top: 1.1rem;
-  left: 1.2rem;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.28em;
-  color: rgba(255,255,255,0.38);
-  text-shadow: 0 1px 8px rgba(0,0,0,0.35);
-}
-.rpma-gl-mark::after {
-  content: "RPM ASSURE  ·  ASSURANCE DELIVERED";
-  position: absolute;
-  right: 1.2rem;
-  bottom: 0.85rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: rgba(143, 206, 74, 0.55);
-}
-.rpma-gl-stage {
+.rpma-co-brand {
   position: relative;
-  z-index: 2;
-  min-height: 100dvh;
+  background:
+    linear-gradient(165deg, rgba(7, 24, 42, 0.88) 0%, rgba(11, 42, 56, 0.82) 55%, rgba(15, 70, 78, 0.78) 100%),
+    url("/brand/login-picks/boardroom-tv.jpg?v=corp") center / cover no-repeat;
+  color: #f3f7fb;
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  padding: 0 1.2rem 2.4rem;
+  padding: 3rem 2.6rem;
 }
-.rpma-gl-card {
-  width: min(100%, 38rem);
-  padding: 0.85rem 1rem 0.75rem;
-  border: 0;
-  border-radius: 14px;
-  background: transparent;
-  box-shadow: none;
-  text-align: center;
-}
-.rpma-gl-tag {
-  margin: 0.55rem 0 0;
+.rpma-co-brand-inner { max-width: 28rem; }
+.rpma-co-kicker {
+  margin: 0 0 0.55rem;
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(243, 247, 251, 0.62);
+}
+.rpma-co-brand h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3.4vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #fff;
+}
+.rpma-co-line {
+  margin: 0.7rem 0 1.6rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8fce4a;
 }
-.rpma-gl-form {
+.rpma-co-brand ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 0.65rem;
-  align-items: end;
-}
-.rpma-gl-field { text-align: left; margin: 0; }
-.rpma-gl-field span {
-  display: block;
-  margin-bottom: 0.18rem;
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 0.45rem;
+  font-size: 0.92rem;
   color: rgba(243, 247, 251, 0.82);
 }
-.rpma-gl-wrap { position: relative; display: flex; align-items: center; }
-.rpma-gl-wrap > svg {
+.rpma-co-brand li {
+  padding-left: 0.9rem;
+  position: relative;
+}
+.rpma-co-brand li::before {
+  content: "";
   position: absolute;
-  left: 0.7rem;
-  color: rgba(243, 247, 251, 0.72);
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1bb8a6;
+}
+.rpma-co-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+}
+.rpma-co-card {
+  width: min(100%, 26rem);
+  background: #fff;
+  border: 1px solid #e4e9ee;
+  border-radius: 12px;
+  padding: 1.85rem 1.7rem 1.6rem;
+  box-shadow: 0 10px 30px rgba(16, 36, 52, 0.06);
+}
+.rpma-co-card h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f2433;
+}
+.rpma-co-sub {
+  margin: 0.3rem 0 1.25rem;
+  font-size: 0.88rem;
+  color: #5b6b78;
+}
+.rpma-co-form { display: grid; gap: 0.85rem; }
+.rpma-co-form label { display: grid; gap: 0.28rem; }
+.rpma-co-form label > span:first-child {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #3d5160;
+}
+.rpma-co-wrap { position: relative; display: flex; align-items: center; }
+.rpma-co-wrap > svg {
+  position: absolute;
+  left: 0.75rem;
+  color: #7a8b98;
   pointer-events: none;
 }
-.rpma-gl-wrap input {
+.rpma-co-form input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.62rem 2.2rem 0.62rem 2.1rem;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: #f3f7fb;
-  font-size: 0.92rem;
+  min-height: 44px;
+  padding: 0.65rem 2.4rem 0.65rem 2.3rem;
+  border: 1px solid #cfd8df;
+  border-radius: 8px;
+  background: #fff;
+  color: #12202c;
+  font-size: 0.95rem;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.38) inset;
 }
-.rpma-gl-wrap input::placeholder { color: rgba(243, 247, 251, 0.48); }
-.rpma-gl-wrap input:focus {
-  box-shadow: 0 0 0 1px #8fce4a inset;
-}
-.rpma-gl-error { grid-column: 1 / -1; }
-.rpma-gl-submit {
-  margin: 0;
-  min-height: 42px;
-  padding: 0.55rem 1.15rem;
-  border: 0;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #0f7f86 0%, #1bb8a6 50%, #8fce4a 100%);
-  color: #fff;
-  font-size: 0.86rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.rpma-gl-eye {
+.rpma-co-form input:focus { border-color: #1bb8a6; box-shadow: 0 0 0 3px rgba(27, 184, 166, 0.16); }
+.rpma-co-eye {
   position: absolute;
-  right: 0.2rem;
+  right: 0.25rem;
   border: 0;
   background: transparent;
-  color: rgba(243, 247, 251, 0.75);
+  color: #6b7c89;
   cursor: pointer;
-  padding: 0.28rem;
+  min-width: 36px;
+  min-height: 36px;
   display: inline-flex;
-  min-width: 34px;
-  min-height: 34px;
   align-items: center;
   justify-content: center;
 }
-.rpma-gl-error {
-  margin: 0.4rem 0 0;
-  padding: 0.4rem 0.55rem;
-  border-radius: 0.55rem;
-  background: rgba(155, 44, 44, 0.28);
-  color: #ffd4d4;
-  font-size: 0.72rem;
+.rpma-co-form button[type="submit"] {
+  margin-top: 0.25rem;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #0f4c5c 0%, #0f7f86 48%, #1bb8a6 100%);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
 }
-.rpma-gl-submit:hover:not(:disabled) { filter: brightness(1.06); }
-.rpma-gl-submit:disabled { opacity: 0.65; cursor: wait; }
-@media (max-width: 720px) {
-  .rpma-gl-form { grid-template-columns: 1fr; }
-  .rpma-gl-stage { padding-bottom: 1.4rem; }
+.rpma-co-form button[type="submit"]:hover:not(:disabled) { filter: brightness(1.05); }
+.rpma-co-form button[type="submit"]:disabled { opacity: 0.65; cursor: wait; }
+.rpma-co-error {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #fdecec;
+  color: #9b2c2c;
+  font-size: 0.82rem;
+}
+.rpma-co-foot {
+  margin: 1.2rem 0 0;
+  font-size: 0.72rem;
+  color: #8a97a3;
+}
+@media (max-width: 840px) {
+  .rpma-co { grid-template-columns: 1fr; }
+  .rpma-co-brand { min-height: 220px; padding: 1.6rem 1.4rem; }
 }
 `;
