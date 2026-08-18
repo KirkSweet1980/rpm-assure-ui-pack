@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "office-h-logo-1down-20260818";
+const LOGIN_BUILD = "office-h-logo-down-20260818";
 const AISLE = "/downloads/login-office-h.jpg";
 const MARK = "/downloads/rpm-assure-wordmark.png";
 
@@ -149,7 +149,7 @@ const CSS = `
   position: absolute;
   z-index: 2;
   left: 0;
-  top: 14%;
+  top: 21%;
   width: 41%;
   height: 32%;
   display: grid;
