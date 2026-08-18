@@ -10,34 +10,9 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "hall-dl-20260818";
+const LOGIN_BUILD = "logo-top-20260818";
 const AISLE = "/downloads/login-white-hall.jpg";
-
-function CubeMark() {
-  return (
-    <svg className="rpma-aisle-cube" viewBox="0 0 80 80" aria-hidden>
-      <defs>
-        <linearGradient id="rpmaCube" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#0aa0c8" />
-          <stop offset="55%" stopColor="#1bb8a6" />
-          <stop offset="100%" stopColor="#8fce4a" />
-        </linearGradient>
-      </defs>
-      <path
-        fill="none"
-        stroke="url(#rpmaCube)"
-        strokeWidth="2.2"
-        strokeLinejoin="round"
-        d="M40 8 70 24v32L40 72 10 56V24Z"
-      />
-      <path fill="none" stroke="url(#rpmaCube)" strokeWidth="1.6" d="M40 8v64M10 24l30 16 30-16" />
-      <circle cx="40" cy="24" r="2.1" fill="#8fce4a" />
-      <circle cx="22" cy="34" r="1.7" fill="#1bb8a6" />
-      <circle cx="58" cy="34" r="1.7" fill="#1bb8a6" />
-      <circle cx="40" cy="40" r="2.1" fill="#0aa0c8" />
-    </svg>
-  );
-}
+const MARK = "/downloads/rpm-assure-wordmark.png";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -93,17 +68,10 @@ function LoginPage() {
     <div className="rpma-aisle" data-login-build={LOGIN_BUILD}>
       <style>{CSS}</style>
       <img className="rpma-aisle-bg" src={AISLE} alt="" />
+      <img className="rpma-aisle-logo" src={MARK} alt="RPM Assure" />
 
       <main className="rpma-aisle-stage">
         <section className="rpma-aisle-card">
-          <div className="rpma-aisle-mark">
-            <CubeMark />
-            <span className="rpma-aisle-word">
-              <strong>RPM</strong>
-              <em>ASSURE</em>
-            </span>
-          </div>
-
           <IdleLogoutBanner />
 
           {!authEnabled ? (
@@ -174,70 +142,49 @@ const CSS = `
   object-position: center;
   display: block;
 }
+.rpma-aisle-logo {
+  position: absolute;
+  z-index: 2;
+  top: 4.5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(42vw, 420px);
+  height: auto;
+  pointer-events: none;
+  background: transparent;
+}
 .rpma-aisle-stage {
   position: relative;
   z-index: 2;
   min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  padding-top: 12vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.2rem 1.2rem 9vh;
 }
 .rpma-aisle-card {
-  width: min(100%, 28.5rem);
-  padding: 1.85rem 1.9rem 1.7rem;
+  width: min(100%, 20.5rem);
+  padding: 1.05rem 1.1rem 1rem;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(18, 32, 44, 0.08);
-  box-shadow: 0 18px 50px rgba(4, 16, 28, 0.18);
+  box-shadow: 0 12px 32px rgba(4, 16, 28, 0.16);
 }
-.rpma-aisle-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin: 0 0 1.4rem;
-}
-.rpma-aisle-cube { width: 52px; height: 52px; flex: 0 0 auto; }
-.rpma-aisle-word {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  line-height: 1;
-}
-.rpma-aisle-mark strong {
-  display: inline;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  background: linear-gradient(90deg, #1287c8 0%, #1bb8a6 48%, #8fce4a 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.rpma-aisle-mark em {
-  display: inline;
-  font-style: normal;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #1a6bb5;
-}
-.rpma-aisle-card form { display: grid; gap: 0.95rem; }
-.rpma-aisle-card label { display: grid; gap: 0.32rem; }
+.rpma-aisle-card form { display: grid; gap: 0.7rem; }
+.rpma-aisle-card label { display: grid; gap: 0.22rem; }
 .rpma-aisle-card label > span {
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #1a2730;
 }
 .rpma-aisle-card input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 42px;
-  padding: 0.55rem 0.7rem;
+  min-height: 36px;
+  padding: 0.4rem 0.55rem;
   border: 1px solid #c5ced6;
   background: #fff;
   color: #12202c;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   outline: none;
 }
 .rpma-aisle-card input:focus { border-color: #1bb8a6; }
@@ -256,8 +203,8 @@ const CSS = `
   min-height: 34px;
 }
 .rpma-aisle-go {
-  margin-top: 0.35rem;
-  min-height: 44px;
+  margin-top: 0.15rem;
+  min-height: 38px;
   border: 1px solid rgba(18, 40, 56, 0.45);
   background: transparent;
   color: #12202c;

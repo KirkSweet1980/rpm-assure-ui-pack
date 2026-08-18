@@ -11,6 +11,7 @@ const ALLOW = new Set([
   "Update-From-Https.ps1",
   "Apply-Staged-Pack.ps1",
   "login-white-hall.jpg",
+  "rpm-assure-wordmark.png",
 ]);
 
 const ROOTS = [
