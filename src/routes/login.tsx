@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "video-hero-20260818";
+const LOGIN_BUILD = "video-wm-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -77,6 +77,7 @@ function LoginPage() {
           playsInline
           preload="auto"
         />
+        <div className="rpma-gl-mark" />
       </div>
 
       <main className="rpma-gl-stage">
@@ -166,6 +167,41 @@ const GLASS_CSS = `
   object-fit: cover;
   object-position: center center;
   display: block;
+}
+.rpma-gl-mark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    repeating-linear-gradient(
+      -28deg,
+      transparent 0,
+      transparent 92px,
+      rgba(255,255,255,0.045) 92px,
+      rgba(255,255,255,0.045) 93px
+    );
+}
+.rpma-gl-mark::before {
+  content: "RPM ASSURE";
+  position: absolute;
+  top: 1.1rem;
+  left: 1.2rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: rgba(255,255,255,0.38);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.35);
+}
+.rpma-gl-mark::after {
+  content: "RPM ASSURE  ·  ASSURANCE DELIVERED";
+  position: absolute;
+  right: 1.2rem;
+  bottom: 0.85rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(143, 206, 74, 0.55);
 }
 .rpma-gl-stage {
   position: relative;
