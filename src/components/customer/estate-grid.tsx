@@ -130,6 +130,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
         : ep.infected || ep.malwareDetected || ep.productOutdated || ep.signatureOutdated
           ? "Warning"
           : "Protected";
+      if (estate !== "Server") return;
       push({
         id: d.deviceId || host,
         site: d.organizationName || org,
@@ -152,12 +153,14 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
       const k = keyOf(host);
       if (seen.has(k)) return;
       const ep = eppBy.get(k);
+      const estate = /server|sql|srv/i.test(host) ? "Server" : "Device";
+      if (estate !== "Server") return;
       push({
         id: String(c.accountId ?? host),
         site: c.partnerName || org,
         host,
         status: "Online",
-        estate: /server|sql|srv/i.test(host) ? "Server" : "Device",
+        estate,
         sysproId: "—",
         backup: /fail|error/i.test(String(c.lastBackupStatus ?? "")) ? "fail" : "ok",
         epp:
@@ -177,12 +180,14 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
       const host = e.deviceName || e.fqdn || `epp-${i + 1}`;
       const k = keyOf(host);
       if (seen.has(k)) return;
+      const estate = e.machineType === 6 ? "Server" : "Workstation";
+      if (estate !== "Server") return;
       push({
         id: e.endpointId || host,
         site: org,
         host,
         status: "Online",
-        estate: e.machineType === 6 ? "Server" : "Workstation",
+        estate,
         sysproId: "—",
         backup: "none",
         epp: e.infected || e.malwareDetected ? "Warning" : "Protected",
