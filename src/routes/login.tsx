@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "video-wm-20260818";
+const LOGIN_BUILD = "orb-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -69,7 +69,7 @@ function LoginPage() {
 
       <div className="rpma-gl-scene" aria-hidden="true">
         <video
-          className="rpma-gl-still"
+          className="rpma-gl-wash"
           src={HERO}
           autoPlay
           muted
@@ -77,6 +77,17 @@ function LoginPage() {
           playsInline
           preload="auto"
         />
+        <div className="rpma-gl-orb">
+          <video
+            className="rpma-gl-still"
+            src={HERO}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+          />
+        </div>
         <div className="rpma-gl-mark" />
       </div>
 
@@ -157,7 +168,31 @@ const GLASS_CSS = `
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #02060e;
+  background: #020810;
+}
+.rpma-gl-wash {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  filter: blur(42px) saturate(1.2) brightness(0.72);
+  transform: scale(1.08);
+  pointer-events: none;
+}
+.rpma-gl-orb {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(72vmin, 70vh);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  overflow: hidden;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  background: #020810;
 }
 .rpma-gl-still {
   position: absolute;
@@ -167,6 +202,7 @@ const GLASS_CSS = `
   object-fit: cover;
   object-position: center center;
   display: block;
+  border: 0;
 }
 .rpma-gl-mark {
   position: absolute;
