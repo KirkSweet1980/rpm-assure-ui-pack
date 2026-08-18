@@ -166,7 +166,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-rmm-patch`,
-            label: "Server Patch Management",
+            label: "Patch Compliance",
             blurb: "Outstanding patches — servers and workstations",
 
             href: `${base}/rmm/patch`,
@@ -183,7 +183,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-rmm-iops`,
-            label: "Disk IOPS",
+            label: "Disk Performance",
             blurb: "PowerShell disk performance counters via the Assure agent",
             href: `${base}/rmm/iops`,
             match: "exact",
@@ -191,7 +191,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-rmm-events`,
-            label: "Event Logs",
+            label: "Windows Events",
             blurb: "Windows Critical / Error — click to read",
             href: `${base}/rmm/events`,
             match: "exact",

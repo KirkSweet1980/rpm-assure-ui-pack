@@ -122,7 +122,7 @@ const rmmLeaves = [
   { label: "Servers", path: "devices" },
   { label: "Workstations", path: "workstations" },
   { label: "Patch Compliance", path: "patch" },
-  { label: "Alerts", path: "alerts" },
+  { label: "Server Alerts", path: "alerts" },
 ];
 
 const coveLeaves = [

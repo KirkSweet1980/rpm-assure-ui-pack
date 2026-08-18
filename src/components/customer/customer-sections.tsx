@@ -689,9 +689,9 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
         { label: "Servers", href: `${base}/devices`, n: online + offline, hint: "Fleet" },
         { label: "Workstations", href: `${base}/workstations`, n: wsOn + wsOff, hint: "Endpoints" },
         { label: "Patch Compliance", href: `${base}/patch`, n: s?.patchMissing ?? 0, hint: "Missing" },
-        { label: "Alerts", href: `${base}/alerts`, n: s?.criticalAlerts ?? 0, hint: "Critical" },
-        { label: "Disk IOPS", href: `${base}/iops`, n: rmm?.agentIops?.length ?? 0, hint: "Volumes" },
-        { label: "Event Logs", href: `${base}/events`, n: rmm?.windowsEvents?.length ?? 0, hint: "Errors" },
+        { label: "Server Alerts", href: `${base}/alerts`, n: s?.criticalAlerts ?? 0, hint: "Critical" },
+        { label: "Disk Performance", href: `${base}/iops`, n: rmm?.agentIops?.length ?? 0, hint: "Volumes" },
+        { label: "Windows Events", href: `${base}/events`, n: rmm?.windowsEvents?.length ?? 0, hint: "Errors" },
       ]}
     />
     </div>
@@ -1496,7 +1496,7 @@ function AgentHostTelemetry({
       {iopsShow.length > 0 ? (
       <section className="rpma-panel p-0">
         <div className="rpma-settings-panel-head">
-          Agent Disk IOPS
+          Disk Performance
           <span className="rpma-settings-count">
             {iopsShow.length} volume{iopsShow.length === 1 ? "" : "s"}
             {iopsLatest ? ` · latest ${formatSastDateTime(iopsLatest)}` : ""}
@@ -2454,7 +2454,7 @@ export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="space-y-3">
       <ChartCaption
-        title="RMM Management · Event Logs"
+        title="RMM Management · Windows Events"
         why="Windows Critical/Error from Assure agents plus RPM RMM notifications for this tenant. A quiet host is not No Cover."
       />
       {hosts.length === 0 ? (
