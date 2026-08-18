@@ -3258,16 +3258,12 @@ html.snow .dk-header-navrow {
   box-shadow: var(--rpma-chrome-shine);
 }
 html[data-theme="light"] .dk-header-navrow .dk-link,
-html.snow .dk-header-navrow .dk-link,
-html[data-theme="light"] .dk-header-navrow .rpma-top-tab-wrap > .dk-link,
-html.snow .dk-header-navrow .rpma-top-tab-wrap > .dk-link {
+html.snow .dk-header-navrow .dk-link {
   color: var(--rpma-chrome-fg);
   border-right-color: var(--rpma-chrome-line);
 }
 html[data-theme="light"] .dk-header-navrow .dk-link.is-active,
-html.snow .dk-header-navrow .dk-link.is-active,
-html[data-theme="light"] .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
-html.snow .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active {
+html.snow .dk-header-navrow .dk-link.is-active {
   color: var(--rpma-chrome-selected-fg);
   background: var(--rpma-chrome-selected);
   border-bottom-color: #8aa4c0;
