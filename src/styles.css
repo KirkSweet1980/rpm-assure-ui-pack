@@ -370,7 +370,7 @@ body {
   color: var(--rpma-chrome-selected-fg);
   border-bottom-color: #1bb8a6;
 }
-.dk-header-navrow .dk-ico { width: 14px; height: 14px; flex: 0 0 auto; filter: drop-shadow(0 0 3px currentColor); }
+.dk-header-navrow .dk-ico { width: 14px; height: 14px; flex: 0 0 auto; }
 .dk-header-navrow .dk-text { flex: 1; min-width: 0; text-align: left; }
 .dk-header-nav { display: none; }
 @media (min-width: 1024px) {
@@ -2406,7 +2406,6 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   height: 14px;
   flex: 0 0 auto;
   color: var(--rpma-tab-ico, #1bb8a6);
-  filter: drop-shadow(0 0 4px currentColor);
 }
 .rpma-emp-gtab-ico svg {
   width: 14px;
@@ -2560,31 +2559,21 @@ html.dark .rpma-emp-rag {
   width: 13px;
   height: 13px;
   stroke-width: 2.1;
-  filter: drop-shadow(0 0 3px currentColor);
 }
 .rpma-emp-tool[data-rag="Green"] .rpma-emp-ico {
   color: var(--rpma-glow-green);
   background: color-mix(in srgb, var(--rpma-glow-green) 14%, transparent);
-  box-shadow:
-    0 0 0 1px var(--rpma-glow-green),
-    0 0 7px color-mix(in srgb, var(--rpma-glow-green) 55%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: none;
 }
 .rpma-emp-tool[data-rag="Amber"] .rpma-emp-ico {
   color: var(--rpma-glow-amber);
   background: color-mix(in srgb, var(--rpma-glow-amber) 14%, transparent);
-  box-shadow:
-    0 0 0 1px var(--rpma-glow-amber),
-    0 0 7px color-mix(in srgb, var(--rpma-glow-amber) 55%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: none;
 }
 .rpma-emp-tool[data-rag="Red"] .rpma-emp-ico {
   color: var(--rpma-glow-red);
   background: color-mix(in srgb, var(--rpma-glow-red) 14%, transparent);
-  box-shadow:
-    0 0 0 1px var(--rpma-glow-red),
-    0 0 7px color-mix(in srgb, var(--rpma-glow-red) 55%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: none;
 }
 .rpma-emp-tool[data-rag="Off"] {
   opacity: 1;
@@ -3890,11 +3879,9 @@ html.snow .rpma-folio-empty { color: #536170; }
   overflow: visible;
   shape-rendering: geometricPrecision;
 }
-.rpma-epp-lamp.is-on {
-  filter: drop-shadow(0 0 2px #22c55e) drop-shadow(0 0 5px rgba(34,197,94,0.55));
-}
+.rpma-epp-lamp.is-on,
 .rpma-epp-lamp.is-off {
-  filter: drop-shadow(0 0 2px #ef4444) drop-shadow(0 0 4px rgba(239,68,68,0.45));
+  filter: none;
 }
 .rpma-epp-chip {
   display: inline-flex; align-items: center; gap: 5px;
@@ -4057,11 +4044,16 @@ html.rpma-crisp .rpma-bot.is-red .rpma-bot-visor,
 html.rpma-crisp .rpma-bot.is-red .rpma-bot-ant-tip {
   animation: rpma-visor-flash-red 0.35s steps(1, end) infinite;
 }
-html.rpma-crisp .rpma-epp-lamp.is-on {
-  filter: drop-shadow(0 0 3px #22c55e);
-}
-html.rpma-crisp .rpma-epp-lamp.is-off {
-  filter: drop-shadow(0 0 3px #ef4444);
+html.rpma-crisp .rpma-epp-lamp.is-on,
+html.rpma-crisp .rpma-epp-lamp.is-off,
+.rpma-epp-lamp.is-on,
+.rpma-epp-lamp.is-off,
+.rpma-emp-gtab-ico,
+.dk-ico,
+.rpma-modbtn svg,
+.rpma-emp-tool svg,
+.rpma-emp-ico svg {
+  filter: none !important;
 }
 
 .rpma-rev-wait {

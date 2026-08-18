@@ -5,19 +5,25 @@ import { RpmRevCounter } from "@/components/brand/rpm-rev-counter";
 const MIN_MS = 420;
 const MAX_MS = 8000;
 
-function isNavClick(el: EventTarget | null) {
-  if (!(el instanceof Element)) return false;
-  return Boolean(
-    el.closest(
-      "a[href], .dk-link, .rpma-emp-gtab, .rpma-emp-tool, .rpma-modbtn, .rpma-top-link, [data-rpma-wait]",
-    ),
-  );
+function isCustomerWorkspace(path: string | null | undefined) {
+  if (!path) return false;
+  return /^\/customers\/[^/?#]+/i.test(path);
 }
 
-/** Centered rev-counter while menus / routes settle. */
+function hrefFrom(el: EventTarget | null): string | null {
+  if (!(el instanceof Element)) return null;
+  const a = el.closest("a[href]");
+  if (a instanceof HTMLAnchorElement) return a.getAttribute("href");
+  return null;
+}
+
+/** Rev-counter only when opening a tenant workspace, not Customer Tenant list. */
 export function PageRevWait() {
-  const busy = useRouterState({
-    select: (s) => Boolean(s.isLoading || s.isTransitioning),
+  const dest = useRouterState({
+    select: (s) => ({
+      busy: Boolean(s.isLoading || s.isTransitioning),
+      path: s.resolvedLocation?.pathname ?? s.location.pathname,
+    }),
   });
   const [show, setShow] = useState(false);
   const hideAt = useRef(0);
@@ -38,14 +44,15 @@ export function PageRevWait() {
   }
 
   useEffect(() => {
-    if (busy) arm();
+    if (dest.busy && isCustomerWorkspace(dest.path)) arm();
     else settle();
-  }, [busy]);
+  }, [dest.busy, dest.path]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      if (isNavClick(e.target)) arm();
+      const href = hrefFrom(e.target);
+      if (href && isCustomerWorkspace(href)) arm();
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
