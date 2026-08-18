@@ -3,6 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { DensityProvider } from "@/lib/density";
 import { ThemeProvider } from "@/lib/theme";
 import appCss from "@/styles.css?url";
+import sideNavCss from "@/styles-side-nav.css?url";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -18,6 +19,7 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: sideNavCss },
     ],
     scripts: [
       {

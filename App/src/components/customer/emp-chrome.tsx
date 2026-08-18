@@ -179,8 +179,7 @@ export function EmpChrome({
   };
 
   return (
-    <div className="rpma-emp">
-      <div className="rpma-emp-stick">
+    <div className="rpma-emp is-side">
       <div className="rpma-emp-title">
         <span className="rpma-emp-dots" aria-hidden>
           <i />
@@ -190,56 +189,59 @@ export function EmpChrome({
         <strong>{customerName}</strong>
         <em>Enterprise Management Platform</em>
       </div>
-      <div className="rpma-emp-ribbon is-opt6" role="toolbar">
-        <div className="rpma-emp-titles">
-          {RIBBON.filter((g) => g.id === "estate" || g.id === group.id || pillarCovered(g.id, live)).map((g) => {
-            const on =
-              g.match === ""
-                ? rest === "" || rest.startsWith("/ams")
-                : rest === g.match || rest.startsWith(`${g.match}/`);
-            const href = `${base}${g.items[0]?.rel ?? g.match}`;
-            const tone = worstRag(g, live);
-            return (
-              <SpaLink
-                key={g.id}
-                href={href}
-                className={cn("rpma-emp-gtab", on && "is-on")}
-                data-rag={tone}
-                title={`${g.title} · ${tone}`}
-              >
-                <g.icon className="rpma-emp-gtab-ico" style={{ color: g.color }} aria-hidden />
-                <span className="rpma-emp-gtab-name">{g.title}</span>
-                <RagLamps tone={tone} />
-              </SpaLink>
-            );
-          })}
+      <div className="rpma-emp-bodyrow">
+        <nav className="rpma-side" aria-label="Tenant navigation">
+          <p className="rpma-side-h">Services</p>
+          <div className="rpma-emp-titles">
+            {RIBBON.filter((g) => g.id === "estate" || g.id === group.id || pillarCovered(g.id, live)).map((g) => {
+              const on =
+                g.match === ""
+                  ? rest === "" || rest.startsWith("/ams")
+                  : rest === g.match || rest.startsWith(`${g.match}/`);
+              const href = `${base}${g.items[0]?.rel ?? g.match}`;
+              const tone = worstRag(g, live);
+              return (
+                <SpaLink
+                  key={g.id}
+                  href={href}
+                  className={cn("rpma-emp-gtab", on && "is-on")}
+                  data-rag={tone}
+                  title={`${g.title} · ${tone}`}
+                >
+                  <g.icon className="rpma-emp-gtab-ico" style={{ color: g.color }} aria-hidden />
+                  <span className="rpma-emp-gtab-name">{g.title}</span>
+                  <RagLamps tone={tone} />
+                </SpaLink>
+              );
+            })}
+          </div>
+          <p className="rpma-side-h">Modules</p>
+          <div className="rpma-emp-tools">
+            {group.items.filter((it) => itemVisible(it, rest, live)).map((it) => {
+              const Icon = it.icon;
+              const href = `${base}${it.rel}`;
+              const active = (it.rel === "" && rest === "") || rest === it.rel;
+              const rag = ragOf(it.rel, live);
+              return (
+                <SpaLink
+                  key={it.rel || "home"}
+                  href={href}
+                  className={cn("rpma-emp-tool", active && "is-on")}
+                  data-rag={rag}
+                  title={`${it.label} · ${rag}`}
+                >
+                  <span className="rpma-emp-ico" style={{ color: it.color }}>
+                    <Icon className="size-5" />
+                  </span>
+                  <span>{it.label}</span>
+                </SpaLink>
+              );
+            })}
+          </div>
+        </nav>
+        <div className="rpma-emp-work">
+          <div className="rpma-emp-body">{children}</div>
         </div>
-        <div className="rpma-emp-tools">
-          {group.items.filter((it) => itemVisible(it, rest, live)).map((it) => {
-            const Icon = it.icon;
-            const href = `${base}${it.rel}`;
-            const active = (it.rel === "" && rest === "") || rest === it.rel;
-            const rag = ragOf(it.rel, live);
-            return (
-              <SpaLink
-                key={it.rel || "home"}
-                href={href}
-                className={cn("rpma-emp-tool", active && "is-on")}
-                data-rag={rag}
-                title={`${it.label} · ${rag}`}
-              >
-                <span className="rpma-emp-ico" style={{ color: it.color }}>
-                  <Icon className="size-5" />
-                </span>
-                <span>{it.label}</span>
-              </SpaLink>
-            );
-          })}
-        </div>
-      </div>
-      </div>
-      <div className="rpma-emp-work">
-        <div className="rpma-emp-body">{children}</div>
       </div>
     </div>
   );

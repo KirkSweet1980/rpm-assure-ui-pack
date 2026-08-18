@@ -1,0 +1,129 @@
+/* Soft vertical nav — matches the icon + pill reference */
+.rpma-emp.is-side {
+  display: flex !important;
+  flex-direction: column !important;
+  background: #f5f7fa !important;
+}
+.rpma-emp.is-side .rpma-emp-bodyrow {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+.rpma-side {
+  background: #fff;
+  border-right: 1px solid #e8edf2;
+  padding: 12px 10px 16px;
+  overflow: auto;
+}
+.rpma-side-h {
+  margin: 10px 10px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+.rpma-side-h:first-child { margin-top: 0; }
+.rpma-emp.is-side .rpma-emp-titles,
+.rpma-emp.is-side .rpma-emp-tools {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  width: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.rpma-emp.is-side .rpma-emp-gtab,
+.rpma-emp.is-side .rpma-emp-tool {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+.rpma-emp.is-side .rpma-emp-gtab-name,
+.rpma-emp.is-side .rpma-emp-tool > span:last-child {
+  flex: 1 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: none !important;
+}
+.rpma-emp.is-side .rpma-emp-gtab:hover,
+.rpma-emp.is-side .rpma-emp-tool:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+.rpma-emp.is-side .rpma-emp-gtab.is-on {
+  background: #e8f0fe !important;
+  color: #1e3a8a !important;
+}
+.rpma-emp.is-side .rpma-emp-tool.is-on {
+  background: #e7f8ee !important;
+  color: #166534 !important;
+}
+.rpma-emp.is-side .rpma-emp-gtab-ico,
+.rpma-emp.is-side .rpma-emp-ico {
+  width: 22px !important;
+  height: 22px !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+.rpma-emp.is-side .rpma-emp-work {
+  min-width: 0;
+  overflow: auto;
+  background: #f5f7fa;
+}
+.rpma-emp.is-side .rpma-emp-rag {
+  margin-left: auto !important;
+}
+
+/* Top app nav — same pill language */
+.dk-header-navrow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e8edf2 !important;
+}
+.dk-header-navrow .dk-link,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 36px !important;
+  padding: 6px 12px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+.dk-header-navrow .dk-link:hover,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+.dk-header-navrow .dk-link.is-active,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
+.dk-header-navrow .rpma-top-link-active {
+  background: #e8f0fe !important;
+  color: #1e3a8a !important;
+}
