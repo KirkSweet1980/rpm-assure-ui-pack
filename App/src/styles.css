@@ -2276,11 +2276,11 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 .rpma-emp-gtab {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 5px;
+  justify-content: flex-start;
+  gap: 6px;
   min-height: 40px;
   padding: 5px 7px;
-  text-align: center;
+  text-align: left;
   font-size: 11px;
   font-weight: 800;
   line-height: 1.2;
@@ -2291,14 +2291,14 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   background: transparent;
 }
 .rpma-emp-gtab-ico {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
 }
 .rpma-emp-gtab-name {
   flex: 1;
   min-width: 0;
-  text-align: center;
+  text-align: left;
   line-height: 1.15;
 }
 .rpma-emp-rag {
@@ -2306,6 +2306,7 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   align-items: center;
   gap: 3px;
   flex: 0 0 auto;
+  margin-left: auto;
   padding: 3px 5px;
   border-radius: 999px;
   background: linear-gradient(180deg, #3a4450 0%, #1a222c 100%);
