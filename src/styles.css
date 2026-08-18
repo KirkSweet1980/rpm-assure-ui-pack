@@ -4787,4 +4787,61 @@ html:not(.dark) .rpma-emp-tool.is-on {
 html:not(.dark) .rpma-sql-digits,
 html:not(.dark) .rpma-sql-digital > em { color: #111827 !important; }
 
+/* Screenshot EMP window — light */
+html:not(.dark) .rpma-emp,
+html.snow .rpma-emp,
+html[data-theme="light"] .rpma-emp {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+html:not(.dark) .rpma-emp-stick,
+html:not(.dark) .rpma-emp-title,
+html:not(.dark) .rpma-emp-ribbon {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+  box-shadow: none !important;
+}
+html:not(.dark) .rpma-emp-title strong { color: #111827 !important; }
+html:not(.dark) .rpma-emp-title em { color: #6b7280 !important; }
+html:not(.dark) .rpma-emp-gtab,
+html:not(.dark) .rpma-emp-tool {
+  background: transparent !important;
+  color: #111827 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html:not(.dark) .rpma-emp-gtab.is-on {
+  background: transparent !important;
+  color: #111827 !important;
+  box-shadow: inset 0 -2px 0 #111827 !important;
+}
+html:not(.dark) .rpma-emp-tool.is-on {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+html:not(.dark) .rpma-emp-body,
+html:not(.dark) .rpma-emp-work {
+  background: #f3f5f7 !important;
+  color: #111827 !important;
+}
+html:not(.dark) .rpma-emp-inspector {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+html:not(.dark) .dk-header-navrow .dk-link {
+  color: #111827 !important;
+  font-size: 12.5px;
+}
+html:not(.dark) .dk-header-navrow .dk-link.is-active {
+  background: transparent !important;
+  color: #111827 !important;
+  box-shadow: inset 0 -2px 0 #111827 !important;
+  border-bottom-color: #111827 !important;
+}
+
+
 
