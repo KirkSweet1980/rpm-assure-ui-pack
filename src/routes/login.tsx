@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "contain-center-20260818";
+const LOGIN_BUILD = "fullbleed-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -69,7 +69,7 @@ function LoginPage() {
 
       <div className="rpma-gl-scene" aria-hidden="true">
         <video
-          className="rpma-gl-wash"
+          className="rpma-gl-still"
           src={HERO}
           autoPlay
           muted
@@ -77,17 +77,6 @@ function LoginPage() {
           playsInline
           preload="auto"
         />
-        <div className="rpma-gl-orb">
-          <video
-            className="rpma-gl-still"
-            src={HERO}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-          />
-        </div>
         <div className="rpma-gl-mark" />
       </div>
 
@@ -170,45 +159,17 @@ const GLASS_CSS = `
   overflow: hidden;
   background: #020810;
 }
-.rpma-gl-wash {
+.rpma-gl-still {
   position: absolute;
-  inset: -18%;
-  width: 136%;
-  height: 136%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  filter: blur(36px) saturate(1.06) brightness(0.82);
-  pointer-events: none;
+  object-position: center center;
+  display: block;
   border: 0;
   outline: 0;
   background: #020810;
-}
-.rpma-gl-orb {
-  position: absolute;
-  left: 50%;
-  top: 44%;
-  width: min(54vw, 58vh);
-  aspect-ratio: 3 / 2;
-  transform: translate(-50%, -50%);
-  background: transparent;
-  border: 0;
-  outline: 0;
-  box-shadow: none;
-  -webkit-mask-image: radial-gradient(ellipse 78% 82% at 50% 50%, #000 0%, #000 52%, rgba(0,0,0,0.55) 70%, transparent 92%);
-  mask-image: radial-gradient(ellipse 78% 82% at 50% 50%, #000 0%, #000 52%, rgba(0,0,0,0.55) 70%, transparent 92%);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
-.rpma-gl-still {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center center;
-  border: 0;
-  outline: 0;
-  background: transparent;
 }
 .rpma-gl-mark {
   position: absolute;
