@@ -140,7 +140,7 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
     targetPct: 99.5,
     targetLabel: "99.5% success · 24h RPO",
     howWeMeasure:
-      "Success = OK jobs ÷ (OK + failed). RPO met = devices whose last success is within 24h. Restore success = passed tests ÷ (passed + failed).",
+      "Success = OK jobs ÷ (OK + failed). RPO met = devices whose last success is within 24h. Recovery tests are not scored — last session time is not on the statistics API.",
     source: INDUSTRY_SLA_DOC,
   },
   epp: {

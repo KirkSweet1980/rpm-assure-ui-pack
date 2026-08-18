@@ -45,18 +45,18 @@ export function emptySlaContract(code: string): CustomerSlaContract {
 }
 
 function parseKpis(raw: string | null | undefined): Partial<Record<IndustryPillarKey, number>> {
-  const base = defaultSlaKpis();
-  if (!raw) return base;
+  const out: Partial<Record<IndustryPillarKey, number>> = {};
+  if (!raw) return out;
   try {
     const j = JSON.parse(raw) as Record<string, unknown>;
-    for (const k of Object.keys(base) as IndustryPillarKey[]) {
+    for (const k of Object.keys(INDUSTRY_MEASURES) as IndustryPillarKey[]) {
       const n = Number(j[k]);
-      if (Number.isFinite(n) && n > 0 && n <= 100) base[k] = Math.round(n * 100) / 100;
+      if (Number.isFinite(n) && n > 0 && n <= 100) out[k] = Math.round(n * 100) / 100;
     }
   } catch {
-    /* keep defaults */
+    /* empty */
   }
-  return base;
+  return out;
 }
 
 async function ensureTable(pool: NonNullable<Awaited<ReturnType<typeof getPool>>>) {

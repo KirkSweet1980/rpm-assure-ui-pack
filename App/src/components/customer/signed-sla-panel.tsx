@@ -75,7 +75,7 @@ export function SignedSlaPanel({ code, cover }: { code: string; cover?: Customer
     setDoc(loadDoc(code));
     fetchCustomerSlaContract({ data: { code } }).then((r) => {
       if (!live) return;
-      setRow({ ...emptySlaContract(code), ...r, kpis: { ...defaultSlaKpis(), ...r.kpis } });
+      setRow({ ...emptySlaContract(code), ...r, kpis: { ...r.kpis } });
       const n = (r.notes ?? "").match(/^CUSTOM:([^\n]*)/)?.[1]?.trim();
       if (n) setCustomName(n);
     });
@@ -108,7 +108,7 @@ export function SignedSlaPanel({ code, cover }: { code: string; cover?: Customer
       return;
     }
     const next = await fetchCustomerSlaContract({ data: { code } });
-    setRow({ ...emptySlaContract(code), ...next, kpis: { ...defaultSlaKpis(), ...next.kpis } });
+    setRow({ ...emptySlaContract(code), ...next, kpis: { ...next.kpis } });
     setMsg(
       kind === "sign"
         ? "Signed SLA on file. Custom targets apply to this customer’s covered services only."

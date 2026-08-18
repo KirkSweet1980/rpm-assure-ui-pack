@@ -30,6 +30,7 @@ function VisionSettingsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [probe, setProbe] = useState("");
+  const [probeCode, setProbeCode] = useState("AHIC");
   const [result, setResult] = useState<string | null>(null);
   const [hits, setHits] = useState<{ title: string; source: string; score: number }[]>([]);
 
@@ -60,7 +61,7 @@ function VisionSettingsPage() {
     setBusy(true);
     setResult(null);
     try {
-      const r = await askVision({ data: { message: probe, path: "/settings/vision" } });
+      const r = await askVision({ data: { message: probe, path: "/settings/vision", customer: probeCode } });
       setResult(r.text);
       setHits((r.hits ?? []).map((h) => ({ title: h.title, source: h.source, score: h.score })));
     } catch (e) {
@@ -126,7 +127,7 @@ function VisionSettingsPage() {
               checked={cfg.includeCustomer}
               onChange={(e) => setCfg({ ...cfg, includeCustomer: e.target.checked })}
             />
-            Mention the open customer code
+            Include live tenant snapshot
           </label>
           <div className="grid gap-2 sm:grid-cols-2">
             {(Object.keys(SOURCE_LABEL) as VisionSourceId[]).map((id) => (
@@ -163,12 +164,19 @@ function VisionSettingsPage() {
           <p className="text-muted">Ask what a staff member would ask. Hits show which chunks ranked.</p>
           <div className="flex flex-wrap gap-2">
             <input
+              className="rpma-sla-input w-28"
+              value={probeCode}
+              onChange={(e) => setProbeCode(e.target.value.toUpperCase())}
+              placeholder="AHIC"
+              aria-label="Customer code for snapshot"
+            />
+            <input
               className="rpma-sla-input flex-1"
               value={probe}
               onChange={(e) => setProbe(e.target.value)}
-              placeholder="e.g. how do I import a signed SLA?"
+              placeholder="e.g. how many open tickets?"
             />
-            <Button type="button" disabled={busy || !probe.trim()} onClick={() => void onProbe()}>
+            <Button type="button" disabled={busy} onClick={() => void onProbe()}>
               <Sparkles className="size-4" />
               Retrieve
             </Button>
