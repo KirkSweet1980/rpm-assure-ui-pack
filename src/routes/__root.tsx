@@ -21,7 +21,7 @@ export const Route = createRootRoute({
     ],
     scripts: [
       {
-        children: `(function(){try{var e=document.documentElement;e.dataset.theme="dark";e.style.colorScheme="dark";e.classList.add("dark","carbon");e.classList.remove("snow");}catch(e){}})();`,
+        children: `(function(){try{var e=document.documentElement;e.dataset.theme="dark";e.style.colorScheme="dark";e.classList.add("dark","carbon");e.classList.remove("snow");var q=new URLSearchParams(location.search).get("palette");if(q){e.dataset.palette=String(q).toLowerCase();}}catch(e){}})();`,
       },
     ],
   }),

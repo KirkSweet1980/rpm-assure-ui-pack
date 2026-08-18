@@ -4103,23 +4103,23 @@ html.dark .rpma-rev-wait {
 }
 
 html, body, .dk-shell {
-  background: #f4f7fa;
-  color: #101820;
+  background: var(--color-bg, #f4f7fa);
+  color: var(--color-fg, #101820);
 }
 .dk-content, .dk-canvas, .rpma-topnav-main, .rpma-topnav-canvas,
 .rpma-amx-workspace, .rpma-emp-body, .rpma-pane, .rpma-panel,
 .rpma-d3-detail, .rpma-list {
-  background: #f4f7fa;
-  color: #101820;
+  background: var(--color-bg, #f4f7fa);
+  color: var(--color-fg, #101820);
 }
 .dk-header-tall, .dk-header-one, .dk-header-row {
-  background: #0b1a3a;
-  color: #e8f7f4;
+  background: var(--pc-header-background, #0b1a3a);
+  color: var(--pc-header-color, #e8f7f4);
 }
-.dk-header-navrow { background: #16324f; color: #e8f7f4; }
+.dk-header-navrow { background: var(--rpma-chrome, #16324f); color: var(--rpma-chrome-fg, #e8f7f4); }
 .rpma-emp-ribbon, .rpma-emp-tools {
-  background: #0b1a3a;
-  color: #e8f7f4;
+  background: var(--pc-header-background, #0b1a3a);
+  color: var(--rpma-chrome-fg, #e8f7f4);
 }
 .dk-header-one .rpma-hud-k,
 .dk-header-tall .rpma-hud-k,
@@ -4280,5 +4280,99 @@ html[data-density="compact"] h1, html[data-density="compact"] h2 { font-size: 1.
 html[data-density="comfortable"] h1, html[data-density="comfortable"] h2 { font-size: 1.45rem; }
 html[data-density="compact"] .rpma-userchip { font-size: 12px; }
 html[data-density="comfortable"] .rpma-userchip { font-size: 15px; }
+
+/* Live palette previews: ?palette=g1 | g2 | g3 */
+html[data-palette="g1"] {
+  --color-bg: #f2f3f5;
+  --color-surface: #ffffff;
+  --color-surface-2: #e8eaed;
+  --color-fg: #1a1d21;
+  --color-muted: #5c636c;
+  --color-subtle: #8fce4a;
+  --color-border: #d0d3d8;
+  --color-brand-teal: #8fce4a;
+  --bs-body-bg: #f2f3f5;
+  --bs-body-color: #1a1d21;
+  --pc-heading-color: #1a1d21;
+  --pc-header-background: #2a2f36;
+  --pc-header-color: #f3f5f4;
+  --pc-sidebar-background: #2a2f36;
+  --rpma-chrome: #3a4048;
+  --rpma-chrome-hover: #4a515a;
+  --rpma-chrome-selected: #8fce4a;
+  --rpma-chrome-fg: #f3f5f4;
+  --rpma-chrome-selected-fg: #1a1d21;
+  --rpma-chrome-line: rgba(143, 206, 74, 0.28);
+}
+html[data-palette="g2"] {
+  --color-bg: #1c1f24;
+  --color-surface: #2a2f36;
+  --color-surface-2: #343a42;
+  --color-fg: #e8ebea;
+  --color-muted: #a8adb4;
+  --color-subtle: #8fce4a;
+  --color-border: #3e454e;
+  --color-brand-teal: #8fce4a;
+  --bs-body-bg: #1c1f24;
+  --bs-body-color: #e8ebea;
+  --pc-heading-color: #e8ebea;
+  --pc-header-background: #14171b;
+  --pc-header-color: #f3f5f4;
+  --pc-sidebar-background: #14171b;
+  --rpma-chrome: #2a2f36;
+  --rpma-chrome-hover: #3a4048;
+  --rpma-chrome-selected: #8fce4a;
+  --rpma-chrome-fg: #f3f5f4;
+  --rpma-chrome-selected-fg: #14171b;
+  --rpma-chrome-line: rgba(143, 206, 74, 0.3);
+}
+html[data-palette="g3"] {
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #eceef1;
+  --color-fg: #1a1d21;
+  --color-muted: #5c636c;
+  --color-subtle: #8fce4a;
+  --color-border: #d5d8dc;
+  --color-brand-teal: #8fce4a;
+  --bs-body-bg: #f7f8fa;
+  --bs-body-color: #1a1d21;
+  --pc-heading-color: #1a1d21;
+  --pc-header-background: #cfd3d8;
+  --pc-header-color: #1a1d21;
+  --pc-sidebar-background: #cfd3d8;
+  --rpma-chrome: #d5d8dc;
+  --rpma-chrome-hover: #e4e6ea;
+  --rpma-chrome-selected: #8fce4a;
+  --rpma-chrome-fg: #1a1d21;
+  --rpma-chrome-selected-fg: #1a1d21;
+  --rpma-chrome-line: rgba(40, 44, 50, 0.18);
+}
+html[data-palette="g1"] .dk-header-one .rpma-sql-digits,
+html[data-palette="g2"] .dk-header-one .rpma-sql-digits,
+html[data-palette="g3"] .dk-header-one .rpma-sql-digits {
+  color: #8fce4a !important;
+}
+html[data-palette="g1"] .dk-header-one .dk-brand-text strong,
+html[data-palette="g2"] .dk-header-one .dk-brand-text strong {
+  color: #8fce4a !important;
+}
+html[data-palette="g3"] .dk-header-one .dk-brand-text strong,
+html[data-palette="g3"] .dk-header-one .rpma-hud-k,
+html[data-palette="g3"] .dk-header-one .rpma-hud-v,
+html[data-palette="g3"] .dk-header-one .rpma-userchip,
+html[data-palette="g3"] .dk-header-one .rpma-userchip-out,
+html[data-palette="g3"] .dk-header-one .rpma-sql-digital > em {
+  color: #1a1d21 !important;
+}
+html[data-palette="g2"] .dk-content,
+html[data-palette="g2"] .rpma-emp-body,
+html[data-palette="g2"] table thead,
+html[data-palette="g2"] table tbody {
+  background: #1c1f24;
+  color: #e8ebea;
+}
+html[data-palette="g2"] table thead { background: #2a2f36; }
+
 
 
