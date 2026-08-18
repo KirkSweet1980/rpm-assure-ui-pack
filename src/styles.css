@@ -4155,3 +4155,120 @@ html.dark select {
 }
 html.dark table thead { background: #eef3f7; }
 
+/* Density: whole UI, not just table cells */
+html[data-density="compact"] {
+  --rpma-fs: 12px;
+  --rpma-fs-sm: 10px;
+  --rpma-fs-lg: 14px;
+  --rpma-gap: 6px;
+}
+html[data-density="comfortable"] {
+  --rpma-fs: 14.5px;
+  --rpma-fs-sm: 12px;
+  --rpma-fs-lg: 18px;
+  --rpma-gap: 14px;
+}
+html[data-density="compact"] .dk-shell.is-topnav { --pc-header-height: 132px; }
+html[data-density="comfortable"] .dk-shell.is-topnav { --pc-header-height: 168px; }
+
+html[data-density="compact"] .dk-content,
+html[data-density="compact"] .rpma-emp-body,
+html[data-density="compact"] .rpma-pane,
+html[data-density="compact"] .rpma-panel,
+html[data-density="compact"] .rpma-list,
+html[data-density="compact"] .rpma-d3-detail {
+  font-size: 12px;
+}
+html[data-density="comfortable"] .dk-content,
+html[data-density="comfortable"] .rpma-emp-body,
+html[data-density="comfortable"] .rpma-pane,
+html[data-density="comfortable"] .rpma-panel,
+html[data-density="comfortable"] .rpma-list,
+html[data-density="comfortable"] .rpma-d3-detail {
+  font-size: 14.5px;
+}
+
+html[data-density="compact"] .dk-header-row { min-height: 76px; padding: 4px 16px; }
+html[data-density="comfortable"] .dk-header-row { min-height: 100px; padding: 12px 24px; }
+html[data-density="compact"] .dk-header-navrow { min-height: 42px; }
+html[data-density="comfortable"] .dk-header-navrow { min-height: 58px; }
+html[data-density="compact"] .dk-header-navrow .dk-link {
+  min-height: 42px; padding: 8px 12px; font-size: 13px;
+}
+html[data-density="comfortable"] .dk-header-navrow .dk-link {
+  min-height: 58px; padding: 14px 18px; font-size: 16px;
+}
+html[data-density="compact"] .dk-brand-text strong { font-size: 18px; }
+html[data-density="comfortable"] .dk-brand-text strong { font-size: 26px; }
+html[data-density="compact"] .rpma-sql-digits { font-size: 14px; }
+html[data-density="comfortable"] .rpma-sql-digits { font-size: 20px; }
+html[data-density="compact"] .rpma-hud-v { font-size: 11px; }
+html[data-density="comfortable"] .rpma-hud-v { font-size: 14px; }
+
+html[data-density="compact"] .rpma-emp-gtab {
+  min-height: 44px; padding: 6px 8px; font-size: 11px;
+}
+html[data-density="comfortable"] .rpma-emp-gtab {
+  min-height: 68px; padding: 12px 14px; font-size: 14px;
+}
+html[data-density="compact"] .rpma-emp-gtab-ico { width: 15px; height: 15px; }
+html[data-density="comfortable"] .rpma-emp-gtab-ico { width: 22px; height: 22px; }
+html[data-density="compact"] .rpma-emp-tools { padding: 4px 8px 6px; gap: 6px; }
+html[data-density="comfortable"] .rpma-emp-tools { padding: 10px 14px 12px; gap: 12px; }
+html[data-density="compact"] .rpma-modbtn,
+html[data-density="compact"] .rpma-emp-tool {
+  min-height: 36px; padding: 4px 8px; font-size: 10px;
+}
+html[data-density="comfortable"] .rpma-modbtn,
+html[data-density="comfortable"] .rpma-emp-tool {
+  min-height: 52px; padding: 10px 14px; font-size: 13px;
+}
+
+html[data-density="compact"] table td,
+html[data-density="compact"] .dk-content table td,
+html[data-density="compact"] .rpma-xls td,
+html[data-density="compact"] .rpma-amx-table td {
+  padding: 4px 7px; font-size: 11.5px; line-height: 1.25;
+}
+html[data-density="compact"] table th,
+html[data-density="compact"] .dk-content table th {
+  padding: 5px 7px; font-size: 10px;
+}
+html[data-density="comfortable"] table td,
+html[data-density="comfortable"] .dk-content table td,
+html[data-density="comfortable"] .rpma-xls td,
+html[data-density="comfortable"] .rpma-amx-table td {
+  padding: 13px 14px; font-size: 14px; line-height: 1.45;
+}
+html[data-density="comfortable"] table th,
+html[data-density="comfortable"] .dk-content table th {
+  padding: 12px 14px; font-size: 12px;
+}
+
+html[data-density="compact"] .rpma-pane,
+html[data-density="compact"] .rpma-panel,
+html[data-density="compact"] .rpma-card {
+  padding: 8px 10px;
+}
+html[data-density="comfortable"] .rpma-pane,
+html[data-density="comfortable"] .rpma-panel,
+html[data-density="comfortable"] .rpma-card {
+  padding: 16px 18px;
+}
+html[data-density="compact"] .rpma-pane-body { padding: 8px 10px; }
+html[data-density="comfortable"] .rpma-pane-body { padding: 16px 18px; }
+html[data-density="compact"] .rpma-list-row { padding: 6px 8px; gap: 6px; }
+html[data-density="comfortable"] .rpma-list-row { padding: 14px 12px; gap: 12px; }
+
+html[data-density="compact"] .dk-shell.is-topnav .dk-content.rpma-topnav-main {
+  padding: 4px 8px 8px;
+}
+html[data-density="comfortable"] .dk-shell.is-topnav .dk-content.rpma-topnav-main {
+  padding: 12px 14px 14px;
+}
+html[data-density="compact"] h1, html[data-density="compact"] h2 { font-size: 1.05rem; }
+html[data-density="comfortable"] h1, html[data-density="comfortable"] h2 { font-size: 1.45rem; }
+html[data-density="compact"] .rpma-userchip { font-size: 12px; }
+html[data-density="comfortable"] .rpma-userchip { font-size: 15px; }
+
+
