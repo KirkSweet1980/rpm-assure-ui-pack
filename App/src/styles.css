@@ -4843,5 +4843,84 @@ html:not(.dark) .dk-header-navrow .dk-link.is-active {
   border-bottom-color: #111827 !important;
 }
 
+/* Option C — Customer Ecosystem command board */
+.rpma-cmd-banners {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0 8px;
+}
+.rpma-cmd-banner {
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #111827;
+  min-height: 58px;
+}
+.rpma-cmd-banner i {
+  align-self: stretch;
+  width: 4px;
+  border-radius: 4px;
+}
+.rpma-cmd-banner strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.rpma-cmd-banner span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #6b7280;
+}
+.rpma-cmd-banner.is-off { opacity: 0.62; }
+.rpma-cmd-heat {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.rpma-cmd-cell {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  text-decoration: none;
+  color: #111827;
+  min-height: 52px;
+}
+.rpma-cmd-cell em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
+}
+.rpma-cmd-cell strong { font-size: 12px; font-weight: 800; }
+.rpma-cmd-cell.is-green { background: #ecfdf3; border-color: #bbf7d0; }
+.rpma-cmd-cell.is-amber { background: #fffbeb; border-color: #fde68a; }
+.rpma-cmd-cell.is-red { background: #fef2f2; border-color: #fecaca; }
+.rpma-cmd-cell.is-off { background: #f3f4f6; color: #6b7280; }
+html.dark .rpma-cmd-banner,
+html.dark .rpma-cmd-cell { background: #12202c; border-color: #243444; color: #e8edf3; }
+html.dark .rpma-cmd-banner span,
+html.dark .rpma-cmd-cell em { color: #8aa0b0; }
+html.dark .rpma-cmd-cell.is-green { background: #123026; }
+html.dark .rpma-cmd-cell.is-amber { background: #2a2410; }
+html.dark .rpma-cmd-cell.is-red { background: #2a1414; }
+html.dark .rpma-cmd-cell.is-off { background: #161e26; }
+@media (max-width: 1100px) {
+  .rpma-cmd-banners,
+  .rpma-cmd-heat { grid-template-columns: 1fr 1fr; }
+}
+
+
 
 

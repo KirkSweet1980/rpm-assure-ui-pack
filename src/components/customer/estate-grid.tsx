@@ -6,7 +6,9 @@ import { coverFromDetail, isDormantCover } from "@/lib/data/cover";
 import { ticketStats } from "@/lib/data/ticket-feed";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
 import { SpaLink } from "@/components/nav/spa-link";
+import { CoverTag } from "@/components/ui/status-robot";
 import { RagBadge } from "@/components/portfolio/rag-badge";
+import { customerLiveStatus } from "@/lib/data/live-status";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
 const PAGE = 11;
@@ -228,15 +230,18 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
   const eppN = customer.eppDeviceCount ?? data.epp?.devices?.length ?? 0;
   const infected = customer.bdInfectedCount ?? 0;
   const iopsN = data.rmm?.agentIops?.length ?? 0;
+  const live = customerLiveStatus(code, customer, cover, data);
 
-  const services = [
+  const banners = [
     {
       on: cover.syspro,
       name: "SYSPRO Landscape",
       href: `${base}/syspro`,
+      bar: "#0d9488",
+      rag: live.pillars.syspro?.rag ?? (cover.syspro ? "Green" : "Off"),
       bits: [
         `${customer.operatorCount || data.operators?.length || 0} operators`,
-        `${jobs} job error${jobs === 1 ? "" : "s"}`,
+        `${jobs} job errors`,
         `${dtr} FinSight OOB`,
       ],
     },
@@ -244,40 +249,41 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
       on: cover.rmm,
       name: "RMM Management",
       href: `${base}/rmm`,
-      bits: [
-        `${srvOn} server online`,
-        `${srvOff} offline`,
-        `${iopsN} IOPS volume${iopsN === 1 ? "" : "s"}`,
-      ],
+      bar: "#2563eb",
+      rag: live.pillars.rmm?.rag ?? (cover.rmm ? "Green" : "Off"),
+      bits: [`${srvOn} online`, `${srvOff} offline`, `${iopsN} IOPS vols`],
     },
     {
       on: cover.cove,
       name: "RPM Cloud Backup",
       href: `${base}/cove`,
-      bits: [`${coveN} device${coveN === 1 ? "" : "s"}`, `${coveFail} failed / stale`],
+      bar: "#7c3aed",
+      rag: live.pillars.cove?.rag ?? (cover.cove ? "Green" : "Off"),
+      bits: [`${coveN} agents`, `${coveFail} failed / stale`],
     },
     {
       on: Boolean(cover.epp),
       name: "RPM End Point Protection",
       href: `${base}/epp`,
-      bits: [`${eppN} endpoint${eppN === 1 ? "" : "s"}`, infected ? `${infected} infected` : "clean"],
-    },
-    {
-      on: Boolean(cover.csp),
-      name: "Microsoft 365",
-      href: `${base}/csp`,
-      bits: [
-        `${customer.cspUserCount ?? data.csp?.users?.length ?? 0} users`,
-        `${customer.cspLicenseSkuCount ?? data.csp?.licenses?.length ?? 0} SKUs`,
-      ],
-    },
-    {
-      on: Boolean(cover.tickets),
-      name: "RPM Service Desk",
-      href: `${base}/tickets`,
-      bits: [`${tix.open} open`, `${tix.total} total`, tix.breaches ? `${tix.breaches} clock miss` : "clocks ok"],
+      bar: "#dc2626",
+      rag: live.pillars.epp?.rag ?? (cover.epp ? "Green" : "Off"),
+      bits: [`${eppN} agents`, infected ? `${infected} infected` : "clean"],
     },
   ];
+
+  const heat = [
+    { label: "Finance Modules", href: `${base}/syspro/dtr`, on: cover.syspro, rag: live.modules["/syspro/dtr"]?.rag ?? live.pillars.syspro?.rag },
+    { label: "Operators", href: `${base}/syspro/operators`, on: cover.syspro, rag: live.modules["/syspro/operators"]?.rag ?? live.pillars.syspro?.rag },
+    { label: "Servers", href: `${base}/rmm/devices`, on: cover.rmm, rag: live.modules["/rmm/devices"]?.rag ?? live.pillars.rmm?.rag },
+    { label: "Workstations", href: `${base}/rmm/workstations`, on: cover.rmm, rag: live.modules["/rmm/workstations"]?.rag ?? "Off" },
+    { label: "Backup Agents", href: `${base}/cove/devices`, on: cover.cove, rag: live.modules["/cove/devices"]?.rag ?? live.pillars.cove?.rag },
+    { label: "Recovery Testing", href: `${base}/cove/recovery`, on: cover.cove, rag: live.modules["/cove/recovery"]?.rag ?? live.pillars.cove?.rag },
+    { label: "EndPoint Agents", href: `${base}/epp`, on: Boolean(cover.epp), rag: live.pillars.epp?.rag },
+    { label: "Open Tickets", href: `${base}/tickets/open`, on: Boolean(cover.tickets), rag: tix.open > 0 ? "Amber" : "Green" },
+  ].map((h) => ({
+    ...h,
+    tone: !h.on ? "off" : h.rag === "Red" ? "red" : h.rag === "Amber" ? "amber" : "green",
+  }));
 
   const kpis = [
     { label: "Assurance", value: dormant || score == null ? "—" : `${score}%`, href: `${base}/ams` },
@@ -321,15 +327,27 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
             </SpaLink>
           ))}
         </div>
-        <div className="rpma-eco-svcs">
-          {services.map((s) => (
+        <div className="rpma-cmd-banners">
+          {banners.map((s) => (
             <SpaLink
               key={s.name}
               href={s.href}
-              className={cn("rpma-eco-svc", s.on ? "is-on" : "is-off")}
+              className={cn("rpma-cmd-banner", s.on ? "is-on" : "is-off")}
             >
-              <strong>{s.name}</strong>
-              <span>{s.on ? `Cover · ${s.bits.join(" · ")}` : "No Cover"}</span>
+              <i style={{ background: s.bar }} />
+              <div>
+                <strong>{s.name}</strong>
+                <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
+              </div>
+              <CoverTag on={s.on} />
+            </SpaLink>
+          ))}
+        </div>
+        <div className="rpma-cmd-heat" aria-label="Module heat">
+          {heat.map((h) => (
+            <SpaLink key={h.label} href={h.href} className={cn("rpma-cmd-cell", `is-${h.tone}`)}>
+              <em>{h.label}</em>
+              <strong>{h.on ? (h.rag === "Off" ? "Cover" : String(h.rag)) : "No Cover"}</strong>
             </SpaLink>
           ))}
         </div>
