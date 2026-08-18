@@ -175,8 +175,9 @@ export function buildCoveEsr(data: CustomerDetailPayload): CoveEsr {
         : "Restore tests need review";
 
   const recoverable = devices.filter((d) => {
-    if (!d.lastRecoveryTestAt) return false;
     const st = (d.recoveryTestStatus || "").toLowerCase();
+    if (st.includes("success") || st.includes("pass") || st.includes("ok")) return true;
+    if (!d.lastRecoveryTestAt) return false;
     return st.includes("success") || st.includes("pass") || st.includes("ok");
   }).length;
   const recoverabilityPct = devices.length
