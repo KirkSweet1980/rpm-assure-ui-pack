@@ -1790,9 +1790,9 @@ html[data-density="comfortable"] .rpma-xls th {
   background: #22c55e;
 }
 .rpma-cover-tag.is-off {
-  color: #f8fafc;
-  border: 1px solid #4b5563;
-  background: #3f4650;
+  color: #ffffff;
+  border: 1px solid #111827;
+  background: #111827;
 }
 .rpma-modbtn.is-cover {
   background: #16a34a;
@@ -4595,4 +4595,119 @@ html.dark .rpma-eco-kpi strong,
 html.dark .rpma-eco-svc strong { color: #e8edf3 !important; }
 html.dark .rpma-eco-kpi em,
 html.dark .rpma-eco-svc span { color: #8aa0b0 !important; }
+
+/* Screenshot colour profile — light mode */
+html:not(.dark):not([data-theme="dark"]),
+html.snow,
+html[data-theme="light"] {
+  --color-bg: #eef1f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f7f8fa;
+  --color-fg: #111827;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --pc-header-background: #ffffff;
+  --pc-header-color: #111827;
+  --rpma-chrome: #ffffff;
+  --rpma-chrome-hover: #f3f4f6;
+  --rpma-chrome-selected: #eef2f6;
+  --rpma-chrome-fg: #111827;
+  --rpma-chrome-selected-fg: #111827;
+  --rpma-chrome-line: #e5e7eb;
+}
+html:not(.dark) .dk-header,
+html:not(.dark) .dk-header-one,
+html:not(.dark) .dk-header-navrow,
+html.snow .dk-header,
+html.snow .dk-header-navrow,
+html[data-theme="light"] .dk-header,
+html[data-theme="light"] .dk-header-navrow {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 0 #e5e7eb !important;
+}
+html:not(.dark) .dk-header-one .dk-brand-text,
+html:not(.dark) .dk-header-one .dk-brand-text strong,
+html:not(.dark) .dk-header-navrow .dk-link,
+html:not(.dark) .rpma-userchip,
+html:not(.dark) .rpma-userchip-name,
+html:not(.dark) .rpma-userchip-out,
+html:not(.dark) .rpma-theme-switch-label,
+html:not(.dark) .dk-iconbtn,
+html.snow .dk-header-one .dk-brand-text strong {
+  color: #111827 !important;
+}
+html:not(.dark) .dk-header-one .dk-brand-text strong { color: #0f766e !important; }
+html:not(.dark) .dk-content,
+html:not(.dark) .rpma-topnav-canvas,
+html:not(.dark) .rpma-amx-workspace,
+html:not(.dark) .rpma-classic-main,
+html.snow .dk-content {
+  background: #eef1f4 !important;
+  color: #111827 !important;
+}
+html:not(.dark) .rpma-classic-nav {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+html:not(.dark) .rpma-classic-nav h2 { color: #6b7280 !important; }
+html:not(.dark) .rpma-classic-row { color: #111827 !important; }
+html:not(.dark) .rpma-classic-row:hover { background: #f3f4f6 !important; }
+html:not(.dark) .rpma-classic-row.is-on {
+  background: #f3f4f6 !important;
+  box-shadow: inset 3px 0 0 #111827 !important;
+}
+html:not(.dark) .rpma-glass,
+html:not(.dark) .rpma-card,
+html:not(.dark) .rpma-panel,
+html:not(.dark) .rpma-pane,
+html:not(.dark) .rpma-eco-kpi,
+html:not(.dark) .rpma-eco-svc {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+html:not(.dark) .rpma-eco-kpi strong,
+html:not(.dark) .rpma-eco-svc strong,
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3 { color: #111827 !important; }
+html:not(.dark) .rpma-eco-kpi em,
+html:not(.dark) .rpma-eco-svc span,
+html:not(.dark) .text-muted { color: #6b7280 !important; }
+html:not(.dark) table thead,
+html:not(.dark) .rpma-est-table th {
+  background: #f8fafc !important;
+  color: #6b7280 !important;
+  border-color: #e5e7eb !important;
+}
+html:not(.dark) table td,
+html:not(.dark) .rpma-est-table td {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #eef1f4 !important;
+}
+html:not(.dark) .rpma-est-table tbody tr:nth-child(even) td { background: #fafbfc !important; }
+html:not(.dark) .rpma-cover-tag.is-on {
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+}
+html:not(.dark) .rpma-cover-tag.is-off {
+  background: #111827 !important;
+  border-color: #111827 !important;
+  color: #ffffff !important;
+}
+html:not(.dark) .dk-header-navrow .dk-link.is-active,
+html:not(.dark) .rpma-emp-gtab.is-on,
+html:not(.dark) .rpma-emp-tool.is-on {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  border-bottom-color: #111827 !important;
+}
+html:not(.dark) .rpma-sql-digits,
+html:not(.dark) .rpma-sql-digital > em { color: #111827 !important; }
+
 
