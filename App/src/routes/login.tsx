@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "top-right-20260818";
-const HALL = "/brand/login-picks/boardroom-tv.jpg?v=20260816rc";
+const LOGIN_BUILD = "video-hero-20260818";
+const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -68,14 +68,19 @@ function LoginPage() {
       <style>{GLASS_CSS}</style>
 
       <div className="rpma-gl-scene" aria-hidden="true">
-        <img className="rpma-gl-still" src={HALL} alt="" />
-        <div className="rpma-gl-wash" />
+        <video
+          className="rpma-gl-still"
+          src={HERO}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
       </div>
 
       <main className="rpma-gl-stage">
         <section className="rpma-gl-card">
-          <h1 className="rpma-gl-word">RPM Assure</h1>
-
           <IdleLogoutBanner />
 
           {!authEnabled ? (
@@ -136,30 +141,22 @@ function LoginPage() {
 
 const GLASS_CSS = `
 .rpma-gl {
-  --teal: var(--color-brand-teal);
-  --lime: var(--color-brand-lime);
-  --slate: var(--color-brand-slate);
-  --fg: #f3f7fb;
-  --muted: rgba(243, 247, 251, 0.72);
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
   width: 100%;
   overflow: hidden;
-  background: #0b1a3a;
-  color: var(--fg);
-  font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
-  font-optical-sizing: auto;
+  background: #02060e;
+  color: #f3f7fb;
+  font-family: "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: #0b1a3a;
 }
 .rpma-gl-scene {
   position: absolute;
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #0b1a3a;
+  background: #02060e;
 }
 .rpma-gl-still {
   position: absolute;
@@ -168,75 +165,55 @@ const GLASS_CSS = `
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  background: #0b1a3a;
   display: block;
-}
-.rpma-gl-wash {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: rgba(7, 14, 20, 0.28);
 }
 .rpma-gl-stage {
   position: relative;
   z-index: 2;
   min-height: 100dvh;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 1.1rem 1.4rem 1.5rem;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 1.2rem 2.4rem;
 }
 .rpma-gl-card {
-  position: relative;
-  width: min(100%, 34rem);
-  padding: 0;
+  width: min(100%, 38rem);
+  padding: 0.85rem 1rem 0.75rem;
   border: 0;
+  border-radius: 14px;
   background: transparent;
   box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  overflow: visible;
   text-align: center;
-}
-.rpma-gl-word {
-  margin: 0 0 0.55rem;
-  text-align: center;
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: #8fce4a;
 }
 .rpma-gl-tag {
-  margin: 0.45rem 0 0;
-  text-align: center;
-  font-size: 0.62rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #8fce4a;
 }
 .rpma-gl-form {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  gap: 0.7rem;
+  gap: 0.65rem;
   align-items: end;
 }
 .rpma-gl-field { text-align: left; margin: 0; }
 .rpma-gl-field span {
   display: block;
-  margin-bottom: 0.2rem;
-  font-size: 0.68rem;
+  margin-bottom: 0.18rem;
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(243, 247, 251, 0.78);
+  color: rgba(243, 247, 251, 0.82);
 }
 .rpma-gl-wrap { position: relative; display: flex; align-items: center; }
 .rpma-gl-wrap > svg {
   position: absolute;
   left: 0.7rem;
-  color: rgba(243, 247, 251, 0.7);
+  color: rgba(243, 247, 251, 0.72);
   pointer-events: none;
 }
 .rpma-gl-wrap input {
@@ -244,43 +221,37 @@ const GLASS_CSS = `
   box-sizing: border-box;
   padding: 0.62rem 2.2rem 0.62rem 2.1rem;
   border: 0;
-  border-radius: 0.7rem;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--fg);
+  border-radius: 999px;
+  background: transparent;
+  color: #f3f7fb;
   font-size: 0.92rem;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.28) inset;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.38) inset;
 }
-.rpma-gl-wrap input::placeholder { color: rgba(243, 247, 251, 0.5); }
+.rpma-gl-wrap input::placeholder { color: rgba(243, 247, 251, 0.48); }
+.rpma-gl-wrap input:focus {
+  box-shadow: 0 0 0 1px #8fce4a inset;
+}
 .rpma-gl-error { grid-column: 1 / -1; }
 .rpma-gl-submit {
   margin: 0;
   min-height: 42px;
-  padding: 0.55rem 1.1rem;
+  padding: 0.55rem 1.15rem;
   border: 0;
-  border-radius: 0.7rem;
-  background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0f7f86 0%, #1bb8a6 50%, #8fce4a 100%);
   color: #fff;
   font-size: 0.86rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
 }
-@media (max-width: 720px) {
-  .rpma-gl-form { grid-template-columns: 1fr; }
-  .rpma-gl-word { font-size: 1.7rem; }
-}
-.rpma-gl-wrap input:focus {
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 0 1px #8fce4a inset;
-}
 .rpma-gl-eye {
   position: absolute;
   right: 0.2rem;
   border: 0;
   background: transparent;
-  color: rgba(243, 247, 251, 0.7);
+  color: rgba(243, 247, 251, 0.75);
   cursor: pointer;
   padding: 0.28rem;
   display: inline-flex;
@@ -299,4 +270,8 @@ const GLASS_CSS = `
 }
 .rpma-gl-submit:hover:not(:disabled) { filter: brightness(1.06); }
 .rpma-gl-submit:disabled { opacity: 0.65; cursor: wait; }
+@media (max-width: 720px) {
+  .rpma-gl-form { grid-template-columns: 1fr; }
+  .rpma-gl-stage { padding-bottom: 1.4rem; }
+}
 `;
