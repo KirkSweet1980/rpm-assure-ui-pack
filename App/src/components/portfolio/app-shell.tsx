@@ -228,8 +228,8 @@ export function AppShell({
                   <strong>RPM Assure</strong>
                 </span>
               </Link>
+              <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="sql" />
             </div>
-            <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="sql" />
             <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="clock" />
             <div className="dk-header-right">
               <DensityToggle />

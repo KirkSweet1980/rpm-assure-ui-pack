@@ -290,13 +290,13 @@ body {
 }
 .dk-header-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   justify-items: stretch;
-  gap: 10px;
+  gap: 16px;
   position: relative;
   min-height: 96px;
-  padding: 10px 16px;
+  padding: 10px 20px;
   flex: 0 0 auto;
   min-width: 0;
   overflow: visible;
@@ -978,20 +978,28 @@ html.dark .rpma-pane-head-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 36px;
   z-index: 4;
   pointer-events: auto;
-  justify-self: end;
+  justify-self: center;
 }
+.rpma-hud-mid .rpma-hud-cell {
+  min-width: 10rem;
+  text-align: center;
+}
+.rpma-hud-mid .rpma-hud-cell > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rpma-hud-mid .rpma-hud-ico { display: none; }
 .rpma-hud-rev {
   display: grid;
   place-items: center;
   width: 80px;
   height: 80px;
   flex: 0 0 80px;
-}
-.rpma-hud-mid .rpma-hud-cell {
-  min-width: 0;
 }
 .rpma-hud-rev-svg {
   width: 80px !important;
@@ -1002,25 +1010,18 @@ html.dark .rpma-pane-head-row {
 .rpma-hud-sql { display: flex; align-items: center; }
 .rpma-sql-digital {
   position: static;
-  left: auto;
-  top: auto;
   transform: none;
-  z-index: 3;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
-  justify-self: center;
+  justify-content: flex-start;
+  justify-self: start;
   width: auto;
-  max-width: 100%;
-  min-width: 0;
   gap: 8px;
-  pointer-events: auto;
+  margin: 0;
+  padding: 0;
   border: 0;
   background: none;
-  box-shadow: none;
-  padding: 0;
-  margin: 0 auto;
 }
 .rpma-sql-meta {
   display: contents;
