@@ -1,0 +1,11 @@
+.rpma-emp-title {
+  background: #3d434a !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid #2c3136 !important;
+}
+.rpma-emp-title strong { color: #f2f4f6 !important; }
+.rpma-emp-title em { color: #c5c9ce !important; }
+.rpma-sql-digital,
+.rpma-sql-live,
+.rpma-system-clock,
+.rpma-hud { display: none !important; }
