@@ -197,14 +197,14 @@ export function CustomerSwitcher({
         ) : (
           <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
         )}
-        <span className={cn("min-w-0 flex-1 truncate", isEcosystem && "text-sm font-medium")}>
+        <span className={cn("min-w-0 flex-1 truncate text-left", isEcosystem && "text-sm font-medium")}>
           {current
             ? current.name
             : isEcosystem
               ? "Customer Tenant"
               : "Customer Tenant"}
         </span>
-        {current ? (
+        {variant !== "nav" && current ? (
           <span className={cn(!isEcosystem && "hidden sm:inline")}>
             <RagBadge rag={current.healthRag} />
           </span>
