@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import type { LiveTone } from "@/lib/data/live-status";
@@ -62,7 +62,6 @@ export function EmpWindow({
                 href={g.items[0]?.href ?? "#"}
                 className={cn("rpma-emp-gtab", g.on && "is-on")}
                 data-rag={g.items.find((i) => i.rag === "Red")?.rag ?? g.items.find((i) => i.rag === "Amber")?.rag ?? g.items[0]?.rag ?? "Off"}
-                style={g.color ? ({ ["--emp-tab"]: g.color } as CSSProperties) : undefined}
               >
                 {g.title}
               </SpaLink>

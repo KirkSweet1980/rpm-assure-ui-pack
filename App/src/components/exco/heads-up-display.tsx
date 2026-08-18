@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Clock, Database } from "lucide-react";
+import { Clock } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 import { HelpTip } from "@/components/ui/help-tip";
 import { RpmRevCounter } from "@/components/brand/rpm-rev-counter";
@@ -111,19 +111,14 @@ export function HeadsUpDisplay({
         title={liveSql ? `Last live SQL read ${sqlWhen}` : `Demo data ${sqlWhen}`}
         aria-label={liveSql ? `Live SQL ${sqlWhen}` : `Demo data ${sqlWhen}`}
       >
-        <span className="rpma-sql-live-ico" aria-hidden>
-          <Database size={15} strokeWidth={2.2} />
-        </span>
-        <span className="rpma-sql-meta">
-          <em>SQL Refresh</em>
-          <span className="rpma-sql-digits">
-            {sqlDigits.hour}
-            <i>:</i>
-            {sqlDigits.minute}
-            <i>:</i>
-            {sqlDigits.second}
-            {sqlDigits.period ? <b>{sqlDigits.period}</b> : null}
-          </span>
+        <em>SQL Refresh</em>
+        <span className="rpma-sql-digits">
+          {sqlDigits.hour}
+          <i>:</i>
+          {sqlDigits.minute}
+          <i>:</i>
+          {sqlDigits.second}
+          {sqlDigits.period ? <b>{sqlDigits.period}</b> : null}
         </span>
       </div>
     );

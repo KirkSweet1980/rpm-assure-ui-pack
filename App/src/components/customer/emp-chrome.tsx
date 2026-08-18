@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
@@ -186,7 +186,6 @@ export function EmpChrome({
                 href={href}
                 className={cn("rpma-emp-gtab", on && "is-on")}
                 data-rag={tone}
-                style={{ ["--emp-tab"]: g.color } as CSSProperties}
               >
                 {g.title}
               </SpaLink>
