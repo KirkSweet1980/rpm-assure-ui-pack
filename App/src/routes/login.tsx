@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "soft-fields-20260818";
+const LOGIN_BUILD = "pw-fix-20260818";
 const AISLE = "/downloads/login-white-hall.jpg";
 const MARK = "/downloads/rpm-assure-wordmark.png";
 
@@ -79,7 +79,7 @@ function LoginPage() {
           ) : (
             <form onSubmit={onSubmit} className="rpma-aisle-row">
               <label>
-                <span>Username</span>
+                <span className="rpma-aisle-lbl">Username</span>
                 <input
                   type="text"
                   required
@@ -90,7 +90,7 @@ function LoginPage() {
                 />
               </label>
               <label>
-                <span>Password</span>
+                <span className="rpma-aisle-lbl">Password</span>
                 <span className="rpma-aisle-pw">
                   <input
                     type={showPw ? "text" : "password"}
@@ -148,7 +148,7 @@ const CSS = `
   top: 50%;
   left: 50%;
   transform: translate(-50%, -42%);
-  width: min(52vw, 560px);
+  width: min(26vw, 280px);
   height: auto;
   pointer-events: none;
   background: transparent;
@@ -185,9 +185,7 @@ const CSS = `
   min-width: 11rem;
   max-width: 16rem;
 }
-.rpma-aisle-card label > span {
-  display: none;
-}
+.rpma-aisle-lbl { display: none; }
 .rpma-aisle-card input {
   width: 100%;
   box-sizing: border-box;
