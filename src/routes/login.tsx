@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "card-down-20260818";
-const AISLE = "/brand/login-white-hall.jpg";
+const LOGIN_BUILD = "hall-dl-20260818";
+const AISLE = "/downloads/login-white-hall.jpg";
 
 function CubeMark() {
   return (

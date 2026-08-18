@@ -10,7 +10,7 @@ const ALLOW = new Set([
   "Pulseway-Collect-DiskIops.ps1",
   "Update-From-Https.ps1",
   "Apply-Staged-Pack.ps1",
-  "RPM-Exco-Brief.html",
+  "login-white-hall.jpg",
 ]);
 
 const ROOTS = [
@@ -21,6 +21,8 @@ const ROOTS = [
 ];
 
 function mimeOf(name: string): string {
+  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
+  if (name.endsWith(".png")) return "image/png";
   if (name.endsWith(".zip")) return "application/zip";
   if (name.endsWith(".html")) return "text/html; charset=utf-8";
   return "text/plain; charset=utf-8";
