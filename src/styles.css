@@ -2310,9 +2310,9 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   height: 100%;
   border-radius: 10px;
   overflow: hidden;
-  background: #061018;
-  border: 1px solid #143044;
-  color: #dce6ee;
+  background: #f4f7fa;
+  border: 1px solid #c5d0da;
+  color: #101820;
 }
 .rpma-emp-stick {
   position: relative;
@@ -2582,7 +2582,7 @@ html.dark .rpma-emp-rag {
   color: #7a8a96;
   box-shadow: 0 0 0 1px #3d5160, 0 0 8px #3d516099;
 }
-.rpma-emp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #07141e; overflow: auto; }
+.rpma-emp-body { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #f4f7fa; overflow: auto; }
 .rpma-emp-work {
   flex: 1;
   min-height: 0;
@@ -2764,29 +2764,29 @@ html.snow .rpma-dormant-banner span { color: #64748b; }
   gap: 0;
   padding: 4px 6px;
   border-radius: 7px;
-  border: 1px solid #1a3a50;
-  background: #081722;
+  border: 1px solid #c5d0da;
+  background: #ffffff;
   text-decoration: none;
   color: inherit;
   min-width: 0;
 }
-.rpma-eco-kpi:hover { border-color: #2ee6a6; }
-.rpma-eco-kpi.is-warn strong { color: #fbbf24; }
-.rpma-eco-kpi.is-bad strong { color: #f87171; }
-.rpma-eco-kpi.is-ok strong { color: #34d399; }
+.rpma-eco-kpi:hover { border-color: #3d5a7a; }
+.rpma-eco-kpi.is-warn strong { color: #b45309; }
+.rpma-eco-kpi.is-bad strong { color: #b91c1c; }
+.rpma-eco-kpi.is-ok strong { color: #047857; }
 .rpma-eco-kpi em {
   font-style: normal;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #8aa0b0;
+  color: #5c6b78;
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rpma-eco-kpi strong { font-size: 13px; font-weight: 800; color: #e8f1f6; line-height: 1.12; }
+.rpma-eco-kpi strong { font-size: 13px; font-weight: 800; color: #101820; line-height: 1.12; }
 .rpma-eco-svcs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2797,16 +2797,16 @@ html.snow .rpma-dormant-banner span { color: #64748b; }
   gap: 3px;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid #1a3a50;
-  background: #07141e;
+  border: 1px solid #c5d0da;
+  background: #ffffff;
   text-decoration: none;
   color: inherit;
 }
-.rpma-eco-svc.is-on { box-shadow: inset 0 0 0 1px color-mix(in srgb, #2ee6a6 35%, transparent); }
+.rpma-eco-svc.is-on { box-shadow: inset 0 0 0 1px #3d5a7a; }
 .rpma-eco-svc.is-off { opacity: 0.55; }
-.rpma-eco-svc:hover { border-color: #2ee6a6; }
-.rpma-eco-svc strong { font-size: 12px; font-weight: 800; }
-.rpma-eco-svc span { font-size: 11px; color: #8aa0b0; }
+.rpma-eco-svc:hover { border-color: #3d5a7a; }
+.rpma-eco-svc strong { font-size: 12px; font-weight: 800; color: #101820; }
+.rpma-eco-svc span { font-size: 11px; color: #5c6b78; }
 @media (max-width: 1100px) {
   .rpma-eco-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .rpma-eco-svcs { grid-template-columns: 1fr 1fr; }
@@ -2843,19 +2843,19 @@ html.snow .rpma-eco-kpi.is-ok strong { color: #047857; }
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8aa0b0;
-  background: #0b1c2a;
+  color: #536170;
+  background: #e8edf2;
   padding: 8px 8px;
-  border-bottom: 1px solid #163246;
+  border-bottom: 1px solid #c5d0da;
 }
 .rpma-est-table td {
   padding: 8px;
-  border-bottom: 1px solid #102636;
-  color: #dce6ee;
+  border-bottom: 1px solid #e2e8ee;
+  color: #293240;
   vertical-align: middle;
 }
 .rpma-est.is-compact .rpma-est-table td { padding: 5px 8px; }
-.rpma-est-table tbody tr:nth-child(even) { background: #081722; }
+.rpma-est-table tbody tr:nth-child(even) { background: #f7f9fb; }
 .rpma-est-table tbody tr:hover { background: color-mix(in srgb, #14b8a6 10%, transparent); }
 .rpma-est-table .w-star { width: 28px; }
 .rpma-est-table .strong { font-weight: 750; }
@@ -4378,6 +4378,103 @@ html[data-palette="g2"] table thead { background: #2a2f36; }
 .rpma-emp-group.is-on {
   background: color-mix(in srgb, #3d5a7a 22%, transparent) !important;
 }
+
+/* Pages stay light. Navy is menus only. */
+.dk-content,
+.rpma-topnav-canvas,
+.rpma-amx-workspace,
+.rpma-emp,
+.rpma-emp-body,
+.rpma-emp-body.is-pad,
+html.dark .dk-content,
+html.dark .rpma-topnav-canvas,
+html.dark .rpma-amx-workspace,
+html.dark .rpma-emp,
+html.dark .rpma-emp-body,
+html.dark .rpma-emp-body.is-pad,
+html[data-theme="dark"] .rpma-emp,
+html[data-theme="dark"] .rpma-emp-body,
+html[data-theme="dark"] .rpma-emp-body.is-pad {
+  background: #f4f7fa !important;
+  color: #101820 !important;
+}
+html.dark .rpma-emp,
+html[data-theme="dark"] .rpma-emp {
+  border-color: #c5d0da !important;
+}
+.rpma-emp .text-fg,
+.rpma-emp h1,
+.rpma-emp h2,
+.rpma-emp h3,
+.rpma-emp h4,
+.rpma-emp strong,
+html.dark .rpma-emp .text-fg,
+html.dark .rpma-emp h1,
+html.dark .rpma-emp h2,
+html.dark .rpma-emp h3,
+html.dark .rpma-emp strong,
+html[data-theme="dark"] .rpma-emp .text-fg,
+html[data-theme="dark"] .rpma-emp h1,
+html[data-theme="dark"] .rpma-emp h2,
+html[data-theme="dark"] .rpma-emp h3 {
+  color: #101820 !important;
+}
+.rpma-emp .text-muted,
+.rpma-emp .text-subtle,
+html.dark .rpma-emp .text-muted,
+html[data-theme="dark"] .rpma-emp .text-muted {
+  color: #5c6b78 !important;
+}
+.rpma-emp .rpma-glass,
+.rpma-emp .rpma-card,
+.rpma-emp .rpma-panel,
+.rpma-emp .rpma-pane,
+.rpma-emp-inspector,
+.rpma-eco-kpi,
+.rpma-eco-svc,
+html.dark .rpma-emp .rpma-glass,
+html.dark .rpma-emp .rpma-card,
+html.dark .rpma-emp .rpma-panel,
+html.dark .rpma-emp-inspector,
+html[data-theme="dark"] .rpma-emp .rpma-glass,
+html[data-theme="dark"] .rpma-emp-inspector {
+  background: #ffffff !important;
+  border-color: #d5dde5 !important;
+  color: #101820 !important;
+}
+.rpma-est-table th,
+html.dark .rpma-emp table th,
+html[data-theme="dark"] .rpma-emp table th {
+  background: #e8edf2 !important;
+  color: #536170 !important;
+  border-color: #c5d0da !important;
+}
+.rpma-est-table td,
+html.dark .rpma-emp table td,
+html[data-theme="dark"] .rpma-emp table td {
+  background: #ffffff !important;
+  color: #293240 !important;
+  border-color: #e2e8ee !important;
+}
+.rpma-est-table tbody tr:nth-child(even) td {
+  background: #f7f9fb !important;
+}
+.rpma-est-st.is-ok { color: #047857 !important; }
+.rpma-eco-kpi em,
+.rpma-eco-svc span { color: #5c6b78 !important; }
+.rpma-eco-kpi strong,
+.rpma-eco-svc strong { color: #101820 !important; }
+.rpma-emp input,
+.rpma-emp select,
+.rpma-emp textarea,
+html.dark .rpma-emp input,
+html.dark .rpma-emp select,
+html.dark .rpma-emp textarea {
+  background: #ffffff !important;
+  color: #101820 !important;
+  border-color: #c5d0da !important;
+}
+
 
 
 
