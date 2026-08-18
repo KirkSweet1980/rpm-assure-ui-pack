@@ -1,14 +1,16 @@
 import type { ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
+import { Building2 } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
 import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
 import { EmpInspector } from "@/components/chrome/emp-inspector";
+import { RagLamps } from "@/components/chrome/rag-lamps";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 type RibbonItem = { label: string; full: string; rel: string; icon: LucideIcon };
-type RibbonGroup = { id: string; title: string; match: string; color: string; items: RibbonItem[] };
+type RibbonGroup = { id: string; title: string; match: string; color: string; icon: LucideIcon; items: RibbonItem[] };
 
 const GROUP_TITLE: Record<string, string> = {
   estate: "Customer Eco System",
@@ -52,6 +54,7 @@ const RIBBON: RibbonGroup[] = [
     title: GROUP_TITLE.estate,
     match: "",
     color: "#0d9488",
+    icon: Building2,
     items: ECOSYSTEM_MODULES.map((m) => ({
       label: shortLabel(m.label),
       full: m.label,
@@ -64,6 +67,7 @@ const RIBBON: RibbonGroup[] = [
     title: GROUP_TITLE[p.id] ?? p.title,
     match: p.overview,
     color: p.color,
+    icon: p.icon,
     items: p.modules.map((m) => ({
       label: shortLabel(m.label),
       full: m.label,
@@ -186,8 +190,11 @@ export function EmpChrome({
                 href={href}
                 className={cn("rpma-emp-gtab", on && "is-on")}
                 data-rag={tone}
+                title={`${g.title} · ${tone}`}
               >
-                {g.title}
+                <g.icon className="rpma-emp-gtab-ico" aria-hidden />
+                <span className="rpma-emp-gtab-name">{g.title}</span>
+                <RagLamps tone={tone} />
               </SpaLink>
             );
           })}

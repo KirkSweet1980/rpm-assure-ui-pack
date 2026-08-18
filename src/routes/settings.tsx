@@ -111,6 +111,7 @@ function SettingsLayout() {
               title: s.title,
               on: svc?.id === s.id,
               color: s.color,
+              icon: s.icon,
               items: s.modules.map((m) => ({
                 label: m.label,
                 href: m.path,

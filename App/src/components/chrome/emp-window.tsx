@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import type { LiveTone } from "@/lib/data/live-status";
+import { RagLamps } from "@/components/chrome/rag-lamps";
 import { cn } from "@/lib/utils";
 
 export type EmpTool = {
@@ -17,6 +18,7 @@ export type EmpGroup = {
   title: string;
   on?: boolean;
   color?: string;
+  icon?: LucideIcon;
   items: EmpTool[];
 };
 
@@ -56,16 +58,27 @@ export function EmpWindow({
         </nav>
         <div className="rpma-emp-ribbon is-opt6" role="toolbar">
           <div className="rpma-emp-titles">
-            {groups.map((g) => (
+            {groups.map((g) => {
+              const tone =
+                g.items.find((i) => i.rag === "Red")?.rag ??
+                g.items.find((i) => i.rag === "Amber")?.rag ??
+                g.items.find((i) => i.rag === "Green")?.rag ??
+                "Off";
+              const Icon = g.icon;
+              return (
               <SpaLink
                 key={g.id}
                 href={g.items[0]?.href ?? "#"}
                 className={cn("rpma-emp-gtab", g.on && "is-on")}
-                data-rag={g.items.find((i) => i.rag === "Red")?.rag ?? g.items.find((i) => i.rag === "Amber")?.rag ?? g.items[0]?.rag ?? "Off"}
+                data-rag={tone}
+                title={`${g.title} · ${tone}`}
               >
-                {g.title}
+                {Icon ? <Icon className="rpma-emp-gtab-ico" aria-hidden /> : null}
+                <span className="rpma-emp-gtab-name">{g.title}</span>
+                <RagLamps tone={tone} />
               </SpaLink>
-            ))}
+              );
+            })}
           </div>
           <div className="rpma-emp-tools">
             {(groups.find((g) => g.on) ?? groups[0])?.items.map((it) => {
