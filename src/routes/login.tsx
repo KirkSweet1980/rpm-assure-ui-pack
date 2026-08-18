@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "white-hall-20260818";
+const LOGIN_BUILD = "noblock-20260818";
 const AISLE = "/brand/login-white-hall.jpg";
 
 function CubeMark() {
@@ -98,10 +98,10 @@ function LoginPage() {
         <section className="rpma-aisle-card">
           <div className="rpma-aisle-mark">
             <CubeMark />
-            <div>
+            <span className="rpma-aisle-word">
               <strong>RPM</strong>
               <em>ASSURE</em>
-            </div>
+            </span>
           </div>
 
           <IdleLogoutBanner />
@@ -184,36 +184,41 @@ const CSS = `
 }
 .rpma-aisle-card {
   width: min(100%, 28.5rem);
-  padding: 2.1rem 2.15rem 1.9rem;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(18, 32, 44, 0.08);
-  box-shadow: 0 18px 50px rgba(4, 16, 28, 0.18);
+  padding: 0.4rem 0.2rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 .rpma-aisle-mark {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.85rem;
-  margin: 0 0 1.55rem;
+  gap: 0.75rem;
+  margin: 0 0 1.4rem;
 }
-.rpma-aisle-cube { width: 58px; height: 58px; flex: 0 0 auto; }
+.rpma-aisle-cube { width: 52px; height: 52px; flex: 0 0 auto; }
+.rpma-aisle-word {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  line-height: 1;
+}
 .rpma-aisle-mark strong {
-  display: block;
+  display: inline;
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.04em;
-  line-height: 0.92;
   background: linear-gradient(90deg, #1287c8 0%, #1bb8a6 48%, #8fce4a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .rpma-aisle-mark em {
-  display: block;
+  display: inline;
   font-style: normal;
-  font-size: 0.78rem;
+  font-size: 2rem;
   font-weight: 800;
-  letter-spacing: 0.28em;
+  letter-spacing: -0.03em;
   color: #1a6bb5;
 }
 .rpma-aisle-card form { display: grid; gap: 0.95rem; }
