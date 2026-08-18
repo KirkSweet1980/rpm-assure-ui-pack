@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
 import { Button } from "@/components/ui/button";
-import { EmpChrome } from "@/components/customer/emp-chrome";
+import { ClassicTenantShell } from "@/components/customer/classic-tenant-nav";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import { fetchCustomerDetail } from "@/lib/data/portfolio";
 import { customerLiveStatus } from "@/lib/data/live-status";
@@ -238,11 +238,10 @@ function CustomerLayout() {
             healthRag={tenantRag}
             name={customer.displayName}
           />
-          <EmpChrome
-            customerCode={customer.customerCode}
-            customerName={customer.displayName}
+          <ClassicTenantShell
+            code={customer.customerCode}
+            cover={pageCover}
             live={live}
-            lastImportAt={customer.lastImportAt}
           >
             {missing ? (
               <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">
@@ -256,7 +255,7 @@ function CustomerLayout() {
               <p className="rpma-pane-nocover mb-2">{noDeviceCover}</p>
             ) : null}
             <Outlet />
-          </EmpChrome>
+          </ClassicTenantShell>
         </div>
       </AppShell>
     </RequireAuth>
