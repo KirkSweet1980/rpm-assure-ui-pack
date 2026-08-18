@@ -5,9 +5,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", "Consolas", "Segoe UI Mono", ui-monospace, monospace;
+  --font-sans: "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-display: "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
   --color-bg: #f0f2f8;
   --color-surface: #ffffff;
   --color-surface-2: #f4f5fb;
@@ -52,13 +52,13 @@
   --pc-sidebar-width: 280px;
   --dk-soft-primary: color-mix(in srgb, var(--color-brand-teal) 12%, transparent);
   --dk-brand-1: linear-gradient(83deg, var(--color-brand-slate) 0%, var(--color-brand-teal) 48%, var(--color-brand-lime) 100%);
-  --rpma-chrome: linear-gradient(180deg, #ffffff 0%, #eef2f6 38%, #d5dde4 100%);
-  --rpma-chrome-hover: linear-gradient(180deg, #f4f9fd 0%, #dce8f2 100%);
-  --rpma-chrome-selected: linear-gradient(180deg, #f3fbff 0%, #cceafc 46%, #8fd0f2 100%);
+  --rpma-chrome: #e8edf2;
+  --rpma-chrome-hover: #dce6ee;
+  --rpma-chrome-selected: #b9e0f5;
   --rpma-chrome-fg: #101820;
   --rpma-chrome-selected-fg: #04283f;
   --rpma-chrome-line: rgba(40, 54, 68, 0.22);
-  --rpma-chrome-shine: inset 0 1px 0 #ffffff, inset 0 -1px 0 rgba(20, 30, 40, 0.18);
+  --rpma-chrome-shine: none;
   --rpma-glow-green: #3ee089;
   --rpma-glow-amber: #ffc043;
   --rpma-glow-red: #ff5a5a;
@@ -81,13 +81,13 @@ html[data-theme="dark"], html.dark {
   --pc-header-color: #c5ced8;
   --pc-sidebar-background: #10151c;
   --pc-active-background: #1e2936;
-  --rpma-chrome: linear-gradient(180deg, #6d7886 0%, #454f5c 46%, #2b333e 100%);
-  --rpma-chrome-hover: linear-gradient(180deg, #7a8696 0%, #4d5866 100%);
-  --rpma-chrome-selected: linear-gradient(180deg, #bfe6fb 0%, #6ec4ef 48%, #2f97d4 100%);
+  --rpma-chrome: #3d4652;
+  --rpma-chrome-hover: #4a5562;
+  --rpma-chrome-selected: #6ec4ef;
   --rpma-chrome-fg: #f4f7fb;
   --rpma-chrome-selected-fg: #031a2b;
   --rpma-chrome-line: rgba(255, 255, 255, 0.14);
-  --rpma-chrome-shine: inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 0 rgba(0, 0, 0, 0.42);
+  --rpma-chrome-shine: none;
   --rpma-glow-green: #3ee089;
   --rpma-glow-amber: #ffc043;
   --rpma-glow-red: #ff5a5a;
@@ -96,20 +96,35 @@ html[data-theme="dark"], html.dark {
 html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--pc-header-height) + 12px);
-  -webkit-font-smoothing: auto;
-  -moz-osx-font-smoothing: auto;
-  text-rendering: auto;
   font-synthesis: none;
   font-optical-sizing: none;
+  text-rendering: auto;
+}
+/* Dark UI: grayscale AA (ClearType fringes look grainy on light-on-dark). */
+html.dark,
+html.carbon,
+html[data-theme="dark"] {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* Light UI: Windows ClearType (hinted Segoe). */
+html.snow,
+html:not(.dark) {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 html.rpma-crisp,
-html.rpma-crisp body {
+html.rpma-crisp body,
+html.rpma-crisp button,
+html.rpma-crisp input,
+html.rpma-crisp select,
+html.rpma-crisp textarea,
+html.rpma-crisp a {
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
   font-optical-sizing: none;
   font-feature-settings: normal;
   font-kerning: none;
   letter-spacing: 0;
-  -webkit-font-smoothing: auto;
-  -moz-osx-font-smoothing: auto;
   text-rendering: auto;
 }
 html.rpma-crisp h1,
@@ -123,12 +138,13 @@ html.rpma-crisp .font-extrabold {
   font-weight: 700;
 }
 .antialiased {
-  -webkit-font-smoothing: auto !important;
-  -moz-osx-font-smoothing: auto !important;
+  -webkit-font-smoothing: inherit !important;
+  -moz-osx-font-smoothing: inherit !important;
 }
 html.rpma-crisp svg {
   shape-rendering: geometricPrecision;
   overflow: visible;
+  -webkit-font-smoothing: inherit;
 }
 html.rpma-crisp img,
 html.rpma-crisp canvas,
