@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Star, XCircle } from "lucide-react";
+import { tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
 import { coverFromDetail, isDormantCover } from "@/lib/data/cover";
 import { ticketStats } from "@/lib/data/ticket-feed";
@@ -95,6 +96,14 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
     function push(partial: Omit<Row, "orgId" | "org"> & { id: string }) {
       const k = keyOf(partial.host) || partial.id;
       if (seen.has(k)) return;
+      if (
+        !tenantAssetBelongs(orgId, {
+          host: partial.host,
+          org: partial.site !== org ? partial.site : null,
+        })
+      ) {
+        return;
+      }
       seen.add(k);
       out.push({ ...partial, orgId, org });
     }

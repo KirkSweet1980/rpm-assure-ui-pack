@@ -740,8 +740,9 @@ function Resolve-Customer([string]$orgName, $orgId) {
     if ($orgMap.ContainsKey($k)) { return $orgMap[$k] }
     # contains match against keys
     foreach ($key in @($orgMap.Keys)) {
+      if ($key.Length -lt 8) { continue }
       if ($k -like ("*" + $key + "*") -or $key -like ("*" + $k + "*")) {
-        if ($key.Length -ge 4 -or $k.Length -ge 4) { return $orgMap[$key] }
+        return $orgMap[$key]
       }
     }
   }

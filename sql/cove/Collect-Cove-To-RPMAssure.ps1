@@ -257,7 +257,7 @@ END
 
 ;WITH src AS (
   SELECT * FROM (VALUES
-    (N''AHI Carriers'', N''AHIC'', 2602886),
+    (N''AHI Carriers'', N''AHIC'', 2760329),
     (N''UVSS'', N''UVSS'', 2814015),
     (N''Able Tracers'', N''ABLE'', NULL),
     (N''Hydra Sales'', N''HYDRA'', NULL),
@@ -346,7 +346,7 @@ do {
         PartnerId         = [int]$rootPartnerId
         RecordsCount      = [int]$pageSize
         StartRecordNumber = [int]$start
-        Columns           = @('AU','AR','AN','MN','CD','TS','TL','US','TB','PN','OP','OV','FR','SR','HR','ZR','WR','NR','XR','PR','I80','I81','I82','F19','F00','F18','RV0','RVJ','RVQ','RVO','RVL','RVK','RV7','RVA','T07')
+        Columns           = @('AU','AR','AN','MN','CD','TS','TL','US','TB','PN','OP','OV','FR','SR','HR','ZR','WR','NR','XR','PR','I80','I81','I82','I83','I84','I85','I86','I88','F19','F00','F18','RV0','RVJ','RVQ','RVO','RVL','RVK','RV7','RVA','T07','RT0','RT1','RT2','RT3','RT4','RT5')
         Filter            = ''
       }
     }
@@ -374,94 +374,10 @@ do {
 Write-Log ("Devices from API=" + $allRows.Count)
 if ($allRows.Count -eq 0) { throw 'No devices returned from Cove' }
 
-# Recovery session times are NOT in EnumerateAccountStatistics (RVO/RVL empty).
-# Probe GetAccountInfo + EnumerateSessions for devices on Recovery Testing / Standby Image.
+# Continuity Recovery Testing last-14 counters live on RT0-RT5 (not RVO/RVL).
+# Session timestamp is still not published. Guessed Continuity methods all return -32601.
 $script:RecoveryByAu = @{}
-function Invoke-CoveMethod([string]$Method, [hashtable]$Params) {
-  $body = [ordered]@{
-    jsonrpc = '2.0'
-    visa    = $visa
-    method  = $Method
-    params  = $Params
-    id      = ('m' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-  }
-  $raw = ConvertTo-Text (Invoke-CoveRaw -Body $body)
-  if ($raw -match '"error"') { return $null }
-  try { return ($raw | ConvertFrom-Json) } catch { return $null }
-}
-function Pick-SessionTime($obj) {
-  if ($null -eq $obj) { return $null }
-  foreach ($k in @('EndTime','CompletedAt','FinishTime','Timestamp','StartTime','Time','Created','UTCTime')) {
-    $p = $obj.PSObject.Properties[$k]
-    if ($p -and $null -ne $p.Value -and "$($p.Value)" -ne '' -and "$($p.Value)" -ne '0') { return $p.Value }
-  }
-  return $null
-}
-function Looks-Recovery($obj) {
-  if ($null -eq $obj) { return $false }
-  $blob = (($obj | ConvertTo-Json -Depth 4 -Compress) + '')
-  return ($blob -match '(?i)recover|vdr|continuity|standby|boot.?test|screenshot')
-}
-$planDevices = New-Object System.Collections.Generic.List[object]
-foreach ($row in $allRows) {
-  $i80x = Get-Setting $row 'I80'
-  if ("$i80x" -eq '1' -or "$i80x" -eq '2') { [void]$planDevices.Add($row) }
-}
-Write-Log ("Recovery-plan devices (I80 1/2)=" + $planDevices.Count)
-$probeN = 0
-foreach ($row in $planDevices) {
-  if ($probeN -ge 40) { break }
-  $auId = Get-Setting $row 'AU'
-  if (-not $auId) { $auId = $row.AccountId }
-  if (-not $auId) { continue }
-  $probeN++
-  $got = $null
-  foreach ($try in @(
-      @{ M = 'EnumerateSessions'; P = @{ accountId = [long]$auId; recordsCount = 50 } },
-      @{ M = 'EnumerateSessions'; P = @{ AccountId = [long]$auId; RecordsCount = 50 } },
-      @{ M = 'EnumerateRestoreSessions'; P = @{ accountId = [long]$auId; recordsCount = 25 } },
-      @{ M = 'EnumerateRestoreSessions'; P = @{ AccountId = [long]$auId } },
-      @{ M = 'GetAccountInfo'; P = @{ accountId = [long]$auId } },
-      @{ M = 'GetAccountInfo'; P = @{ AccountId = [long]$auId } },
-      @{ M = 'GetRecoveryTestingInfo'; P = @{ accountId = [long]$auId } },
-      @{ M = 'EnumerateRecoverySessions'; P = @{ accountId = [long]$auId } }
-    )) {
-    $js = Invoke-CoveMethod $try.M $try.P
-    if (-not $js) { continue }
-    $payload = $js.result
-    if ($payload -and $payload.result) { $payload = $payload.result }
-    if ($probeN -eq 1) {
-      $keys = @()
-      try { $keys = @($payload.PSObject.Properties.Name) } catch {}
-      Write-Log ("Recovery probe " + $try.M + " AU=" + $auId + " keys=" + ($keys -join ','))
-      try {
-        [System.IO.File]::WriteAllText((Join-Path $logDir ('recovery_probe_' + $try.M + '.json')), ($js | ConvertTo-Json -Depth 8), [System.Text.UTF8Encoding]::new($false))
-      } catch {}
-    }
-    $cands = @()
-    if ($payload -is [System.Array]) { $cands = @($payload) }
-    elseif ($payload.Sessions) { $cands = @($payload.Sessions) }
-    elseif ($payload.sessions) { $cands = @($payload.sessions) }
-    elseif ($payload) { $cands = @($payload) }
-    foreach ($s in $cands) {
-      if (-not (Looks-Recovery $s)) { continue }
-      $when = Pick-SessionTime $s
-      if (-not $when) { continue }
-      $st = ''
-      foreach ($sk in @('Status','State','Result','SessionStatus')) {
-        $sp = $s.PSObject.Properties[$sk]
-        if ($sp) { $st = [string]$sp.Value; break }
-      }
-      $got = [pscustomobject]@{ When = $when; Status = $st; Via = $try.M }
-    }
-    if ($got) { break }
-  }
-  if ($got) {
-    $script:RecoveryByAu["$auId"] = $got
-    Write-Log ("Recovery session AU=" + $auId + " via=" + $got.Via + " when=" + $got.When + " status=" + $got.Status)
-  }
-}
-Write-Log ("Recovery sessions resolved=" + $script:RecoveryByAu.Count + " of " + $probeN)
+Write-Log 'Recovery: using RT0-RT5 last-14 counters from EnumerateAccountStatistics'
 
 $snap = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
 $values = New-Object System.Collections.Generic.List[string]
@@ -617,9 +533,23 @@ foreach ($row in $allRows) {
   $i82 = Get-Setting $row 'I82'
   $f00 = Get-Setting $row 'F00'
   $f18 = Get-Setting $row 'F18'
+  $rt0 = 0; $rt1 = 0; $rt2 = 0; $rt3 = 0; $rt4 = 0; $rt5 = 0
+  [void][int]::TryParse((Get-Setting $row 'RT0'), [ref]$rt0)
+  [void][int]::TryParse((Get-Setting $row 'RT1'), [ref]$rt1)
+  [void][int]::TryParse((Get-Setting $row 'RT2'), [ref]$rt2)
+  [void][int]::TryParse((Get-Setting $row 'RT3'), [ref]$rt3)
+  [void][int]::TryParse((Get-Setting $row 'RT4'), [ref]$rt4)
+  [void][int]::TryParse((Get-Setting $row 'RT5'), [ref]$rt5)
+  $rtNote = ('last14 ok=' + $rt0 + ' fail=' + $rt1 + ' warn=' + $rt2 + ' rt3=' + $rt3 + ' rt4=' + $rt4 + ' rt5=' + $rt5)
+  if (-not $verify) { $verify = $rtNote }
+  elseif ($verify -notmatch 'last14') {
+    $joined = $verify + ' | ' + $rtNote
+    if ($joined.Length -gt 400) { $joined = $joined.Substring(0, 400) }
+    $verify = $joined
+  }
   $lastTestSql = 'NULL'
-  foreach ($ep in @($rvo, $rvl, $i82, $f00, $f18)) {
-    if ($ep -and "$ep" -ne '' -and "$ep" -ne '0') {
+  foreach ($ep in @($rvo, $rvl, $f18)) {
+    if ($ep -and "$ep" -ne '' -and "$ep" -ne '0' -and "$ep" -ne 'Yes' -and "$ep" -ne 'No') {
       $lastTestSql = Epoch-ToSql ([string]$ep)
       if ($lastTestSql -ne 'NULL') { break }
     }
@@ -644,12 +574,14 @@ foreach ($row in $allRows) {
   $testStatus = 'NotInPlan'
   if ($planType -eq 1 -or $planType -eq 2) {
     $testStatus = Map-RestoreStatus $rvStatus $rvErr $verify
-    if ($testStatus -eq 'Unknown' -and $lastTestSql -eq 'NULL' -and -not $verify) {
-      $testStatus = 'NotStarted'  # plan on, no completed restore session yet
+    if ($rt1 -gt 0) { $testStatus = 'Failed' }
+    elseif ($rt0 -gt 0) { $testStatus = 'Success' }
+    elseif ($testStatus -eq 'Unknown' -and $lastTestSql -eq 'NULL' -and $rt0 -eq 0) {
+      $testStatus = 'NotStarted'
     }
-  } elseif ($null -ne $rvStatus -or $lastTestSql -ne 'NULL') {
-    # Has VDR restore history even without I80 plan flag
+  } elseif ($null -ne $rvStatus -or $lastTestSql -ne 'NULL' -or $rt0 -gt 0) {
     $testStatus = Map-RestoreStatus $rvStatus $rvErr $verify
+    if ($rt0 -gt 0 -and $rt1 -eq 0) { $testStatus = 'Success' }
     if ($planType -eq 0) { $planLabel = 'VDR restore (no plan flag)'; $planType = 1 }
   }
 
@@ -689,7 +621,7 @@ Write-Log ("Rows to insert=" + $values.Count)
 foreach ($row in $allRows) {
   $i80s = Get-Setting $row 'I80'
   if ("$i80s" -eq '1' -or "$i80s" -eq '2') {
-    Write-Log ("Recovery sample AN=" + (Get-Setting $row 'AN') + " I80=" + $i80s + " I81=" + (Get-Setting $row 'I81') + " RV0=" + (Get-Setting $row 'RV0') + " RVJ=" + (Get-Setting $row 'RVJ') + " RVQ=" + (Get-Setting $row 'RVQ') + " RVO=" + (Get-Setting $row 'RVO') + " RVL=" + (Get-Setting $row 'RVL') + " RVK=" + (Get-Setting $row 'RVK') + " F19=" + (Get-Setting $row 'F19'))
+    Write-Log ("Recovery sample AN=" + (Get-Setting $row 'AN') + " I80=" + $i80s + " I81=" + (Get-Setting $row 'I81') + " RT0=" + (Get-Setting $row 'RT0') + " RT1=" + (Get-Setting $row 'RT1') + " RT2=" + (Get-Setting $row 'RT2') + " I84=" + (Get-Setting $row 'I84') + " RVO=" + (Get-Setting $row 'RVO'))
     break
   }
 }

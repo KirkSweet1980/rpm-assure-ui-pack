@@ -54,7 +54,7 @@ import type {
 import { formatSastDate } from "@/lib/utils";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
-import { rmmDeviceBelongsToCustomer } from "@/lib/data/rmm-device-owner";
+import { rmmDeviceBelongsToCustomer, tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
 import { coveHealthFor, eppHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
 import { floorScoreToRag } from "./rag-score";
 import { worstLiveRag } from "./live-status";
@@ -258,6 +258,10 @@ function mapCustomer(r: CustRow): PortfolioRow {
     activeUserCount,
     sysproLastImportAt: lastImportAt,
     pulsewayOrgName,
+    agentCount: (r as CustRow & { AgentCount?: number }).AgentCount ?? null,
+    sysproAgentLive: (r as CustRow & { SysproAgentLive?: boolean | number | null }).SysproAgentLive == null
+      ? null
+      : Boolean((r as CustRow & { SysproAgentLive?: boolean | number | null }).SysproAgentLive),
   });
 
   // Provisional SYSPRO-only health; finalizeEstateHealth after RMM/Cove enrich
@@ -333,9 +337,16 @@ function recomputeRowHealth(row: PortfolioRow): void {
     cspUserCount: row.cspUserCount ?? 0,
     cspLicenseCount: row.cspLicenseSkuCount ?? 0,
     cspMapped: row.pillarCsp === true,
+    agentCount: row.agentCount,
+    sysproAgentLive: row.sysproAgentLive,
   });
-  // Instance mapped => Covered unless explicit PillarSyspro = false (deferred No Cover)
-  if (
+  // Live SYSPRO agent required. Leftover SqlInstanceName is not cover.
+  if (row.sysproAgentLive === false) {
+    cover2 = { ...cover2, syspro: false };
+  } else if (row.sysproAgentLive === true && row.pillarSyspro !== false) {
+    cover2 = { ...cover2, syspro: true };
+  } else if (
+    row.sysproAgentLive == null &&
     row.pillarSyspro !== false &&
     row.sqlInstanceName &&
     String(row.sqlInstanceName).trim()
@@ -2457,6 +2468,36 @@ WHERE (e.CustomerCode IS NULL OR LTRIM(RTRIM(e.CustomerCode)) = N'')
   }
 }
 
+/** Live SYSPRO Edge: heartbeat in last 2 hours and not UNINSTALLED. */
+async function enrichSysproAgentLive(
+  pool: { request: () => { query: (q: string) => Promise<{ recordset?: Array<Record<string, unknown>> }> } },
+  rows: PortfolioRow[],
+): Promise<void> {
+  try {
+    const r = await pool.request().query(`
+SELECT
+  UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode,
+  SUM(CASE
+    WHEN LastStatus IN (N'UNINSTALLED', N'REMOVED') THEN 0
+    WHEN LastHeartbeatUtc >= DATEADD(hour, -2, SYSUTCDATETIME()) THEN 1
+    ELSE 0
+  END) AS LiveN
+FROM dbo.Agent_Registry WITH (NOLOCK)
+GROUP BY UPPER(LTRIM(RTRIM(CustomerCode)))`);
+    const by = new Map<string, number>();
+    for (const row of r.recordset ?? []) {
+      by.set(String(row.CustomerCode ?? "").toUpperCase(), Number(row.LiveN) || 0);
+    }
+    for (const row of rows) {
+      const n = by.get(row.customerCode.toUpperCase()) ?? 0;
+      row.agentCount = n;
+      row.sysproAgentLive = n > 0;
+    }
+  } catch (e) {
+    console.warn("[rpm-assure] Agent_Registry enrich skipped:", e instanceof Error ? e.message : e);
+  }
+}
+
 export async function fetchLivePortfolio(): Promise<PortfolioPayload | null> {
   const pool = await getPool();
   if (!pool) return null;
@@ -2541,6 +2582,7 @@ WHERE PulsewayOrgName IS NOT NULL AND LTRIM(RTRIM(CAST(PulsewayOrgName AS nvarch
     enrichEppPortfolio(pool, rows),
     enrichCspPortfolio(pool, rows),
     enrichTicketsPortfolio(pool, rows),
+    enrichSysproAgentLive(pool, rows),
   ]);
   for (const row of rows) {
     recomputeRowHealth(row);
@@ -3332,6 +3374,14 @@ ORDER BY CASE WHEN c.CustomerCode = @code THEN 0 ELSE 1 END`);
         enrichTicketsPortfolio(pool, [customer]).catch((e) => {
           console.warn(
             "[rpm-assure] single-customer tickets enrich:",
+            e instanceof Error ? e.message : e,
+          );
+        }),
+      );
+      enrichJobs.push(
+        enrichSysproAgentLive(pool, [customer]).catch((e) => {
+          console.warn(
+            "[rpm-assure] single-customer agent enrich:",
             e instanceof Error ? e.message : e,
           );
         }),
@@ -5117,7 +5167,8 @@ INNER JOIN (
             rmm.agentIops = iopsRows
               .filter((row) => {
                 const host = String(row.HostName ?? "").trim();
-                return host.length > 0 && !/^(DEMO[-_]?|SAMPLE[-_]?|TEST[-_]?|FAKE[-_])/i.test(host);
+                if (!host || /^(DEMO[-_]?|SAMPLE[-_]?|TEST[-_]?|FAKE[-_])/i.test(host)) return false;
+                return tenantAssetBelongs(code, { host });
               })
               .map((row) => {
               const mediaRaw = row.MediaType ? String(row.MediaType) : "";
@@ -5321,7 +5372,7 @@ INNER JOIN (
     }
 
     rmm.devices = rmm.devices.filter((d) =>
-      rmmDeviceBelongsToCustomer(code, d.name, null),
+      rmmDeviceBelongsToCustomer(code, d.name, null, d.organizationName),
     );
 
     try {
@@ -5945,10 +5996,8 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
         );
         coveRows = all.filter((r: any) => {
           const pn = String(r.PartnerName ?? r.Product ?? "");
-          const pid = r.PartnerId != null ? Number(r.PartnerId) : null;
-          if (pid != null && ids.has(pid)) return true;
-          if (cove.mapping.some((m) => vendorNameHits(pn, m.partnerName))) return true;
-          return vendorNameHits(pn, customer.displayName);
+          const host = String(r.MachineName ?? r.DeviceName ?? "");
+          return tenantAssetBelongs(code, { host, org: pn });
         });
       } catch {
         /* optional */
@@ -6001,6 +6050,12 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
       backupDurationSec:
         r.LastBackupDurationSec != null ? Number(r.LastBackupDurationSec) : null,
     }));
+    cove.devices = cove.devices.filter((d) =>
+      tenantAssetBelongs(code, {
+        host: d.machineName || d.deviceName,
+        org: d.partnerName,
+      }),
+    );
 
     // Summary: real view columns (LastImportAt, not ImportedAt; no HealthRag)
     try {
@@ -6510,6 +6565,9 @@ ORDER BY DeviceName`;
     }));
     // Collapse GZ clean-name + name-MAC duplicates (all customers)
     epp.devices = dedupeEppDevices(epp.devices);
+    epp.devices = epp.devices.filter((d) =>
+      tenantAssetBelongs(code, { host: d.deviceName || d.fqdn }),
+    );
     try {
       const polRes = await pool
         .request()
@@ -6637,6 +6695,9 @@ ORDER BY SnapshotDate DESC, DeviceName`);
           const mx = epp.devices[0]?.snapshotDate;
           epp.devices = epp.devices.filter((d) => d.snapshotDate === mx);
           epp.devices = dedupeEppDevices(epp.devices);
+          epp.devices = epp.devices.filter((d) =>
+            tenantAssetBelongs(code, { host: d.deviceName || d.fqdn }),
+          );
           epp.summary = eppSummaryFromDevices(epp.devices, null);
         }
       } catch {
@@ -7320,6 +7381,8 @@ ORDER BY UserPrincipalName, DisplayName`);
     cspMapped: customer.pillarCsp === true || Boolean(csp?.tenant),
     ticketCount: typeof incidents !== "undefined" ? incidents.length : 0,
     ticketsMapped: typeof incidents !== "undefined" && incidents.length > 0,
+    agentCount: customer.agentCount,
+    sysproAgentLive: customer.sysproAgentLive,
   });
   // EPP cover from devices (and explicit AmsConfig.PillarBitdefender)
   const eppCount =
@@ -7343,8 +7406,9 @@ ORDER BY UserPrincipalName, DisplayName`);
         "No cover — RPM EPP is not in scope for this customer.";
     }
   }
-  // Warehouse footprint => SYSPRO Covered — unless explicit PillarSyspro = false (deferred)
+  // Warehouse leftover is NOT cover. Live SYSPRO agent required.
   const sysproHardOff = customer.pillarSyspro === false;
+  const sysproAgentLive = customer.sysproAgentLive;
   const sysproLoadedEvidence =
     !sysproHardOff &&
     ((typeof operators !== "undefined" && operators.length > 0) ||
@@ -7359,10 +7423,12 @@ ORDER BY UserPrincipalName, DisplayName`);
       (typeof operGroups !== "undefined" && operGroups.length > 0) ||
       customer.pillarSyspro === true);
 
-  if (sysproHardOff) {
+  if (sysproHardOff || sysproAgentLive === false) {
     cover = { ...cover, syspro: false };
+  } else if (sysproAgentLive === true) {
+    cover = { ...cover, syspro: true };
   } else {
-    cover = forceSysproCoverIfEvidence(cover, sysproLoadedEvidence);
+    cover = forceSysproCoverIfEvidence(cover, sysproLoadedEvidence, sysproAgentLive);
     if (instanceName && String(instanceName).trim()) {
       cover = { ...cover, syspro: true };
     }
