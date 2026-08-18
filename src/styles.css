@@ -3271,6 +3271,8 @@ html.snow .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active {
   color: var(--rpma-chrome-selected-fg);
   background: var(--rpma-chrome-selected);
   border-bottom-color: #8aa4c0;
+}
+html[data-theme="light"] .dk-header-one .dk-iconbtn,
 html[data-theme="light"] .dk-header-tall .dk-iconbtn,
 html.snow .dk-header-one .dk-iconbtn,
 html.snow .dk-header-tall .dk-iconbtn { color: #3d4b58; }
