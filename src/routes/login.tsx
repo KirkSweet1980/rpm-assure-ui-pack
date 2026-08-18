@@ -75,7 +75,6 @@ function LoginPage() {
       <main className="rpma-gl-stage">
         <section className="rpma-gl-card">
           <div className="rpma-gl-sheen" aria-hidden="true" />
-          <p className="rpma-gl-kicker">RPM Resources</p>
           <h1 className="rpma-gl-word">RPM Assure</h1>
           <p className="rpma-gl-tag">Assurance Delivered</p>
 
@@ -341,8 +340,7 @@ const GLASS_CSS = `
   text-align: center;
   font-family: "Segoe UI Variable Small", "Segoe UI", sans-serif;
   font-optical-sizing: auto;
-  font-size: 0.58rem;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--lime) 78%, white);
 }
 @media (max-width: 860px) {
   .rpma-gl-stage {
