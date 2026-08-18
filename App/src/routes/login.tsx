@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "fullbleed-20260818";
+const LOGIN_BUILD = "half-center-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -157,19 +157,23 @@ const GLASS_CSS = `
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #020810;
+  background: #02060e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 4.5rem;
 }
 .rpma-gl-still {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
   display: block;
+  width: min(50vw, 52vh);
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  object-position: center center;
   border: 0;
   outline: 0;
-  background: #020810;
+  box-shadow: none;
+  background: transparent;
 }
 .rpma-gl-mark {
   position: absolute;
