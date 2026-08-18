@@ -98,7 +98,7 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--pc-header-height) + 12px);
   font-synthesis: none;
-  font-optical-sizing: none;
+  font-optical-sizing: auto;
   text-rendering: auto;
 }
 /* Dark UI: grayscale AA (ClearType fringes look grainy on light-on-dark). */
@@ -122,21 +122,36 @@ html.rpma-crisp select,
 html.rpma-crisp textarea,
 html.rpma-crisp a {
   font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
-  font-optical-sizing: none;
-  font-feature-settings: normal;
-  font-kerning: none;
+  font-optical-sizing: auto;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
   letter-spacing: 0;
   text-rendering: auto;
 }
 html.rpma-crisp h1,
 html.rpma-crisp h2,
+html.rpma-crisp .dk-brand-text strong,
+html.rpma-crisp .dk-pagehead h1 {
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: 0;
+}
 html.rpma-crisp h3,
 html.rpma-crisp h4,
 html.rpma-crisp strong,
 html.rpma-crisp .font-bold,
 html.rpma-crisp .font-extrabold {
   letter-spacing: 0;
-  font-weight: 700;
+  font-weight: 600;
+}
+html.rpma-crisp .rpma-crumb,
+html.rpma-crisp .rpma-list-name,
+html.rpma-crisp .rpma-list-title,
+html.rpma-crisp th,
+html.rpma-crisp .rpma-dd-status {
+  font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-optical-sizing: auto;
 }
 .antialiased {
   -webkit-font-smoothing: inherit !important;
