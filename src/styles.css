@@ -5,9 +5,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-display: "Inter", system-ui, sans-serif;
-  --font-mono: "Inter", system-ui, sans-serif;
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "Consolas", "Segoe UI Mono", ui-monospace, monospace;
   --color-bg: #f0f2f8;
   --color-surface: #ffffff;
   --color-surface-2: #f4f5fb;
@@ -98,7 +98,7 @@ html {
   scroll-padding-top: calc(var(--pc-header-height) + 12px);
   -webkit-font-smoothing: auto;
   -moz-osx-font-smoothing: auto;
-  text-rendering: optimizeLegibility;
+  text-rendering: auto;
   font-synthesis: none;
   font-optical-sizing: none;
 }
@@ -106,9 +106,11 @@ html.rpma-crisp,
 html.rpma-crisp body {
   font-optical-sizing: none;
   font-feature-settings: normal;
+  font-kerning: none;
   letter-spacing: 0;
   -webkit-font-smoothing: auto;
   -moz-osx-font-smoothing: auto;
+  text-rendering: auto;
 }
 html.rpma-crisp h1,
 html.rpma-crisp h2,
@@ -118,7 +120,11 @@ html.rpma-crisp strong,
 html.rpma-crisp .font-bold,
 html.rpma-crisp .font-extrabold {
   letter-spacing: 0;
-  font-weight: 800;
+  font-weight: 700;
+}
+.antialiased {
+  -webkit-font-smoothing: auto !important;
+  -moz-osx-font-smoothing: auto !important;
 }
 html.rpma-crisp svg {
   shape-rendering: geometricPrecision;
@@ -297,7 +303,7 @@ body {
   background: transparent;
   color: var(--rpma-chrome-fg);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   text-align: left;
   text-decoration: none;
