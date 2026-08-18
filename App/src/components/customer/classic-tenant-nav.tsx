@@ -7,6 +7,7 @@ import type { CustomerCover } from "@/lib/data/types";
 import type { LiveFlag } from "@/lib/data/live-status";
 import { cn } from "@/lib/utils";
 import { useRouterState } from "@tanstack/react-router";
+import { ChevronDown, CornerDownRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 function pillarFromPath(path: string, base: string) {
@@ -27,6 +28,7 @@ function Row({
   rag,
   hint,
   selected,
+  tree,
 }: {
   href: string;
   label: string;
@@ -36,13 +38,19 @@ function Row({
   rag: LiveFlag["rag"];
   hint?: string;
   selected: boolean;
+  tree?: "service" | "module" | "leaf";
 }) {
   return (
     <SpaLink
       href={href}
       title={hint ?? label}
-      className={cn("rpma-classic-row", selected && "is-on")}
+      className={cn("rpma-classic-row", selected && "is-on", tree && `is-${tree}`)}
     >
+      <span className="rpma-classic-tree" aria-hidden>
+        {tree === "service" && selected ? <ChevronDown strokeWidth={2.4} /> : null}
+        {tree === "module" && selected ? <CornerDownRight strokeWidth={2.4} /> : null}
+        {tree === "leaf" ? <i /> : null}
+      </span>
       <Icon className="rpma-classic-ico" style={{ color }} aria-hidden />
       <span>{label}</span>
       <CoverTag on={on} />
@@ -91,7 +99,7 @@ export function ClassicTenantNav({
           );
         })}
       </section>
-      <section>
+      <section className="is-svc">
         <h2>RPM Services</h2>
         {CUSTOMER_PILLARS.map((p) => {
           const href = `${base}${p.overview}`;
@@ -109,11 +117,12 @@ export function ClassicTenantNav({
               rag={flag?.rag ?? (on ? "Green" : "Off")}
               hint={flag?.hint}
               selected={selected}
+              tree="service"
             />
           );
         })}
       </section>
-      <section>
+      <section className="is-mods">
         <h2>{heading}</h2>
         {modules.map((m) => {
           const href = m.path ? `${base}${m.path}` : base;
@@ -131,6 +140,7 @@ export function ClassicTenantNav({
               rag={flag?.rag ?? (on ? "Green" : "Off")}
               hint={flag?.hint}
               selected={selected}
+              tree={selected ? "module" : "leaf"}
             />
           );
         })}
