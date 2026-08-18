@@ -12,7 +12,7 @@ function degFor(rpm: number) {
 }
 
 /** Needle is driven by SVG transform — not CSS — so it always moves. */
-export function RpmRevCounter({ className }: { className?: string }) {
+export function RpmRevCounter({ className, size = 80 }: { className?: string; size?: number }) {
   const uid = useId().replace(/:/g, "");
   const needleRef = useRef<SVGGElement | null>(null);
   const [shown, setShown] = useState(1850);
@@ -44,8 +44,8 @@ export function RpmRevCounter({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width={80}
-      height={80}
+      width={size}
+      height={size}
       viewBox="0 0 80 80"
       role="img"
       aria-label={`Rev counter ${shown} RPM`}

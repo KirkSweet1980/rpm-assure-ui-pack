@@ -7,6 +7,7 @@ import { UserButton } from "@/lib/auth/gates";
 import { fetchDataSourceStatus, fetchPortfolio } from "@/lib/data/portfolio";
 import { HeadsUpDisplay } from "@/components/exco/heads-up-display";
 import { VisionAssistant } from "@/components/vision/vision-assistant";
+import { PageRevWait } from "@/components/nav/page-rev-wait";
 import {
   readClientPortfolioCache,
   writeClientPortfolioCache,
@@ -263,6 +264,7 @@ export function AppShell({
           </main>
         </div>
         <VisionAssistant />
+        <PageRevWait />
       </div>
     </CustomerListProvider>
   );
