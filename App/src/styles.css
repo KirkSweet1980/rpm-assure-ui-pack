@@ -52,13 +52,15 @@
   --pc-sidebar-width: 280px;
   --dk-soft-primary: color-mix(in srgb, var(--color-brand-teal) 12%, transparent);
   --dk-brand-1: linear-gradient(83deg, var(--color-brand-slate) 0%, var(--color-brand-teal) 48%, var(--color-brand-lime) 100%);
-  --rpma-chrome: linear-gradient(180deg, #f8fafc 0%, #e4eaef 46%, #cfd8e0 100%);
-  --rpma-chrome-hover: linear-gradient(180deg, #eef5fb 0%, #d7e3ed 100%);
-  --rpma-chrome-selected: linear-gradient(180deg, #e8f5ff 0%, #c4e5fb 48%, #a6d6f6 100%);
+  --rpma-chrome: linear-gradient(180deg, #ffffff 0%, #eef2f6 18%, #c8d2dc 52%, #b4c0cb 78%, #e4eaef 100%);
+  --rpma-chrome-hover: linear-gradient(180deg, #ffffff 0%, #f4f8fb 20%, #d4dee8 50%, #c2ced8 100%);
+  --rpma-chrome-selected: linear-gradient(180deg, #f3fbff 0%, #d4eefc 22%, #8fd0f4 54%, #6ec4f0 78%, #c5e8fb 100%);
   --rpma-chrome-fg: #1a2430;
-  --rpma-chrome-selected-fg: #0a3d62;
-  --rpma-chrome-line: color-mix(in srgb, #6b7c8c 28%, transparent);
-  --rpma-chrome-shine: inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -1px 0 rgba(80, 96, 112, 0.12);
+  --rpma-chrome-selected-fg: #06324e;
+  --rpma-chrome-line: color-mix(in srgb, #5b6b79 32%, transparent);
+  --rpma-chrome-edge: color-mix(in srgb, #6b7c8c 45%, #fff);
+  --rpma-chrome-shine: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(70, 86, 102, 0.18);
+  --rpma-chrome-raise: 0 1px 0 rgba(255, 255, 255, 0.55), 0 1px 2px rgba(40, 56, 72, 0.12);
 }
 
 html[data-theme="dark"], html.dark {
@@ -78,13 +80,15 @@ html[data-theme="dark"], html.dark {
   --pc-header-color: #c5ced8;
   --pc-sidebar-background: #10151c;
   --pc-active-background: #1e2936;
-  --rpma-chrome: linear-gradient(180deg, #5a6574 0%, #3d4754 48%, #2a3340 100%);
-  --rpma-chrome-hover: linear-gradient(180deg, #667385 0%, #465264 100%);
-  --rpma-chrome-selected: linear-gradient(180deg, #8fd0f4 0%, #5eb4e8 50%, #3a9ad4 100%);
-  --rpma-chrome-fg: #eef3f8;
-  --rpma-chrome-selected-fg: #052033;
-  --rpma-chrome-line: color-mix(in srgb, #9aa8b6 22%, transparent);
-  --rpma-chrome-shine: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+  --rpma-chrome: linear-gradient(180deg, #a8b2be 0%, #6d7886 22%, #3a4450 54%, #252d36 80%, #4a5562 100%);
+  --rpma-chrome-hover: linear-gradient(180deg, #bcc6d2 0%, #7d8896 24%, #46515e 56%, #323c48 100%);
+  --rpma-chrome-selected: linear-gradient(180deg, #d6f0ff 0%, #8fd0f4 24%, #3fa0d8 56%, #2a86c4 80%, #5eb4e8 100%);
+  --rpma-chrome-fg: #f3f6f9;
+  --rpma-chrome-selected-fg: #041826;
+  --rpma-chrome-line: color-mix(in srgb, #c5d0da 28%, transparent);
+  --rpma-chrome-edge: color-mix(in srgb, #d5deea 22%, #1a222c);
+  --rpma-chrome-shine: inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 0 rgba(0, 0, 0, 0.38);
+  --rpma-chrome-raise: 0 1px 0 rgba(255, 255, 255, 0.12), 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 html {
@@ -233,6 +237,46 @@ body {
 .dk-nav.is-top { display: contents; }
 .dk-shell.is-topnav { --pc-header-height: 184px; --rpma-hud-h: 0px; }
 .dk-shell.is-topnav.is-menu-open { --pc-header-height: 184px; }
+
+/* Shared chrome / glass face for every menu button */
+.rpma-glass-btn,
+.dk-header-navrow .dk-link,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link,
+.rpma-emp-gtab,
+.rpma-emp-tool,
+.rpma-nav-seg-btn {
+  position: relative;
+  background: var(--rpma-chrome) !important;
+  color: var(--rpma-chrome-fg) !important;
+  border: 1px solid var(--rpma-chrome-edge);
+  box-shadow: var(--rpma-chrome-shine), var(--rpma-chrome-raise);
+  backdrop-filter: blur(12px) saturate(1.35);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.rpma-glass-btn:hover,
+.dk-header-navrow .dk-link:hover,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link:hover,
+.rpma-emp-gtab:hover,
+.rpma-emp-tool:hover,
+.rpma-nav-seg-btn:hover {
+  background: var(--rpma-chrome-hover) !important;
+  color: var(--rpma-chrome-fg) !important;
+}
+.rpma-glass-btn.is-on,
+.rpma-glass-btn.is-active,
+.dk-header-navrow .dk-link.is-active,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
+.dk-header-navrow .rpma-top-link-active,
+.rpma-emp-gtab.is-on,
+.rpma-emp-tool.is-on,
+.rpma-nav-seg-btn-active,
+.rpma-nav-seg-btn[aria-pressed="true"] {
+  background: var(--rpma-chrome-selected) !important;
+  color: var(--rpma-chrome-selected-fg) !important;
+  border-color: color-mix(in srgb, #6ec4f0 70%, var(--rpma-chrome-edge));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88), inset 0 -1px 0 rgba(20, 80, 120, 0.18), 0 0 0 1px color-mix(in srgb, #6ec4f0 45%, transparent);
+}
+
 .dk-header-navrow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -259,8 +303,6 @@ body {
   border-right: 1px solid var(--rpma-chrome-line);
   border-bottom: 3px solid transparent;
   border-radius: 0;
-  background: transparent;
-  color: var(--rpma-chrome-fg);
   font-size: 12px;
   font-weight: 800;
   text-decoration: none;
@@ -274,10 +316,7 @@ body {
 }
 .dk-header-navrow .dk-link.is-active,
 .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active {
-  background: var(--rpma-chrome-selected);
-  color: var(--rpma-chrome-selected-fg);
   border-bottom-color: #6ec4f0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 .dk-header-navrow .dk-ico { width: 14px; height: 14px; }
 .dk-header-nav { display: none; }
@@ -2288,9 +2327,6 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   text-decoration: none;
   border-right: 1px solid var(--rpma-chrome-line);
   border-bottom: 3px solid transparent;
-  background: transparent;
-  box-shadow: none;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .rpma-emp-gtab:last-child { border-right: 0; }
 .rpma-emp-gtab:hover {
@@ -2298,10 +2334,7 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   color: var(--rpma-chrome-fg);
 }
 .rpma-emp-gtab.is-on {
-  background: var(--rpma-chrome-selected);
-  color: var(--rpma-chrome-selected-fg);
   border-bottom-color: #6ec4f0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 .rpma-emp-gtab[data-rag] { /* chrome tabs; RAG stays on module icons */ }
 .rpma-emp-gtab.is-on[data-rag="Green"],
@@ -2816,7 +2849,7 @@ html[data-theme="light"] .rpma-emp-gtab,
 html.snow .rpma-emp-gtab {
   color: var(--rpma-chrome-fg);
   border-right-color: var(--rpma-chrome-line);
-  background: transparent;
+  background: var(--rpma-chrome);
 }
 html[data-theme="light"] .rpma-emp-gtab:hover,
 html.snow .rpma-emp-gtab:hover {
@@ -2837,7 +2870,7 @@ html.snow .rpma-emp-group.is-on {
   background: color-mix(in srgb, #1bb8a6 10%, #fff);
 }
 html[data-theme="light"] .rpma-emp-tool,
-html.snow .rpma-emp-tool { color: #3d4b58; }
+html.snow .rpma-emp-tool { color: var(--rpma-chrome-fg); }
 html[data-theme="light"] .rpma-emp-tool:hover,
 html[data-theme="light"] .rpma-emp-tool.is-on,
 html.snow .rpma-emp-tool:hover,
@@ -3433,6 +3466,15 @@ html.carbon {
   --pc-heading-color: #f3f7fa;
   --bs-body-color: #e8edf3;
   --bs-body-bg: #071018;
+  --rpma-chrome: linear-gradient(180deg, #a8b2be 0%, #6d7886 22%, #3a4450 54%, #252d36 80%, #4a5562 100%);
+  --rpma-chrome-hover: linear-gradient(180deg, #bcc6d2 0%, #7d8896 24%, #46515e 56%, #323c48 100%);
+  --rpma-chrome-selected: linear-gradient(180deg, #d6f0ff 0%, #8fd0f4 24%, #3fa0d8 56%, #2a86c4 80%, #5eb4e8 100%);
+  --rpma-chrome-fg: #f3f6f9;
+  --rpma-chrome-selected-fg: #041826;
+  --rpma-chrome-line: color-mix(in srgb, #c5d0da 28%, transparent);
+  --rpma-chrome-edge: color-mix(in srgb, #d5deea 22%, #1a222c);
+  --rpma-chrome-shine: inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 0 rgba(0, 0, 0, 0.38);
+  --rpma-chrome-raise: 0 1px 0 rgba(255, 255, 255, 0.12), 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 html[data-theme="dark"] .dk-shell,
 html.dark .dk-shell,
@@ -3449,17 +3491,22 @@ html.dark .dk-header-tall {
   border-bottom: 1px solid #14344a;
 }
 html[data-theme="dark"] .dk-header-navrow,
-html.dark .dk-header-navrow { background: #0a1c2a; border-top-color: #14344a; }
+html.dark .dk-header-navrow,
+html.carbon .dk-header-navrow {
+  background: var(--rpma-chrome);
+  border-top-color: var(--rpma-chrome-line);
+  box-shadow: var(--rpma-chrome-shine);
+}
 html[data-theme="dark"] .dk-link,
 html[data-theme="dark"] .dk-collapse,
 html.dark .dk-link,
-html.dark .dk-collapse { color: #c5d4de; }
-html[data-theme="dark"] .dk-link.is-active,
-html[data-theme="dark"] .dk-collapse.is-active,
-html.dark .dk-link.is-active,
-html.dark .dk-collapse.is-active {
-  color: #fff;
-  background: color-mix(in srgb, #14b8a6 18%, #0a1c2a);
+html.dark .dk-collapse { color: var(--rpma-chrome-fg); }
+html[data-theme="dark"] .dk-header-navrow .dk-link.is-active,
+html[data-theme="dark"] .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
+html.dark .dk-header-navrow .dk-link.is-active,
+html.dark .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active {
+  color: var(--rpma-chrome-selected-fg) !important;
+  background: var(--rpma-chrome-selected) !important;
 }
 html[data-theme="dark"] .rpma-emp,
 html.dark .rpma-emp {
@@ -3483,10 +3530,9 @@ html[data-theme="dark"] .rpma-emp-title em,
 html.dark .rpma-emp-title em { color: color-mix(in srgb, var(--rpma-chrome-fg) 70%, transparent) !important; }
 html[data-theme="dark"] .rpma-emp-gtab,
 html.dark .rpma-emp-gtab {
-  background: transparent !important;
+  background: var(--rpma-chrome) !important;
   color: var(--rpma-chrome-fg) !important;
   border-right-color: var(--rpma-chrome-line);
-  border-bottom-color: transparent;
 }
 html[data-theme="dark"] .rpma-emp-gtab:hover,
 html.dark .rpma-emp-gtab:hover {
