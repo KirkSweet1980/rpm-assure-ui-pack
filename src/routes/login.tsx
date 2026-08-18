@@ -74,9 +74,7 @@ function LoginPage() {
 
       <main className="rpma-gl-stage">
         <section className="rpma-gl-card">
-          <div className="rpma-gl-sheen" aria-hidden="true" />
           <h1 className="rpma-gl-word">RPM Assure</h1>
-          <p className="rpma-gl-tag">Assurance Delivered</p>
 
           <IdleLogoutBanner />
 
@@ -122,14 +120,14 @@ function LoginPage() {
                   </button>
                 </span>
               </label>
-              {error ? <p className="rpma-gl-error">{error}</p> : null}
               <button type="submit" className="rpma-gl-submit" disabled={busy}>
                 {busy ? "Signing in..." : "Sign in"}
               </button>
+              {error ? <p className="rpma-gl-error">{error}</p> : null}
             </form>
           )}
 
-          <p className="rpma-gl-foot">Powered by RPM Resources</p>
+          <p className="rpma-gl-tag">Assurance Delivered</p>
         </section>
       </main>
     </div>
@@ -168,7 +166,7 @@ const GLASS_CSS = `
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center center;
   background: #0b1a3a;
   display: block;
@@ -177,8 +175,7 @@ const GLASS_CSS = `
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent 0 48%, rgba(7, 14, 20, 0.18) 68%, rgba(7, 14, 20, 0.38) 100%);
+  background: rgba(7, 14, 20, 0.28);
 }
 .rpma-gl-stage {
   position: relative;
@@ -186,110 +183,101 @@ const GLASS_CSS = `
   min-height: 100dvh;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 1.4rem 5.2vw 1.4rem 1.2rem;
+  justify-content: center;
+  padding: 1.5rem;
 }
 .rpma-gl-card {
   position: relative;
-  width: min(100%, 17.6rem);
-  padding: 1rem 1rem 0.75rem;
-  border-radius: 1.05rem;
-  background: rgba(8, 16, 24, 0.54);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.22) inset,
-    0 16px 36px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  overflow: hidden;
-}
-.rpma-gl-sheen {
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
-}
-.rpma-gl-kicker {
-  margin: 0.08rem 0 0.24rem;
+  width: min(100%, 36rem);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
   text-align: center;
-  font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
-  font-size: 0.56rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
 .rpma-gl-word {
-  margin: 0 0 0.16rem;
+  margin: 0 0 1.1rem;
   text-align: center;
   font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", sans-serif;
   font-optical-sizing: auto;
-  font-size: 1.36rem;
-  font-weight: 600;
-  letter-spacing: 0;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   line-height: 1;
   color: #8fce4a;
-  background: none;
-  -webkit-text-fill-color: currentColor;
 }
 .rpma-gl-tag {
-  margin: 0 0 0.7rem;
+  margin: 0.9rem 0 0;
   text-align: center;
   font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", sans-serif;
   font-optical-sizing: auto;
-  font-size: 0.56rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--lime) 78%, white);
+  color: #8fce4a;
 }
-.rpma-gl-form { display: flex; flex-direction: column; gap: 0.48rem; }
+.rpma-gl-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.7rem;
+  align-items: end;
+}
+.rpma-gl-field { text-align: left; margin: 0; }
 .rpma-gl-field span {
   display: block;
-  margin-bottom: 0.16rem;
-  font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--muted);
+  margin-bottom: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(243, 247, 251, 0.78);
 }
 .rpma-gl-wrap { position: relative; display: flex; align-items: center; }
 .rpma-gl-wrap > svg {
   position: absolute;
-  left: 0.65rem;
-  color: rgba(243, 247, 251, 0.62);
+  left: 0.7rem;
+  color: rgba(243, 247, 251, 0.7);
   pointer-events: none;
 }
 .rpma-gl-wrap input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.5rem 2.2rem 0.5rem 2rem;
+  padding: 0.62rem 2.2rem 0.62rem 2.1rem;
   border: 0;
-  border-radius: 0.62rem;
-  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.12);
   color: var(--fg);
-  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.28) inset;
+  backdrop-filter: blur(8px);
 }
-.rpma-gl-wrap input::placeholder { color: rgba(243, 247, 251, 0.45); }
-.rpma-gl-wrap input:-webkit-autofill,
-.rpma-gl-wrap input:-webkit-autofill:hover,
-.rpma-gl-wrap input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--fg);
-  transition: background-color 9999s ease-out 0s;
-  box-shadow: 0 0 0 1000px rgba(20, 40, 55, 0.4) inset;
+.rpma-gl-wrap input::placeholder { color: rgba(243, 247, 251, 0.5); }
+.rpma-gl-error { grid-column: 1 / -1; }
+.rpma-gl-submit {
+  margin: 0;
+  min-height: 42px;
+  padding: 0.55rem 1.1rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .rpma-gl-form { grid-template-columns: 1fr; }
+  .rpma-gl-word { font-size: 1.7rem; }
 }
 .rpma-gl-wrap input:focus {
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--teal) 70%, white) inset,
-    0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 1px #8fce4a inset;
 }
 .rpma-gl-eye {
   position: absolute;
@@ -306,52 +294,13 @@ const GLASS_CSS = `
   justify-content: center;
 }
 .rpma-gl-error {
-  margin: 0;
+  margin: 0.4rem 0 0;
   padding: 0.4rem 0.55rem;
   border-radius: 0.55rem;
   background: rgba(155, 44, 44, 0.28);
   color: #ffd4d4;
-  font-family: "Segoe UI Variable Small", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
   font-size: 0.72rem;
-  box-shadow: 0 0 0 1px rgba(255, 180, 180, 0.28) inset;
-}
-.rpma-gl-submit {
-  margin-top: 0.08rem;
-  width: 100%;
-  min-height: 38px;
-  padding: 0.52rem 0.85rem;
-  border: 0;
-  border-radius: 0.68rem;
-  background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
-  color: #fff;
-  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(27, 184, 166, 0.26);
 }
 .rpma-gl-submit:hover:not(:disabled) { filter: brightness(1.06); }
-.rpma-gl-submit:active:not(:disabled) { transform: scale(0.98); }
 .rpma-gl-submit:disabled { opacity: 0.65; cursor: wait; }
-.rpma-gl-foot {
-  margin: 0.64rem 0 0;
-  text-align: center;
-  font-family: "Segoe UI Variable Small", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
-  color: color-mix(in srgb, var(--lime) 78%, white);
-}
-@media (max-width: 860px) {
-  .rpma-gl-stage {
-    align-items: flex-end;
-    justify-content: center;
-    padding: 0.8rem 0.75rem 1.25rem;
-  }
-  .rpma-gl-card { width: min(100%, 17.2rem); }
-  .rpma-gl-wash {
-    background: linear-gradient(180deg, transparent 0 46%, rgba(7, 14, 20, 0.42) 100%);
-  }
-}
 `;
