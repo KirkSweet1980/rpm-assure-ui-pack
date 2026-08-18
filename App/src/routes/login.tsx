@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "logo-top-20260818";
+const LOGIN_BUILD = "center-row-20260818";
 const AISLE = "/downloads/login-white-hall.jpg";
 const MARK = "/downloads/rpm-assure-wordmark.png";
 
@@ -77,7 +77,7 @@ function LoginPage() {
           {!authEnabled ? (
             <p className="rpma-aisle-error">Auth is disabled.</p>
           ) : (
-            <form onSubmit={onSubmit}>
+            <form onSubmit={onSubmit} className="rpma-aisle-row">
               <label>
                 <span>Username</span>
                 <input
@@ -111,10 +111,10 @@ function LoginPage() {
                   </button>
                 </span>
               </label>
-              {error ? <p className="rpma-aisle-error">{error}</p> : null}
               <button type="submit" className="rpma-aisle-go" disabled={busy}>
                 {busy ? "Signing in…" : "Sign in"}
               </button>
+              {error ? <p className="rpma-aisle-error">{error}</p> : null}
             </form>
           )}
         </section>
@@ -145,10 +145,10 @@ const CSS = `
 .rpma-aisle-logo {
   position: absolute;
   z-index: 2;
-  top: 4.5vh;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  width: min(42vw, 420px);
+  transform: translate(-50%, -58%);
+  width: min(52vw, 560px);
   height: auto;
   pointer-events: none;
   background: transparent;
@@ -160,17 +160,29 @@ const CSS = `
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 1.2rem 1.2rem 9vh;
+  padding: 1.2rem 1.2rem 8vh;
 }
 .rpma-aisle-card {
-  width: min(100%, 20.5rem);
-  padding: 1.05rem 1.1rem 1rem;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(18, 32, 44, 0.08);
-  box-shadow: 0 12px 32px rgba(4, 16, 28, 0.16);
+  width: min(100%, 40rem);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
-.rpma-aisle-card form { display: grid; gap: 0.7rem; }
-.rpma-aisle-card label { display: grid; gap: 0.22rem; }
+.rpma-aisle-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.7rem 0.85rem;
+}
+.rpma-aisle-row label {
+  display: grid;
+  gap: 0.22rem;
+  flex: 1 1 11rem;
+  min-width: 11rem;
+  max-width: 16rem;
+}
 .rpma-aisle-card label > span {
   font-size: 0.78rem;
   font-weight: 700;
@@ -179,10 +191,10 @@ const CSS = `
 .rpma-aisle-card input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 36px;
+  min-height: 38px;
   padding: 0.4rem 0.55rem;
   border: 1px solid #c5ced6;
-  background: #fff;
+  background: rgba(255,255,255,0.92);
   color: #12202c;
   font-size: 0.88rem;
   outline: none;
@@ -203,8 +215,10 @@ const CSS = `
   min-height: 34px;
 }
 .rpma-aisle-go {
-  margin-top: 0.15rem;
+  margin-top: 0;
   min-height: 38px;
+  min-width: 7.2rem;
+  padding: 0 1rem;
   border: 1px solid rgba(18, 40, 56, 0.45);
   background: transparent;
   color: #12202c;
@@ -219,6 +233,8 @@ const CSS = `
 }
 .rpma-aisle-go:disabled { opacity: 0.6; cursor: wait; }
 .rpma-aisle-error {
+  flex: 1 0 100%;
+  text-align: center;
   margin: 0;
   padding: 0.5rem 0.6rem;
   background: rgba(155, 44, 44, 0.1);
