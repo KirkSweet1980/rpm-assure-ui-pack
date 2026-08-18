@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "yours-right-20260816";
+const LOGIN_BUILD = "top-right-20260818";
 const HALL = "/brand/login-picks/boardroom-tv.jpg?v=20260816rc";
 
 function LoginPage() {
@@ -182,13 +182,13 @@ const GLASS_CSS = `
   z-index: 2;
   min-height: 100dvh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 1.1rem 1.4rem 1.5rem;
 }
 .rpma-gl-card {
   position: relative;
-  width: min(100%, 36rem);
+  width: min(100%, 34rem);
   padding: 0;
   border: 0;
   background: transparent;
@@ -199,24 +199,20 @@ const GLASS_CSS = `
   text-align: center;
 }
 .rpma-gl-word {
-  margin: 0 0 1.1rem;
-  text-align: center;
-  font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
-  font-size: 2.1rem;
+  margin: 0 0 0.55rem;
+  text-align: right;
+  font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
   color: #8fce4a;
 }
 .rpma-gl-tag {
-  margin: 0.9rem 0 0;
-  text-align: center;
-  font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  font-optical-sizing: auto;
-  font-size: 0.78rem;
+  margin: 0.45rem 0 0;
+  text-align: right;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #8fce4a;
 }
