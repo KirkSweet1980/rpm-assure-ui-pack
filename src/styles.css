@@ -4494,8 +4494,8 @@ html:has(.rpma-classic) body { overflow: hidden; height: 100%; }
 }
 .rpma-classic {
   display: grid;
-  grid-template-columns: 400px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 10px;
   align-items: stretch;
   height: calc(100dvh - var(--pc-header-height) - 16px);
   max-height: calc(100dvh - var(--pc-header-height) - 16px);
@@ -4508,7 +4508,7 @@ html:has(.rpma-classic) body { overflow: hidden; height: 100%; }
   background: #ffffff;
   border: 1px solid #dbe3ea;
   border-radius: 12px;
-  padding: 14px 12px 16px;
+  padding: 10px 8px 10px;
   height: 100%;
   max-height: 100%;
   overflow: hidden;
@@ -4520,60 +4520,72 @@ html:has(.rpma-classic) body { overflow: hidden; height: 100%; }
   min-height: 0;
 }
 .rpma-classic-nav section + section {
-  margin-top: 14px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid #e6edf2;
 }
 .rpma-classic-nav h2 {
-  margin: 0 10px 10px;
-  font-size: 11px;
+  margin: 0 6px 6px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #5b6b79;
 }
 .rpma-classic-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 12px 13px minmax(0, 1fr) auto 14px;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  column-gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
   color: #1b2836;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 10.5px;
   font-weight: 600;
-  min-height: 36px;
+  line-height: 1.25;
+  min-height: 0;
 }
-.rpma-classic-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rpma-classic-row span {
+  min-width: 0;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .rpma-classic-row:hover { background: #f3f6f8; }
-.rpma-classic-row.is-on { background: #eef3f7; box-shadow: inset 3px 0 0 #111827; }
-.rpma-classic-ico { width: 16px; height: 16px; flex: 0 0 auto; }
+.rpma-classic-row.is-on { background: #eef3f7; box-shadow: inset 2px 0 0 #111827; }
+.rpma-classic-ico { width: 12px; height: 12px; flex: 0 0 auto; }
 .rpma-classic-tree {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
   display: grid;
   place-items: center;
   color: #111827;
 }
-.rpma-classic-tree svg { width: 14px; height: 14px; }
+.rpma-classic-tree svg { width: 11px; height: 11px; }
 .rpma-classic-tree i {
   display: block;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-left: 1.5px solid #c5d0da;
   border-bottom: 1.5px solid #c5d0da;
-  margin-top: -2px;
+  margin-top: -1px;
 }
 .rpma-classic-nav section.is-mods {
-  margin-left: 18px;
-  padding-left: 10px;
-  border-left: 2px solid #c5d0da;
+  margin-left: 10px;
+  padding-left: 8px;
+  border-left: 1.5px solid #c5d0da;
 }
 .rpma-classic-nav .rpma-cover-tag {
-  font-size: 9px;
-  padding: 2px 6px;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 3px;
 }
+.rpma-classic-nav .rpma-bot { width: 12px; height: 12px; }
+.rpma-classic-nav .rpma-bot svg { width: 12px; height: 12px; }
 .rpma-classic-main {
   min-width: 0;
   min-height: 0;
