@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "bg-fade-20260818";
+const LOGIN_BUILD = "card-down-20260818";
 const AISLE = "/brand/login-white-hall.jpg";
 
 function CubeMark() {
@@ -93,7 +93,6 @@ function LoginPage() {
     <div className="rpma-aisle" data-login-build={LOGIN_BUILD}>
       <style>{CSS}</style>
       <img className="rpma-aisle-bg" src={AISLE} alt="" />
-      <div className="rpma-aisle-wash" aria-hidden="true" />
 
       <main className="rpma-aisle-stage">
         <section className="rpma-aisle-card">
@@ -174,15 +173,6 @@ const CSS = `
   object-fit: cover;
   object-position: center;
   display: block;
-  opacity: 0.42;
-  filter: saturate(0.7);
-}
-.rpma-aisle-wash {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 55% 60% at 50% 48%, rgba(255,255,255,0.55) 0%, rgba(244,247,250,0.28) 48%, rgba(236,241,245,0.55) 100%);
 }
 .rpma-aisle-stage {
   position: relative;
@@ -191,13 +181,14 @@ const CSS = `
   display: grid;
   place-items: center;
   padding: 1.5rem;
+  padding-top: 12vh;
 }
 .rpma-aisle-card {
   width: min(100%, 28.5rem);
-  padding: 0.4rem 0.2rem;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  padding: 1.85rem 1.9rem 1.7rem;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(18, 32, 44, 0.08);
+  box-shadow: 0 18px 50px rgba(4, 16, 28, 0.18);
 }
 .rpma-aisle-mark {
   display: flex;
