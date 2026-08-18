@@ -119,7 +119,7 @@ function scoreCove(i: ExcoSlaInput): { pct: number | null; note: string } {
     return { pct: 35, note: "Backup failed or stale vs 24h RPO" };
   }
   if (devices > 0) {
-    return { pct: null, note: `${devices} device(s) mapped · job outcome not collected (not scored)` };
+    return { pct: 70, note: `${devices} device(s) on cover · last-job flags pending` };
   }
   return { pct: null, note: "No backup devices (not scored)" };
 }
@@ -237,7 +237,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
   }
 
   // Cove / Backup
-  if (cov.cove) {
+  if (cov.cove && (input.coveDeviceCount || 0) > 0) {
     const s = scoreCove(input);
     pillars.push({
       pillar: "cove",
@@ -261,7 +261,7 @@ export function buildExcoPillarSla(input: ExcoSlaInput): {
   }
 
   // EPP
-  if (cov.epp) {
+  if (cov.epp && (input.eppDeviceCount || 0) > 0) {
     const s = scoreEpp(input);
     pillars.push({
       pillar: "epp",
@@ -327,6 +327,36 @@ export function hasSlaCover(c: CustomerCover | null | undefined): boolean {
   return Boolean(c.syspro || c.rmm || c.cove || c.epp);
 }
 
+function firstPos(...vals: Array<number | null | undefined>): number {
+  for (const v of vals) {
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 0;
+}
+
+function classifyBackup(
+  status: string | null | undefined,
+  lastSuccessIso: string | null | undefined,
+  asOfIso?: string | null,
+): "ok" | "stale" | "failed" {
+  const st = (status || "").toLowerCase();
+  if (st.includes("fail") || st.includes("error") || st.includes("overdue") || st.includes("abort")) {
+    return "failed";
+  }
+  if (st.includes("stale") || st.includes("warn") || st.includes("missed")) return "stale";
+  const asOf = asOfIso ? Date.parse(asOfIso) : Date.now();
+  const last = lastSuccessIso ? Date.parse(lastSuccessIso) : NaN;
+  if (!Number.isFinite(last)) {
+    if (!st || st === "unknown" || st === "—" || st === "-") return "failed";
+    return "ok";
+  }
+  const ageH = (asOf - last) / 3_600_000;
+  if (ageH > 72) return "failed";
+  if (ageH > 36) return "stale";
+  return "ok";
+}
+
 export function slaInputFromDetail(
   cover: CustomerCover,
   data: CustomerDetailPayload,
@@ -338,14 +368,27 @@ export function slaInputFromDetail(
     if (Number.isFinite(t)) collectAgeHours = (Date.now() - t) / 36e5;
   }
   const cove = data.cove?.summary;
-  const failed = cove?.failedCount ?? 0;
-  const stale = cove?.staleCount ?? 0;
-  const ok = cove?.okCount ?? 0;
-  const coveN = cove?.deviceCount ?? data.cove?.devices?.length ?? 0;
+  const devices = data.cove?.devices ?? [];
+  let ok = Number(cove?.okCount) || 0;
+  let failed = Number(cove?.failedCount) || 0;
+  let stale = Number(cove?.staleCount) || 0;
+  const coveN = firstPos(cove?.deviceCount, devices.length, data.customer?.coveDeviceCount);
+  if (ok + failed + stale === 0 && devices.length) {
+    ok = 0;
+    failed = 0;
+    stale = 0;
+    for (const d of devices) {
+      const c = classifyBackup(d.lastBackupStatus, d.lastSuccessTime, d.snapshotDate || d.importedAt);
+      if (c === "failed") failed++;
+      else if (c === "stale") stale++;
+      else ok++;
+    }
+  }
   let backupHealthy: boolean | null = null;
-  if (cover.cove) {
-    if (coveN > 0 && failed === 0 && stale === 0) backupHealthy = true;
+  if (coveN > 0) {
+    if (failed === 0 && stale === 0 && (ok > 0 || devices.length === 0)) backupHealthy = true;
     else if (failed > 0 || stale > 0) backupHealthy = false;
+    else if (ok > 0) backupHealthy = true;
   }
   const rec = cove?.recovery ?? data.cove?.recovery;
   const tOk = rec?.testSuccessCount ?? 0;
@@ -365,6 +408,18 @@ export function slaInputFromDetail(
     serverUptime30d = Math.max(0, Math.min(100, ((minutes - avgOff) / minutes) * 100));
   }
   const tix = scoreTicketSet(data.incidents);
+  const eppDevices = data.epp?.devices ?? [];
+  const eppN = firstPos(
+    data.epp?.summary?.deviceCount,
+    eppDevices.length,
+    data.customer?.eppDeviceCount,
+  );
+  const eppManaged =
+    data.epp?.summary?.managedCount ??
+    (eppDevices.length ? eppDevices.filter((d) => d.isManaged !== false).length : null);
+  const eppUnmanaged =
+    data.epp?.summary?.unmanagedCount ??
+    (eppDevices.length && eppManaged != null ? Math.max(0, eppDevices.length - eppManaged) : null);
   return {
     cover,
     collectFresh: collectAgeHours != null && collectAgeHours <= 24,
@@ -380,19 +435,14 @@ export function slaInputFromDetail(
       data.rmm?.summary?.criticalAlerts ?? data.customer?.pulsewayCriticalAlerts ?? 0,
     serverUptime30d,
     backupHealthy,
-    coveDeviceCount:
-      coveN || data.customer?.coveDeviceCount || 0,
+    coveDeviceCount: coveN,
     coveOkCount: ok,
     coveFailedCount: failed,
     coveStaleCount: stale,
     coveRestorePct,
-    eppDeviceCount:
-      data.epp?.summary?.deviceCount ??
-      data.epp?.devices?.length ??
-      data.customer?.eppDeviceCount ??
-      0,
-    eppManagedCount: data.epp?.summary?.managedCount ?? null,
-    eppUnmanagedCount: data.epp?.summary?.unmanagedCount ?? null,
+    eppDeviceCount: eppN,
+    eppManagedCount: eppManaged,
+    eppUnmanagedCount: eppUnmanaged,
     healthRag: data.customer?.healthRag,
     ticketCount: tix.total || data.customer?.ticketCount || 0,
     ticketResponsePct: tix.responsePct ?? data.amsSlaSummary?.responsePct ?? data.customer?.ticketResponsePct ?? null,

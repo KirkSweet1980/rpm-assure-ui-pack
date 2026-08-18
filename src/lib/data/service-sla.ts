@@ -180,10 +180,25 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
 export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
   const cover = coverFromDetail(data).cove;
   const s = data.cove?.summary;
-  const ok = s?.okCount ?? 0;
-  const failed = s?.failedCount ?? 0;
-  const stale = s?.staleCount ?? 0;
-  const n = s?.deviceCount ?? data.cove?.devices?.length ?? 0;
+  const devices = data.cove?.devices ?? [];
+  let ok = s?.okCount ?? 0;
+  let failed = s?.failedCount ?? 0;
+  let stale = s?.staleCount ?? 0;
+  const n = (s?.deviceCount && s.deviceCount > 0 ? s.deviceCount : null) ?? devices.length ?? data.customer?.coveDeviceCount ?? 0;
+  if (ok + failed + stale === 0 && devices.length) {
+    ok = 0;
+    failed = 0;
+    stale = 0;
+    for (const d of devices) {
+      const st = (d.lastBackupStatus || "").toLowerCase();
+      const last = d.lastSuccessTime ? Date.parse(d.lastSuccessTime) : NaN;
+      if (st.includes("fail") || st.includes("error") || st.includes("overdue")) failed++;
+      else if (st.includes("stale") || st.includes("warn")) stale++;
+      else if (Number.isFinite(last) && (Date.now() - last) / 36e5 > 72) failed++;
+      else if (Number.isFinite(last) && (Date.now() - last) / 36e5 > 36) stale++;
+      else ok++;
+    }
+  }
   const slaCover = cover && n > 0;
   const denom = ok + failed;
   const success = slaCover && denom > 0 ? clamp((ok / denom) * 100) : null;
@@ -223,9 +238,10 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
 export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack {
   const cover = Boolean(coverFromDetail(data).epp);
   const s = data.epp?.summary;
-  const managed = s?.managedCount ?? 0;
-  const unmanaged = s?.unmanagedCount ?? 0;
-  const n = s?.deviceCount ?? data.epp?.devices?.length ?? 0;
+  const eppDevices = data.epp?.devices ?? [];
+  const managed = s?.managedCount ?? eppDevices.filter((d) => d.isManaged !== false).length;
+  const unmanaged = s?.unmanagedCount ?? Math.max(0, eppDevices.length - managed);
+  const n = (s?.deviceCount && s.deviceCount > 0 ? s.deviceCount : null) ?? eppDevices.length ?? data.customer?.eppDeviceCount ?? 0;
   const slaCover = cover && n > 0;
   const den = managed + unmanaged || n;
   const cov = slaCover && den > 0 ? clamp((managed / den) * 100) : null;

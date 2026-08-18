@@ -6064,16 +6064,17 @@ ORDER BY AsOfDate DESC`);
           healthSummary: `${failed} failed · ${stale} stale · ${ok} OK of ${cove.devices.length}`,
         };
       } else {
-        // If view reported all OK but age says otherwise, prefer age rollup
+        // Overlay when view is all-zero or all-OK-but-age-disagrees
+        const viewBits = (Number(cove.summary.okCount) || 0) + (Number(cove.summary.failedCount) || 0) + (Number(cove.summary.staleCount) || 0);
         const viewOk = (cove.summary.okCount ?? 0) >= (cove.summary.deviceCount ?? 0);
-        if (viewOk && (failed > 0 || stale > 0)) {
+        if (viewBits === 0 || (viewOk && (failed > 0 || stale > 0))) {
           cove.summary = {
             ...cove.summary,
             okCount: ok,
             staleCount: stale,
             failedCount: failed,
             healthRag: failed > 0 ? "Red" : stale > 0 ? "Amber" : "Green",
-            healthSummary: `${failed} failed · ${stale} stale · ${ok} OK of ${cove.devices.length} (age-aware)`,
+            healthSummary: `${failed} failed · ${stale} stale · ${ok} OK of ${cove.devices.length} (from last success)`,
           };
         }
       }
