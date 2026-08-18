@@ -63,7 +63,7 @@ export function PageRevWait() {
   return (
     <div className="rpma-rev-wait" role="status" aria-live="polite" aria-label="Loading">
       <div className="rpma-rev-wait-dial">
-        <RpmRevCounter className="rpma-rev-wait-gauge" size={168} />
+        <RpmRevCounter className="rpma-rev-wait-gauge" size={52} />
         <span className="rpma-rev-wait-cap">Loading</span>
       </div>
     </div>

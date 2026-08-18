@@ -971,16 +971,17 @@ html.dark .rpma-pane-head-row {
 .rpma-hud,
 .rpma-hud-spacer { display: none; }
 .rpma-hud-mid {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: static;
+  left: auto;
+  top: auto;
+  transform: none;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
   z-index: 4;
   pointer-events: auto;
+  justify-self: end;
 }
 .rpma-hud-rev {
   display: grid;
@@ -1009,8 +1010,9 @@ html.dark .rpma-pane-head-row {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  justify-self: stretch;
-  width: 100%;
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
   min-width: 0;
   gap: 8px;
   pointer-events: auto;
@@ -1018,6 +1020,7 @@ html.dark .rpma-pane-head-row {
   background: none;
   box-shadow: none;
   padding: 0;
+  margin: 0 auto;
 }
 .rpma-sql-meta {
   display: contents;
@@ -4082,9 +4085,9 @@ html.dark .rpma-rev-wait {
 }
 .rpma-rev-wait-cap {
   font-family: "Segoe UI Variable Small", "Segoe UI", sans-serif;
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted, #3d4b58);
 }
