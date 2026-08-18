@@ -11,7 +11,7 @@
 {
 	# Valid values on this Caddy build: off | disable_redirects | disable_certs | ignore_loaded_certs
 	auto_https disable_redirects
-	# email ops@rpmresources.co.za
+	email ops@rpmresources.co.za
 }
 
 https://assure.rpmresources.co.za {

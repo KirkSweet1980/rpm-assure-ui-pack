@@ -310,7 +310,7 @@ if (Test-Path -LiteralPath $ens) {
 
 $ren = Join-Path $Root 'deploy\Install-Https-Renew-Task.ps1'
 if (Test-Path -LiteralPath $ren) {
-  W Cyan '--- Let''s Encrypt renew watchdog (daily 04:15) ---'
+  W Cyan '--- Let''s Encrypt renew watchdog (04:15, 16:15, on-start) ---'
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ren
 }
 
