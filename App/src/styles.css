@@ -229,7 +229,7 @@ body {
 .rpma-glass .text-lg, .rpma-exco .text-lg, .rpma-eco-visuals .text-lg { font-size: 14px !important; overflow-wrap: anywhere; }
 
 .dk-shell { display: flex; flex-direction: column; min-height: 100dvh; padding-top: var(--pc-header-height); background: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-sans); --rpma-hud-h: 3.4rem; }
-.dk-brand { height: auto; min-height: 82px; display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 10px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-brand { height: auto; min-height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 12px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
 .dk-brand-reel {
   display: block;
   height: 82px;
@@ -341,8 +341,8 @@ html.dark .dk-brand-reel { mix-blend-mode: screen; }
   align-items: center;
 }
 .dk-nav.is-top { display: contents; }
-.dk-shell.is-topnav { --pc-header-height: 156px; --rpma-hud-h: 0px; }
-.dk-shell.is-topnav.is-menu-open { --pc-header-height: 156px; }
+.dk-shell.is-topnav { --pc-header-height: 108px; --rpma-hud-h: 0px; }
+.dk-shell.is-topnav.is-menu-open { --pc-header-height: 108px; }
 .dk-header-navrow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -407,8 +407,8 @@ html.dark .dk-brand-reel { mix-blend-mode: screen; }
   .rpma-hud-mid { gap: 8px; }
   .dk-header-navrow { grid-template-columns: 1fr 1fr; }
   .dk-header-navrow.is-collapsed { display: none; }
-  .dk-shell.is-topnav { --pc-header-height: 156px; }
-  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 196px; }
+  .dk-shell.is-topnav { --pc-header-height: 114px; }
+  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 168px; }
 }
 .dk-header-mid { flex: 1; min-width: 0; }
 
@@ -4178,8 +4178,8 @@ html[data-density="comfortable"] {
   --rpma-fs-lg: 18px;
   --rpma-gap: 14px;
 }
-html[data-density="compact"] .dk-shell.is-topnav { --pc-header-height: 148px; }
-html[data-density="comfortable"] .dk-shell.is-topnav { --pc-header-height: 156px; }
+html[data-density="compact"] .dk-shell.is-topnav { --pc-header-height: 104px; }
+html[data-density="comfortable"] .dk-shell.is-topnav { --pc-header-height: 112px; }
 
 html[data-density="compact"] .dk-content,
 html[data-density="compact"] .rpma-emp-body,
