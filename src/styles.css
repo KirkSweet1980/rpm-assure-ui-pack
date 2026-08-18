@@ -1766,14 +1766,14 @@ html[data-density="comfortable"] .rpma-xls th {
 .rpma-bot-ant-tip { fill: color-mix(in srgb, var(--color-fg) 35%, var(--color-border)); }
 .rpma-bot-visor { fill: color-mix(in srgb, var(--color-fg) 22%, var(--color-border)); }
 .rpma-bot-dot { fill: color-mix(in srgb, var(--color-fg) 28%, var(--color-border)); }
-.rpma-bot.is-green .rpma-bot-visor { fill: var(--color-rag-green); }
-.rpma-bot.is-green .rpma-bot-ant-tip { fill: var(--color-rag-green); }
+.rpma-bot.is-green .rpma-bot-visor { fill: #17c666; }
+.rpma-bot.is-green .rpma-bot-ant-tip { fill: #17c666; }
 .rpma-bot.is-green { filter: none; }
-.rpma-bot.is-amber .rpma-bot-visor { fill: var(--color-rag-amber); }
-.rpma-bot.is-amber .rpma-bot-ant-tip { fill: var(--color-rag-amber); }
+.rpma-bot.is-amber .rpma-bot-visor { fill: #ffb020; }
+.rpma-bot.is-amber .rpma-bot-ant-tip { fill: #ffb020; }
 .rpma-bot.is-amber { filter: none; }
-.rpma-bot.is-red .rpma-bot-visor { fill: var(--color-rag-red); }
-.rpma-bot.is-red .rpma-bot-ant-tip { fill: var(--color-rag-red); }
+.rpma-bot.is-red .rpma-bot-visor { fill: #ff2a2a; }
+.rpma-bot.is-red .rpma-bot-ant-tip { fill: #ff2a2a; }
 .rpma-bot.is-red { filter: none; }
 .rpma-bot.is-off { opacity: 0.45; }
 
@@ -2431,26 +2431,38 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 0 rgba(0, 0, 0, 0.18);
 }
 .rpma-emp-rag i {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 99px;
   display: block;
-  opacity: 0.32;
-  background: #8b949e;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  opacity: 0.28;
+  background: #6b7380;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
-.rpma-emp-rag i.is-red { background: #ff3b3b; }
+.rpma-emp-rag i.is-red { background: #ff2a2a; }
 .rpma-emp-rag i.is-amber { background: #ffb020; }
-.rpma-emp-rag i.is-green { background: #22d36a; }
+.rpma-emp-rag i.is-green { background: #17c666; }
 .rpma-emp-rag i.is-on { opacity: 1; }
-.rpma-emp-rag i.is-on.is-red {
-  box-shadow: 0 0 0 1px #ffb0b0, 0 0 5px #ff3b3bcc, inset 0 1px 0 rgba(255,255,255,0.45);
+.rpma-emp-rag i.is-on.is-green {
+  background: #17c666;
+  box-shadow: 0 0 0 1px #9ef0c0, 0 0 8px #17c666;
+  animation: none;
 }
 .rpma-emp-rag i.is-on.is-amber {
-  box-shadow: 0 0 0 1px #ffe08a, 0 0 5px #ffb020cc, inset 0 1px 0 rgba(255,255,255,0.5);
+  background: #ffb020;
+  animation: rpma-rag-blink-amber 0.7s steps(1, end) infinite;
 }
-.rpma-emp-rag i.is-on.is-green {
-  box-shadow: 0 0 0 1px #9ef0c0, 0 0 5px #22d36acc, inset 0 1px 0 rgba(255,255,255,0.5);
+.rpma-emp-rag i.is-on.is-red {
+  background: #ff2a2a;
+  animation: rpma-rag-blink-red 0.35s steps(1, end) infinite;
+}
+@keyframes rpma-rag-blink-amber {
+  0%, 48% { background: #ffb020; opacity: 1; box-shadow: 0 0 0 1px #ffe08a, 0 0 9px #ffb020; }
+  52%, 100% { background: #7a5a10; opacity: 0.35; box-shadow: none; }
+}
+@keyframes rpma-rag-blink-red {
+  0%, 42% { background: #ff2a2a; opacity: 1; box-shadow: 0 0 0 1px #ffb0b0, 0 0 10px #ff2a2a; }
+  50%, 100% { background: #6a1010; opacity: 0.28; box-shadow: none; }
 }
 html[data-theme="light"] .rpma-emp-rag,
 html.snow .rpma-emp-rag {
@@ -4015,41 +4027,39 @@ html.rpma-crisp .rpma-bot.is-amber,
 html.rpma-crisp .rpma-bot.is-red {
   filter: none;
 }
-@keyframes rpma-visor-flash-green {
-  0%, 100% { fill: var(--color-rag-green); opacity: 1; }
-  50% { fill: #b8f5d4; opacity: 0.28; }
-}
 @keyframes rpma-visor-flash-amber {
-  0%, 100% { fill: var(--color-rag-amber); opacity: 1; }
-  50% { fill: #ffe7a3; opacity: 0.22; }
+  0%, 48% { fill: #ffb020; opacity: 1; }
+  52%, 100% { fill: #7a5a10; opacity: 0.35; }
 }
 @keyframes rpma-visor-flash-red {
-  0%, 40% { fill: var(--color-rag-red); opacity: 1; }
-  50%, 90% { fill: #ffd0d0; opacity: 0.12; }
+  0%, 42% { fill: #ff2a2a; opacity: 1; }
+  50%, 100% { fill: #6a1010; opacity: 0.28; }
 }
 .rpma-bot.is-green .rpma-bot-visor,
 .rpma-bot.is-green .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-green var(--rpma-bot-flash-green, 2.2s) ease-in-out infinite;
+  fill: #17c666;
+  animation: none;
 }
 .rpma-bot.is-amber .rpma-bot-visor,
 .rpma-bot.is-amber .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-amber var(--rpma-bot-flash-amber, 0.7s) ease-in-out infinite;
+  animation: rpma-visor-flash-amber 0.7s steps(1, end) infinite;
 }
 .rpma-bot.is-red .rpma-bot-visor,
 .rpma-bot.is-red .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-red var(--rpma-bot-flash-red, 0.28s) steps(1, end) infinite;
+  animation: rpma-visor-flash-red 0.35s steps(1, end) infinite;
 }
 html.rpma-crisp .rpma-bot.is-green .rpma-bot-visor,
 html.rpma-crisp .rpma-bot.is-green .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-green var(--rpma-bot-flash-green, 2.2s) ease-in-out infinite;
+  fill: #17c666;
+  animation: none;
 }
 html.rpma-crisp .rpma-bot.is-amber .rpma-bot-visor,
 html.rpma-crisp .rpma-bot.is-amber .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-amber var(--rpma-bot-flash-amber, 0.7s) ease-in-out infinite;
+  animation: rpma-visor-flash-amber 0.7s steps(1, end) infinite;
 }
 html.rpma-crisp .rpma-bot.is-red .rpma-bot-visor,
 html.rpma-crisp .rpma-bot.is-red .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-red var(--rpma-bot-flash-red, 0.28s) steps(1, end) infinite;
+  animation: rpma-visor-flash-red 0.35s steps(1, end) infinite;
 }
 html.rpma-crisp .rpma-epp-lamp.is-on {
   filter: drop-shadow(0 0 1px #22c55e) drop-shadow(0 0 3px rgba(34,197,94,0.45));
