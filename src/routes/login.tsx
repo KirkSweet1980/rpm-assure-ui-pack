@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "noblock-20260818";
+const LOGIN_BUILD = "bg-fade-20260818";
 const AISLE = "/brand/login-white-hall.jpg";
 
 function CubeMark() {
@@ -93,6 +93,7 @@ function LoginPage() {
     <div className="rpma-aisle" data-login-build={LOGIN_BUILD}>
       <style>{CSS}</style>
       <img className="rpma-aisle-bg" src={AISLE} alt="" />
+      <div className="rpma-aisle-wash" aria-hidden="true" />
 
       <main className="rpma-aisle-stage">
         <section className="rpma-aisle-card">
@@ -173,6 +174,15 @@ const CSS = `
   object-fit: cover;
   object-position: center;
   display: block;
+  opacity: 0.42;
+  filter: saturate(0.7);
+}
+.rpma-aisle-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 60% at 50% 48%, rgba(255,255,255,0.55) 0%, rgba(244,247,250,0.28) 48%, rgba(236,241,245,0.55) 100%);
 }
 .rpma-aisle-stage {
   position: relative;
