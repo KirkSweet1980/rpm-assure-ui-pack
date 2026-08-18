@@ -8,21 +8,21 @@
   --font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
   --font-display: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
   --font-mono: Consolas, "Courier New", monospace;
-  --color-bg: #0b1a3a;
-  --color-surface: #16324f;
-  --color-surface-2: #1c3d5c;
-  --color-fg: #e8f7f4;
-  --color-muted: #a8c5c0;
+  --color-bg: #f4f7fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef3f7;
+  --color-fg: #101820;
+  --color-muted: #5c6b78;
   --color-subtle: #1bb8a6;
-  --color-border: #2a4a68;
-  --color-border-strong: #3a6284;
+  --color-border: #d5dde5;
+  --color-border-strong: #b8c2cc;
   --color-brand-slate: #2d6a8a;
   --color-brand-teal: #1bb8a6;
   --color-brand-lime: #8fce4a;
   --color-brand-ink: #0b1a3a;
-  --color-field: #122844;
+  --color-field: #eef3f7;
   --color-accent: var(--color-brand-teal);
-  --color-accent-soft: color-mix(in srgb, var(--color-brand-teal) 20%, transparent);
+  --color-accent-soft: color-mix(in srgb, var(--color-brand-teal) 16%, transparent);
   --color-accent-fg: #0b1a3a;
   --color-nav: #0b1a3a;
   --color-rag-green: #17c666;
@@ -35,9 +35,9 @@
 
 :root {
   --bs-primary: var(--color-brand-teal);
-  --bs-body-bg: #0b1a3a;
-  --bs-body-color: #e8f7f4;
-  --pc-heading-color: #e8f7f4;
+  --bs-body-bg: #f4f7fa;
+  --bs-body-color: #101820;
+  --pc-heading-color: #0b1a3a;
   --pc-sidebar-background: #0b1a3a;
   --pc-sidebar-color: #e8f7f4;
   --pc-sidebar-caption-color: var(--color-brand-teal);
@@ -68,18 +68,18 @@
 }
 
 html[data-theme="dark"], html.dark, html.snow, html[data-theme="light"] {
-  color-scheme: dark;
-  --color-bg: #0b1a3a;
-  --color-surface: #16324f;
-  --color-surface-2: #1c3d5c;
-  --color-fg: #e8f7f4;
-  --color-muted: #a8c5c0;
+  color-scheme: light;
+  --color-bg: #f4f7fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef3f7;
+  --color-fg: #101820;
+  --color-muted: #5c6b78;
   --color-subtle: #1bb8a6;
-  --color-border: #2a4a68;
-  --color-border-strong: #3a6284;
-  --bs-body-bg: #0b1a3a;
-  --bs-body-color: #e8f7f4;
-  --pc-heading-color: #e8f7f4;
+  --color-border: #d5dde5;
+  --color-border-strong: #b8c2cc;
+  --bs-body-bg: #f4f7fa;
+  --bs-body-color: #101820;
+  --pc-heading-color: #0b1a3a;
   --pc-header-background: #0b1a3a;
   --pc-header-color: #e8f7f4;
   --pc-sidebar-background: #0b1a3a;
@@ -1418,14 +1418,14 @@ html[data-theme="dark"] textarea,
 html.dark textarea,
 html[data-theme="dark"] select,
 html.dark select {
-  background: #0b1a3a;
-  color: #e8f7f4;
-  border-color: #2a4a68;
+  background: #ffffff;
+  color: #101820;
+  border-color: #d5dde5;
 }
 html[data-theme="dark"] table thead,
-html.dark table thead { background: #1a212c; }
+html.dark table thead { background: #eef3f7; }
 html[data-theme="dark"] .bg-white,
-html.dark .bg-white { background-color: #141a22 !important; }
+html.dark .bg-white { background-color: #ffffff !important; }
 
 .rpma-online {
   display: inline-flex;
@@ -3796,7 +3796,7 @@ html.dark .rpma-sql-digits {
 html[data-theme="dark"] .rpma-sql-meta > em,
 html.dark .rpma-sql-meta > em { color: #8aa0b0; }
 html[data-theme="dark"] .dk-content,
-html.dark .dk-content { color: #e8edf3; }
+html.dark .dk-content { color: #101820; }
 html[data-theme="dark"] .rpma-amx-workspace,
 html.dark .rpma-amx-workspace { background: transparent; }
 
@@ -4093,16 +4093,39 @@ html.dark .rpma-rev-wait {
   color: var(--color-muted, #a8c5c0);
 }
 
-html, body, .dk-shell, .dk-content, .dk-canvas, .rpma-topnav-main {
-  background: #0b1a3a;
-  color: #e8f7f4;
+html, body, .dk-shell {
+  background: #f4f7fa;
+  color: #101820;
+}
+.dk-content, .dk-canvas, .rpma-topnav-main, .rpma-topnav-canvas,
+.rpma-amx-workspace, .rpma-emp-body, .rpma-pane, .rpma-panel,
+.rpma-d3-detail, .rpma-list {
+  background: #f4f7fa;
+  color: #101820;
 }
 .dk-header-tall, .dk-header-one, .dk-header-row {
   background: #0b1a3a;
   color: #e8f7f4;
 }
-.dk-header-navrow { background: #16324f; }
-.rpma-rev-wait {
-  background: color-mix(in srgb, #0b1a3a 78%, transparent);
+.dk-header-navrow { background: #16324f; color: #e8f7f4; }
+.rpma-emp-ribbon, .rpma-emp-tools {
+  background: #0b1a3a;
+  color: #e8f7f4;
 }
+.rpma-rev-wait {
+  background: color-mix(in srgb, #f4f7fa 78%, transparent);
+}
+html.dark .dk-content,
+html.dark .rpma-topnav-canvas,
+html.dark .rpma-amx-workspace,
+html.dark table thead,
+html.dark table tbody,
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background: #ffffff;
+  color: #101820;
+  border-color: #d5dde5;
+}
+html.dark table thead { background: #eef3f7; }
 
