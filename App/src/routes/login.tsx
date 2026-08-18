@@ -200,7 +200,7 @@ const GLASS_CSS = `
 }
 .rpma-gl-word {
   margin: 0 0 0.55rem;
-  text-align: right;
+  text-align: center;
   font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -209,7 +209,7 @@ const GLASS_CSS = `
 }
 .rpma-gl-tag {
   margin: 0.45rem 0 0;
-  text-align: right;
+  text-align: center;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.16em;
