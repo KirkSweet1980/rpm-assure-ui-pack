@@ -82,7 +82,7 @@ export function RpmAssureNavLogo({ className }: { className?: string }) {
           y="26"
           className="rpma-nav-logo-text"
           fill="currentColor"
-          fontFamily="Inter, Segoe UI, system-ui, sans-serif"
+          fontFamily='"Segoe UI", system-ui, sans-serif'
           fontSize="17"
           fontWeight="700"
           letterSpacing="-0.03em"

@@ -180,13 +180,13 @@ body {
 .dk-brand-text { display: flex; flex-direction: column; line-height: 1.05; position: relative; padding-bottom: 5px; }
 .dk-brand-text strong {
   font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: transparent;
-  background: var(--dk-brand-1);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #1bb8a6;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
 }
 .dk-brand-text em { font-style: normal; font-size: 11px; color: #8996a4; }
 .dk-brand-text::after {

@@ -151,8 +151,8 @@ const GLASS_CSS = `
   overflow: hidden;
   background: #0b1218;
   color: var(--fg);
-  font-family: Inter, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: auto;
 }
 .rpma-gl-scene {
   position: absolute;
