@@ -91,7 +91,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-syspro-dtr`,
-            label: "FinSight",
+            label: "Finance Modules",
             blurb: "Control account recons — sub-ledger vs GL (INV, AP, AR, WIP)",
             href: `${base}/syspro/dtr`,
             match: "exact",
@@ -217,7 +217,7 @@ export function customerTree(code: string, displayName: string): NavNode {
         children: [
           {
             id: `${code}-cove-devices`,
-            label: "Devices on Cloud Backup",
+            label: "Backup Agents",
             blurb: "OK / stale / overdue · backup size",
             href: `${base}/cove/devices`,
             match: "exact",
@@ -225,7 +225,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-cove-recovery`,
-            label: "Backup Recovery Testing",
+            label: "Recovery Testing",
             blurb: "Restore / recovery test results",
             href: `${base}/cove/recovery`,
             match: "exact",
@@ -233,7 +233,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-cove-retention`,
-            label: "Retention policies",
+            label: "Backup Retention",
             blurb: "Policy name, profile, retention periods",
             href: `${base}/cove/retention`,
             match: "exact",
@@ -268,7 +268,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-epp-endpoints`,
-            label: "Endpoints",
+            label: "EndPoint Agents",
             blurb: "Managed devices and policies",
             href: `${base}/epp/endpoints`,
             match: "exact",
@@ -276,7 +276,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-epp-modules`,
-            label: "Policies",
+            label: "Policies & Modules",
             blurb: "Installed EPP modules and assigned policies",
             href: `${base}/epp/modules`,
             match: "exact",

@@ -107,7 +107,7 @@ const domains: DomainDef[] = [
 
 const sysproLeaves = [
   { label: "Overview", path: "" },
-  { label: "FinSight", path: "dtr" },
+  { label: "Finance Modules", path: "dtr" },
   { label: "Licence", path: "license" },
   { label: "Hotfixes", path: "hotfixes" },
   { label: "Operators", path: "operators" },
@@ -126,15 +126,15 @@ const rmmLeaves = [
 ];
 
 const coveLeaves = [
-  { label: "Backup Devices", path: "devices" },
-  { label: "Recovery", path: "recovery" },
-  { label: "Retention", path: "retention" },
+  { label: "Backup Agents", path: "devices" },
+  { label: "Recovery Testing", path: "recovery" },
+  { label: "Backup Retention", path: "retention" },
 ];
 
 const eppLeaves = [
   { label: "Overview", path: "" },
-  { label: "Endpoints", path: "endpoints" },
-  { label: "Policies", path: "modules" },
+  { label: "EndPoint Agents", path: "endpoints" },
+  { label: "Policies & Modules", path: "modules" },
   { label: "Security Incidents", path: "incidents" },
   { label: "Quarantine", path: "quarantine" },
 ];

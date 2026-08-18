@@ -77,7 +77,7 @@ export const CUSTOMER_PILLARS: {
     covered: (c) => Boolean(c?.syspro),
     modules: [
       { label: "Overview", path: "/syspro", icon: LayoutDashboard, color: "#0d9488" },
-      { label: "FinSight", path: "/syspro/dtr", icon: Scale, color: "#d97706" },
+      { label: "Finance Modules", path: "/syspro/dtr", icon: Scale, color: "#d97706" },
       { label: "Licence", path: "/syspro/license", icon: KeyRound, color: "#7c3aed" },
       { label: "Hotfixes", path: "/syspro/hotfixes", icon: Wrench, color: "#ea580c" },
       { label: "Operators", path: "/syspro/operators", icon: Users, color: "#2563eb" },
@@ -118,9 +118,9 @@ export const CUSTOMER_PILLARS: {
     covered: (c) => Boolean(c?.cove),
     modules: [
       { label: "Overview", path: "/cove", icon: LayoutDashboard, color: "#7c3aed" },
-      { label: "Backup Devices", path: "/cove/devices", icon: HardDrive, color: "#6d28d9" },
-      { label: "Recovery", path: "/cove/recovery", icon: RotateCcw, color: "#2563eb" },
-      { label: "Retention", path: "/cove/retention", icon: Archive, color: "#d97706" },
+      { label: "Backup Agents", path: "/cove/devices", icon: HardDrive, color: "#6d28d9" },
+      { label: "Recovery Testing", path: "/cove/recovery", icon: RotateCcw, color: "#2563eb" },
+      { label: "Backup Retention", path: "/cove/retention", icon: Archive, color: "#d97706" },
       { label: "Service SLA", path: "/cove/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
@@ -134,8 +134,8 @@ export const CUSTOMER_PILLARS: {
     covered: (c) => Boolean(c?.epp),
     modules: [
       { label: "Overview", path: "/epp", icon: LayoutDashboard, color: "#dc2626" },
-      { label: "Endpoints", path: "/epp/endpoints", icon: Monitor, color: "#b91c1c" },
-      { label: "Policies", path: "/epp/modules", icon: FileKey2, color: "#7c3aed" },
+      { label: "EndPoint Agents", path: "/epp/endpoints", icon: Monitor, color: "#b91c1c" },
+      { label: "Policies & Modules", path: "/epp/modules", icon: FileKey2, color: "#7c3aed" },
       { label: "Security Incidents", path: "/epp/incidents", icon: Siren, color: "#ea580c" },
       { label: "Quarantine", path: "/epp/quarantine", icon: Ban, color: "#334155" },
       { label: "Service SLA", path: "/epp/sla", icon: Gauge, color: "#7c3aed" },

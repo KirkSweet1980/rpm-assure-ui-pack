@@ -623,7 +623,7 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
         { name: "Hotfixes", value: (data.sysproHotfixes ?? []).length, fill: "#4f46e0" },
       ]}
       tiles={[
-        { label: "FinSight", href: `${base}/dtr`, n: c.sysproDtrVarianceLines, hint: "Control Recons" },
+        { label: "Finance Modules", href: `${base}/dtr`, n: c.sysproDtrVarianceLines, hint: "Control Recons" },
         { label: "Job Logging", href: `${base}/jobs`, n: c.sysproJobErrorCount, hint: "Batch Errors" },
         { label: "Day End", href: `${base}/day-end`, n: data.dayEnd?.label ?? "—", hint: "Close Status" },
         { label: "Operators", href: `${base}/operators`, n: totalOps, hint: "Accounts" },
@@ -4709,8 +4709,8 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
         ]}
         tiles={[
           { label: "Devices", href: `/customers/${code}/cove/devices`, n, hint: "Protected" },
-          { label: "Recovery", href: `/customers/${code}/cove/recovery`, n: devices.filter((d) => d.lastRecoveryTestAt).length, hint: "Tests" },
-          { label: "Retention", href: `/customers/${code}/cove/retention`, n: devices.length, hint: "Policy" },
+          { label: "Recovery Testing", href: `/customers/${code}/cove/recovery`, n: devices.filter((d) => d.lastRecoveryTestAt).length, hint: "Tests" },
+          { label: "Backup Retention", href: `/customers/${code}/cove/retention`, n: devices.length, hint: "Policy" },
           { label: "Service SLA", href: `/customers/${code}/cove/sla`, n: "Open", hint: "Clocks" },
         ]}
       />
@@ -4773,8 +4773,8 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
         { name: "Incidents", value: incidents, fill: "#ea4d4d" },
       ]}
       tiles={[
-        { label: "Endpoints", href: `/customers/${code}/epp/endpoints`, n: s?.deviceCount ?? devices.length, hint: "Fleet" },
-        { label: "Policies", href: `/customers/${code}/epp/modules`, n: "Open", hint: "Policy" },
+        { label: "EndPoint Agents", href: `/customers/${code}/epp/endpoints`, n: s?.deviceCount ?? devices.length, hint: "Fleet" },
+        { label: "Policies & Modules", href: `/customers/${code}/epp/modules`, n: "Open", hint: "Policy" },
         { label: "Security Incidents", href: `/customers/${code}/epp/incidents`, n: incidents, hint: "Open" },
         { label: "Quarantine", href: `/customers/${code}/epp/quarantine`, n: epp?.quarantine?.length ?? 0, hint: "Items" },
       ]}

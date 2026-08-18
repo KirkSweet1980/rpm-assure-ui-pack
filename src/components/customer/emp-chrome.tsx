@@ -24,11 +24,13 @@ const GROUP_TITLE: Record<string, string> = {
 
 const SHORT: Record<string, string> = {
   "Tenant Overview": "Overview",
-  "Customer Assurance": "Assurance",
+  "Customer Assurance": "Customer Assurance",
   "Customer Incidents": "Incidents",
   "Customer Risks": "Risks",
   "Customer SLA": "SLA",
   "Job Logging": "Jobs",
+  "FinSight": "Finance Modules",
+  "Finance Modules": "Finance Modules",
   "Patch Compliance": "Patch Compliance",
   "Server Alerts": "Server Alerts",
   "Disk IOPS": "Disk Performance",
@@ -37,11 +39,20 @@ const SHORT: Record<string, string> = {
   "Windows Events": "Windows Events",
   "Alerts": "Server Alerts",
   "Service SLA": "SLA",
-  "Backup Devices": "Devices",
+  "Backup Devices": "Backup Agents",
+  "Backup Agents": "Backup Agents",
+  "Recovery": "Recovery Testing",
+  "Recovery Testing": "Recovery Testing",
+  "Retention": "Backup Retention",
+  "Backup Retention": "Backup Retention",
+  "Endpoints": "EndPoint Agents",
+  "EndPoint Agents": "EndPoint Agents",
+  "Policies": "Policies & Modules",
+  "Policies & Modules": "Policies & Modules",
   "Security Incidents": "Incidents",
-  "Open Tickets": "Open",
-  "Resolved Tickets": "Resolved",
-  "Closed Tickets": "Closed",
+  "Open Tickets": "Open Tickets",
+  "Resolved Tickets": "Resolved Tickets",
+  "Closed Tickets": "Closed Tickets",
   "Secure Score": "Score",
   "Global Admins": "Admins",
 };
@@ -129,12 +140,11 @@ function itemVisible(
 ) {
   if (ALWAYS_ON.has(it.rel)) return true;
   if ((it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel) return true;
-  if (/\/sla$/.test(it.rel) || /\/(syspro|rmm|cove|epp|csp|tickets)$/.test(it.rel)) {
-    const p = it.rel.split("/")[1];
-    if (p && live?.pillars[p]?.cover) return true;
-  }
+  const p = it.rel.replace(/^\//, "").split("/")[0];
+  if (p && live?.pillars[p]?.cover) return true;
+  if (it.rel.startsWith("/ams") || it.rel === "") return true;
   const flag = live?.modules[it.rel];
-  if (flag) return flag.cover;
+  if (flag) return Boolean(flag.cover);
   return ragOf(it.rel, live) !== "Off";
 }
 

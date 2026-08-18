@@ -426,7 +426,7 @@ export function customerLiveStatus(
       rag: wsRag,
       cover: wsCover,
       href: `${base}/rmm/workstations`,
-      hint: !wsCover ? "No Cover for Devices" : wsOff ? `${wsOff} workstation(s) offline` : "Workstations online",
+      hint: !wsCover ? "No Cover — no workstations" : wsOff ? `${wsOff} workstation(s) offline` : "Workstations online",
     },
     "/rmm/patch": {
       rag: patchRag,
