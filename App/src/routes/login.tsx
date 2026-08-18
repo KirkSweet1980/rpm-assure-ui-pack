@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "orb-soft-20260818";
+const LOGIN_BUILD = "soft-vignette-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -77,17 +77,15 @@ function LoginPage() {
           playsInline
           preload="auto"
         />
-        <div className="rpma-gl-orb">
-          <video
-            className="rpma-gl-still"
-            src={HERO}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-          />
-        </div>
+        <video
+          className="rpma-gl-still"
+          src={HERO}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
         <div className="rpma-gl-mark" />
       </div>
 
@@ -172,28 +170,15 @@ const GLASS_CSS = `
 }
 .rpma-gl-wash {
   position: absolute;
-  inset: -10%;
-  width: 120%;
-  height: 120%;
+  inset: -18%;
+  width: 136%;
+  height: 136%;
   object-fit: cover;
-  filter: blur(28px) saturate(1.08) brightness(0.88);
-  transform: scale(1.06);
+  filter: blur(36px) saturate(1.06) brightness(0.82);
   pointer-events: none;
-}
-.rpma-gl-orb {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: min(86vmin, 86vh);
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
   border: 0;
   outline: 0;
-  box-shadow: none;
-  background: transparent;
-  overflow: visible;
-  -webkit-mask-image: radial-gradient(circle at center, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 86%);
-  mask-image: radial-gradient(circle at center, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 86%);
+  background: #020810;
 }
 .rpma-gl-still {
   position: absolute;
@@ -204,7 +189,14 @@ const GLASS_CSS = `
   object-position: center center;
   display: block;
   border: 0;
-  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  -webkit-mask-image: radial-gradient(ellipse 58% 62% at 50% 46%, #000 0%, #000 34%, rgba(0,0,0,0.55) 52%, transparent 74%);
+  mask-image: radial-gradient(ellipse 58% 62% at 50% 46%, #000 0%, #000 34%, rgba(0,0,0,0.55) 52%, transparent 74%);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 .rpma-gl-mark {
   position: absolute;
