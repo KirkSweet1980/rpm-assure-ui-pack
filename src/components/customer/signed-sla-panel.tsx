@@ -145,7 +145,7 @@ export function SignedSlaPanel({ code, cover }: { code: string; cover?: Customer
         ) : (
           <>
             <strong>Provisional Cover</strong>
-            <span>subject to Signed SLA</span>
+            <span>No — Signed SLA —</span>
           </>
         )}
       </div>

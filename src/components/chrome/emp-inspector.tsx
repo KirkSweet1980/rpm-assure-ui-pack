@@ -61,7 +61,7 @@ export function EmpInspector({
         ) : (
           <>
             <strong>Provisional Cover</strong>
-            <span>subject to Signed SLA</span>
+            <span>No — Signed SLA —</span>
           </>
         )}
       </div>
