@@ -2418,16 +2418,55 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
 .rpma-emp-body .rpma-glass,
 .rpma-emp-body .rpma-pane,
 .rpma-emp-body .rpma-kpi-tile {
-  padding: 8px 10px !important;
+  padding: 5px 7px !important;
 }
 .rpma-emp-body .h-52,
 .rpma-emp-body .h-56,
 .rpma-emp-body .h-48,
 .rpma-emp-body .h-44 {
-  height: 7.5rem !important;
+  height: 5.5rem !important;
 }
-.rpma-emp-body .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.55rem; }
-.rpma-emp-body .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.45rem; }
+.rpma-emp-body .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.4rem; }
+.rpma-emp-body .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.3rem; }
+
+/* Compact module view — all pillars / services / customers */
+.rpma-emp-body,
+.rpma-emp-body.is-pad {
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.rpma-emp-body h1,
+.rpma-emp-body .text-2xl { font-size: 14px !important; line-height: 1.2 !important; }
+.rpma-emp-body h2,
+.rpma-emp-body .text-xl { font-size: 13px !important; line-height: 1.2 !important; }
+.rpma-emp-body h3,
+.rpma-emp-body .text-lg { font-size: 12.5px !important; line-height: 1.2 !important; }
+.rpma-emp-body .text-base { font-size: 12px !important; }
+.rpma-emp-body .text-sm { font-size: 11px !important; }
+.rpma-emp-body .text-xs,
+.rpma-emp-body .text-\[11px\],
+.rpma-emp-body .text-\[10px\] { font-size: 10px !important; }
+.rpma-emp-body p { margin-top: 0; }
+.rpma-emp-body .mb-2 { margin-bottom: 0.35rem !important; }
+.rpma-emp-body .mt-2 { margin-top: 0.3rem !important; }
+.rpma-emp-body .gap-2 { gap: 0.35rem !important; }
+.rpma-emp-body .gap-3 { gap: 0.45rem !important; }
+.rpma-emp-body .px-3 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+.rpma-emp-body .py-2\.5 { padding-top: 0.32rem !important; padding-bottom: 0.32rem !important; }
+.rpma-emp-body .py-2 { padding-top: 0.28rem !important; padding-bottom: 0.28rem !important; }
+.rpma-emp-body .py-3 { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
+.rpma-emp-body .p-3,
+.rpma-emp-body .p-4 { padding: 0.45rem 0.55rem !important; }
+.rpma-emp-body .rounded-lg.border,
+.rpma-rmm-detail .rounded-lg.border {
+  padding: 5px 7px !important;
+}
+.rpma-emp-body table { font-size: 11px; }
+.rpma-emp-body table th,
+.rpma-emp-body table td { padding: 4px 7px !important; }
+.rpma-emp-body .rpma-eco-head h2 { font-size: 12.5px; }
+.rpma-emp-body .rpma-eco-head p { font-size: 10.5px; }
+.rpma-emp-inspector { padding: 0.65rem 0.7rem; font-size: 11.5px; }
 .rpma-emp-work.is-tree {
   grid-template-columns: 220px minmax(0, 1fr) 260px;
 }
@@ -2528,18 +2567,18 @@ html.snow .rpma-dormant-banner span { color: #64748b; }
   border-bottom: 1px solid #143044;
 }
 .rpma-eco-head-row { display: flex; align-items: center; gap: 8px; }
-.rpma-eco-head h2 { margin: 0; font-size: 14px; font-weight: 800; color: #e8f1f6; }
-.rpma-eco-head p { margin: 2px 0 0; font-size: 11px; color: #8aa0b0; }
+.rpma-eco-head h2 { margin: 0; font-size: 13px; font-weight: 800; color: #e8f1f6; }
+.rpma-eco-head p { margin: 1px 0 0; font-size: 10.5px; color: #8aa0b0; }
 .rpma-eco-kpis {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
 }
 .rpma-eco-kpi {
   display: grid;
-  gap: 1px;
-  padding: 5px 8px;
-  border-radius: 8px;
+  gap: 0;
+  padding: 4px 6px;
+  border-radius: 7px;
   border: 1px solid #1a3a50;
   background: #081722;
   text-decoration: none;
@@ -2562,7 +2601,7 @@ html.snow .rpma-dormant-banner span { color: #64748b; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rpma-eco-kpi strong { font-size: 15px; font-weight: 800; color: #e8f1f6; line-height: 1.15; }
+.rpma-eco-kpi strong { font-size: 13px; font-weight: 800; color: #e8f1f6; line-height: 1.12; }
 .rpma-eco-svcs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2960,8 +2999,8 @@ html.snow .rpma-brief-bar { background: #e2e8ee; }
 
 .rpma-ttree {
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 8px;
   align-items: start;
   min-height: 0;
 }
@@ -2987,14 +3026,14 @@ html.snow .rpma-brief-bar { background: #e2e8ee; }
 .rpma-ttree-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   text-align: left;
   border: 0;
   background: transparent;
   color: #d7e4ee;
-  border-radius: 7px;
-  padding: 7px 8px;
+  border-radius: 6px;
+  padding: 4px 6px;
   cursor: pointer;
 }
 .rpma-ttree-item i {
@@ -3009,7 +3048,7 @@ html.snow .rpma-brief-bar { background: #e2e8ee; }
 .rpma-ttree-item i[data-tone="amber"] { background: #ffa21d; box-shadow: 0 0 8px #ffa21d99; }
 .rpma-ttree-item i[data-tone="red"] { background: #ea4d4d; box-shadow: 0 0 8px #ea4d4d99; }
 .rpma-ttree-item span { display: grid; gap: 1px; min-width: 0; }
-.rpma-ttree-item strong { font-size: 12px; font-weight: 750; }
+.rpma-ttree-item strong { font-size: 11px; font-weight: 750; }
 .rpma-ttree-item em { font-style: normal; font-size: 10px; color: #8aa0b0; }
 .rpma-ttree-item.is-on { background: color-mix(in srgb, #14b8a6 16%, transparent); }
 .rpma-ttree-pane { min-width: 0; }
@@ -3323,8 +3362,8 @@ html.snow .rpma-vision input { background: #f4f6f8; color: #1d2630; border-color
 
 .rpma-rmm-split {
   display: grid;
-  grid-template-columns: minmax(240px, 2fr) minmax(0, 3fr);
-  gap: 12px;
+  grid-template-columns: minmax(220px, 2fr) minmax(0, 3fr);
+  gap: 8px;
   align-items: start;
 }
 .rpma-rmm-list {
@@ -3335,14 +3374,14 @@ html.snow .rpma-vision input { background: #f4f6f8; color: #1d2630; border-color
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #143044;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #081722;
 }
 .rpma-rmm-list-h {
   flex: 0 0 auto;
-  padding: 8px 10px;
+  padding: 5px 8px;
   border-bottom: 1px solid #143044;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3355,13 +3394,22 @@ html.snow .rpma-vision input { background: #f4f6f8; color: #1d2630; border-color
   overflow-y: auto;
   flex: 1;
 }
+.rpma-rmm-list button {
+  padding: 5px 8px !important;
+  gap: 1px !important;
+}
+.rpma-rmm-list button svg {
+  width: 18px !important;
+  height: 18px !important;
+}
 .rpma-rmm-detail {
   min-width: 0;
   border: 1px solid #143044;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #07141e;
-  padding: 12px 14px;
+  padding: 8px 10px;
 }
+.rpma-rmm-detail h3 { font-size: 13px !important; margin: 0; }
 html[data-theme="light"] .rpma-rmm-list,
 html.snow .rpma-rmm-list,
 html[data-theme="light"] .rpma-rmm-detail,

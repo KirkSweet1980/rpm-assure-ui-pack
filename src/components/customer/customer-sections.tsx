@@ -125,9 +125,9 @@ function formatZar(n: number | null | undefined): string {
 
 function ChartCaption({ title, why }: { title: string; why: string }) {
   return (
-    <div className="mb-2">
-      <p className="text-sm font-bold leading-tight text-fg sm:text-[0.95rem]">{title}</p>
-      <p className="mt-0.5 text-[12px] leading-snug text-muted">{why}</p>
+    <div className="mb-1.5">
+      <p className="text-[12.5px] font-extrabold leading-tight text-fg">{title}</p>
+      <p className="mt-0.5 text-[10.5px] leading-snug text-muted">{why}</p>
     </div>
   );
 }
@@ -1725,14 +1725,14 @@ export function RmmDevicesSection({
                       type="button"
                       onClick={() => setSelectedId(d.deviceId)}
                       className={
-                        "flex w-full flex-col gap-0.5 px-3 py-2.5 text-left transition hover:bg-surface-2/60 " +
+                        "flex w-full flex-col gap-0 px-2 py-1.5 text-left transition hover:bg-surface-2/60 " +
                         (active ? "bg-accent-soft/30" : "")
                       }
                     >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-2">
-                          {mode === "servers" ? <ServerKindIcon device={d} size={32} showLabel /> : null}
-                          <span className="truncate text-sm font-semibold text-fg">
+                      <span className="flex items-center justify-between gap-1.5">
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          {mode === "servers" ? <ServerKindIcon device={d} size={20} showLabel /> : null}
+                          <span className="truncate text-[12px] font-semibold text-fg">
                             {d.name ?? d.deviceId}
                           </span>
                         </span>
@@ -1776,9 +1776,9 @@ export function RmmDevicesSection({
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-start gap-2">
-                    {mode === "servers" ? <ServerKindIcon device={selected} size={36} /> : null}
+                    {mode === "servers" ? <ServerKindIcon device={selected} size={22} /> : null}
                     <div>
-                    <h3 className="text-lg font-extrabold tracking-tight text-fg">
+                    <h3 className="text-[13px] font-extrabold tracking-tight text-fg">
                       {selected.name ?? selected.deviceId}
                     </h3>
                     <p className="mt-0.5 font-mono text-[11px] text-muted">
@@ -2104,13 +2104,13 @@ function StatTile({
   tip?: string;
 }) {
   return (
-    <div className={"rounded-lg border border-border px-3 py-2 " + (className ?? "")}>
+    <div className={"rounded-lg border border-border px-2 py-1.5 " + (className ?? "")}>
       {tip ? <MetricLabel tip={tip}>{label}</MetricLabel> : (
-        <p className="text-[10px] font-bold uppercase tracking-wide text-subtle">{label}</p>
+        <p className="text-[9px] font-bold uppercase tracking-wide text-subtle">{label}</p>
       )}
       <p
         className={
-          "mt-0.5 text-sm font-semibold text-fg " + (mono ? "font-mono" : "")
+          "mt-0 text-[12px] font-semibold leading-tight text-fg " + (mono ? "font-mono" : "")
         }
       >
         {value}
