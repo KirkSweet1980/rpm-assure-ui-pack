@@ -5649,7 +5649,9 @@ ORDER BY
         providerName: String(r.ProviderName ?? ""),
         message: String(r.MessageText ?? ""),
       }));
-      rmm.windowsEvents = windowsEvents;
+      rmm.windowsEvents = windowsEvents.filter((e) =>
+        tenantAssetBelongs(code, { host: e.hostName }),
+      );
       if (!windowsEvents.length) {
         try {
           const nReq = pool.request().input("code", sql.NVarChar(50), code);
@@ -5682,7 +5684,7 @@ ORDER BY
             levelName: String(r.Severity ?? "Error"),
             providerName: "RPM RMM",
             message: [r.Title, r.Message].filter(Boolean).join(" — "),
-          }));
+          })).filter((e) => tenantAssetBelongs(code, { host: e.hostName }));
         } catch {
           /* notifications optional */
         }

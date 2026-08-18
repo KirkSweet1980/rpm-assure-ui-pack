@@ -48,6 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { NoCover, NoCoverPanel } from "@/components/ui/no-cover";
 import { HelpTip, MetricLabel } from "@/components/ui/help-tip";
 import { classifyRmmDevice, classifyServerHardware, isRmmServer, isRmmWorkstation } from "@/lib/data/rmm-device-class";
+import { rmmDeviceBelongsToCustomer, tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
 import { ServerKindIcon } from "@/components/customer/server-kind-icon";
 import { assuranceTone } from "@/lib/data/rag-score";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
@@ -868,6 +869,9 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   }
   // Server Patch Management — servers only (workstations excluded)
   const devices = [...(rmm?.devices ?? [])]
+    .filter((d) =>
+      rmmDeviceBelongsToCustomer(data.customer.customerCode, d.name, null, d.organizationName),
+    )
     .filter((d) => isRmmServer(d))
     .sort((a, b) => {
     const am = a.patchMissing ?? -1;
@@ -1632,7 +1636,18 @@ export function RmmDevicesSection({
   /** servers = Server class only; workstations = client devices only */
   mode?: "servers" | "workstations";
 }) {
-  const allDevices = data.rmm?.devices ?? [];
+  const allDevices = useMemo(
+    () =>
+      (data.rmm?.devices ?? []).filter((d) =>
+        rmmDeviceBelongsToCustomer(
+          data.customer.customerCode,
+          d.name,
+          null,
+          d.organizationName,
+        ),
+      ),
+    [data.rmm?.devices, data.customer.customerCode],
+  );
   const devices = useMemo(() => {
     const list = allDevices.filter((d) =>
       mode === "workstations" ? isRmmWorkstation(d) : isRmmServer(d),
@@ -2131,8 +2146,13 @@ function StatTile({
 }
 
 export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
-  const alerts = (data.rmm?.alerts ?? []).filter((a) => a.source !== "agent");
-  const devices = data.rmm?.devices ?? [];
+  const code = data.customer.customerCode;
+  const alerts = (data.rmm?.alerts ?? [])
+    .filter((a) => a.source !== "agent")
+    .filter((a) => rmmDeviceBelongsToCustomer(code, a.deviceName, null));
+  const devices = (data.rmm?.devices ?? []).filter((d) =>
+    rmmDeviceBelongsToCustomer(code, d.name, null, d.organizationName),
+  );
   if (!effectiveCover(data).rmm && alerts.length === 0) {
     return (
       <NoCoverPanel
@@ -2377,8 +2397,13 @@ function IopsPerfMatrix({
 }
 
 export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
-  const rows = keepLiveIops(data.rmm?.agentIops ?? []);
-  const devices = data.rmm?.devices ?? [];
+  const code = data.customer.customerCode;
+  const rows = keepLiveIops(data.rmm?.agentIops ?? []).filter((r) =>
+    tenantAssetBelongs(code, { host: r.hostName }),
+  );
+  const devices = (data.rmm?.devices ?? []).filter((d) =>
+    rmmDeviceBelongsToCustomer(code, d.name, null, d.organizationName),
+  );
   const rmmHosts = devices
     .filter((d) => classifyRmmDevice(d) === "server" || /server/i.test(`${d.osName || ""} ${d.deviceType || ""} ${d.name || ""}`))
     .map((d) => String(d.name || "").trim())
@@ -2429,9 +2454,13 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
 }
 
 export function RmmEventsSection({ data }: { data: CustomerDetailPayload }) {
-  const agent = data.rmm?.windowsEvents ?? [];
+  const code = data.customer.customerCode;
+  const agent = (data.rmm?.windowsEvents ?? []).filter((e) =>
+    tenantAssetBelongs(code, { host: e.hostName }),
+  );
   const fromAlerts = (data.rmm?.alerts ?? [])
     .filter((a) => a.source !== "agent")
+    .filter((a) => rmmDeviceBelongsToCustomer(code, a.deviceName, null))
     .map((a) => ({
       hostName: a.deviceName || a.deviceId || "Estate",
       timeCreatedUtc: a.raisedAt,

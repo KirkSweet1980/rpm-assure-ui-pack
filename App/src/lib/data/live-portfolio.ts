@@ -54,7 +54,7 @@ import type {
 import { formatSastDate } from "@/lib/utils";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
-import { rmmDeviceBelongsToCustomer } from "@/lib/data/rmm-device-owner";
+import { rmmDeviceBelongsToCustomer, tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
 import { coveHealthFor, eppHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
 import { floorScoreToRag } from "./rag-score";
 import { worstLiveRag } from "./live-status";
@@ -5167,7 +5167,8 @@ INNER JOIN (
             rmm.agentIops = iopsRows
               .filter((row) => {
                 const host = String(row.HostName ?? "").trim();
-                return host.length > 0 && !/^(DEMO[-_]?|SAMPLE[-_]?|TEST[-_]?|FAKE[-_])/i.test(host);
+                if (!host || /^(DEMO[-_]?|SAMPLE[-_]?|TEST[-_]?|FAKE[-_])/i.test(host)) return false;
+                return tenantAssetBelongs(code, { host });
               })
               .map((row) => {
               const mediaRaw = row.MediaType ? String(row.MediaType) : "";
@@ -5371,7 +5372,7 @@ INNER JOIN (
     }
 
     rmm.devices = rmm.devices.filter((d) =>
-      rmmDeviceBelongsToCustomer(code, d.name, null),
+      rmmDeviceBelongsToCustomer(code, d.name, null, d.organizationName),
     );
 
     try {
@@ -5648,7 +5649,9 @@ ORDER BY
         providerName: String(r.ProviderName ?? ""),
         message: String(r.MessageText ?? ""),
       }));
-      rmm.windowsEvents = windowsEvents;
+      rmm.windowsEvents = windowsEvents.filter((e) =>
+        tenantAssetBelongs(code, { host: e.hostName }),
+      );
       if (!windowsEvents.length) {
         try {
           const nReq = pool.request().input("code", sql.NVarChar(50), code);
@@ -5681,7 +5684,7 @@ ORDER BY
             levelName: String(r.Severity ?? "Error"),
             providerName: "RPM RMM",
             message: [r.Title, r.Message].filter(Boolean).join(" — "),
-          }));
+          })).filter((e) => tenantAssetBelongs(code, { host: e.hostName }));
         } catch {
           /* notifications optional */
         }
@@ -5995,10 +5998,8 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
         );
         coveRows = all.filter((r: any) => {
           const pn = String(r.PartnerName ?? r.Product ?? "");
-          const pid = r.PartnerId != null ? Number(r.PartnerId) : null;
-          if (pid != null && ids.has(pid)) return true;
-          if (cove.mapping.some((m) => vendorNameHits(pn, m.partnerName))) return true;
-          return vendorNameHits(pn, customer.displayName);
+          const host = String(r.MachineName ?? r.DeviceName ?? "");
+          return tenantAssetBelongs(code, { host, org: pn });
         });
       } catch {
         /* optional */
@@ -6051,6 +6052,12 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
       backupDurationSec:
         r.LastBackupDurationSec != null ? Number(r.LastBackupDurationSec) : null,
     }));
+    cove.devices = cove.devices.filter((d) =>
+      tenantAssetBelongs(code, {
+        host: d.machineName || d.deviceName,
+        org: d.partnerName,
+      }),
+    );
 
     // Summary: real view columns (LastImportAt, not ImportedAt; no HealthRag)
     try {
@@ -6560,6 +6567,9 @@ ORDER BY DeviceName`;
     }));
     // Collapse GZ clean-name + name-MAC duplicates (all customers)
     epp.devices = dedupeEppDevices(epp.devices);
+    epp.devices = epp.devices.filter((d) =>
+      tenantAssetBelongs(code, { host: d.deviceName || d.fqdn }),
+    );
     try {
       const polRes = await pool
         .request()
@@ -6687,6 +6697,9 @@ ORDER BY SnapshotDate DESC, DeviceName`);
           const mx = epp.devices[0]?.snapshotDate;
           epp.devices = epp.devices.filter((d) => d.snapshotDate === mx);
           epp.devices = dedupeEppDevices(epp.devices);
+          epp.devices = epp.devices.filter((d) =>
+            tenantAssetBelongs(code, { host: d.deviceName || d.fqdn }),
+          );
           epp.summary = eppSummaryFromDevices(epp.devices, null);
         }
       } catch {
