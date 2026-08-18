@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 import { HelpTip } from "@/components/ui/help-tip";
-import { RpmRevCounter } from "@/components/brand/rpm-rev-counter";
 
 const TZ = "Africa/Johannesburg";
 
@@ -127,9 +126,6 @@ export function HeadsUpDisplay({
   return (
     <div className="rpma-hud-mid" aria-label="System clock">
       <HudCell icon={Clock} label="System Date" value={dateStr} tip="Today in South Africa Standard Time. All Assure dates use SAST." />
-      <div className="rpma-hud-rev">
-        <RpmRevCounter className="rpma-hud-rev-svg" />
-      </div>
       <HudCell icon={Clock} label="System Time" value={`${timeStr} SAST`} tip="Live clock in SAST. Collect age and SLA windows are measured against this." />
     </div>
   );

@@ -1768,13 +1768,13 @@ html[data-density="comfortable"] .rpma-xls th {
 .rpma-bot-dot { fill: color-mix(in srgb, var(--color-fg) 28%, var(--color-border)); }
 .rpma-bot.is-green .rpma-bot-visor { fill: var(--color-rag-green); }
 .rpma-bot.is-green .rpma-bot-ant-tip { fill: var(--color-rag-green); }
-.rpma-bot.is-green { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-rag-green) 70%, transparent)); }
+.rpma-bot.is-green { filter: none; }
 .rpma-bot.is-amber .rpma-bot-visor { fill: var(--color-rag-amber); }
 .rpma-bot.is-amber .rpma-bot-ant-tip { fill: var(--color-rag-amber); }
-.rpma-bot.is-amber { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-rag-amber) 75%, transparent)); }
+.rpma-bot.is-amber { filter: none; }
 .rpma-bot.is-red .rpma-bot-visor { fill: var(--color-rag-red); }
 .rpma-bot.is-red .rpma-bot-ant-tip { fill: var(--color-rag-red); }
-.rpma-bot.is-red { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-rag-red) 75%, transparent)); }
+.rpma-bot.is-red { filter: none; }
 .rpma-bot.is-off { opacity: 0.45; }
 
 .rpma-cover-tag {
@@ -2412,7 +2412,6 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   height: 17px;
   flex: 0 0 auto;
   color: var(--rpma-tab-ico, #1bb8a6);
-  filter: drop-shadow(0 0 1px currentColor);
 }
 .rpma-emp-gtab-ico svg {
   width: 17px;
@@ -4112,9 +4111,36 @@ html, body, .dk-shell {
   background: #0b1a3a;
   color: #e8f7f4;
 }
-.rpma-rev-wait {
-  background: color-mix(in srgb, #f4f7fa 78%, transparent);
+.dk-header-one .rpma-hud-k,
+.dk-header-tall .rpma-hud-k,
+.dk-header-one .rpma-sql-digital > em,
+.dk-header-tall .rpma-sql-digital > em {
+  color: #b7ece4 !important;
 }
+.dk-header-one .rpma-hud-v,
+.dk-header-tall .rpma-hud-v {
+  color: #f3f6fa !important;
+}
+.dk-header-one .rpma-sql-digits,
+.dk-header-tall .rpma-sql-digits {
+  color: #2ee6a6 !important;
+}
+.dk-header-one .rpma-userchip,
+.dk-header-one .rpma-userchip-name,
+.dk-header-one .rpma-userchip-out,
+.dk-header-tall .rpma-userchip,
+.dk-header-tall .rpma-userchip-name,
+.dk-header-tall .rpma-userchip-out,
+.dk-header-one .dk-iconbtn,
+.dk-header-tall .dk-iconbtn,
+.dk-header-one .rpma-theme-switch-label,
+.dk-header-one .dk-brand,
+.dk-header-one .dk-brand-text,
+.dk-header-one .dk-brand-text strong {
+  color: #e8f7f4 !important;
+}
+.dk-header-one .dk-brand-text strong { color: #1bb8a6 !important; }
+.rpma-hud-mid { gap: 48px; }
 html.dark .dk-content,
 html.dark .rpma-topnav-canvas,
 html.dark .rpma-amx-workspace,
