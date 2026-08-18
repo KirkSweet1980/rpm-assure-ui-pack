@@ -5372,7 +5372,11 @@ INNER JOIN (
     }
 
     rmm.devices = rmm.devices.filter((d) =>
-      rmmDeviceBelongsToCustomer(code, d.name, null, d.organizationName),
+      tenantAssetBelongs(code, {
+        host: d.name,
+        org: d.organizationName,
+        stamped: (d as { customerCode?: string | null }).customerCode ?? null,
+      }),
     );
 
     try {
@@ -5421,13 +5425,12 @@ ORDER BY
           /* try next table */
         }
       }
-      items = items.filter(
-        (p) =>
-          rmm.devices.some(
-            (d) =>
-              (p.deviceId && d.deviceId === p.deviceId) ||
-              (p.deviceName && normH(d.name || "") === normH(p.deviceName)),
-          ) || rmmDeviceBelongsToCustomer(code, p.deviceName, null),
+      items = items.filter((p) =>
+        rmm.devices.some(
+          (d) =>
+            (p.deviceId && d.deviceId === p.deviceId) ||
+            (p.deviceName && normH(d.name || "") === normH(p.deviceName)),
+        ),
       );
       rmm.patches = items;
       const byDev = new Map<string, typeof items>();

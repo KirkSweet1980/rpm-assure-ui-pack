@@ -12,7 +12,7 @@ const NAME_RULES: { re: RegExp; code: string }[] = [
   { re: /^REDSUN/i, code: "RSR" },
   { re: /^UVSS[-_]/i, code: "UVSS" },
   { re: /^UVSS/i, code: "UVSS" },
-  { re: /^RSS[-_]/i, code: "RSS" },
+  { re: /^RSS/i, code: "RSS" },
   { re: /^HYDRA/i, code: "HYDRA" },
   { re: /^ABLE[-_]/i, code: "ABLE" },
   { re: /^AT[-_]/i, code: "ABLE" },
@@ -78,11 +78,11 @@ export function tenantAssetBelongs(
   if (!want) return false;
   const fromHost = rmmCodeFromDeviceName(asset.host);
   if (fromHost) return fromHost.toUpperCase() === want;
-  const fromOrg = tenantCodeFromOrgName(asset.org);
-  if (fromOrg) return fromOrg.toUpperCase() === want;
   if (asset.stamped && String(asset.stamped).trim()) {
     return String(asset.stamped).trim().toUpperCase() === want;
   }
+  const fromOrg = tenantCodeFromOrgName(asset.org);
+  if (fromOrg) return fromOrg.toUpperCase() === want;
   return false;
 }
 
