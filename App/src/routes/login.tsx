@@ -151,8 +151,10 @@ const GLASS_CSS = `
   overflow: hidden;
   background: #0b1218;
   color: var(--fg);
-  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-  -webkit-font-smoothing: auto;
+  font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 .rpma-gl-scene {
   position: absolute;
@@ -211,8 +213,10 @@ const GLASS_CSS = `
 .rpma-gl-kicker {
   margin: 0.08rem 0 0.24rem;
   text-align: center;
+  font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 0.56rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted);
@@ -220,21 +224,23 @@ const GLASS_CSS = `
 .rpma-gl-word {
   margin: 0 0 0.16rem;
   text-align: center;
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 1.36rem;
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  font-weight: 600;
+  letter-spacing: 0;
   line-height: 1;
-  color: transparent;
-  background: linear-gradient(90deg, #9ec6d8 0%, var(--teal) 46%, var(--lime) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #1bb8a6;
+  background: none;
+  -webkit-text-fill-color: currentColor;
 }
 .rpma-gl-tag {
   margin: 0 0 0.7rem;
   text-align: center;
+  font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 0.56rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--lime) 78%, white);
@@ -243,6 +249,8 @@ const GLASS_CSS = `
 .rpma-gl-field span {
   display: block;
   margin-bottom: 0.16rem;
+  font-family: "Segoe UI Variable Small", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -263,6 +271,8 @@ const GLASS_CSS = `
   border-radius: 0.62rem;
   background: rgba(255, 255, 255, 0.1);
   color: var(--fg);
+  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 0.8rem;
   outline: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset;
@@ -301,6 +311,8 @@ const GLASS_CSS = `
   border-radius: 0.55rem;
   background: rgba(155, 44, 44, 0.28);
   color: #ffd4d4;
+  font-family: "Segoe UI Variable Small", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 0.72rem;
   box-shadow: 0 0 0 1px rgba(255, 180, 180, 0.28) inset;
 }
@@ -313,8 +325,10 @@ const GLASS_CSS = `
   border-radius: 0.68rem;
   background: linear-gradient(90deg, var(--slate) 0%, var(--teal) 48%, var(--lime) 100%);
   color: #fff;
+  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(27, 184, 166, 0.26);
@@ -325,6 +339,8 @@ const GLASS_CSS = `
 .rpma-gl-foot {
   margin: 0.64rem 0 0;
   text-align: center;
+  font-family: "Segoe UI Variable Small", "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   font-size: 0.58rem;
   color: var(--muted);
 }
