@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "center-row-20260818";
+const LOGIN_BUILD = "soft-fields-20260818";
 const AISLE = "/downloads/login-white-hall.jpg";
 const MARK = "/downloads/rpm-assure-wordmark.png";
 
@@ -147,11 +147,13 @@ const CSS = `
   z-index: 2;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -58%);
+  transform: translate(-50%, -42%);
   width: min(52vw, 560px);
   height: auto;
   pointer-events: none;
   background: transparent;
+  opacity: 1;
+  filter: contrast(1.08) saturate(1.12);
 }
 .rpma-aisle-stage {
   position: relative;
@@ -184,20 +186,25 @@ const CSS = `
   max-width: 16rem;
 }
 .rpma-aisle-card label > span {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #1a2730;
+  display: none;
 }
 .rpma-aisle-card input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 38px;
-  padding: 0.4rem 0.55rem;
-  border: 1px solid #c5ced6;
-  background: rgba(255,255,255,0.92);
+  min-height: 40px;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(18, 32, 44, 0.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.42);
   color: #12202c;
   font-size: 0.88rem;
+  text-align: center;
   outline: none;
+}
+.rpma-aisle-card input::placeholder {
+  color: #3a4a56;
+  text-align: center;
+  font-weight: 600;
 }
 .rpma-aisle-card input:focus { border-color: #1bb8a6; }
 .rpma-aisle-pw { position: relative; display: block; }
@@ -216,10 +223,11 @@ const CSS = `
 }
 .rpma-aisle-go {
   margin-top: 0;
-  min-height: 38px;
+  min-height: 40px;
   min-width: 7.2rem;
   padding: 0 1rem;
-  border: 1px solid rgba(18, 40, 56, 0.45);
+  border: 0;
+  border-radius: 999px;
   background: transparent;
   color: #12202c;
   font-size: 0.98rem;
@@ -227,8 +235,7 @@ const CSS = `
   cursor: pointer;
 }
 .rpma-aisle-go:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.28);
-  border-color: #0f7f86;
+  background: rgba(255, 255, 255, 0.22);
   color: #0b3a42;
 }
 .rpma-aisle-go:disabled { opacity: 0.6; cursor: wait; }
