@@ -225,9 +225,15 @@ export function AppShell({
                 <span />
               </button>
               <Link to="/" className="dk-brand" aria-label="RPM Assure home">
-                <span className="dk-brand-text">
-                  <strong>RPM Assure</strong>
-                </span>
+                <video
+                  className="dk-brand-reel"
+                  src="/brand/rpm-assure-mark.mp4"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                />
               </Link>
               <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="sql" />
             </div>

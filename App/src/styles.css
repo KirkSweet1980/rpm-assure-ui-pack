@@ -229,7 +229,16 @@ body {
 .rpma-glass .text-lg, .rpma-exco .text-lg, .rpma-eco-visuals .text-lg { font-size: 14px !important; overflow-wrap: anywhere; }
 
 .dk-shell { display: flex; flex-direction: column; min-height: 100dvh; padding-top: var(--pc-header-height); background: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-sans); --rpma-hud-h: 3.4rem; }
-.dk-brand { height: var(--pc-header-height); display: flex; align-items: center; gap: 8px; padding: 0 20px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-brand { height: auto; min-height: 82px; display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 10px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-brand-reel {
+  display: block;
+  height: 82px;
+  width: auto;
+  max-width: 240px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #041018;
+}
 .dk-rev { flex: 0 0 auto; display: block; overflow: visible; }
 .dk-brand-mark { display: none; }
 .dk-brand-text { display: flex; flex-direction: column; line-height: 1.05; position: relative; padding-bottom: 5px; }
@@ -328,7 +337,7 @@ body {
   align-items: center;
 }
 .dk-nav.is-top { display: contents; }
-.dk-shell.is-topnav { --pc-header-height: 108px; --rpma-hud-h: 0px; }
+.dk-shell.is-topnav { --pc-header-height: 128px; --rpma-hud-h: 0px; }
 .dk-shell.is-topnav.is-menu-open { --pc-header-height: 108px; }
 .dk-header-navrow {
   display: grid;
