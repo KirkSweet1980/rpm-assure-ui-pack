@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "logo-down-20260818";
-const AISLE = "/downloads/login-white-hall.jpg";
+const LOGIN_BUILD = "office-h-wall-20260818";
+const AISLE = "/downloads/login-office-h.jpg";
 const MARK = "/downloads/rpm-assure-wordmark.png";
 
 function LoginPage() {
@@ -68,7 +68,9 @@ function LoginPage() {
     <div className="rpma-aisle" data-login-build={LOGIN_BUILD}>
       <style>{CSS}</style>
       <img className="rpma-aisle-bg" src={AISLE} alt="" />
-      <img className="rpma-aisle-logo" src={MARK} alt="RPM Assure" />
+      <div className="rpma-aisle-wall">
+        <img className="rpma-aisle-logo" src={MARK} alt="RPM Assure" />
+      </div>
 
       <main className="rpma-aisle-stage">
         <section className="rpma-aisle-card">
@@ -139,21 +141,28 @@ const CSS = `
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: 18% 42%;
   display: block;
 }
-.rpma-aisle-logo {
+/* Left navy wall: 0-41% wide, empty face 21-53% down. Logo pinned to that face. */
+.rpma-aisle-wall {
   position: absolute;
   z-index: 2;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, 18%);
-  width: min(26vw, 280px);
-  height: auto;
+  left: 0;
+  top: 21%;
+  width: 41%;
+  height: 32%;
+  display: grid;
+  place-items: center;
   pointer-events: none;
+}
+.rpma-aisle-logo {
+  width: min(68%, 240px);
+  height: auto;
+  display: block;
   background: transparent;
   opacity: 1;
-  filter: contrast(1.22) saturate(1.28) brightness(1.06);
+  filter: contrast(1.18) saturate(1.22) brightness(1.08);
 }
 .rpma-aisle-stage {
   position: relative;

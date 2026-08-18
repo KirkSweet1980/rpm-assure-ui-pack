@@ -11,6 +11,7 @@ const ALLOW = new Set([
   "Update-From-Https.ps1",
   "Apply-Staged-Pack.ps1",
   "login-white-hall.jpg",
+  "login-office-h.jpg",
   "rpm-assure-wordmark.png",
   "login-opt-A.jpg",
   "login-opt-B.jpg",
