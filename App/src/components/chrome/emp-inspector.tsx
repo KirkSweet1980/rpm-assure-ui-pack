@@ -60,8 +60,7 @@ export function EmpInspector({
           </>
         ) : (
           <>
-            <strong>Provisional Cover</strong>
-            <span>No — Signed SLA —</span>
+            <strong>Provisional Cover | No Signed SLA</strong>
           </>
         )}
       </div>
@@ -81,7 +80,7 @@ export function EmpInspector({
         <div>
           <dt>SLA cover</dt>
           <dd className={signed ? "text-emerald-400" : "text-rag-amber"}>
-            {signed ? "Signed SLA" : "Provisional Cover"}
+            {signed ? "Signed SLA" : "Provisional Cover | No Signed SLA"}
           </dd>
         </div>
         <div>
