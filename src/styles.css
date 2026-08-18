@@ -235,10 +235,14 @@ body {
   height: 82px;
   width: auto;
   max-width: 240px;
-  object-fit: cover;
-  border-radius: 8px;
-  background: #041018;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  mix-blend-mode: normal;
 }
+html:not(.dark) .dk-brand-reel { mix-blend-mode: multiply; }
+html.dark .dk-brand-reel { mix-blend-mode: screen; }
 .dk-rev { flex: 0 0 auto; display: block; overflow: visible; }
 .dk-brand-mark { display: none; }
 .dk-brand-text { display: flex; flex-direction: column; line-height: 1.05; position: relative; padding-bottom: 5px; }
