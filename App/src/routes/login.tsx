@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "office-h-logo-2x-20260818";
+const LOGIN_BUILD = "office-h-logo-1down-20260818";
 const AISLE = "/downloads/login-office-h.jpg";
 const MARK = "/downloads/rpm-assure-wordmark.png";
 
@@ -157,7 +157,7 @@ const CSS = `
   pointer-events: none;
 }
 .rpma-aisle-logo {
-  width: min(92%, 480px);
+  width: min(82%, 360px);
   height: auto;
   display: block;
   background: transparent;
