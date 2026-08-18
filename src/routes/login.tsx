@@ -154,6 +154,7 @@ const GLASS_CSS = `
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #0b0e13;
 }
 .rpma-gl-scene {
   position: absolute;
@@ -229,7 +230,7 @@ const GLASS_CSS = `
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1;
-  color: #1bb8a6;
+  color: #8fce4a;
   background: none;
   -webkit-text-fill-color: currentColor;
 }
