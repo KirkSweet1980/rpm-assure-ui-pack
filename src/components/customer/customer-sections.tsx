@@ -4807,7 +4807,7 @@ function formatRecoveryTestStatus(
     return lastTest ? "Result not reported" : "No test recorded";
   }
   if (s === "NotInPlan") return "Not in plan";
-  if (s === "NotStarted") return lastTest ? "In plan" : "In plan";
+  if (s === "NotStarted") return lastTest ? "Awaiting result" : "No test on API";
   if (s === "InProgress") return "In progress";
   if (s === "Success" || s === "Passed" || s === "OK") return "Success";
   if (s === "Failed" || s === "Fail" || s === "Error") return "Failed";

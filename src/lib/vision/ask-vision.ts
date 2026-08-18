@@ -10,10 +10,7 @@ export const askVision = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const message = String(data.message ?? "").slice(0, 2000);
     const cfg = getVisionConfig();
-    const snap =
-      cfg.includeCustomer && data.customer
-        ? await loadVisionTenantSnap(data.customer)
-        : null;
+    const snap = data.customer ? await loadVisionTenantSnap(data.customer) : null;
     const live = snap ? formatVisionSnap(snap) : null;
 
     if (!message.trim()) {

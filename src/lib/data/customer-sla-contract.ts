@@ -142,7 +142,7 @@ export const saveCustomerSlaContract = createServerFn({ method: "POST" })
     if (!code) return { ok: false as const, error: "customer code required" };
     const pool = await getPool();
     if (!pool) return { ok: false as const, error: getLastPoolError() || "SQL not connected" };
-    const kpis = { ...defaultSlaKpis(), ...(data.kpis ?? {}) };
+    const kpis = { ...(data.kpis ?? {}) };
     const confirm = Boolean(data.confirmedSignature);
     const sign = Boolean(data.sign) && confirm;
     const doc = String(data.documentName ?? "").trim().slice(0, 260);

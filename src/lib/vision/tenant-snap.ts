@@ -79,18 +79,25 @@ SELECT
     WHEN ClosedAtUtc IS NOT NULL THEN 0
     ELSE 1
   END) AS OpenN
-FROM dbo.Fact_Incident WITH (NOLOCK)
-WHERE UPPER(LTRIM(RTRIM(CustomerCode))) = @c`);
+FROM dbo.Freshdesk_Tickets WITH (NOLOCK)
+WHERE UPPER(LTRIM(RTRIM(CustomerCode))) = @c
+  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Freshdesk_Tickets WITH (NOLOCK))`);
     snap.ticketsTotal = n(r.recordset?.[0]?.TotalN);
     snap.ticketsOpen = n(r.recordset?.[0]?.OpenN);
   } catch {
     try {
       const r = await pool.request().input("c", code).query(`
-SELECT COUNT(*) AS TotalN
-FROM dbo.Freshdesk_Tickets WITH (NOLOCK)
-WHERE UPPER(LTRIM(RTRIM(CustomerCode))) = @c
-  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Freshdesk_Tickets WITH (NOLOCK))`);
+SELECT
+  COUNT(*) AS TotalN,
+  SUM(CASE
+    WHEN StatusName IN (N'Closed', N'Resolved', N'Resolved - Closed') THEN 0
+    WHEN ClosedAtUtc IS NOT NULL THEN 0
+    ELSE 1
+  END) AS OpenN
+FROM dbo.Fact_Incident WITH (NOLOCK)
+WHERE UPPER(LTRIM(RTRIM(CustomerCode))) = @c`);
       snap.ticketsTotal = n(r.recordset?.[0]?.TotalN);
+      snap.ticketsOpen = n(r.recordset?.[0]?.OpenN);
     } catch {
       /* */
     }

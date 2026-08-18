@@ -81,13 +81,7 @@ export function composeVisionAnswer(
     ? hits
         .map((h, i) => (i === 0 ? h.text : `${SOURCE_LABEL[h.source]} · ${h.title}: ${h.text}`))
         .join("\n\n")
-    : "I did not retrieve a strong match. Try SLA import, tickets, IOPS, EPP last scan, Cloud Backup, SYSPRO, cover, or agent deploy — or turn on more sources under Configuration → Vision.";
-  const ctx = [
-    live || "",
-    includeCustomer && customer && !live ? `Customer ${customer}.` : "",
-    includePath && path ? `You are on ${path}.` : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+    : "I did not retrieve a strong match. Ask about this tenant’s tickets, servers, backup, EPP, SYSPRO, or SLA — or open Configuration → Vision.";
+  const ctx = [live || "", includePath && path ? `You are on ${path}.` : ""].filter(Boolean).join("\n\n");
   return ctx ? `${help}\n\n${ctx}` : help;
 }

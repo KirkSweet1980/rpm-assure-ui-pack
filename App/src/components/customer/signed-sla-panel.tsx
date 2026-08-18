@@ -7,6 +7,7 @@ import {
   saveCustomerSlaContract,
   type CustomerSlaContract,
 } from "@/lib/data/customer-sla-contract";
+import { kpisOnCover } from "@/lib/data/apply-sla-kpis";
 import { INDUSTRY_MEASURES, type IndustryPillarKey } from "@/lib/data/sla-metrics";
 import type { CustomerCover } from "@/lib/data/cover";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,8 @@ async function fileToStored(file: File): Promise<StoredDoc> {
 
 export function SignedSlaPanel({ code, cover }: { code: string; cover?: CustomerCover }) {
   const pillars = PILLARS.filter((p) => {
-    if (p === "tickets") return true;
+    if (cover?.dormant) return false;
+    if (p === "tickets") return Boolean(cover?.syspro || cover?.rmm || cover?.cove || cover?.epp);
     if (!cover) return true;
     return Boolean(cover[p]);
   });
@@ -96,7 +98,7 @@ export function SignedSlaPanel({ code, cover }: { code: string; cover?: Customer
         signedBy: row.signedBy ?? "",
         confirmedSignature: kind === "sign" ? true : row.confirmedSignature,
         notes,
-        kpis: row.kpis,
+        kpis: cover ? kpisOnCover(cover, row.kpis) : row.kpis,
         sign: kind === "sign",
       },
     });
@@ -203,6 +205,11 @@ export function SignedSlaPanel({ code, cover }: { code: string; cover?: Customer
             Applies only to this customer, and only to services on Cover. Uncovered services stay on platform defaults
             and are not scored.
           </p>
+          {cover?.dormant || pillars.length === 0 ? (
+            <p className="text-[12px] font-semibold text-amber-600">
+              Dormant / no covered services — Custom SLA is not scored until an agent or vendor cover is on.
+            </p>
+          ) : null}
           <label className="grid max-w-md gap-1 text-[12px]">
             <span className="font-semibold">Custom SLA name</span>
             <input

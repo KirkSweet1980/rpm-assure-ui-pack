@@ -375,7 +375,7 @@ export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
     "Long-term offline devices, full disks, and application locks not remediated by the client.",
     "Extreme bandwidth constraints outside RPM control.",
     "A job that fails then succeeds inside the RPO window is still compliant.",
-    "Restore and test-frequency are scored only when a Recovery Testing or Standby Image plan is on. No plan is excluded, not a miss.",
+    "Recovery test success and test-frequency are not scored. Cove statistics do not publish last-session time (RVO/RVL); emails still fire.",
     "No Cover for Devices: customers with 0 backup devices are not scored in SLA.",
   ],
   epp: [
