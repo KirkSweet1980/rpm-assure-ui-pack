@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "orb-20260818";
+const LOGIN_BUILD = "orb-soft-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -172,27 +172,28 @@ const GLASS_CSS = `
 }
 .rpma-gl-wash {
   position: absolute;
-  inset: -8%;
-  width: 116%;
-  height: 116%;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
   object-fit: cover;
-  filter: blur(42px) saturate(1.2) brightness(0.72);
-  transform: scale(1.08);
+  filter: blur(28px) saturate(1.08) brightness(0.88);
+  transform: scale(1.06);
   pointer-events: none;
 }
 .rpma-gl-orb {
   position: absolute;
   left: 50%;
   top: 46%;
-  width: min(72vmin, 70vh);
+  width: min(86vmin, 86vh);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
-  overflow: hidden;
   border: 0;
   outline: 0;
   box-shadow: none;
-  background: #020810;
+  background: transparent;
+  overflow: visible;
+  -webkit-mask-image: radial-gradient(circle at center, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 86%);
+  mask-image: radial-gradient(circle at center, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 86%);
 }
 .rpma-gl-still {
   position: absolute;
@@ -203,6 +204,7 @@ const GLASS_CSS = `
   object-position: center center;
   display: block;
   border: 0;
+  border-radius: 0;
 }
 .rpma-gl-mark {
   position: absolute;
