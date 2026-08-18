@@ -62,6 +62,9 @@
   --rpma-glow-green: #3ee089;
   --rpma-glow-amber: #ffc043;
   --rpma-glow-red: #ff5a5a;
+  --rpma-bot-flash-green: 2.2s;
+  --rpma-bot-flash-amber: 0.7s;
+  --rpma-bot-flash-red: 0.28s;
 }
 
 html[data-theme="dark"], html.dark {
@@ -4023,27 +4026,27 @@ html.rpma-crisp .rpma-bot.is-red {
 }
 .rpma-bot.is-green .rpma-bot-visor,
 .rpma-bot.is-green .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-green 1.5s ease-in-out infinite;
+  animation: rpma-visor-flash-green var(--rpma-bot-flash-green, 2.2s) ease-in-out infinite;
 }
 .rpma-bot.is-amber .rpma-bot-visor,
 .rpma-bot.is-amber .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-amber 0.85s ease-in-out infinite;
+  animation: rpma-visor-flash-amber var(--rpma-bot-flash-amber, 0.7s) ease-in-out infinite;
 }
 .rpma-bot.is-red .rpma-bot-visor,
 .rpma-bot.is-red .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-red 0.4s steps(1, end) infinite;
+  animation: rpma-visor-flash-red var(--rpma-bot-flash-red, 0.28s) steps(1, end) infinite;
 }
 html.rpma-crisp .rpma-bot.is-green .rpma-bot-visor,
 html.rpma-crisp .rpma-bot.is-green .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-green 1.5s ease-in-out infinite;
+  animation: rpma-visor-flash-green var(--rpma-bot-flash-green, 2.2s) ease-in-out infinite;
 }
 html.rpma-crisp .rpma-bot.is-amber .rpma-bot-visor,
 html.rpma-crisp .rpma-bot.is-amber .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-amber 0.85s ease-in-out infinite;
+  animation: rpma-visor-flash-amber var(--rpma-bot-flash-amber, 0.7s) ease-in-out infinite;
 }
 html.rpma-crisp .rpma-bot.is-red .rpma-bot-visor,
 html.rpma-crisp .rpma-bot.is-red .rpma-bot-ant-tip {
-  animation: rpma-visor-flash-red 0.4s steps(1, end) infinite;
+  animation: rpma-visor-flash-red var(--rpma-bot-flash-red, 0.28s) steps(1, end) infinite;
 }
 html.rpma-crisp .rpma-epp-lamp.is-on {
   filter: drop-shadow(0 0 1px #22c55e) drop-shadow(0 0 3px rgba(34,197,94,0.45));
