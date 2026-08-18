@@ -148,20 +148,20 @@ const GLASS_CSS = `
   min-height: 100dvh;
   width: 100%;
   overflow: hidden;
-  background: #0b1218;
+  background: #0b1a3a;
   color: var(--fg);
   font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #0b0e13;
+  background: #0b1a3a;
 }
 .rpma-gl-scene {
   position: absolute;
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #0b1218;
+  background: #0b1a3a;
 }
 .rpma-gl-still {
   position: absolute;
@@ -170,7 +170,7 @@ const GLASS_CSS = `
   height: 100%;
   object-fit: contain;
   object-position: center center;
-  background: #0b1218;
+  background: #0b1a3a;
   display: block;
 }
 .rpma-gl-wash {

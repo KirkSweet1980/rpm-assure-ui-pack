@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ThemeToggle } from "@/components/portfolio/theme-toggle";
 import { DensityToggle } from "@/components/portfolio/density-toggle";
 import { DkSidebarNav } from "@/components/nav/dk-sidebar-nav";
 import { UserButton } from "@/lib/auth/gates";
@@ -234,7 +233,6 @@ export function AppShell({
             <HeadsUpDisplay liveSql={hudLive} generatedAt={hudAt} variant="clock" />
             <div className="dk-header-right">
               <DensityToggle />
-              <ThemeToggle />
               <UserButton />
             </div>
           </div>

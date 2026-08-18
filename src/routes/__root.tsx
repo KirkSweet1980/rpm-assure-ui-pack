@@ -21,7 +21,7 @@ export const Route = createRootRoute({
     ],
     scripts: [
       {
-        children: `(function(){try{var dn=localStorage.getItem("daynight-theme");var p=dn==="carbon"?"dark":dn==="snow"?"light":(localStorage.getItem("rpma-theme")||"dark");var m=p==="auto"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):p;if(m!=="light"&&m!=="dark")m="dark";var e=document.documentElement;e.dataset.theme=m;e.style.colorScheme=m;e.classList.toggle("dark",m==="dark");e.classList.toggle("carbon",m==="dark");e.classList.toggle("snow",m==="light");}catch(e){}})();`,
+        children: `(function(){try{var e=document.documentElement;e.dataset.theme="dark";e.style.colorScheme="dark";e.classList.add("dark","carbon");e.classList.remove("snow");}catch(e){}})();`,
       },
     ],
   }),
