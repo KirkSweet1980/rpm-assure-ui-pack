@@ -10,7 +10,7 @@ import { cn, formatSastDateTime } from "@/lib/utils";
 
 const PILLAR_SUB: Record<string, string> = {
   syspro: "SYSPRO Landscape",
-  rmm: "RMM Infrastructure Management",
+  rmm: "RMM Management",
   cove: "RPM Cloud Backup",
   epp: "RPM End Point Protection",
   csp: "Microsoft 365",

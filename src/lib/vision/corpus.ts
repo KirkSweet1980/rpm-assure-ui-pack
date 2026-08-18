@@ -42,7 +42,7 @@ export const VISION_CORPUS: VisionChunk[] = [
     source: "rmm",
     title: "RMM servers",
     keys: ["rmm", "server", "virtual", "physical", "patch", "event"],
-    text: "RMM Infrastructure Management lists estate servers from Pulseway. Virtual vs physical icons come from the device type. Patches and event logs need their collect scripts; IOPS is a separate POST.",
+    text: "RMM Management lists estate servers from Pulseway. Virtual vs physical icons come from the device type. Patches and event logs need their collect scripts; IOPS is a separate POST.",
   },
   {
     id: "epp-scan",
@@ -91,7 +91,7 @@ export const VISION_CORPUS: VisionChunk[] = [
     source: "howto",
     title: "Where to click",
     keys: ["where", "menu", "how", "navigate", "find", "page"],
-    text: "Top bar: Customer Eco-System, Customer Tenant, Reporting, Configuration. Inside a tenant the ribbon is Customer Eco System, SYSPRO Landscape, RMM Infrastructure Management, RPM Cloud Backup, RPM End Point Protection, RPM Service Desk. Vision is the teal button bottom-right.",
+    text: "Top bar: Customer Eco-System, Customer Tenant, Reporting, Configuration. Inside a tenant the ribbon is Customer Eco System, SYSPRO Landscape, RMM Management, RPM Cloud Backup, RPM End Point Protection, RPM Service Desk. Vision is the teal button bottom-right.",
   },
 ];
 

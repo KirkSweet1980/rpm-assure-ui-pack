@@ -10,7 +10,7 @@ import { cn, formatSastDateTime } from "@/lib/utils";
 
 const PILLAR_SUB: Record<string, string> = {
   syspro: "SYSPRO Landscape",
-  rmm: "RMM Infrastructure Management",
+  rmm: "RMM Management",
   cove: "RPM Cloud Backup",
   epp: "RPM End Point Protection",
   csp: "Microsoft 365",
@@ -72,7 +72,7 @@ function kpisFor(pillar: PillarId, data: CustomerDetailPayload) {
     { label: "Open", value: tix.open, warn: tix.open > 0 },
     { label: "Resolved", value: tix.resolved },
     { label: "Closed", value: tix.closed },
-    { label: "SLA miss", value: tix.breaches, warn: tix.breaches > 0 },
+    { label: "SLA", value: tix.sla.overallPct != null ? `${tix.sla.overallPct}%` : "—", warn: (tix.sla.overallPct ?? 100) < 90 },
   ];
 }
 
