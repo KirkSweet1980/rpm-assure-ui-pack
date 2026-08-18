@@ -9,7 +9,7 @@ import { RagLamps } from "@/components/chrome/rag-lamps";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
-type RibbonItem = { label: string; full: string; rel: string; icon: LucideIcon };
+type RibbonItem = { label: string; full: string; rel: string; icon: LucideIcon; color: string };
 type RibbonGroup = { id: string; title: string; match: string; color: string; icon: LucideIcon; items: RibbonItem[] };
 
 const GROUP_TITLE: Record<string, string> = {
@@ -60,6 +60,7 @@ const RIBBON: RibbonGroup[] = [
       full: m.label,
       rel: m.path,
       icon: m.icon,
+      color: m.color,
     })),
   },
   ...CUSTOMER_PILLARS.map((p) => ({
@@ -73,6 +74,7 @@ const RIBBON: RibbonGroup[] = [
       full: m.label,
       rel: m.path,
       icon: m.icon,
+      color: m.color,
     })),
   })),
 ];
@@ -192,7 +194,7 @@ export function EmpChrome({
                 data-rag={tone}
                 title={`${g.title} · ${tone}`}
               >
-                <g.icon className="rpma-emp-gtab-ico" aria-hidden />
+                <g.icon className="rpma-emp-gtab-ico" style={{ color: g.color }} aria-hidden />
                 <span className="rpma-emp-gtab-name">{g.title}</span>
                 <RagLamps tone={tone} />
               </SpaLink>
@@ -213,7 +215,7 @@ export function EmpChrome({
                 data-rag={rag}
                 title={`${it.label} · ${rag}`}
               >
-                <span className="rpma-emp-ico">
+                <span className="rpma-emp-ico" style={{ color: it.color }}>
                   <Icon className="size-5" />
                 </span>
                 <span>{it.label}</span>

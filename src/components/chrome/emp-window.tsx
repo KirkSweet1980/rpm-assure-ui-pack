@@ -73,7 +73,7 @@ export function EmpWindow({
                 data-rag={tone}
                 title={`${g.title} · ${tone}`}
               >
-                {Icon ? <Icon className="rpma-emp-gtab-ico" aria-hidden /> : null}
+                {Icon ? <Icon className="rpma-emp-gtab-ico" style={{ color: g.color }} aria-hidden /> : null}
                 <span className="rpma-emp-gtab-name">{g.title}</span>
                 <RagLamps tone={tone} />
               </SpaLink>
