@@ -287,7 +287,7 @@ body {
 }
 .dk-header-row {
   display: grid;
-  grid-template-columns: auto 1fr 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   justify-items: stretch;
   gap: 10px;
@@ -1006,7 +1006,9 @@ html.dark .rpma-pane-head-row {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  justify-self: center;
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
   gap: 8px;
   pointer-events: auto;
   border: 0;
@@ -4007,9 +4009,42 @@ html.rpma-crisp .rpma-bot.is-amber,
 html.rpma-crisp .rpma-bot.is-red {
   filter: none;
 }
-html.rpma-crisp .rpma-bot.is-green { box-shadow: 0 0 0 1px var(--rpma-glow-green), 0 0 6px color-mix(in srgb, var(--rpma-glow-green) 55%, transparent); }
-html.rpma-crisp .rpma-bot.is-amber { box-shadow: 0 0 0 1px var(--rpma-glow-amber), 0 0 6px color-mix(in srgb, var(--rpma-glow-amber) 55%, transparent); }
-html.rpma-crisp .rpma-bot.is-red { box-shadow: 0 0 0 1px var(--rpma-glow-red), 0 0 6px color-mix(in srgb, var(--rpma-glow-red) 55%, transparent); }
+@keyframes rpma-visor-flash-green {
+  0%, 100% { fill: var(--color-rag-green); opacity: 1; }
+  50% { fill: #b8f5d4; opacity: 0.28; }
+}
+@keyframes rpma-visor-flash-amber {
+  0%, 100% { fill: var(--color-rag-amber); opacity: 1; }
+  50% { fill: #ffe7a3; opacity: 0.22; }
+}
+@keyframes rpma-visor-flash-red {
+  0%, 40% { fill: var(--color-rag-red); opacity: 1; }
+  50%, 90% { fill: #ffd0d0; opacity: 0.12; }
+}
+.rpma-bot.is-green .rpma-bot-visor,
+.rpma-bot.is-green .rpma-bot-ant-tip {
+  animation: rpma-visor-flash-green 1.5s ease-in-out infinite;
+}
+.rpma-bot.is-amber .rpma-bot-visor,
+.rpma-bot.is-amber .rpma-bot-ant-tip {
+  animation: rpma-visor-flash-amber 0.85s ease-in-out infinite;
+}
+.rpma-bot.is-red .rpma-bot-visor,
+.rpma-bot.is-red .rpma-bot-ant-tip {
+  animation: rpma-visor-flash-red 0.4s steps(1, end) infinite;
+}
+html.rpma-crisp .rpma-bot.is-green .rpma-bot-visor,
+html.rpma-crisp .rpma-bot.is-green .rpma-bot-ant-tip {
+  animation: rpma-visor-flash-green 1.5s ease-in-out infinite;
+}
+html.rpma-crisp .rpma-bot.is-amber .rpma-bot-visor,
+html.rpma-crisp .rpma-bot.is-amber .rpma-bot-ant-tip {
+  animation: rpma-visor-flash-amber 0.85s ease-in-out infinite;
+}
+html.rpma-crisp .rpma-bot.is-red .rpma-bot-visor,
+html.rpma-crisp .rpma-bot.is-red .rpma-bot-ant-tip {
+  animation: rpma-visor-flash-red 0.4s steps(1, end) infinite;
+}
 html.rpma-crisp .rpma-epp-lamp.is-on {
   filter: drop-shadow(0 0 1px #22c55e) drop-shadow(0 0 3px rgba(34,197,94,0.45));
 }
