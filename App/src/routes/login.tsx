@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "pw-fix-20260818";
+const LOGIN_BUILD = "logo-down-20260818";
 const AISLE = "/downloads/login-white-hall.jpg";
 const MARK = "/downloads/rpm-assure-wordmark.png";
 
@@ -147,13 +147,13 @@ const CSS = `
   z-index: 2;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -42%);
+  transform: translate(-50%, 18%);
   width: min(26vw, 280px);
   height: auto;
   pointer-events: none;
   background: transparent;
   opacity: 1;
-  filter: contrast(1.08) saturate(1.12);
+  filter: contrast(1.22) saturate(1.28) brightness(1.06);
 }
 .rpma-aisle-stage {
   position: relative;
