@@ -96,16 +96,19 @@ html[data-theme="dark"], html.dark {
 html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--pc-header-height) + 12px);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
   font-synthesis: none;
+  font-optical-sizing: none;
 }
 html.rpma-crisp,
 html.rpma-crisp body {
-  font-optical-sizing: auto;
-  font-feature-settings: "ss01" 1, "cv11" 1, "tnum" 1;
-  letter-spacing: -0.012em;
+  font-optical-sizing: none;
+  font-feature-settings: normal;
+  letter-spacing: 0;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 html.rpma-crisp h1,
 html.rpma-crisp h2,
@@ -114,7 +117,7 @@ html.rpma-crisp h4,
 html.rpma-crisp strong,
 html.rpma-crisp .font-bold,
 html.rpma-crisp .font-extrabold {
-  letter-spacing: -0.022em;
+  letter-spacing: 0;
   font-weight: 800;
 }
 html.rpma-crisp svg {
@@ -295,7 +298,7 @@ body {
   color: var(--rpma-chrome-fg);
   font-size: 13px;
   font-weight: 800;
-  letter-spacing: -0.018em;
+  letter-spacing: 0;
   text-align: left;
   text-decoration: none;
 }
@@ -435,8 +438,8 @@ body {
 }
 .rpma-glass-dropdown {
   z-index: 80; border-radius: 12px;
-  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
-  backdrop-filter: blur(16px);
+  background: var(--color-surface);
+  backdrop-filter: none;
   border: 1px solid var(--color-border);
   color: var(--color-fg);
 }
@@ -645,8 +648,8 @@ html[data-theme="dark"] .rpma-eco-item.is-on { background: #222b38; }
   margin: 0 0 0.65rem;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
-  backdrop-filter: blur(14px) saturate(1.15);
+  background: var(--color-surface);
+  backdrop-filter: none;
   box-shadow: 0 8px 20px color-mix(in srgb, #000 12%, transparent);
 }
 html[data-theme="dark"] .rpma-context-bar,
@@ -712,8 +715,8 @@ html.dark .rpma-context-bar a {
   padding: 0.55rem 1rem;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
-  backdrop-filter: blur(12px) saturate(1.1);
+  background: var(--color-surface);
+  backdrop-filter: none;
 }
 .rpma-pane-menubar-title {
   margin: 0;
@@ -982,7 +985,7 @@ html.dark .rpma-pane-head-row {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #2ee6a6;
-  text-shadow: 0 0 8px color-mix(in srgb, #14b8a6 70%, transparent);
+  text-shadow: none;
   background: none;
   border: 0;
   border-radius: 0;
@@ -999,7 +1002,7 @@ html.dark .rpma-pane-head-row {
 }
 .rpma-sql-digital.is-demo .rpma-sql-digits {
   color: #ffa21d;
-  text-shadow: 0 0 8px color-mix(in srgb, #ffa21d 55%, transparent);
+  text-shadow: none;
   border: 0;
 }
 @keyframes rpma-sql-colon {
@@ -1133,8 +1136,8 @@ html.dark .rpma-hud {
   padding: 10px 8.5rem 10px 14px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
-  backdrop-filter: blur(14px) saturate(1.15);
+  background: var(--color-surface);
+  backdrop-filter: none;
   box-shadow: 0 8px 18px color-mix(in srgb, #000 12%, transparent);
 }
 .rpma-eco-menubar-title {
@@ -2326,7 +2329,7 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   text-align: left;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: -0.016em;
+  letter-spacing: 0;
   line-height: 1.15;
   color: var(--rpma-chrome-fg);
   text-decoration: none;
@@ -3724,7 +3727,7 @@ html.dark .rpma-sla-banner.is-signed {
 html[data-theme="dark"] .rpma-sql-digits,
 html.dark .rpma-sql-digits {
   color: #2ee6a6;
-  text-shadow: 0 0 10px color-mix(in srgb, #2ee6a6 45%, transparent);
+  text-shadow: none;
 }
 html[data-theme="dark"] .rpma-sql-meta > em,
 html.dark .rpma-sql-meta > em { color: #8aa0b0; }
@@ -3933,11 +3936,11 @@ html.rpma-crisp .rpma-glass h3,
 html.rpma-crisp .rpma-emp-body h2,
 html.rpma-crisp .rpma-emp-body h3 {
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 html.rpma-crisp .rpma-emp-body p,
 html.rpma-crisp .rpma-emp-inspector {
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 html.rpma-crisp .rpma-emp-gtab.is-on,
 html.rpma-crisp .dk-header-navrow .dk-link.is-active,
