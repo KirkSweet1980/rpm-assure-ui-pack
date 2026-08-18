@@ -12,6 +12,12 @@ const ALLOW = new Set([
   "Apply-Staged-Pack.ps1",
   "login-white-hall.jpg",
   "rpm-assure-wordmark.png",
+  "login-opt-A.jpg",
+  "login-opt-B.jpg",
+  "login-opt-C.jpg",
+  "login-opt-D.jpg",
+  "login-opt-E.jpg",
+  "login-opt-F.jpg",
 ]);
 
 const ROOTS = [
