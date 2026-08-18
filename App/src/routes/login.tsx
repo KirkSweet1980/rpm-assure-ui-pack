@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "soft-vignette-20260818";
+const LOGIN_BUILD = "vignette-half-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -191,8 +191,8 @@ const GLASS_CSS = `
   border: 0;
   outline: 0;
   background: transparent;
-  -webkit-mask-image: radial-gradient(ellipse 58% 62% at 50% 46%, #000 0%, #000 34%, rgba(0,0,0,0.55) 52%, transparent 74%);
-  mask-image: radial-gradient(ellipse 58% 62% at 50% 46%, #000 0%, #000 34%, rgba(0,0,0,0.55) 52%, transparent 74%);
+  -webkit-mask-image: radial-gradient(ellipse 30% 32% at 50% 46%, #000 0%, #000 34%, rgba(0,0,0,0.55) 52%, transparent 74%);
+  mask-image: radial-gradient(ellipse 30% 32% at 50% 46%, #000 0%, #000 34%, rgba(0,0,0,0.55) 52%, transparent 74%);
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
