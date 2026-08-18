@@ -69,9 +69,11 @@ import {
   RPM_SLA_REVISION,
   RPM_SLA_TITLE,
   vsIndustryTone,
+  type IndustryPillarKey,
 } from "@/lib/data/sla-metrics";
 import { buildRmmServiceSla, buildCoveServiceSla, buildEppServiceSla, buildSysproServiceSla, buildCspServiceSla, buildTicketsServiceSla } from "@/lib/data/service-sla";
-import { ServiceSlaTable, SlaStrip } from "@/components/customer/service-sla-section";
+import { EcoHead, EcoKpis, type EcoKpiItem } from "@/components/customer/eco-kpis";
+import { ServiceSlaTable } from "@/components/customer/service-sla-section";
 import { CoveEsrPanel } from "@/components/customer/cove-esr-panel";
 import { cn, formatSastDate, formatSastDateTime } from "@/lib/utils";
 import {
@@ -240,53 +242,36 @@ function ServiceVisuals({
 }: {
   title: string;
   subtitle?: string;
-  kpis: { label: string; value: string | number; tone?: "green" | "amber" | "red" }[];
+  kpis: EcoKpiItem[];
   pie?: { name: string; value: number; fill: string }[];
   bars?: { name: string; value: number; fill: string }[];
   tiles?: { label: string; href: string; n: string | number; hint: string }[];
 }) {
-  const pieData = (pie ?? []).filter((d) => d.value > 0);
-  const barData = bars ?? [];
+  const seen = new Set(kpis.map((k) => k.label.toLowerCase()));
+  const extras: EcoKpiItem[] = [];
+  for (const e of pie ?? []) {
+    if (e.value > 0 && !seen.has(e.name.toLowerCase())) {
+      extras.push({ label: e.name, value: e.value });
+      seen.add(e.name.toLowerCase());
+    }
+  }
+  for (const e of bars ?? []) {
+    if (e.value > 0 && !seen.has(e.name.toLowerCase())) {
+      extras.push({ label: e.name, value: e.value });
+      seen.add(e.name.toLowerCase());
+    }
+  }
+  const tileKpis: EcoKpiItem[] = (tiles ?? [])
+    .filter((t) => !seen.has(t.label.toLowerCase()))
+    .map((t) => ({ label: t.label, value: t.n, href: t.href, hint: t.hint }));
+  const items: EcoKpiItem[] = [
+    ...kpis.map((k) => ({ label: k.label, value: k.value, tone: k.tone })),
+    ...extras,
+    ...tileKpis,
+  ].slice(0, 8);
   return (
-    <div className="rpma-eco-visuals space-y-2">
-      <div className="rpma-glass flex flex-wrap items-center gap-2 px-3 py-2">
-        <div className="min-w-0">
-          <p className="text-base font-extrabold tracking-tight text-fg">{title}</p>
-          {subtitle ? <p className="text-[11px] text-muted">{subtitle}</p> : null}
-        </div>
-        {kpis.length ? (
-          <div className="ml-auto grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-            {kpis.slice(0, 4).map((k) => (
-              <StatCard key={k.label} label={k.label} value={k.value} tone={k.tone} />
-            ))}
-          </div>
-        ) : null}
-      </div>
-      {pieData.length || barData.length ? (
-        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
-          {pieData.map((e) => (
-            <StatCard key={`p-${e.name}`} label={e.name} value={e.value} />
-          ))}
-          {barData.map((e) => (
-            <StatCard key={`b-${e.name}`} label={e.name} value={e.value} />
-          ))}
-        </div>
-      ) : null}
-      {tiles?.length ? (
-        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
-          {tiles.map((t) => (
-            <SpaLink key={t.href} href={t.href} className="rpma-glass rpma-tile block px-2.5 py-2">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">
-                <span className="inline-flex items-center gap-1">
-                  {t.label}
-                  {t.hint ? <HelpTip text={t.hint} /> : null}
-                </span>
-              </p>
-              <p className="font-mono text-lg font-extrabold text-fg">{t.n}</p>
-            </SpaLink>
-          ))}
-        </div>
-      ) : null}
+    <div className="rpma-eco-visuals">
+      <EcoHead title={title} subtitle={subtitle} kpis={items} />
     </div>
   );
 }
@@ -302,16 +287,52 @@ export function TicketStrip({
   const s = ticketStats(rows);
   const href = `/customers/${data.customer.customerCode}/tickets`;
   return (
-    <div className="rpma-glass flex flex-wrap items-center gap-3 px-3 py-2">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Freshdesk tickets</p>
-      <StatCard label="30d" value={s.total} />
-      <StatCard label="Open" value={s.open} tone={s.open > 0 ? "amber" : "green"} />
-      <StatCard label="SLA breach" value={s.breaches} tone={s.breaches > 0 ? "red" : "green"} />
-      <SpaLink href={href} className="ml-auto text-[12px] font-semibold text-primary hover:underline">
-        Customer Incidents
-      </SpaLink>
+    <div className="rpma-eco-head">
+      <div className="rpma-eco-head-row">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Freshdesk tickets</p>
+        <SpaLink href={href} className="ml-auto text-[11px] font-semibold text-primary hover:underline">
+          Customer Incidents
+        </SpaLink>
+      </div>
+      <EcoKpis
+        items={[
+          { label: "30d", value: s.total, href },
+          { label: "Open", value: s.open, tone: s.open > 0 ? "amber" : "green", href: `${href}/open` },
+          { label: "SLA breach", value: s.breaches, tone: s.breaches > 0 ? "red" : "green", href: `${href}/sla` },
+        ]}
+      />
     </div>
   );
+}
+
+function slaHeadKpis(data: CustomerDetailPayload, pillar: IndustryPillarKey): EcoKpiItem[] {
+  const pack =
+    pillar === "syspro"
+      ? buildSysproServiceSla(data)
+      : pillar === "rmm"
+        ? buildRmmServiceSla(data)
+        : pillar === "cove"
+          ? buildCoveServiceSla(data)
+          : pillar === "epp"
+            ? buildEppServiceSla(data)
+            : pillar === "csp"
+              ? buildCspServiceSla(data)
+              : buildTicketsServiceSla(data);
+  if (!pack.covered) return [];
+  return [
+    {
+      label: "SLA",
+      value: pack.overallPct != null ? `${pack.overallPct}%` : "—",
+      tone:
+        pack.overallPct == null
+          ? undefined
+          : pack.overallPct >= 90
+            ? "green"
+            : pack.overallPct >= 70
+              ? "amber"
+              : "red",
+    },
+  ];
 }
 
 
@@ -430,13 +451,25 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
             Ecosystem overview · last collect {formatSastDateTime(lastCollect)}
           </p>
         </div>
-        <div className="ml-auto grid grid-cols-3 gap-2">
-          <StatCard label="Assurance" value={`${score}%`} tone={assuranceTone(score, customer.healthRag)} />
-          <StatCard label="Services on cover" value={`${coverCount}/5`} tone={coverCount >= 4 ? "green" : coverCount >= 2 ? "amber" : "red"} />
-          <StatCard
-            label="Open risks"
-            value={openRisks.length}
-            tone={openRisks.length === 0 ? "green" : "amber"}
+        <div className="ml-auto min-w-[16rem] max-w-md flex-1">
+          <EcoKpis
+            items={[
+              {
+                label: "Assurance",
+                value: score == null ? "—" : `${score}%`,
+                tone: score == null ? "default" : assuranceTone(score, customer.healthRag),
+              },
+              {
+                label: "On cover",
+                value: `${coverCount}/5`,
+                tone: coverCount >= 4 ? "green" : coverCount >= 2 ? "amber" : "red",
+              },
+              {
+                label: "Open risks",
+                value: openRisks.length,
+                tone: openRisks.length === 0 ? "green" : "amber",
+              },
+            ]}
           />
         </div>
       </div>
@@ -570,11 +603,11 @@ export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
   const idleOps = Math.max(0, totalOps - activeOps);
   return (
     <div className="space-y-3">
-      <SlaStrip data={data} pillar="syspro" />
       <ServiceVisuals
       title="SYSPRO"
       subtitle={`${c.displayName} · last collect ${formatSastDateTime(c.lastImportAt)}`}
       kpis={[
+        ...slaHeadKpis(data, "syspro"),
         { label: "Active Users", value: activeOps, tone: activeOps > 0 ? "green" : "amber" },
         { label: "Job Logging", value: c.sysproJobErrorCount, tone: c.sysproJobErrorCount > 0 ? "amber" : "green" },
         { label: "FinSight OOB", value: c.sysproDtrVarianceLines, tone: c.sysproDtrVarianceLines > 0 ? "amber" : "green" },
@@ -634,11 +667,11 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
   const wsOff = s?.workstationOffline || fromDevices.workstationOffline;
   return (
     <div className="space-y-4">
-    <SlaStrip data={data} pillar="rmm" />
     <ServiceVisuals
       title="RPM Remote Management"
       subtitle={`${c.displayName}${rmm?.pulsewayOrgName ? ` · ${rmm.pulsewayOrgName}` : ""}`}
       kpis={[
+        ...slaHeadKpis(data, "rmm"),
         { label: "Servers Online", value: online, tone: offline > 0 ? "amber" : "green" },
         { label: "Servers Offline", value: offline, tone: offline > 0 ? "red" : "green" },
         { label: "Critical Alerts", value: s?.criticalAlerts ?? 0, tone: (s?.criticalAlerts ?? 0) > 0 ? "red" : "green" },
@@ -2526,41 +2559,35 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
     }));
 
   return (
-    <div className="rpma-eco-visuals space-y-3">
-      <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
-        <RagBadge rag={c.healthRag} title={c.healthSummary} />
-        <div className="min-w-0">
-          <p className="text-lg font-bold tracking-tight text-fg">Customer Assurance</p>
-          <p className="text-[12px] text-muted">{c.displayName} · last collect {formatSastDateTime(c.lastImportAt)}</p>
-        </div>
-        <div className="ml-auto grid grid-cols-3 gap-2">
-          <StatCard label="Assurance" value={`${score}%`} tone={assuranceTone(score, c.healthRag)} />
-          <StatCard label="Open risks" value={openRisks.length} tone={openRisks.length === 0 ? "green" : "amber"} />
-          <StatCard label="Open incidents" value={openInc.length} tone={openInc.length === 0 ? "green" : "red"} />
-        </div>
-      </div>
+    <div className="rpma-eco-visuals space-y-2">
+      <EcoHead
+        title="Customer Assurance"
+        subtitle={`${c.displayName} · last collect ${formatSastDateTime(c.lastImportAt)}`}
+        icon={<RagBadge rag={c.healthRag} title={c.healthSummary} />}
+        kpis={[
+          {
+            label: "Assurance",
+            value: score == null ? "—" : `${score}%`,
+            tone: score == null ? "default" : assuranceTone(score, c.healthRag),
+          },
+          { label: "Open risks", value: openRisks.length, tone: openRisks.length === 0 ? "green" : "amber" },
+          { label: "Closed risks", value: closedRisks },
+          { label: "Open tickets", value: openInc.length, tone: openInc.length === 0 ? "green" : "red" },
+          { label: "Major", value: major.length, tone: major.length === 0 ? "green" : "red" },
+          { label: "Issues", value: openIssues.length },
+          ...slaBars.slice(0, 2).map((s) => ({
+            label: s.name,
+            value: `${s.value}%`,
+            tone: (s.value >= 80 ? "green" : s.value >= 55 ? "amber" : "red") as "green" | "amber" | "red",
+          })),
+        ]}
+      />
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Open risks" value={openRisks.length} tone={openRisks.length === 0 ? "green" : "amber"} />
-        <StatCard label="Closed risks" value={closedRisks} />
-        <StatCard label="Open incidents" value={openInc.length} tone={openInc.length === 0 ? "green" : "red"} />
-        <StatCard label="Major" value={major.length} tone={major.length === 0 ? "green" : "red"} />
-        <StatCard label="Issues" value={openIssues.length} />
-        {slaBars.map((s) => (
-          <StatCard
-            key={s.name}
-            label={s.name}
-            value={`${s.value}%`}
-            tone={s.value >= 80 ? "green" : s.value >= 55 ? "amber" : "red"}
-          />
-        ))}
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="rpma-eco-svcs">
         {[
           { label: "Incidents", href: `${base}/incidents`, n: openInc.length, hint: "Service desk" },
           { label: "Risks", href: `${base}/risks`, n: openRisks.length, hint: "Register" },
-          { label: "SLA", href: `${base}/sla`, n: `${score}%`, hint: "Clocks" },
+          { label: "SLA", href: `${base}/sla`, n: score == null ? "—" : `${score}%`, hint: "Clocks" },
           {
             label: "Day End",
             href: `/customers/${c.customerCode}/syspro/day-end`,
@@ -2568,10 +2595,11 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
             hint: data.dayEnd?.expectedToday ? "Expected today" : "Schedule",
           },
         ].map((t) => (
-          <SpaLink key={t.href} href={t.href} className="rpma-glass block px-3 py-2.5 hover:shadow-md">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{t.label}</p>
-            <p className="font-mono text-xl font-bold text-fg">{t.n}</p>
-            <p className="text-[11px] text-muted">{t.hint} · open module</p>
+          <SpaLink key={t.href} href={t.href} className="rpma-eco-svc">
+            <strong>{t.label}</strong>
+            <span>
+              {t.n} · {t.hint}
+            </span>
           </SpaLink>
         ))}
       </div>
@@ -4187,24 +4215,26 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
         why="Tickets from Freshdesk (mapped companies only) land in Fact_Incident. Response/resolve scored against Dim_SlaPolicy. Manual log still available for Assure-only incidents."
       />
 
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <StatCard label="Open" value={open.length} tone={open.length > 0 ? "amber" : "green"} />
-        <StatCard
-          label="Major open"
-          value={summary?.majorOpenCount ?? open.filter((i) => i.isMajor).length}
-          tone={(summary?.majorOpenCount ?? 0) > 0 ? "red" : "default"}
-        />
-        <StatCard
-          label="Response breach (30d)"
-          value={summary?.responseBreach ?? incidents.filter((i) => i.responseSlaMet === false).length}
-          tone={(summary?.responseBreach ?? 0) > 0 ? "red" : "green"}
-        />
-        <StatCard
-          label="Resolve breach (30d)"
-          value={summary?.resolveBreach ?? incidents.filter((i) => i.resolveSlaMet === false).length}
-          tone={(summary?.resolveBreach ?? 0) > 0 ? "red" : "green"}
-        />
-      </div>
+      <EcoKpis
+        items={[
+          { label: "Open", value: open.length, tone: open.length > 0 ? "amber" : "green" },
+          {
+            label: "Major open",
+            value: summary?.majorOpenCount ?? open.filter((i) => i.isMajor).length,
+            tone: (summary?.majorOpenCount ?? 0) > 0 ? "red" : "default",
+          },
+          {
+            label: "Response breach",
+            value: summary?.responseBreach ?? incidents.filter((i) => i.responseSlaMet === false).length,
+            tone: (summary?.responseBreach ?? 0) > 0 ? "red" : "green",
+          },
+          {
+            label: "Resolve breach",
+            value: summary?.resolveBreach ?? incidents.filter((i) => i.resolveSlaMet === false).length,
+            tone: (summary?.resolveBreach ?? 0) > 0 ? "red" : "green",
+          },
+        ]}
+      />
 
       <Card>
         <CardHead>Ticket register (module data)</CardHead>
@@ -4667,11 +4697,11 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
   const code = c.customerCode;
   return (
     <div className="space-y-3">
-      <SlaStrip data={data} pillar="cove" />
       <ServiceVisuals
         title="RPM Cloud Backup"
         subtitle={c.displayName}
         kpis={[
+          ...slaHeadKpis(data, "cove"),
           { label: "Devices", value: n },
           { label: "Healthy", value: c.coveOkDeviceCount ?? Math.max(0, n - fail), tone: "green" },
           { label: "Failed / stale", value: fail, tone: fail > 0 ? "amber" : "green" },
@@ -4723,11 +4753,11 @@ export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   const fdTickets = ticketStats(ticketsForPillar(data.incidents, "epp"));
   return (
     <div className="space-y-3">
-    <SlaStrip data={data} pillar="epp" />
     <ServiceVisuals
       title="RPM EndPoint Protection"
       subtitle={data.customer.displayName}
       kpis={[
+        ...slaHeadKpis(data, "epp"),
         { label: "Endpoints", value: s?.deviceCount ?? devices.length },
         { label: "Managed", value: managed, tone: "green" },
         { label: "Infected", value: infected, tone: infected > 0 ? "red" : "green" },
@@ -5355,11 +5385,11 @@ export function CspTenantHealthSection({ data }: { data: CustomerDetailPayload }
 
   return (
     <div className="space-y-4">
-      <SlaStrip data={data} pillar="csp" />
       <ServiceVisuals
         title="Microsoft 365 CSP"
         subtitle={t?.displayName || t?.primaryDomain || data.customer.displayName}
         kpis={[
+          ...slaHeadKpis(data, "csp"),
           { label: "Secure Score", value: scorePct != null ? `${Math.round(scorePct)}%` : "—", tone: scoreTone },
           { label: "MFA", value: mfaPct != null ? `${mfaPct}%` : "—", tone: mfaTone },
           { label: "Global Admins", value: ga ?? csp?.globalAdmins?.length ?? "—", tone: gaTone },

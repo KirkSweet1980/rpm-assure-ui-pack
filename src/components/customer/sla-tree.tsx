@@ -6,6 +6,7 @@ import { StatCard } from "@/components/portfolio/stat-card";
 import { SignedSlaPanel } from "@/components/customer/signed-sla-panel";
 import { TenantTree } from "@/components/customer/tenant-tree";
 import { ServiceSlaTable } from "@/components/customer/service-sla-section";
+import { EcoKpis } from "@/components/customer/eco-kpis";
 import {
   buildCoveServiceSla,
   buildCspServiceSla,
@@ -203,36 +204,36 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
                 : "Targets from the signed SLA — not measured this period."}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-            <StatCard label="Incidents (30d)" value={data.amsSlaSummary?.incidentCount30d ?? a?.incidentCount30d ?? "—"} />
-            <StatCard
-              label="Acknowledge / response met"
-              value={
-                data.amsSlaSummary?.responsePct != null
-                  ? `${data.amsSlaSummary.responsePct}%`
-                  : a?.slaResponsePct != null
-                    ? `${a.slaResponsePct}%`
-                    : "—"
-              }
-              tone={(data.amsSlaSummary?.responsePct ?? a?.slaResponsePct ?? 100) < 90 ? "amber" : "green"}
-            />
-            <StatCard
-              label="Restore met"
-              value={
-                data.amsSlaSummary?.resolvePct != null
-                  ? `${data.amsSlaSummary.resolvePct}%`
-                  : a?.slaResolvePct != null
-                    ? `${a.slaResolvePct}%`
-                    : "—"
-              }
-              tone={(data.amsSlaSummary?.resolvePct ?? a?.slaResolvePct ?? 100) < 90 ? "amber" : "green"}
-            />
-            <StatCard
-              label="Open now"
-              value={data.amsSlaSummary?.openCount ?? "—"}
-              tone={(data.amsSlaSummary?.openCount ?? 0) > 0 ? "amber" : "green"}
-            />
-          </div>
+          <EcoKpis
+            items={[
+              { label: "Incidents 30d", value: data.amsSlaSummary?.incidentCount30d ?? a?.incidentCount30d ?? "—" },
+              {
+                label: "Response",
+                value:
+                  data.amsSlaSummary?.responsePct != null
+                    ? `${data.amsSlaSummary.responsePct}%`
+                    : a?.slaResponsePct != null
+                      ? `${a.slaResponsePct}%`
+                      : "—",
+                tone: (data.amsSlaSummary?.responsePct ?? a?.slaResponsePct ?? 100) < 90 ? "amber" : "green",
+              },
+              {
+                label: "Restore",
+                value:
+                  data.amsSlaSummary?.resolvePct != null
+                    ? `${data.amsSlaSummary.resolvePct}%`
+                    : a?.slaResolvePct != null
+                      ? `${a.slaResolvePct}%`
+                      : "—",
+                tone: (data.amsSlaSummary?.resolvePct ?? a?.slaResolvePct ?? 100) < 90 ? "amber" : "green",
+              },
+              {
+                label: "Open now",
+                value: data.amsSlaSummary?.openCount ?? "—",
+                tone: (data.amsSlaSummary?.openCount ?? 0) > 0 ? "amber" : "green",
+              },
+            ]}
+          />
         </div>
       ) : null}
 

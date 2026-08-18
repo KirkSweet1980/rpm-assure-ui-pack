@@ -2487,32 +2487,46 @@ html[data-theme="light"] .rpma-dormant-banner span,
 html.snow .rpma-dormant-banner span { color: #64748b; }
 .rpma-eco-head {
   display: grid;
-  gap: 10px;
-  padding: 10px 12px 12px;
+  gap: 8px;
+  padding: 8px 10px 10px;
   border-bottom: 1px solid #143044;
 }
-.rpma-eco-head-row { display: flex; align-items: center; gap: 10px; }
-.rpma-eco-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: #e8f1f6; }
+.rpma-eco-head-row { display: flex; align-items: center; gap: 8px; }
+.rpma-eco-head h2 { margin: 0; font-size: 14px; font-weight: 800; color: #e8f1f6; }
 .rpma-eco-head p { margin: 2px 0 0; font-size: 11px; color: #8aa0b0; }
 .rpma-eco-kpis {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .rpma-eco-kpi {
   display: grid;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  gap: 1px;
+  padding: 5px 8px;
+  border-radius: 8px;
   border: 1px solid #1a3a50;
   background: #081722;
   text-decoration: none;
   color: inherit;
+  min-width: 0;
 }
 .rpma-eco-kpi:hover { border-color: #2ee6a6; }
 .rpma-eco-kpi.is-warn strong { color: #fbbf24; }
-.rpma-eco-kpi em { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #8aa0b0; }
-.rpma-eco-kpi strong { font-size: 18px; font-weight: 800; color: #e8f1f6; }
+.rpma-eco-kpi.is-bad strong { color: #f87171; }
+.rpma-eco-kpi.is-ok strong { color: #34d399; }
+.rpma-eco-kpi em {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8aa0b0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpma-eco-kpi strong { font-size: 15px; font-weight: 800; color: #e8f1f6; line-height: 1.15; }
 .rpma-eco-svcs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2548,6 +2562,12 @@ html.snow .rpma-eco-svc {
 }
 html[data-theme="light"] .rpma-eco-kpi strong,
 html.snow .rpma-eco-kpi strong { color: #0b1a3a; }
+html[data-theme="light"] .rpma-eco-kpi.is-warn strong,
+html.snow .rpma-eco-kpi.is-warn strong { color: #b45309; }
+html[data-theme="light"] .rpma-eco-kpi.is-bad strong,
+html.snow .rpma-eco-kpi.is-bad strong { color: #b91c1c; }
+html[data-theme="light"] .rpma-eco-kpi.is-ok strong,
+html.snow .rpma-eco-kpi.is-ok strong { color: #047857; }
 .rpma-est-scroll { overflow: auto; flex: 1; }
 .rpma-est-table {
   width: 100%;

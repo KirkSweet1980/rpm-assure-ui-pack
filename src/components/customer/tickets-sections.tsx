@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Ticket } from "lucide-react";
-import { SpaLink } from "@/components/nav/spa-link";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
-import { StatCard } from "@/components/portfolio/stat-card";
+import { EcoHead } from "@/components/customer/eco-kpis";
 import { formatSastDateTime } from "@/lib/utils";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
 import {
@@ -10,7 +9,6 @@ import {
   ticketsInBucket,
   type TicketBucket,
 } from "@/lib/data/ticket-feed";
-import { SlaStrip } from "@/components/customer/service-sla-section";
 import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
 import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
 
@@ -105,7 +103,6 @@ function EmptyTickets({
 }
 
 export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
-  const code = data.customer.customerCode;
   const rows = data.incidents ?? [];
   const s = ticketStats(rows);
   const sla = s.sla;
@@ -117,64 +114,41 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
+  const code = data.customer.customerCode;
+  const base = `/customers/${code}/tickets`;
   return (
-    <div className="space-y-3">
-      <SlaStrip data={data} pillar="tickets" />
-      <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
-        <Ticket className="h-5 w-5 text-primary" aria-hidden />
-        <div className="min-w-0">
-          <p className="text-lg font-bold tracking-tight text-fg">Customer Tickets</p>
-          <p className="text-[12px] text-muted">
-            {data.customer.displayName} · Freshdesk feed · last 90 days
-          </p>
-        </div>
-        <div className="ml-auto grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatCard label="Open" value={s.open} tone={s.open > 0 ? "amber" : "green"} />
-          <StatCard label="Resolved" value={s.resolved} />
-          <StatCard label="Closed" value={s.closed} />
-          <StatCard label="SLA breach" value={s.breaches} tone={s.breaches > 0 ? "red" : "green"} />
-        </div>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-3">
-        {[
-          { label: "Open Tickets", href: `/customers/${code}/tickets/open`, n: s.open, hint: "New / in progress" },
-          { label: "Resolved Tickets", href: `/customers/${code}/tickets/resolved`, n: s.resolved, hint: "Waiting close" },
-          { label: "Closed Tickets", href: `/customers/${code}/tickets/closed`, n: s.closed, hint: "Completed" },
-        ].map((t) => (
-          <SpaLink key={t.href} href={t.href} className="rpma-glass block px-3 py-2.5 hover:shadow-md">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{t.label}</p>
-            <p className="font-mono text-xl font-bold text-fg">{t.n}</p>
-            <p className="text-[11px] text-muted">{t.hint}</p>
-          </SpaLink>
-        ))}
-      </div>
-
-      <div className="rpma-glass p-3">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">
-          SLA clocks (from ticket timestamps)
-        </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatCard
-            label="Response"
-            value={sla.responsePct != null ? `${sla.responsePct}%` : "—"}
-            tone={(sla.responsePct ?? 100) < 90 ? "amber" : "green"}
-            hint={`${sla.responseMet}/${sla.responseScored} scored`}
-          />
-          <StatCard
-            label="Resolve"
-            value={sla.resolvePct != null ? `${sla.resolvePct}%` : "—"}
-            tone={(sla.resolvePct ?? 100) < 90 ? "amber" : "green"}
-            hint={`${sla.resolveMet}/${sla.resolveScored} scored`}
-          />
-          <StatCard label="Tickets 30d" value={sla.last30d} hint={`${sla.total} on feed`} />
-          <StatCard label="Open now" value={sla.open} tone={sla.open > 0 ? "amber" : "green"} />
-        </div>
-      </div>
-
+    <div className="rpma-exco">
+      <EcoHead
+        title="Customer Tickets"
+        subtitle={`${data.customer.displayName} · Freshdesk · last 90 days · ${s.total} tickets`}
+        icon={<Ticket className="h-4 w-4 text-primary" aria-hidden />}
+        kpis={[
+          { label: "Open", value: s.open, tone: s.open > 0 ? "amber" : "green", href: `${base}/open` },
+          { label: "Resolved", value: s.resolved, href: `${base}/resolved` },
+          { label: "Closed", value: s.closed, href: `${base}/closed` },
+          {
+            label: "SLA",
+            value: sla.overallPct != null ? `${sla.overallPct}%` : "—",
+            tone: (sla.overallPct ?? 100) < 90 ? "amber" : "green",
+            href: `${base}/sla`,
+          },
+          {
+            label: "Response",
+            value: sla.responsePct != null ? `${sla.responsePct}%` : "—",
+            tone: (sla.responsePct ?? 100) < 90 ? "amber" : "green",
+            href: `${base}/sla`,
+          },
+          {
+            label: "Restore",
+            value: sla.resolvePct != null ? `${sla.resolvePct}%` : "—",
+            tone: (sla.resolvePct ?? 100) < 90 ? "amber" : "green",
+            href: `${base}/sla`,
+          },
+        ]}
+      />
       <div className="rpma-glass">
-        <p className="px-3 pt-3 text-[11px] font-bold uppercase tracking-wide text-muted">Latest tickets</p>
-        <TicketTable rows={rows.slice(0, 12)} empty="No tickets exist for this customer." />
+        <p className="px-3 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">Latest tickets</p>
+        <TicketTable rows={rows.slice(0, 16)} empty="No tickets exist for this customer." />
       </div>
     </div>
   );
@@ -190,8 +164,7 @@ export function TicketsListSection({
   const rows = ticketsInBucket(data.incidents, bucket);
   const title =
     bucket === "open" ? "Open Tickets" : bucket === "resolved" ? "Resolved Tickets" : "Closed Tickets";
-  const empty =
-    "No tickets for this customer.";
+  const empty = "No tickets for this customer.";
   const [sel, setSel] = useState(rows[0]?.incidentId ?? rows[0]?.externalRef ?? "");
   const items = rows.map((r, i) => ({
     id: String(r.incidentId ?? r.externalRef ?? i),
@@ -201,19 +174,28 @@ export function TicketsListSection({
   }));
   const picked =
     rows.find((r, i) => String(r.incidentId ?? r.externalRef ?? i) === sel) ?? rows[0] ?? null;
+  const all = ticketStats(data.incidents ?? []);
+  const code = data.customer.customerCode;
+  const base = `/customers/${code}/tickets`;
   return (
-    <div className="space-y-3">
-      <div className="rpma-glass flex flex-wrap items-center gap-3 px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-lg font-bold tracking-tight text-fg">{title}</p>
-          <p className="text-[12px] text-muted">
-            {data.customer.displayName} · {rows.length} ticket{rows.length === 1 ? "" : "s"}
-          </p>
-        </div>
-        <StatCard label={title} value={rows.length} tone={bucket === "open" && rows.length > 0 ? "amber" : "green"} />
-      </div>
+    <div className="rpma-exco">
+      <EcoHead
+        title={title}
+        subtitle={`${data.customer.displayName} · ${rows.length} ticket${rows.length === 1 ? "" : "s"}`}
+        kpis={[
+          { label: "Open", value: all.open, tone: all.open > 0 ? "amber" : "green", href: `${base}/open` },
+          { label: "Resolved", value: all.resolved, href: `${base}/resolved` },
+          { label: "Closed", value: all.closed, href: `${base}/closed` },
+          {
+            label: "SLA",
+            value: all.sla.overallPct != null ? `${all.sla.overallPct}%` : "—",
+            tone: (all.sla.overallPct ?? 100) < 90 ? "amber" : "green",
+            href: `${base}/sla`,
+          },
+        ]}
+      />
       {rows.length === 0 ? (
-        <p className="text-sm text-muted">{empty}</p>
+        <p className="px-3 py-4 text-[12px] text-muted">{empty}</p>
       ) : (
         <StickyPickSplit title={title} items={items} selected={items.some((i) => i.id === sel) ? sel : items[0].id} onSelect={setSel}>
           {picked ? <TicketTable rows={[picked]} empty={empty} /> : null}
@@ -239,51 +221,51 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
+  const code = data.customer.customerCode;
+  const base = `/customers/${code}/tickets`;
   return (
-    <div className="space-y-3">
-      <div className="rpma-glass px-4 py-3">
-        <p className="text-lg font-bold tracking-tight text-fg">Customer Tickets · SLA</p>
-        <p className="text-[12px] text-muted">
-          Layer A · SAST business hours 08:00–17:00. Score = average of response-met % and restore-met % (90% target).
-          Open clocks are not misses. P4 restore is by agreement and is not scored.
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <StatCard
-          label="Tickets SLA"
-          value={pack.overallPct != null ? `${pack.overallPct}%` : "70%"}
-          tone={
-            pack.overallPct == null ? "amber" : pack.overallPct >= 90 ? "green" : pack.overallPct >= 70 ? "amber" : "red"
-          }
-          hint={pack.overallPct == null ? "Clocks not closed yet — held at 70%" : `${pack.last30d} tickets in 30d`}
-        />
-        <StatCard
-          label="Response 30d"
-          value={pack.responsePct != null ? `${pack.responsePct}%` : "—"}
-          tone={(pack.responsePct ?? 100) < 90 ? "amber" : "green"}
-          hint={`${pack.responseMet} met · ${pack.responseBreach} breach`}
-        />
-        <StatCard
-          label="Restore 30d"
-          value={pack.resolvePct != null ? `${pack.resolvePct}%` : "—"}
-          tone={(pack.resolvePct ?? 100) < 90 ? "amber" : "green"}
-          hint={`${pack.resolveMet} met · ${pack.resolveBreach} breach`}
-        />
-        <StatCard label="Open now" value={pack.open} tone={pack.open > 0 ? "amber" : "green"} />
-      </div>
-      <div className="rpma-glass overflow-x-auto p-3">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">
+    <div className="rpma-exco">
+      <EcoHead
+        title="Customer Tickets · SLA"
+        subtitle="SAST 08:00–17:00 · 90% target · open clocks are not misses"
+        kpis={[
+          {
+            label: "SLA",
+            value: pack.overallPct != null ? `${pack.overallPct}%` : "—",
+            tone: (pack.overallPct ?? 100) < 90 ? "amber" : "green",
+          },
+          {
+            label: "Response",
+            value: pack.responsePct != null ? `${pack.responsePct}%` : "—",
+            tone: (pack.responsePct ?? 100) < 90 ? "amber" : "green",
+          },
+          {
+            label: "Restore",
+            value: pack.resolvePct != null ? `${pack.resolvePct}%` : "—",
+            tone: (pack.resolvePct ?? 100) < 90 ? "amber" : "green",
+          },
+          { label: "Open", value: pack.open, tone: pack.open > 0 ? "amber" : "green", href: `${base}/open` },
+          { label: "Met", value: `${pack.responseMet}/${pack.responseScored || 0}` },
+          {
+            label: "Breach",
+            value: pack.responseBreach + pack.resolveBreach,
+            tone: pack.responseBreach + pack.resolveBreach > 0 ? "red" : "green",
+          },
+        ]}
+      />
+      <div className="rpma-glass overflow-x-auto">
+        <p className="px-3 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
           Actual vs signed clock (30 days)
         </p>
         <table className="w-full text-left text-[12px]">
           <thead className="rpma-table-head">
             <tr>
-              <th className="px-2 py-1.5">Priority</th>
-              <th className="px-2 py-1.5">Tickets</th>
-              <th className="px-2 py-1.5">Ack target</th>
-              <th className="px-2 py-1.5">Response</th>
-              <th className="px-2 py-1.5">Restore target</th>
-              <th className="px-2 py-1.5">Restore</th>
+              <th className="px-2 py-1">Priority</th>
+              <th className="px-2 py-1">Tickets</th>
+              <th className="px-2 py-1">Ack target</th>
+              <th className="px-2 py-1">Response</th>
+              <th className="px-2 py-1">Restore target</th>
+              <th className="px-2 py-1">Restore</th>
             </tr>
           </thead>
           <tbody>
@@ -291,16 +273,16 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
               const a = pack.byPriority.find((p) => p.priority === row.priority);
               return (
                 <tr key={row.priority} className="border-t border-border">
-                  <td className="px-2 py-1.5 font-semibold">
+                  <td className="px-2 py-1 font-semibold">
                     {row.priority} {row.name}
                   </td>
-                  <td className="px-2 py-1.5">{a?.n ?? 0}</td>
-                  <td className="px-2 py-1.5 text-muted">{row.acknowledge}</td>
-                  <td className="px-2 py-1.5 font-medium">
+                  <td className="px-2 py-1">{a?.n ?? 0}</td>
+                  <td className="px-2 py-1 text-muted">{row.acknowledge}</td>
+                  <td className="px-2 py-1 font-medium">
                     {a?.responsePct != null ? `${a.responsePct}%` : "—"}
                   </td>
-                  <td className="px-2 py-1.5 text-muted">{row.restore}</td>
-                  <td className="px-2 py-1.5 font-medium">
+                  <td className="px-2 py-1 text-muted">{row.restore}</td>
+                  <td className="px-2 py-1 font-medium">
                     {a?.resolvePct != null ? `${a.resolvePct}%` : "—"}
                   </td>
                 </tr>
@@ -308,7 +290,7 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
             })}
           </tbody>
         </table>
-        <p className="mt-2 text-[11px] text-subtle">
+        <p className="px-3 py-2 text-[11px] text-subtle">
           {RPM_CONTRACT_RULES.businessHours} {RPM_CONTRACT_RULES.measuredAs}
         </p>
       </div>
