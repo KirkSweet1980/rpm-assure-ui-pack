@@ -5,8 +5,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Segoe UI", Tahoma, Arial, sans-serif;
-  --font-display: "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
   --font-mono: Consolas, "Courier New", monospace;
   --color-bg: #f0f2f8;
   --color-surface: #ffffff;
@@ -121,7 +121,7 @@ html.rpma-crisp input,
 html.rpma-crisp select,
 html.rpma-crisp textarea,
 html.rpma-crisp a {
-  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
   font-optical-sizing: none;
   font-feature-settings: normal;
   font-kerning: none;

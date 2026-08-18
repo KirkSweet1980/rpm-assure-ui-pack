@@ -111,7 +111,7 @@ export function RpmRevCounter({ className }: { className?: string }) {
         y={CY + 15}
         textAnchor="middle"
         fill="#8fce4a"
-        fontFamily='"Segoe UI", ui-monospace, monospace'
+        fontFamily='"Segoe UI Variable Text", "Segoe UI", ui-monospace, monospace'
         fontSize="8.5"
         fontWeight="800"
       >
@@ -122,7 +122,7 @@ export function RpmRevCounter({ className }: { className?: string }) {
         y={CY + 23}
         textAnchor="middle"
         fill="var(--rev-readout, #2d6a8a)"
-        fontFamily='"Segoe UI", sans-serif'
+        fontFamily='"Segoe UI Variable Display", "Segoe UI", sans-serif'
         fontSize="5.2"
         fontWeight="800"
         letterSpacing="0.1em"
