@@ -5,6 +5,9 @@
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-Assure-Agent.ps1 -KeepFiles
 param(
   [string]$Root = 'C:\RPM-Assure',
+  [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
+  [string]$AgentSecret = '',
+  [string]$CustomerCode = '',
   [switch]$KeepFiles
 )
 
@@ -20,6 +23,44 @@ Write-Host (' Root  ' + $Root)
 Write-Host '========================================'
 
 $Agent = Join-Path $Root 'Agent'
+
+if (-not $CustomerCode) {
+  $cfg = Join-Path $Agent 'Agent.Config.ps1'
+  if (Test-Path $cfg) {
+    try {
+      . $cfg
+      if ($CustomerCode) { $CustomerCode = ([string]$CustomerCode).Trim().ToUpperInvariant() }
+    } catch {}
+  }
+}
+if (-not $AgentSecret) {
+  $setPath = Join-Path $Agent 'Agent.Settings.json'
+  if (Test-Path $setPath) {
+    try {
+      $set = Get-Content $setPath -Raw | ConvertFrom-Json
+      if ($set.agentSecret) { $AgentSecret = [string]$set.agentSecret }
+      if ($set.appHttpsUrl) { $AppHttpsUrl = [string]$set.appHttpsUrl }
+    } catch {}
+  }
+}
+
+if ($CustomerCode -and $AgentSecret) {
+  Write-Host ('Tell Assure this host is uninstalled (' + $CustomerCode + ')...')
+  try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $body = '{"kind":"uninstall","customerCode":"' + $CustomerCode + '","hostName":"' + $env:COMPUTERNAME + '"}'
+    $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 20 `
+      -Uri ($AppHttpsUrl.TrimEnd('/') + '/api/agent/ingest') `
+      -Method POST `
+      -Headers @{ 'X-Assure-Secret' = $AgentSecret; 'Content-Type' = 'application/json' } `
+      -Body $body
+    Write-Host ('  Assure ' + $r.StatusCode + ' ' + $r.Content)
+  } catch {
+    Write-Host ('  WARN Assure uninstall stamp: ' + $_.Exception.Message)
+  }
+} else {
+  Write-Host 'WARN: no customer/secret - SYSPRO cover drops after 2h silent heartbeat.'
+}
 
 Write-Host 'Stopping tray / agent PowerShell...'
 Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
@@ -104,6 +145,6 @@ if (-not $KeepFiles) {
 }
 
 Write-Host ''
-Write-Host 'Done. This host will drop off Assure after the next missed heartbeat.'
-Write-Host 'IB customer + SYSPRO data on Assure SQL are unchanged.'
+Write-Host 'Done. This host is UNINSTALLED on Assure. SYSPRO cover drops when no live agent remains.'
+Write-Host 'IB customer + SYSPRO warehouse rows stay. Cover comes back only after a new agent heartbeat.'
 Write-Host '========================================'

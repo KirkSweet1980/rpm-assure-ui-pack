@@ -76,6 +76,45 @@ WHERE c.CustomerCode = @c;`);
         const pool = await getPool();
         if (!pool) return Response.json({ ok: false, error: "sql unavailable" }, { status: 503 });
 
+        if (kind === "uninstall") {
+          if (!hostName || !customerCode) {
+            return Response.json({ ok: false, error: "hostName and customerCode required" }, { status: 400 });
+          }
+          await pool
+            .request()
+            .input("h", sql.NVarChar(128), hostName)
+            .input("c", sql.NVarChar(32), customerCode)
+            .query(`
+UPDATE dbo.Agent_Registry
+SET LastStatus = N'UNINSTALLED',
+    LastMessage = N'uninstalled from host'
+WHERE HostName = @h AND CustomerCode = @c;`);
+          const liveRs = await pool
+            .request()
+            .input("c", sql.NVarChar(32), customerCode)
+            .query(`
+SELECT COUNT(*) AS LiveAgents
+FROM dbo.Agent_Registry WITH (NOLOCK)
+WHERE CustomerCode = @c
+  AND LastStatus NOT IN (N'UNINSTALLED', N'REMOVED')
+  AND LastHeartbeatUtc >= DATEADD(hour, -2, SYSUTCDATETIME())
+  AND (
+    RoleTags IS NULL
+    OR LTRIM(RTRIM(RoleTags)) = N''
+    OR LOWER(RoleTags) LIKE N'%syspro%'
+  )`);
+          const live = Number(liveRs.recordset?.[0]?.LiveAgents) || 0;
+          return Response.json({
+            ok: true,
+            via: "https",
+            kind: "uninstall",
+            customerCode,
+            hostName,
+            liveSysproAgents: live,
+            sysproCover: live > 0,
+          });
+        }
+
         if (kind === "status") {
           if (!hostName) return Response.json({ ok: false, error: "hostName required" }, { status: 400 });
           const status = str(body.status ?? body.LastStatus, 32) || "ONLINE";

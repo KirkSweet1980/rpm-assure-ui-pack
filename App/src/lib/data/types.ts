@@ -88,6 +88,10 @@ export type PortfolioRow = {
   ticketsMapped?: boolean | null;
   ticketResponsePct?: number | null;
   ticketResolvePct?: number | null;
+  /** Live Edge agents (heartbeat recent, not UNINSTALLED) */
+  agentCount?: number | null;
+  /** Live SYSPRO-role Edge agent — false drops SYSPRO cover */
+  sysproAgentLive?: boolean | null;
 };
 
 export type OperatorRow = {

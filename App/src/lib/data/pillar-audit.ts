@@ -100,6 +100,8 @@ export function resolveCoverForRow(row: PortfolioRow): CustomerCover {
     coveDeviceCount: row.coveDeviceCount,
     coveMapped: (row.coveDeviceCount ?? 0) > 0,
     eppDeviceCount: row.eppDeviceCount ?? 0,
+    agentCount: row.agentCount,
+    sysproAgentLive: row.sysproAgentLive,
   });
 }
 
@@ -117,9 +119,13 @@ export function auditPortfolioRows(rows: PortfolioRow[]): PillarAuditSummary {
     const cov = resolveCoverForRow(row);
     const ev = evidenceFromRow(row);
 
-    // SYSPRO hard-off is intentional No Cover even if residual data exists
+    // SYSPRO: leftover warehouse without a live agent is not cover evidence
     const sysproEvidence =
-      row.pillarSyspro === false ? false : ev.syspro;
+      row.pillarSyspro === false
+        ? false
+        : row.sysproAgentLive === false
+          ? false
+          : ev.syspro && row.sysproAgentLive !== false;
 
     const syspro = cell(
       cov.syspro === true,
