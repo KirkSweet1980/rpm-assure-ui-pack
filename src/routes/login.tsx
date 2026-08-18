@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "aisle-20260818";
-const AISLE = "/brand/login-dc.jpg";
+const LOGIN_BUILD = "white-hall-20260818";
+const AISLE = "/brand/login-white-hall.jpg";
 
 function CubeMark() {
   return (
@@ -185,9 +185,9 @@ const CSS = `
 .rpma-aisle-card {
   width: min(100%, 28.5rem);
   padding: 2.1rem 2.15rem 1.9rem;
-  background: rgba(255, 255, 255, 0.88);
-  border: 0;
-  box-shadow: 0 18px 50px rgba(4, 16, 28, 0.28);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(18, 32, 44, 0.08);
+  box-shadow: 0 18px 50px rgba(4, 16, 28, 0.18);
 }
 .rpma-aisle-mark {
   display: flex;
