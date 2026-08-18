@@ -4,7 +4,6 @@ import { Building2 } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
 import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
-import { EmpInspector } from "@/components/chrome/emp-inspector";
 import { RagLamps } from "@/components/chrome/rag-lamps";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -241,16 +240,6 @@ export function EmpChrome({
       </div>
       <div className="rpma-emp-work">
         <div className="rpma-emp-body">{children}</div>
-        <EmpInspector
-          name={customerName}
-          customerCode={customerCode}
-          service={ctx.service}
-          module={ctx.module}
-          cover={ctx.cover}
-          health={ctx.health}
-          lastUtc={lastImportAt}
-          slaHref={ctx.slaHref}
-        />
       </div>
     </div>
   );
