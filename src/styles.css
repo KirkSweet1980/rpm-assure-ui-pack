@@ -5018,3 +5018,62 @@ html:not(.dark) .rpma-eco-kpi {
 .rpma-eco-kpis > :nth-child(8n+7) { background: #f3f6f2 !important; }
 .rpma-eco-kpis > :nth-child(8n+8) { background: #f7f2f4 !important; }
 html.dark .rpma-eco-kpis > :nth-child(n) { background: #16232e !important; }
+
+/* Module row = same as service tabs: icon left, label right, centred, full width */
+.rpma-emp-ribbon.is-opt6 .rpma-emp-tools,
+.rpma-emp-tools {
+  display: grid !important;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  width: 100%;
+  align-items: stretch;
+  gap: 0 !important;
+  padding: 0 !important;
+  min-height: 36px;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+.rpma-emp-tool,
+html:not(.dark) .rpma-emp-tool {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  flex: unset !important;
+  min-width: 0 !important;
+  min-height: 36px;
+  padding: 4px 6px !important;
+  border-radius: 0 !important;
+  border-right: 1px solid #e5e7eb !important;
+  background: transparent !important;
+  color: #111827 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-align: center;
+  line-height: 1.15;
+}
+.rpma-emp-tool:last-child { border-right: 0 !important; }
+.rpma-emp-tool span:last-child {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap;
+  max-width: none !important;
+}
+.rpma-emp-ico {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 auto;
+}
+.rpma-emp-ico svg,
+.rpma-emp-tool svg { width: 15px !important; height: 15px !important; }
+.rpma-emp-tool.is-on,
+html:not(.dark) .rpma-emp-tool.is-on {
+  background: #eef5fb !important;
+  color: #1e3a4c !important;
+  border-bottom: 2px solid #c5d9e8 !important;
+}
+html.dark .rpma-emp-tools { background: #12202c !important; }
+html.dark .rpma-emp-tool { color: #e8edf3 !important; border-right-color: #243444 !important; }
+html.dark .rpma-emp-tool.is-on { background: #1c3348 !important; color: #e8edf3 !important; }
+
