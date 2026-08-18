@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "half-center-20260818";
+const LOGIN_BUILD = "noline-20260818";
 const HERO = "/brand/login-assure.mp4";
 
 function LoginPage() {
@@ -70,13 +70,15 @@ function LoginPage() {
       <div className="rpma-gl-scene" aria-hidden="true">
         <video
           className="rpma-gl-still"
-          src={HERO}
           autoPlay
           muted
           loop
           playsInline
           preload="auto"
-        />
+        >
+          <source src="/brand/login-assure.webm" type="video/webm" />
+          <source src={HERO} type="video/mp4" />
+        </video>
         <div className="rpma-gl-mark" />
       </div>
 
@@ -147,7 +149,7 @@ const GLASS_CSS = `
   min-height: 100dvh;
   width: 100%;
   overflow: hidden;
-  background: #02060e;
+  background: #000;
   color: #f3f7fb;
   font-family: "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -157,7 +159,7 @@ const GLASS_CSS = `
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #02060e;
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -167,13 +169,13 @@ const GLASS_CSS = `
   display: block;
   width: min(50vw, 52vh);
   height: auto;
-  aspect-ratio: 3 / 2;
   object-fit: contain;
   object-position: center center;
-  border: 0;
-  outline: 0;
-  box-shadow: none;
-  background: transparent;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  mix-blend-mode: screen;
 }
 .rpma-gl-mark {
   position: absolute;
