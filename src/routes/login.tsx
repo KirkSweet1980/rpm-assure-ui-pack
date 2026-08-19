@@ -5,13 +5,13 @@ import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { IdleLogoutBanner } from "@/lib/auth/idle-logout";
 import { normalizeLoginIdentifier } from "@/lib/auth/root-admin";
+import aisleBg from "@/assets/login-boardroom-tv.jpg";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-signin-white-20260819";
-const AISLE = "/downloads/login-boardroom-tv.jpg";
+const LOGIN_BUILD = "boardroom-bundled-20260819";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ function LoginPage() {
   return (
     <div className="rpma-aisle" data-login-build={LOGIN_BUILD}>
       <style>{CSS}</style>
-      <img className="rpma-aisle-bg" src={AISLE} alt="" />
+      <img className="rpma-aisle-bg" src={aisleBg} alt="" />
       <h1 className="rpma-aisle-sr">RPM Assure</h1>
 
       <main className="rpma-aisle-stage">

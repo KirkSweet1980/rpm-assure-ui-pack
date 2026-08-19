@@ -229,7 +229,20 @@ body {
 .rpma-glass .text-lg, .rpma-exco .text-lg, .rpma-eco-visuals .text-lg { font-size: 14px !important; overflow-wrap: anywhere; }
 
 .dk-shell { display: flex; flex-direction: column; min-height: 100dvh; padding-top: var(--pc-header-height); background: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-sans); --rpma-hud-h: 3.4rem; }
-.dk-brand { height: auto; min-height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 12px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-brand { height: auto; min-height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 8px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-brand-logo {
+  display: none;
+  height: 46px;
+  width: auto;
+  max-width: 210px;
+  object-fit: contain;
+  object-position: left center;
+  background: transparent !important;
+}
+html.dark .dk-brand-logo.is-dark,
+html.carbon .dk-brand-logo.is-dark { display: block; }
+html:not(.dark) .dk-brand-logo.is-light,
+html.snow .dk-brand-logo.is-light { display: block; }
 .dk-brand-reel {
   display: block;
   height: 82px;
@@ -5082,4 +5095,17 @@ html:not(.dark) .rpma-emp-tool.is-on {
 html.dark .rpma-emp-tools { background: #12202c !important; }
 html.dark .rpma-emp-tool { color: #e8edf3 !important; border-right-color: #243444 !important; }
 html.dark .rpma-emp-tool.is-on { background: #1c3348 !important; color: #e8edf3 !important; }
+
+.rpma-emp-title {
+  background: #3d434a !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid #2c3136 !important;
+}
+.rpma-emp-title strong { color: #f2f4f6 !important; }
+.rpma-emp-title em { color: #c5c9ce !important; }
+.rpma-sql-digital,
+.rpma-sql-live,
+.rpma-system-clock,
+.rpma-hud { display: none !important; }
+
 

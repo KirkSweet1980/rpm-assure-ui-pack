@@ -14,6 +14,8 @@ const ALLOW = new Set([
   "login-office-h.jpg",
   "login-boardroom-tv.jpg",
   "rpm-assure-wordmark.png",
+  "rpm-assure-logo-dark.png",
+  "rpm-assure-logo-light.png",
   "login-opt-A.jpg",
   "login-opt-B.jpg",
   "login-opt-C.jpg",
