@@ -1,0 +1,30 @@
+Pulseway executes firewall collect. Assure stores it. Pulseway REST v3 cannot return it.
+
+Why
+  Pulseway Automation can run PowerShell on every managed Windows device.
+  Pulseway REST v3 does not publish Windows Firewall profiles or inbound ports.
+  So: Pulseway runs the script -> the script POSTs to Assure -> server details pane.
+
+Setup (once)
+  1. On Assure, set PULSEWAY_WEBHOOK_SECRET or RPM_ASSURE_IOPS_SECRET
+     (same string you already use for Disk IOPS).
+  2. Apply schema: Sql\central\521_Agent_HostFirewall.sql
+  3. Pulseway -> Automation -> Scripts -> New -> PowerShell
+     Paste: C:\RPM-Assure\Sql\rmm\pulseway\Pulseway-Collect-Firewall.ps1
+     Inputs:
+       AssureUrl    = https://assure.rpmresources.co.za/api/firewall
+       AssureSecret = <that same secret>
+  4. Schedule hourly on Windows servers
+     (add workstations if you want them on this pane).
+  5. Pulseway org / device must already map to a CustomerCode
+     (same map as RMM). Unmapped hosts are rejected.
+
+What you should see
+  Pulseway script history: OK 200 {"ok":true,"customerCode":"AHIC",...}
+  Assure -> customer -> RMM -> Servers -> pick a host:
+    Public / Domain / Private pills (Active / On / Off)
+    Three windows: Public - Exposed Ports, Domain - Exposed Ports, Private - Exposed Ports
+
+Do not
+  Expect Recheck / Pulseway collect to invent firewall from the API.
+  Recheck still pulls devices, disks (size), alerts. Firewall arrives via POST.

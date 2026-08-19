@@ -19,6 +19,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as UiLabRouteImport } from './routes/ui-lab'
 import { Route as ApiBootstrapAdminRouteImport } from './routes/api/bootstrap-admin'
+import { Route as ApiFirewallRouteImport } from './routes/api/firewall'
 import { Route as ApiIopsRouteImport } from './routes/api/iops'
 import { Route as ApiPatchesRouteImport } from './routes/api/patches'
 import { Route as ApiPortfolioRefreshRouteImport } from './routes/api/portfolio-refresh'
@@ -31,16 +32,15 @@ import { Route as SettingsAgentsRouteImport } from './routes/settings.agents'
 import { Route as SettingsAlertsRouteImport } from './routes/settings.alerts'
 import { Route as SettingsAuditRouteImport } from './routes/settings.audit'
 import { Route as SettingsChromeRouteImport } from './routes/settings.chrome'
-import { Route as SettingsNavLabRouteImport } from './routes/settings.nav-lab'
 import { Route as SettingsCollectRouteImport } from './routes/settings.collect'
 import { Route as SettingsDashboardRouteImport } from './routes/settings.dashboard'
 import { Route as SettingsInfrastructureRouteImport } from './routes/settings.infrastructure'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsLabelsRouteImport } from './routes/settings.labels'
+import { Route as SettingsNavLabRouteImport } from './routes/settings.nav-lab'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsQueryRouteImport } from './routes/settings.query'
 import { Route as SettingsRagRouteImport } from './routes/settings.rag'
-import { Route as SettingsVisionRouteImport } from './routes/settings.vision'
 import { Route as SettingsReportsRouteImport } from './routes/settings.reports'
 import { Route as SettingsSecurityRouteImport } from './routes/settings.security'
 import { Route as SettingsSmtpRouteImport } from './routes/settings.smtp'
@@ -48,13 +48,14 @@ import { Route as SettingsSqlRouteImport } from './routes/settings.sql'
 import { Route as SettingsSslRouteImport } from './routes/settings.ssl'
 import { Route as SettingsThemeRouteImport } from './routes/settings.theme'
 import { Route as SettingsUsersRouteImport } from './routes/settings.users'
+import { Route as SettingsVisionRouteImport } from './routes/settings.vision'
 import { Route as ApiAgentPackCodeRouteImport } from './routes/api/agent-pack.$code'
 import { Route as ApiAgentHeartbeatRouteImport } from './routes/api/agent/heartbeat'
+import { Route as ApiAgentIngestRouteImport } from './routes/api/agent/ingest'
 import { Route as ApiAgentOnboardRouteImport } from './routes/api/agent/onboard'
 import { Route as ApiAgentPackRouteImport } from './routes/api/agent/pack'
-import { Route as ApiAgentSyncRouteImport } from './routes/api/agent/sync'
-import { Route as ApiAgentIngestRouteImport } from './routes/api/agent/ingest'
 import { Route as ApiAgentSqlRouteImport } from './routes/api/agent/sql'
+import { Route as ApiAgentSyncRouteImport } from './routes/api/agent/sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCronWeeklyReportRouteImport } from './routes/api/cron/weekly-report'
 import { Route as ApiPulsewayWebhookRouteImport } from './routes/api/pulseway.webhook'
@@ -84,6 +85,7 @@ import { Route as CustomersCodeCspGlobalAdminsRouteImport } from './routes/custo
 import { Route as CustomersCodeCspLicensesRouteImport } from './routes/customers.$code.csp.licenses'
 import { Route as CustomersCodeCspMfaRouteImport } from './routes/customers.$code.csp.mfa'
 import { Route as CustomersCodeCspSecureScoreRouteImport } from './routes/customers.$code.csp.secure-score'
+import { Route as CustomersCodeCspSlaRouteImport } from './routes/customers.$code.csp.sla'
 import { Route as CustomersCodeCspUsersRouteImport } from './routes/customers.$code.csp.users'
 import { Route as CustomersCodeEppIndexRouteImport } from './routes/customers.$code.epp.index'
 import { Route as CustomersCodeEppEndpointsRouteImport } from './routes/customers.$code.epp.endpoints'
@@ -168,6 +170,11 @@ const ApiBootstrapAdminRoute = ApiBootstrapAdminRouteImport.update({
   path: '/api/bootstrap-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFirewallRoute = ApiFirewallRouteImport.update({
+  id: '/api/firewall',
+  path: '/api/firewall',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIopsRoute = ApiIopsRouteImport.update({
   id: '/api/iops',
   path: '/api/iops',
@@ -228,11 +235,6 @@ const SettingsChromeRoute = SettingsChromeRouteImport.update({
   path: '/chrome',
   getParentRoute: () => SettingsRoute,
 } as any)
-const SettingsNavLabRoute = SettingsNavLabRouteImport.update({
-  id: '/nav-lab',
-  path: '/nav-lab',
-  getParentRoute: () => SettingsRoute,
-} as any)
 const SettingsCollectRoute = SettingsCollectRouteImport.update({
   id: '/collect',
   path: '/collect',
@@ -258,6 +260,11 @@ const SettingsLabelsRoute = SettingsLabelsRouteImport.update({
   path: '/labels',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsNavLabRoute = SettingsNavLabRouteImport.update({
+  id: '/nav-lab',
+  path: '/nav-lab',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -271,11 +278,6 @@ const SettingsQueryRoute = SettingsQueryRouteImport.update({
 const SettingsRagRoute = SettingsRagRouteImport.update({
   id: '/rag',
   path: '/rag',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsVisionRoute = SettingsVisionRouteImport.update({
-  id: '/vision',
-  path: '/vision',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsReportsRoute = SettingsReportsRouteImport.update({
@@ -313,6 +315,11 @@ const SettingsUsersRoute = SettingsUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsVisionRoute = SettingsVisionRouteImport.update({
+  id: '/vision',
+  path: '/vision',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const ApiAgentPackCodeRoute = ApiAgentPackCodeRouteImport.update({
   id: '/api/agent-pack/$code',
   path: '/api/agent-pack/$code',
@@ -321,6 +328,11 @@ const ApiAgentPackCodeRoute = ApiAgentPackCodeRouteImport.update({
 const ApiAgentHeartbeatRoute = ApiAgentHeartbeatRouteImport.update({
   id: '/api/agent/heartbeat',
   path: '/api/agent/heartbeat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentIngestRoute = ApiAgentIngestRouteImport.update({
+  id: '/api/agent/ingest',
+  path: '/api/agent/ingest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAgentOnboardRoute = ApiAgentOnboardRouteImport.update({
@@ -333,19 +345,14 @@ const ApiAgentPackRoute = ApiAgentPackRouteImport.update({
   path: '/api/agent/pack',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAgentSyncRoute = ApiAgentSyncRouteImport.update({
-  id: '/api/agent/sync',
-  path: '/api/agent/sync',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAgentIngestRoute = ApiAgentIngestRouteImport.update({
-  id: '/api/agent/ingest',
-  path: '/api/agent/ingest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAgentSqlRoute = ApiAgentSqlRouteImport.update({
   id: '/api/agent/sql',
   path: '/api/agent/sql',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentSyncRoute = ApiAgentSyncRouteImport.update({
+  id: '/api/agent/sync',
+  path: '/api/agent/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -502,6 +509,11 @@ const CustomersCodeCspSecureScoreRoute =
     path: '/secure-score',
     getParentRoute: () => CustomersCodeCspRoute,
   } as any)
+const CustomersCodeCspSlaRoute = CustomersCodeCspSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
+  getParentRoute: () => CustomersCodeCspRoute,
+} as any)
 const CustomersCodeCspUsersRoute = CustomersCodeCspUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -695,6 +707,7 @@ export interface FileRoutesByFullPath {
   '/two-factor': typeof TwoFactorRoute
   '/ui-lab': typeof UiLabRoute
   '/api/bootstrap-admin': typeof ApiBootstrapAdminRoute
+  '/api/firewall': typeof ApiFirewallRoute
   '/api/iops': typeof ApiIopsRoute
   '/api/patches': typeof ApiPatchesRoute
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
@@ -706,16 +719,15 @@ export interface FileRoutesByFullPath {
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
-  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
   '/settings/infrastructure': typeof SettingsInfrastructureRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/labels': typeof SettingsLabelsRoute
+  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/query': typeof SettingsQueryRoute
   '/settings/rag': typeof SettingsRagRoute
-  '/settings/vision': typeof SettingsVisionRoute
   '/settings/reports': typeof SettingsReportsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/settings/smtp': typeof SettingsSmtpRoute
@@ -723,14 +735,15 @@ export interface FileRoutesByFullPath {
   '/settings/ssl': typeof SettingsSslRoute
   '/settings/theme': typeof SettingsThemeRoute
   '/settings/users': typeof SettingsUsersRoute
+  '/settings/vision': typeof SettingsVisionRoute
   '/settings/': typeof SettingsIndexRoute
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
+  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
   '/api/agent/pack': typeof ApiAgentPackRoute
-  '/api/agent/sync': typeof ApiAgentSyncRoute
-  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/agent/sql': typeof ApiAgentSqlRoute
+  '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -757,6 +770,7 @@ export interface FileRoutesByFullPath {
   '/customers/$code/csp/licenses': typeof CustomersCodeCspLicensesRoute
   '/customers/$code/csp/mfa': typeof CustomersCodeCspMfaRoute
   '/customers/$code/csp/secure-score': typeof CustomersCodeCspSecureScoreRoute
+  '/customers/$code/csp/sla': typeof CustomersCodeCspSlaRoute
   '/customers/$code/csp/users': typeof CustomersCodeCspUsersRoute
   '/customers/$code/epp/endpoints': typeof CustomersCodeEppEndpointsRoute
   '/customers/$code/epp/incidents': typeof CustomersCodeEppIncidentsRoute
@@ -804,6 +818,7 @@ export interface FileRoutesByTo {
   '/two-factor': typeof TwoFactorRoute
   '/ui-lab': typeof UiLabRoute
   '/api/bootstrap-admin': typeof ApiBootstrapAdminRoute
+  '/api/firewall': typeof ApiFirewallRoute
   '/api/iops': typeof ApiIopsRoute
   '/api/patches': typeof ApiPatchesRoute
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
@@ -814,16 +829,15 @@ export interface FileRoutesByTo {
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
-  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
   '/settings/infrastructure': typeof SettingsInfrastructureRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/labels': typeof SettingsLabelsRoute
+  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/query': typeof SettingsQueryRoute
   '/settings/rag': typeof SettingsRagRoute
-  '/settings/vision': typeof SettingsVisionRoute
   '/settings/reports': typeof SettingsReportsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/settings/smtp': typeof SettingsSmtpRoute
@@ -831,14 +845,15 @@ export interface FileRoutesByTo {
   '/settings/ssl': typeof SettingsSslRoute
   '/settings/theme': typeof SettingsThemeRoute
   '/settings/users': typeof SettingsUsersRoute
+  '/settings/vision': typeof SettingsVisionRoute
   '/settings': typeof SettingsIndexRoute
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
+  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
   '/api/agent/pack': typeof ApiAgentPackRoute
-  '/api/agent/sync': typeof ApiAgentSyncRoute
-  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/agent/sql': typeof ApiAgentSqlRoute
+  '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -858,6 +873,7 @@ export interface FileRoutesByTo {
   '/customers/$code/csp/licenses': typeof CustomersCodeCspLicensesRoute
   '/customers/$code/csp/mfa': typeof CustomersCodeCspMfaRoute
   '/customers/$code/csp/secure-score': typeof CustomersCodeCspSecureScoreRoute
+  '/customers/$code/csp/sla': typeof CustomersCodeCspSlaRoute
   '/customers/$code/csp/users': typeof CustomersCodeCspUsersRoute
   '/customers/$code/epp/endpoints': typeof CustomersCodeEppEndpointsRoute
   '/customers/$code/epp/incidents': typeof CustomersCodeEppIncidentsRoute
@@ -907,6 +923,7 @@ export interface FileRoutesById {
   '/two-factor': typeof TwoFactorRoute
   '/ui-lab': typeof UiLabRoute
   '/api/bootstrap-admin': typeof ApiBootstrapAdminRoute
+  '/api/firewall': typeof ApiFirewallRoute
   '/api/iops': typeof ApiIopsRoute
   '/api/patches': typeof ApiPatchesRoute
   '/api/portfolio-refresh': typeof ApiPortfolioRefreshRoute
@@ -918,16 +935,15 @@ export interface FileRoutesById {
   '/settings/alerts': typeof SettingsAlertsRoute
   '/settings/audit': typeof SettingsAuditRoute
   '/settings/chrome': typeof SettingsChromeRoute
-  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/collect': typeof SettingsCollectRoute
   '/settings/dashboard': typeof SettingsDashboardRoute
   '/settings/infrastructure': typeof SettingsInfrastructureRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/labels': typeof SettingsLabelsRoute
+  '/settings/nav-lab': typeof SettingsNavLabRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/query': typeof SettingsQueryRoute
   '/settings/rag': typeof SettingsRagRoute
-  '/settings/vision': typeof SettingsVisionRoute
   '/settings/reports': typeof SettingsReportsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/settings/smtp': typeof SettingsSmtpRoute
@@ -935,14 +951,15 @@ export interface FileRoutesById {
   '/settings/ssl': typeof SettingsSslRoute
   '/settings/theme': typeof SettingsThemeRoute
   '/settings/users': typeof SettingsUsersRoute
+  '/settings/vision': typeof SettingsVisionRoute
   '/settings/': typeof SettingsIndexRoute
   '/api/agent-pack/$code': typeof ApiAgentPackCodeRoute
   '/api/agent/heartbeat': typeof ApiAgentHeartbeatRoute
+  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/agent/onboard': typeof ApiAgentOnboardRoute
   '/api/agent/pack': typeof ApiAgentPackRoute
-  '/api/agent/sync': typeof ApiAgentSyncRoute
-  '/api/agent/ingest': typeof ApiAgentIngestRoute
   '/api/agent/sql': typeof ApiAgentSqlRoute
+  '/api/agent/sync': typeof ApiAgentSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/weekly-report': typeof ApiCronWeeklyReportRoute
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
@@ -969,6 +986,7 @@ export interface FileRoutesById {
   '/customers/$code/csp/licenses': typeof CustomersCodeCspLicensesRoute
   '/customers/$code/csp/mfa': typeof CustomersCodeCspMfaRoute
   '/customers/$code/csp/secure-score': typeof CustomersCodeCspSecureScoreRoute
+  '/customers/$code/csp/sla': typeof CustomersCodeCspSlaRoute
   '/customers/$code/csp/users': typeof CustomersCodeCspUsersRoute
   '/customers/$code/epp/endpoints': typeof CustomersCodeEppEndpointsRoute
   '/customers/$code/epp/incidents': typeof CustomersCodeEppIncidentsRoute
@@ -1019,6 +1037,7 @@ export interface FileRouteTypes {
     | '/two-factor'
     | '/ui-lab'
     | '/api/bootstrap-admin'
+    | '/api/firewall'
     | '/api/iops'
     | '/api/patches'
     | '/api/portfolio-refresh'
@@ -1030,16 +1049,15 @@ export interface FileRouteTypes {
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
-    | '/settings/nav-lab'
     | '/settings/collect'
     | '/settings/dashboard'
     | '/settings/infrastructure'
     | '/settings/integrations'
     | '/settings/labels'
+    | '/settings/nav-lab'
     | '/settings/profile'
     | '/settings/query'
     | '/settings/rag'
-    | '/settings/vision'
     | '/settings/reports'
     | '/settings/security'
     | '/settings/smtp'
@@ -1047,13 +1065,14 @@ export interface FileRouteTypes {
     | '/settings/ssl'
     | '/settings/theme'
     | '/settings/users'
+    | '/settings/vision'
     | '/settings/'
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
     | '/api/agent/ingest'
-    | '/api/agent/sql'
     | '/api/agent/onboard'
     | '/api/agent/pack'
+    | '/api/agent/sql'
     | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
@@ -1081,6 +1100,7 @@ export interface FileRouteTypes {
     | '/customers/$code/csp/licenses'
     | '/customers/$code/csp/mfa'
     | '/customers/$code/csp/secure-score'
+    | '/customers/$code/csp/sla'
     | '/customers/$code/csp/users'
     | '/customers/$code/epp/endpoints'
     | '/customers/$code/epp/incidents'
@@ -1128,6 +1148,7 @@ export interface FileRouteTypes {
     | '/two-factor'
     | '/ui-lab'
     | '/api/bootstrap-admin'
+    | '/api/firewall'
     | '/api/iops'
     | '/api/patches'
     | '/api/portfolio-refresh'
@@ -1138,16 +1159,15 @@ export interface FileRouteTypes {
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
-    | '/settings/nav-lab'
     | '/settings/collect'
     | '/settings/dashboard'
     | '/settings/infrastructure'
     | '/settings/integrations'
     | '/settings/labels'
+    | '/settings/nav-lab'
     | '/settings/profile'
     | '/settings/query'
     | '/settings/rag'
-    | '/settings/vision'
     | '/settings/reports'
     | '/settings/security'
     | '/settings/smtp'
@@ -1155,13 +1175,14 @@ export interface FileRouteTypes {
     | '/settings/ssl'
     | '/settings/theme'
     | '/settings/users'
+    | '/settings/vision'
     | '/settings'
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
     | '/api/agent/ingest'
-    | '/api/agent/sql'
     | '/api/agent/onboard'
     | '/api/agent/pack'
+    | '/api/agent/sql'
     | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
@@ -1182,6 +1203,7 @@ export interface FileRouteTypes {
     | '/customers/$code/csp/licenses'
     | '/customers/$code/csp/mfa'
     | '/customers/$code/csp/secure-score'
+    | '/customers/$code/csp/sla'
     | '/customers/$code/csp/users'
     | '/customers/$code/epp/endpoints'
     | '/customers/$code/epp/incidents'
@@ -1230,6 +1252,7 @@ export interface FileRouteTypes {
     | '/two-factor'
     | '/ui-lab'
     | '/api/bootstrap-admin'
+    | '/api/firewall'
     | '/api/iops'
     | '/api/patches'
     | '/api/portfolio-refresh'
@@ -1241,16 +1264,15 @@ export interface FileRouteTypes {
     | '/settings/alerts'
     | '/settings/audit'
     | '/settings/chrome'
-    | '/settings/nav-lab'
     | '/settings/collect'
     | '/settings/dashboard'
     | '/settings/infrastructure'
     | '/settings/integrations'
     | '/settings/labels'
+    | '/settings/nav-lab'
     | '/settings/profile'
     | '/settings/query'
     | '/settings/rag'
-    | '/settings/vision'
     | '/settings/reports'
     | '/settings/security'
     | '/settings/smtp'
@@ -1258,13 +1280,14 @@ export interface FileRouteTypes {
     | '/settings/ssl'
     | '/settings/theme'
     | '/settings/users'
+    | '/settings/vision'
     | '/settings/'
     | '/api/agent-pack/$code'
     | '/api/agent/heartbeat'
     | '/api/agent/ingest'
-    | '/api/agent/sql'
     | '/api/agent/onboard'
     | '/api/agent/pack'
+    | '/api/agent/sql'
     | '/api/agent/sync'
     | '/api/auth/$'
     | '/api/cron/weekly-report'
@@ -1292,6 +1315,7 @@ export interface FileRouteTypes {
     | '/customers/$code/csp/licenses'
     | '/customers/$code/csp/mfa'
     | '/customers/$code/csp/secure-score'
+    | '/customers/$code/csp/sla'
     | '/customers/$code/csp/users'
     | '/customers/$code/epp/endpoints'
     | '/customers/$code/epp/incidents'
@@ -1341,6 +1365,7 @@ export interface RootRouteChildren {
   TwoFactorRoute: typeof TwoFactorRoute
   UiLabRoute: typeof UiLabRoute
   ApiBootstrapAdminRoute: typeof ApiBootstrapAdminRoute
+  ApiFirewallRoute: typeof ApiFirewallRoute
   ApiIopsRoute: typeof ApiIopsRoute
   ApiPatchesRoute: typeof ApiPatchesRoute
   ApiPortfolioRefreshRoute: typeof ApiPortfolioRefreshRoute
@@ -1349,11 +1374,11 @@ export interface RootRouteChildren {
   DownloadsSplatRoute: typeof DownloadsSplatRoute
   ApiAgentPackCodeRoute: typeof ApiAgentPackCodeRoute
   ApiAgentHeartbeatRoute: typeof ApiAgentHeartbeatRoute
+  ApiAgentIngestRoute: typeof ApiAgentIngestRoute
   ApiAgentOnboardRoute: typeof ApiAgentOnboardRoute
   ApiAgentPackRoute: typeof ApiAgentPackRoute
-  ApiAgentSyncRoute: typeof ApiAgentSyncRoute
-  ApiAgentIngestRoute: typeof ApiAgentIngestRoute
   ApiAgentSqlRoute: typeof ApiAgentSqlRoute
+  ApiAgentSyncRoute: typeof ApiAgentSyncRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronWeeklyReportRoute: typeof ApiCronWeeklyReportRoute
   ApiPulsewayWebhookRoute: typeof ApiPulsewayWebhookRoute
@@ -1430,6 +1455,13 @@ declare module '@tanstack/react-router' {
       path: '/api/bootstrap-admin'
       fullPath: '/api/bootstrap-admin'
       preLoaderRoute: typeof ApiBootstrapAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/firewall': {
+      id: '/api/firewall'
+      path: '/api/firewall'
+      fullPath: '/api/firewall'
+      preLoaderRoute: typeof ApiFirewallRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/iops': {
@@ -1516,13 +1548,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsChromeRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/settings/nav-lab': {
-      id: '/settings/nav-lab'
-      path: '/nav-lab'
-      fullPath: '/settings/nav-lab'
-      preLoaderRoute: typeof SettingsNavLabRouteImport
-      parentRoute: typeof SettingsRoute
-    }
     '/settings/collect': {
       id: '/settings/collect'
       path: '/collect'
@@ -1558,6 +1583,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsLabelsRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/nav-lab': {
+      id: '/settings/nav-lab'
+      path: '/nav-lab'
+      fullPath: '/settings/nav-lab'
+      preLoaderRoute: typeof SettingsNavLabRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/profile': {
       id: '/settings/profile'
       path: '/profile'
@@ -1577,13 +1609,6 @@ declare module '@tanstack/react-router' {
       path: '/rag'
       fullPath: '/settings/rag'
       preLoaderRoute: typeof SettingsRagRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/vision': {
-      id: '/settings/vision'
-      path: '/vision'
-      fullPath: '/settings/vision'
-      preLoaderRoute: typeof SettingsVisionRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/reports': {
@@ -1635,6 +1660,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsUsersRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/vision': {
+      id: '/settings/vision'
+      path: '/vision'
+      fullPath: '/settings/vision'
+      preLoaderRoute: typeof SettingsVisionRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/api/agent-pack/$code': {
       id: '/api/agent-pack/$code'
       path: '/api/agent-pack/$code'
@@ -1647,6 +1679,13 @@ declare module '@tanstack/react-router' {
       path: '/api/agent/heartbeat'
       fullPath: '/api/agent/heartbeat'
       preLoaderRoute: typeof ApiAgentHeartbeatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/ingest': {
+      id: '/api/agent/ingest'
+      path: '/api/agent/ingest'
+      fullPath: '/api/agent/ingest'
+      preLoaderRoute: typeof ApiAgentIngestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/agent/onboard': {
@@ -1663,25 +1702,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgentPackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/agent/sync': {
-      id: '/api/agent/sync'
-      path: '/api/agent/sync'
-      fullPath: '/api/agent/sync'
-      preLoaderRoute: typeof ApiAgentSyncRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/agent/ingest': {
-      id: '/api/agent/ingest'
-      path: '/api/agent/ingest'
-      fullPath: '/api/agent/ingest'
-      preLoaderRoute: typeof ApiAgentIngestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/agent/sql': {
       id: '/api/agent/sql'
       path: '/api/agent/sql'
       fullPath: '/api/agent/sql'
       preLoaderRoute: typeof ApiAgentSqlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/sync': {
+      id: '/api/agent/sync'
+      path: '/api/agent/sync'
+      fullPath: '/api/agent/sync'
+      preLoaderRoute: typeof ApiAgentSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -1885,6 +1917,13 @@ declare module '@tanstack/react-router' {
       path: '/secure-score'
       fullPath: '/customers/$code/csp/secure-score'
       preLoaderRoute: typeof CustomersCodeCspSecureScoreRouteImport
+      parentRoute: typeof CustomersCodeCspRoute
+    }
+    '/customers/$code/csp/sla': {
+      id: '/customers/$code/csp/sla'
+      path: '/sla'
+      fullPath: '/customers/$code/csp/sla'
+      preLoaderRoute: typeof CustomersCodeCspSlaRouteImport
       parentRoute: typeof CustomersCodeCspRoute
     }
     '/customers/$code/csp/users': {
@@ -2127,16 +2166,15 @@ interface SettingsRouteChildren {
   SettingsAlertsRoute: typeof SettingsAlertsRoute
   SettingsAuditRoute: typeof SettingsAuditRoute
   SettingsChromeRoute: typeof SettingsChromeRoute
-  SettingsNavLabRoute: typeof SettingsNavLabRoute
   SettingsCollectRoute: typeof SettingsCollectRoute
   SettingsDashboardRoute: typeof SettingsDashboardRoute
   SettingsInfrastructureRoute: typeof SettingsInfrastructureRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsLabelsRoute: typeof SettingsLabelsRoute
+  SettingsNavLabRoute: typeof SettingsNavLabRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsQueryRoute: typeof SettingsQueryRoute
   SettingsRagRoute: typeof SettingsRagRoute
-  SettingsVisionRoute: typeof SettingsVisionRoute
   SettingsReportsRoute: typeof SettingsReportsRoute
   SettingsSecurityRoute: typeof SettingsSecurityRoute
   SettingsSmtpRoute: typeof SettingsSmtpRoute
@@ -2144,6 +2182,7 @@ interface SettingsRouteChildren {
   SettingsSslRoute: typeof SettingsSslRoute
   SettingsThemeRoute: typeof SettingsThemeRoute
   SettingsUsersRoute: typeof SettingsUsersRoute
+  SettingsVisionRoute: typeof SettingsVisionRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
@@ -2153,16 +2192,15 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAlertsRoute: SettingsAlertsRoute,
   SettingsAuditRoute: SettingsAuditRoute,
   SettingsChromeRoute: SettingsChromeRoute,
-  SettingsNavLabRoute: SettingsNavLabRoute,
   SettingsCollectRoute: SettingsCollectRoute,
   SettingsDashboardRoute: SettingsDashboardRoute,
   SettingsInfrastructureRoute: SettingsInfrastructureRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsLabelsRoute: SettingsLabelsRoute,
+  SettingsNavLabRoute: SettingsNavLabRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsQueryRoute: SettingsQueryRoute,
   SettingsRagRoute: SettingsRagRoute,
-  SettingsVisionRoute: SettingsVisionRoute,
   SettingsReportsRoute: SettingsReportsRoute,
   SettingsSecurityRoute: SettingsSecurityRoute,
   SettingsSmtpRoute: SettingsSmtpRoute,
@@ -2170,6 +2208,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsSslRoute: SettingsSslRoute,
   SettingsThemeRoute: SettingsThemeRoute,
   SettingsUsersRoute: SettingsUsersRoute,
+  SettingsVisionRoute: SettingsVisionRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
 
@@ -2224,6 +2263,7 @@ interface CustomersCodeCspRouteChildren {
   CustomersCodeCspLicensesRoute: typeof CustomersCodeCspLicensesRoute
   CustomersCodeCspMfaRoute: typeof CustomersCodeCspMfaRoute
   CustomersCodeCspSecureScoreRoute: typeof CustomersCodeCspSecureScoreRoute
+  CustomersCodeCspSlaRoute: typeof CustomersCodeCspSlaRoute
   CustomersCodeCspUsersRoute: typeof CustomersCodeCspUsersRoute
   CustomersCodeCspIndexRoute: typeof CustomersCodeCspIndexRoute
 }
@@ -2233,6 +2273,7 @@ const CustomersCodeCspRouteChildren: CustomersCodeCspRouteChildren = {
   CustomersCodeCspLicensesRoute: CustomersCodeCspLicensesRoute,
   CustomersCodeCspMfaRoute: CustomersCodeCspMfaRoute,
   CustomersCodeCspSecureScoreRoute: CustomersCodeCspSecureScoreRoute,
+  CustomersCodeCspSlaRoute: CustomersCodeCspSlaRoute,
   CustomersCodeCspUsersRoute: CustomersCodeCspUsersRoute,
   CustomersCodeCspIndexRoute: CustomersCodeCspIndexRoute,
 }
@@ -2377,6 +2418,7 @@ const rootRouteChildren: RootRouteChildren = {
   TwoFactorRoute: TwoFactorRoute,
   UiLabRoute: UiLabRoute,
   ApiBootstrapAdminRoute: ApiBootstrapAdminRoute,
+  ApiFirewallRoute: ApiFirewallRoute,
   ApiIopsRoute: ApiIopsRoute,
   ApiPatchesRoute: ApiPatchesRoute,
   ApiPortfolioRefreshRoute: ApiPortfolioRefreshRoute,
@@ -2385,11 +2427,11 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadsSplatRoute: DownloadsSplatRoute,
   ApiAgentPackCodeRoute: ApiAgentPackCodeRoute,
   ApiAgentHeartbeatRoute: ApiAgentHeartbeatRoute,
+  ApiAgentIngestRoute: ApiAgentIngestRoute,
   ApiAgentOnboardRoute: ApiAgentOnboardRoute,
   ApiAgentPackRoute: ApiAgentPackRoute,
-  ApiAgentSyncRoute: ApiAgentSyncRoute,
-  ApiAgentIngestRoute: ApiAgentIngestRoute,
   ApiAgentSqlRoute: ApiAgentSqlRoute,
+  ApiAgentSyncRoute: ApiAgentSyncRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronWeeklyReportRoute: ApiCronWeeklyReportRoute,
   ApiPulsewayWebhookRoute: ApiPulsewayWebhookRoute,

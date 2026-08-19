@@ -598,6 +598,42 @@ export function getDemoCustomerDetail(code: string): CustomerDetailPayload | nul
                 { driveLetter: "C:", totalGb: 120, freeGb: 48, usedPct: 60 },
                 { driveLetter: "D:", totalGb: 500, freeGb: 210, usedPct: 58 },
               ],
+              firewall: {
+                hostName: "AHI-DC01",
+                snapshotUtc: NOW,
+                source: "pulseway",
+                profiles: [
+                  {
+                    name: "Public",
+                    enabled: true,
+                    active: false,
+                    ports: [],
+                  },
+                  {
+                    name: "Domain",
+                    enabled: true,
+                    active: true,
+                    ports: [
+                      { port: "53", proto: "UDP", name: "DNS" },
+                      { port: "88", proto: "TCP", name: "Kerberos" },
+                      { port: "135", proto: "TCP", name: "RPC Endpoint Mapper" },
+                      { port: "389", proto: "TCP", name: "LDAP" },
+                      { port: "445", proto: "TCP", name: "SMB" },
+                      { port: "3389", proto: "TCP", name: "Remote Desktop" },
+                      { port: "5985", proto: "TCP", name: "WinRM HTTP" },
+                    ],
+                  },
+                  {
+                    name: "Private",
+                    enabled: true,
+                    active: false,
+                    ports: [
+                      { port: "3389", proto: "TCP", name: "Remote Desktop" },
+                      { port: "5985", proto: "TCP", name: "WinRM HTTP" },
+                    ],
+                  },
+                ],
+              },
             },
             {
               deviceId: "DEMO-AHIC-FS01",
@@ -617,6 +653,38 @@ export function getDemoCustomerDetail(code: string): CustomerDetailPayload | nul
                 { driveLetter: "C:", totalGb: 200, freeGb: 16, usedPct: 92 },
                 { driveLetter: "E:", totalGb: 2000, freeGb: 400, usedPct: 80 },
               ],
+              firewall: {
+                hostName: "AHI-FS01",
+                snapshotUtc: NOW,
+                source: "pulseway",
+                profiles: [
+                  {
+                    name: "Public",
+                    enabled: true,
+                    active: false,
+                    ports: [],
+                  },
+                  {
+                    name: "Domain",
+                    enabled: true,
+                    active: true,
+                    ports: [
+                      { port: "445", proto: "TCP", name: "SMB" },
+                      { port: "139", proto: "TCP", name: "NetBIOS" },
+                      { port: "3389", proto: "TCP", name: "Remote Desktop" },
+                    ],
+                  },
+                  {
+                    name: "Private",
+                    enabled: true,
+                    active: false,
+                    ports: [
+                      { port: "445", proto: "TCP", name: "SMB" },
+                      { port: "139", proto: "TCP", name: "NetBIOS" },
+                    ],
+                  },
+                ],
+              },
             },
             {
               deviceId: "DEMO-AHIC-WS01",
@@ -635,6 +703,36 @@ export function getDemoCustomerDetail(code: string): CustomerDetailPayload | nul
               disks: [
                 { driveLetter: "C:", totalGb: 512, freeGb: 90, usedPct: 82.4 },
               ],
+              firewall: {
+                hostName: "AHI-ACC01",
+                snapshotUtc: NOW,
+                source: "pulseway",
+                profiles: [
+                  {
+                    name: "Public",
+                    enabled: true,
+                    active: false,
+                    ports: [],
+                  },
+                  {
+                    name: "Domain",
+                    enabled: true,
+                    active: false,
+                    ports: [
+                      { port: "3389", proto: "TCP", name: "Remote Desktop" },
+                    ],
+                  },
+                  {
+                    name: "Private",
+                    enabled: true,
+                    active: true,
+                    ports: [
+                      { port: "3389", proto: "TCP", name: "Remote Desktop" },
+                      { port: "5357", proto: "TCP", name: "WSDAPI" },
+                    ],
+                  },
+                ],
+              },
             },
           ]
         : [],

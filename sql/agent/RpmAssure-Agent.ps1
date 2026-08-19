@@ -701,6 +701,17 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       W "WARN Collect-Windows-EventLog.ps1 missing"
     }
 
+    $fwRunner = Ensure-RpmaAgentScript "Collect-Host-Firewall.ps1"
+    if ($fwRunner) {
+      $jobs += @{
+        Name = "host-firewall-$code"
+        Customer = $code
+        IntervalMin = 60
+        Script = $fwRunner
+        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot)
+      }
+    }
+
     if (-not $rmmOn) { W ("SKIP RMM scripts for $code - no RMM cover") }
     if (-not $coveOn) { W ("SKIP Cove scripts for $code - no Cove cover") }
     if (-not $eppOn) { W ("SKIP EPP scripts for $code - no EPP cover") }

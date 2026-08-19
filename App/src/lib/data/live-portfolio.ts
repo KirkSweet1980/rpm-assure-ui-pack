@@ -5310,6 +5310,91 @@ INNER JOIN (
             /* Agent_DiskIops missing until first agent cycle */
           }
 
+          try {
+            const fwRes = await pool
+              .request()
+              .input("code", sql.NVarChar(50), code)
+              .query(`
+SELECT d.HostName, d.ProfileName, d.Enabled, d.Active, d.PortsJson, d.SnapshotUtc, d.Source
+FROM dbo.Agent_HostFirewall AS d WITH (NOLOCK)
+INNER JOIN (
+  SELECT HostName, MAX(SnapshotUtc) AS mx
+  FROM dbo.Agent_HostFirewall WITH (NOLOCK)
+  WHERE SnapshotUtc >= DATEADD(day, -7, SYSUTCDATETIME())
+    AND CustomerCode = @code
+  GROUP BY HostName
+) m ON m.HostName = d.HostName AND m.mx = d.SnapshotUtc
+WHERE d.CustomerCode = @code`);
+            const fwRows = (fwRes.recordset ?? []) as Array<{
+              HostName?: string;
+              ProfileName?: string;
+              Enabled?: boolean;
+              Active?: boolean;
+              PortsJson?: string | null;
+              SnapshotUtc?: Date | string | null;
+              Source?: string | null;
+            }>;
+            const byHost = new Map<string, typeof fwRows>();
+            for (const row of fwRows) {
+              const h = String(row.HostName ?? "").toUpperCase();
+              if (!h || !tenantAssetBelongs(code, { host: h })) continue;
+              const arr = byHost.get(h) ?? [];
+              arr.push(row);
+              byHost.set(h, arr);
+            }
+            const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+            for (const d of rmm.devices) {
+              const dn = norm(d.name || "");
+              let hit: typeof fwRows | undefined;
+              for (const [h, rows] of byHost) {
+                const hn = norm(h);
+                if (dn && hn && (dn === hn || dn.startsWith(hn) || hn.startsWith(dn))) {
+                  hit = rows;
+                  break;
+                }
+              }
+              if (!hit?.length) continue;
+              const names = ["Domain", "Private", "Public"] as const;
+              d.firewall = {
+                hostName: String(hit[0].HostName ?? d.name ?? ""),
+                snapshotUtc: toIso(hit[0].SnapshotUtc ?? null),
+                source: hit[0].Source ? String(hit[0].Source) : null,
+                profiles: names.map((name) => {
+                  const row = hit!.find((r) => String(r.ProfileName ?? "") === name);
+                  let ports: { port: string; proto: string; name: string }[] = [];
+                  if (row?.PortsJson) {
+                    try {
+                      const parsed = JSON.parse(String(row.PortsJson)) as Array<{
+                        port?: string;
+                        proto?: string;
+                        name?: string;
+                      }>;
+                      if (Array.isArray(parsed)) {
+                        ports = parsed
+                          .map((p) => ({
+                            port: String(p.port ?? ""),
+                            proto: String(p.proto ?? "TCP"),
+                            name: String(p.name ?? ""),
+                          }))
+                          .filter((p) => p.port);
+                      }
+                    } catch {
+                      ports = [];
+                    }
+                  }
+                  return {
+                    name,
+                    enabled: Boolean(row?.Enabled),
+                    active: Boolean(row?.Active),
+                    ports,
+                  };
+                }),
+              };
+            }
+          } catch {
+            /* Agent_HostFirewall missing until first collect */
+          }
+
         }
       } catch {
         /* disks optional */

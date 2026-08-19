@@ -575,6 +575,27 @@ export type RmmDeviceRow = {
   diskTotalGb?: number | null;
   /** Peak TotalIops across volumes (servers) */
   diskIopsMax?: number | null;
+  firewall?: HostFirewallSnapshot | null;
+};
+
+export type HostFirewallPort = {
+  port: string;
+  proto: string;
+  name: string;
+};
+
+export type HostFirewallProfile = {
+  name: "Domain" | "Private" | "Public";
+  enabled: boolean;
+  active: boolean;
+  ports: HostFirewallPort[];
+};
+
+export type HostFirewallSnapshot = {
+  hostName: string;
+  snapshotUtc: string | null;
+  source: string | null;
+  profiles: HostFirewallProfile[];
 };
 
 export type RmmAlertRow = {

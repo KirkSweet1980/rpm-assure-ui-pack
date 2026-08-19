@@ -2061,11 +2061,142 @@ export function RmmDevicesSection({
                     </div>
                   )}
                 </div>
+
+                <ServerFirewallPanel snapshot={selected.firewall} />
               </div>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ServerFirewallPanel({
+  snapshot,
+}: {
+  snapshot: import("@/lib/data/types").HostFirewallSnapshot | null | undefined;
+}) {
+  const order = ["Public", "Domain", "Private"] as const;
+  const profiles = snapshot?.profiles ?? [];
+  const ordered = order.map((name) => {
+    const hit = profiles.find((p) => p.name === name);
+    return (
+      hit ?? {
+        name,
+        enabled: false,
+        active: false,
+        ports: [] as import("@/lib/data/types").HostFirewallPort[],
+      }
+    );
+  });
+  const have = Boolean(snapshot);
+  const active = ordered.filter((p) => p.active).map((p) => p.name);
+  return (
+    <div className="space-y-2">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-subtle">
+          <Shield className="h-3.5 w-3.5" aria-hidden />
+          Windows Firewall
+        </p>
+        {have && snapshot?.snapshotUtc ? (
+          <span className="font-mono text-[10px] text-muted">
+            {formatSastDateTime(snapshot.snapshotUtc)}
+            {snapshot.source ? ` · ${snapshot.source}` : ""}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {ordered.map((p) => (
+          <span
+            key={p.name}
+            className={
+              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold " +
+              (p.active
+                ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                : p.enabled
+                  ? "border-sky-300/70 bg-sky-500/10 text-sky-800 dark:text-sky-300"
+                  : "border-border bg-surface-2 text-muted")
+            }
+            title={
+              p.active
+                ? `${p.name} is the active network profile`
+                : p.enabled
+                  ? `${p.name} firewall is on, not the current network`
+                  : `${p.name} firewall is off`
+            }
+          >
+            <i
+              className={
+                "inline-block h-1.5 w-1.5 rounded-full " +
+                (p.active ? "bg-emerald-500" : p.enabled ? "bg-sky-400" : "bg-slate-400")
+              }
+            />
+            {p.name}
+            <em className="not-italic font-semibold opacity-80">
+              {p.active ? "Active" : p.enabled ? "On" : "Off"}
+            </em>
+          </span>
+        ))}
+      </div>
+      <p className="text-[11px] text-muted">
+        {have
+          ? active.length
+            ? `Active profile: ${active.join(", ")}`
+            : "No network profile marked active on last collect."
+          : "No firewall collect yet. Schedule Pulseway-Collect-Firewall.ps1 or wait for the Assure agent (hourly)."}
+      </p>
+      <div className="grid gap-2 md:grid-cols-3">
+        {ordered.map((p) => (
+          <div
+            key={p.name}
+            className={
+              "overflow-hidden rounded-lg border bg-surface " +
+              (p.active ? "border-emerald-400/50" : "border-border")
+            }
+          >
+            <div
+              className={
+                "flex items-center justify-between gap-2 border-b px-2.5 py-1.5 " +
+                (p.active
+                  ? "border-emerald-400/30 bg-emerald-500/10"
+                  : "border-border bg-surface-2")
+              }
+            >
+              <p className="text-[11px] font-extrabold text-fg">
+                {p.name} - Exposed Ports
+              </p>
+              <span className="font-mono text-[10px] text-muted">{p.ports.length}</span>
+            </div>
+            <div className="max-h-44 min-h-[4.5rem] overflow-auto px-2.5 py-1.5">
+              {p.ports.length === 0 ? (
+                <p className="text-[11px] text-muted">
+                  {have ? "No inbound allow ports on this profile." : "Waiting for collect."}
+                </p>
+              ) : (
+                <ul className="space-y-0.5">
+                  {p.ports.map((port, i) => (
+                    <li
+                      key={`${p.name}-${port.port}-${port.proto}-${i}`}
+                      className="flex items-baseline justify-between gap-2 font-mono text-[11px]"
+                    >
+                      <span className="shrink-0 font-bold text-fg">
+                        {port.proto} {port.port}
+                      </span>
+                      <span
+                        className="min-w-0 truncate text-right text-[10px] text-muted"
+                        title={port.name}
+                      >
+                        {port.name || "rule"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
