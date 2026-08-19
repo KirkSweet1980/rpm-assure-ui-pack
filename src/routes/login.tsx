@@ -10,7 +10,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "boardroom-tv-20260819";
+const LOGIN_BUILD = "boardroom-signin-white-20260819";
 const AISLE = "/downloads/login-boardroom-tv.jpg";
 
 function LoginPage() {
@@ -224,14 +224,14 @@ const CSS = `
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #12202c;
+  color: #ffffff;
   font-size: 0.98rem;
   font-weight: 700;
   cursor: pointer;
 }
 .rpma-aisle-go:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.22);
-  color: #0b3a42;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 .rpma-aisle-go:disabled { opacity: 0.6; cursor: wait; }
 .rpma-aisle-error {
