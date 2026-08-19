@@ -240,9 +240,22 @@ body {
   background: transparent !important;
 }
 html.dark .dk-brand-logo.is-dark,
-html.carbon .dk-brand-logo.is-dark { display: block; }
+html.carbon .dk-brand-logo.is-dark,
+html[data-theme="dark"] .dk-brand-logo.is-dark {
+  display: block;
+  filter: brightness(1.28) saturate(1.2) drop-shadow(0 0 10px rgba(46, 230, 166, 0.45));
+}
 html:not(.dark) .dk-brand-logo.is-light,
-html.snow .dk-brand-logo.is-light { display: block; }
+html.snow .dk-brand-logo.is-light,
+html[data-theme="light"] .dk-brand-logo.is-light {
+  display: block;
+}
+html.dark .dk-brand-logo.is-light,
+html.carbon .dk-brand-logo.is-light,
+html[data-theme="dark"] .dk-brand-logo.is-light { display: none !important; }
+html:not(.dark) .dk-brand-logo.is-dark,
+html.snow .dk-brand-logo.is-dark,
+html[data-theme="light"] .dk-brand-logo.is-dark { display: none !important; }
 .dk-brand-reel {
   display: block;
   height: 82px;
