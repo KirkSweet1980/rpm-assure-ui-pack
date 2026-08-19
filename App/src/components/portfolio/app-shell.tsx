@@ -214,11 +214,11 @@ export function AppShell({
                 <span />
                 <span />
               </button>
-              <Link to="/" className="dk-brand" aria-label="RPM Assure home">
-                <img className="dk-brand-logo is-dark" src={logoDark} alt="RPM Assure" />
-                <img className="dk-brand-logo is-light" src={logoLight} alt="" />
-              </Link>
             </div>
+            <Link to="/" className="dk-brand" aria-label="RPM Assure home">
+              <img className="dk-brand-logo is-dark" src={logoDark} alt="RPM Assure" />
+              <img className="dk-brand-logo is-light" src={logoLight} alt="" />
+            </Link>
             <div className="dk-header-right">
               <ThemeToggle />
               <DensityToggle />
