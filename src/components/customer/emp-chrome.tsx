@@ -240,7 +240,13 @@ export function EmpChrome({
           </div>
         </nav>
         <div className="rpma-emp-work">
-          <div className="rpma-emp-body">{children}</div>
+          <section className="rpma-win is-fill rpma-work-window">
+            <header className="rpma-win-head">
+              <h2>{item.label}</h2>
+              <p>{group.title}</p>
+            </header>
+            <div className="rpma-emp-body rpma-work-scroll">{children}</div>
+          </section>
         </div>
       </div>
     </div>
