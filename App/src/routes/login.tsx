@@ -10,8 +10,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const LOGIN_BUILD = "office-h-wall-centre-20260818";
-const AISLE = "/downloads/login-office-h.jpg";
+const LOGIN_BUILD = "boardroom-tv-20260819";
+const AISLE = "/downloads/login-boardroom-tv.jpg";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -138,7 +138,7 @@ const CSS = `
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 18% 42%;
+  object-position: center 42%;
   display: block;
 }
 .rpma-aisle-sr {
