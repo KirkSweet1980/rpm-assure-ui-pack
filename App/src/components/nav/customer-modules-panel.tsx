@@ -305,7 +305,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
                 className={cn("rpma-mod-row", selected && "is-on")}
               >
                 <Icon className="rpma-nav-ico" style={{ color: m.color }} aria-hidden />
-                <span className="min-w-0 flex-1 truncate">{m.label}</span>
+                <span className="min-w-0 flex-1">{m.label}</span>
                 <CoverTag on={serviceCover} />
                 <StatusRobot
                   rag={flag?.rag ?? (serviceCover ? "Green" : "Off")}

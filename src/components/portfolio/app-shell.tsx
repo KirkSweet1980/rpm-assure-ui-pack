@@ -25,8 +25,6 @@ import {
 } from "@/lib/nav/customer-list-context";
 import { inferCustomerCover } from "@/lib/data/cover";
 import { cn } from "@/lib/utils";
-import logoDark from "@/assets/rpm-assure-logo-dark.png";
-import logoLight from "@/assets/rpm-assure-logo-light.png";
 
 /**
  * App shell — D3 top navigation (navy chrome) + shared customer list for master–detail.
@@ -214,11 +212,12 @@ export function AppShell({
                 <span />
                 <span />
               </button>
+              <Link to="/" className="dk-brand" aria-label="RPM Assure home">
+                <span className="dk-brand-text">
+                  <strong>RPM Assure</strong>
+                </span>
+              </Link>
             </div>
-            <Link to="/" className="dk-brand" aria-label="RPM Assure home">
-              <img className="dk-brand-logo is-dark" src={logoDark} alt="RPM Assure" />
-              <img className="dk-brand-logo is-light" src={logoLight} alt="" />
-            </Link>
             <div className="dk-header-right">
               <ThemeToggle />
               <DensityToggle />

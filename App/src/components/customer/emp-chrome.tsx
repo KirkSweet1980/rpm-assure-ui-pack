@@ -12,7 +12,7 @@ type RibbonItem = { label: string; full: string; rel: string; icon: LucideIcon; 
 type RibbonGroup = { id: string; title: string; match: string; color: string; icon: LucideIcon; items: RibbonItem[] };
 
 const GROUP_TITLE: Record<string, string> = {
-  estate: "Customer Eco System",
+  estate: "Customer Eco-System",
   syspro: "SYSPRO Landscape",
   rmm: "RMM Management",
   cove: "RPM Cloud Backup",

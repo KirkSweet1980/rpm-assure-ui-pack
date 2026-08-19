@@ -61,7 +61,7 @@ export function CorpWorkspaceRail({
             onClick={() => setPicked(null)}
           >
             <LayoutDashboard className="rpma-nav-ico" style={{ color: "#0d9488" }} aria-hidden />
-            <span className="min-w-0 flex-1 truncate">{homeLabel}</span>
+            <span className="min-w-0 flex-1">{homeLabel}</span>
           </SpaLink>
         </div>
       </section>
@@ -108,7 +108,7 @@ export function CorpWorkspaceRail({
                     className={cn("rpma-mod-row", selected && "is-on")}
                   >
                     <Icon className="rpma-nav-ico" style={{ color: m.color ?? active.color ?? "#0d9488" }} aria-hidden />
-                    <span className="min-w-0 flex-1 truncate">{m.label}</span>
+                    <span className="min-w-0 flex-1">{m.label}</span>
                   </SpaLink>
                 );
               })

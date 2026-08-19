@@ -1,4 +1,4 @@
-/* Soft vertical nav — matches the icon + pill reference */
+/* Soft vertical nav — full labels, no ellipsis */
 .rpma-emp.is-side {
   display: flex !important;
   flex-direction: column !important;
@@ -6,7 +6,7 @@
 }
 .rpma-emp.is-side .rpma-emp-bodyrow {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: 292px minmax(0, 1fr);
   min-height: 0;
   flex: 1;
 }
@@ -17,12 +17,12 @@
   overflow: auto;
 }
 .rpma-side-h {
-  margin: 10px 10px 6px;
-  font-size: 10px;
+  margin: 12px 8px 6px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: #64748b;
 }
 .rpma-side-h:first-child { margin-top: 0; }
 .rpma-emp.is-side .rpma-emp-titles,
@@ -37,31 +37,35 @@
 }
 .rpma-emp.is-side .rpma-emp-gtab,
 .rpma-emp.is-side .rpma-emp-tool {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) auto !important;
   flex-direction: row !important;
   align-items: center !important;
-  justify-content: flex-start !important;
+  justify-content: stretch !important;
   gap: 10px !important;
   width: 100% !important;
-  min-height: 40px !important;
-  padding: 8px 12px !important;
+  min-height: 42px !important;
+  padding: 8px 10px !important;
   border: 0 !important;
   border-radius: 12px !important;
   background: transparent !important;
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  color: #1e293b !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
   text-align: left !important;
   box-shadow: none !important;
 }
 .rpma-emp.is-side .rpma-emp-gtab-name,
 .rpma-emp.is-side .rpma-emp-tool > span:last-child {
   flex: 1 !important;
+  min-width: 0 !important;
   text-align: left !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
   max-width: none !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
 }
 .rpma-emp.is-side .rpma-emp-gtab:hover,
 .rpma-emp.is-side .rpma-emp-tool:hover {
@@ -82,6 +86,8 @@
   height: 22px !important;
   background: transparent !important;
   border-radius: 0 !important;
+  display: grid !important;
+  place-items: center !important;
 }
 .rpma-emp.is-side .rpma-emp-work {
   min-width: 0;
@@ -89,7 +95,61 @@
   background: #f5f7fa;
 }
 .rpma-emp.is-side .rpma-emp-rag {
-  margin-left: auto !important;
+  margin-left: 0 !important;
+  justify-self: end;
+}
+
+html.dark .rpma-emp.is-side,
+html[data-theme="dark"] .rpma-emp.is-side {
+  background: #0f1722 !important;
+}
+html.dark .rpma-emp.is-side .rpma-side,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-side {
+  background: #15202c;
+  border-right-color: #243040;
+}
+html.dark .rpma-emp.is-side .rpma-side-h,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-side-h { color: #94a3b8; }
+html.dark .rpma-emp.is-side .rpma-emp-gtab,
+html.dark .rpma-emp.is-side .rpma-emp-tool,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-gtab,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-tool {
+  color: #e2e8f0 !important;
+}
+html.dark .rpma-emp.is-side .rpma-emp-gtab.is-on,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-gtab.is-on {
+  background: #1e3a5f !important;
+  color: #dbeafe !important;
+}
+html.dark .rpma-emp.is-side .rpma-emp-tool.is-on,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-tool.is-on {
+  background: #163528 !important;
+  color: #bbf7d0 !important;
+}
+html.dark .rpma-emp.is-side .rpma-emp-work,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-work { background: #0f1722; }
+
+/* Config / reporting rails — no ellipsis */
+.rpma-svc-row-name,
+.rpma-mod-row span,
+.rpma-eco-item span {
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+  font-weight: 700;
+}
+
+/* Headings bold throughout */
+.rpma-emp-body h1,
+.rpma-emp-body h2,
+.rpma-emp-body h3,
+.dk-pagehead h1,
+.dk-pagehead h2,
+.rpma-pane-h,
+.rpma-eco-h,
+.rpma-head-title,
+.rpma-emp-title strong {
+  font-weight: 800 !important;
 }
 
 /* Top app nav — same pill language */
@@ -113,7 +173,7 @@
   background: transparent !important;
   color: #334155 !important;
   font-size: 13px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   box-shadow: none !important;
 }
 .dk-header-navrow .dk-link:hover,
@@ -126,4 +186,18 @@
 .dk-header-navrow .rpma-top-link-active {
   background: #e8f0fe !important;
   color: #1e3a8a !important;
+}
+html.dark .dk-header-navrow,
+html[data-theme="dark"] .dk-header-navrow {
+  background: #15202c !important;
+  border-bottom-color: #243040 !important;
+}
+html.dark .dk-header-navrow .dk-link,
+html[data-theme="dark"] .dk-header-navrow .dk-link {
+  color: #e2e8f0 !important;
+}
+html.dark .dk-header-navrow .dk-link.is-active,
+html[data-theme="dark"] .dk-header-navrow .dk-link.is-active {
+  background: #1e3a5f !important;
+  color: #dbeafe !important;
 }

@@ -229,33 +229,8 @@ body {
 .rpma-glass .text-lg, .rpma-exco .text-lg, .rpma-eco-visuals .text-lg { font-size: 14px !important; overflow-wrap: anywhere; }
 
 .dk-shell { display: flex; flex-direction: column; min-height: 100dvh; padding-top: var(--pc-header-height); background: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-sans); --rpma-hud-h: 3.4rem; }
-.dk-brand { height: auto; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; justify-self: center; }
-.dk-brand-logo {
-  display: none;
-  height: 92px;
-  width: auto;
-  max-width: 420px;
-  object-fit: contain;
-  object-position: center;
-  background: transparent !important;
-}
-html.dark .dk-brand-logo.is-dark,
-html.carbon .dk-brand-logo.is-dark,
-html[data-theme="dark"] .dk-brand-logo.is-dark {
-  display: block;
-  filter: brightness(1.28) saturate(1.2) drop-shadow(0 0 10px rgba(46, 230, 166, 0.45));
-}
-html:not(.dark) .dk-brand-logo.is-light,
-html.snow .dk-brand-logo.is-light,
-html[data-theme="light"] .dk-brand-logo.is-light {
-  display: block;
-}
-html.dark .dk-brand-logo.is-light,
-html.carbon .dk-brand-logo.is-light,
-html[data-theme="dark"] .dk-brand-logo.is-light { display: none !important; }
-html:not(.dark) .dk-brand-logo.is-dark,
-html.snow .dk-brand-logo.is-dark,
-html[data-theme="light"] .dk-brand-logo.is-dark { display: none !important; }
+.dk-brand { height: auto; min-height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 8px; background: transparent; color: #fff; text-decoration: none; flex-shrink: 0; }
+.dk-brand-logo { display: none !important; }
 .dk-brand-reel {
   display: block;
   height: 82px;
@@ -329,13 +304,13 @@ html.dark .dk-brand-reel { mix-blend-mode: screen; }
 }
 .dk-header-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-items: stretch;
   gap: 16px;
   position: relative;
-  min-height: 104px;
-  padding: 6px 14px;
+  min-height: 62px;
+  padding: 4px 14px;
   flex: 0 0 auto;
   min-width: 0;
   overflow: visible;
@@ -353,24 +328,22 @@ html.dark .dk-brand-reel { mix-blend-mode: screen; }
 .dk-header-right {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
+  justify-content: flex-end;
+  gap: 10px;
   flex-shrink: 0;
   min-width: 0;
   max-width: none;
   z-index: 1;
-  justify-self: end;
-  padding-right: 8px;
 }
 .dk-header-one .dk-brand, .dk-header-tall .dk-brand {
   height: auto;
-  padding: 0;
-  justify-self: center;
+  padding: 0 4px;
+  justify-self: start;
   align-items: center;
 }
 .dk-nav.is-top { display: contents; }
-.dk-shell.is-topnav { --pc-header-height: 148px; --rpma-hud-h: 0px; }
-.dk-shell.is-topnav.is-menu-open { --pc-header-height: 148px; }
+.dk-shell.is-topnav { --pc-header-height: 108px; --rpma-hud-h: 0px; }
+.dk-shell.is-topnav.is-menu-open { --pc-header-height: 108px; }
 .dk-header-navrow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4226,8 +4199,8 @@ html[data-density="comfortable"] .rpma-d3-detail {
   font-size: 13px;
 }
 
-html[data-density="compact"] .dk-header-row { min-height: 100px; padding: 4px 12px; }
-html[data-density="comfortable"] .dk-header-row { min-height: 112px; padding: 8px 16px; }
+html[data-density="compact"] .dk-header-row { min-height: 58px; padding: 3px 12px; }
+html[data-density="comfortable"] .dk-header-row { min-height: 70px; padding: 6px 16px; }
 html[data-density="compact"] .dk-header-navrow { min-height: 30px; }
 html[data-density="comfortable"] .dk-header-navrow { min-height: 36px; }
 html[data-density="compact"] .dk-header-navrow .dk-link {
