@@ -49,9 +49,16 @@ import { NoCover, NoCoverPanel } from "@/components/ui/no-cover";
 import { HelpTip, MetricLabel } from "@/components/ui/help-tip";
 import { classifyRmmDevice, classifyServerHardware, isRmmServer, isRmmWorkstation } from "@/lib/data/rmm-device-class";
 import { rmmDeviceBelongsToCustomer, tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
+import {
+  summarizeFirewall,
+  firewallLevelTone,
+  firewallLevelLabel,
+  exposureLabel,
+} from "@/lib/data/firewall-risk";
 import { ServerKindIcon } from "@/components/customer/server-kind-icon";
 import { assuranceTone } from "@/lib/data/rag-score";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
+import { DataWindow } from "@/components/customer/data-window";
 import { CHART } from "@/lib/brand-colors";
 import { SignedSlaPanel } from "@/components/customer/signed-sla-panel";
 import { CustomerSlaTree } from "@/components/customer/sla-tree";
@@ -842,6 +849,8 @@ export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
               hint="Agents that sent Updates counters"
             />
           </div>
+
+          <FirewallEstateStrip devices={rmm?.devices ?? []} />
 
           {s.lastImportAt ? (
             <p className="text-xs text-muted">
@@ -1719,6 +1728,7 @@ export function RmmDevicesSection({
             : "Server-class devices only. Workstations and laptops are under the Workstations module. Offline devices listed first."
         }
       />
+      {mode === "servers" ? <FirewallEstateStrip devices={devices} compact /> : null}
       {devices.length === 0 ? (
         <p className="text-sm text-muted">
           {mode === "workstations"
@@ -2077,21 +2087,9 @@ function ServerFirewallPanel({
 }: {
   snapshot: import("@/lib/data/types").HostFirewallSnapshot | null | undefined;
 }) {
-  const order = ["Public", "Domain", "Private"] as const;
-  const profiles = snapshot?.profiles ?? [];
-  const ordered = order.map((name) => {
-    const hit = profiles.find((p) => p.name === name);
-    return (
-      hit ?? {
-        name,
-        enabled: false,
-        active: false,
-        ports: [] as import("@/lib/data/types").HostFirewallPort[],
-      }
-    );
-  });
-  const have = Boolean(snapshot);
-  const active = ordered.filter((p) => p.active).map((p) => p.name);
+  const sum = summarizeFirewall(snapshot);
+  const tone = firewallLevelTone(sum.level);
+
   return (
     <div className="space-y-2">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
@@ -2099,103 +2097,118 @@ function ServerFirewallPanel({
           <Shield className="h-3.5 w-3.5" aria-hidden />
           Windows Firewall
         </p>
-        {have && snapshot?.snapshotUtc ? (
+        {sum.have && sum.sampledUtc ? (
           <span className="font-mono text-[10px] text-muted">
-            {formatSastDateTime(snapshot.snapshotUtc)}
-            {snapshot.source ? ` · ${snapshot.source}` : ""}
+            {formatSastDateTime(sum.sampledUtc)}
+            {sum.source ? ` · ${sum.source}` : ""}
           </span>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {ordered.map((p) => (
-          <span
-            key={p.name}
-            className={
-              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold " +
-              (p.active
-                ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                : p.enabled
-                  ? "border-sky-300/70 bg-sky-500/10 text-sky-800 dark:text-sky-300"
-                  : "border-border bg-surface-2 text-muted")
-            }
-            title={
-              p.active
-                ? `${p.name} is the active network profile`
-                : p.enabled
-                  ? `${p.name} firewall is on, not the current network`
-                  : `${p.name} firewall is off`
-            }
-          >
-            <i
-              className={
-                "inline-block h-1.5 w-1.5 rounded-full " +
-                (p.active ? "bg-emerald-500" : p.enabled ? "bg-sky-400" : "bg-slate-400")
-              }
-            />
-            {p.name}
-            <em className="not-italic font-semibold opacity-80">
-              {p.active ? "Active" : p.enabled ? "On" : "Off"}
-            </em>
-          </span>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted">
-        {have
-          ? active.length
-            ? `Active profile: ${active.join(", ")}`
-            : "No network profile marked active on last collect."
-          : "No firewall collect yet. Schedule Pulseway-Collect-Firewall.ps1 or wait for the Assure agent (hourly)."}
-      </p>
-      <div className="grid gap-2 md:grid-cols-3">
-        {ordered.map((p) => (
-          <div
-            key={p.name}
-            className={
-              "overflow-hidden rounded-lg border bg-surface " +
-              (p.active ? "border-emerald-400/50" : "border-border")
-            }
-          >
-            <div
-              className={
-                "flex items-center justify-between gap-2 border-b px-2.5 py-1.5 " +
-                (p.active
-                  ? "border-emerald-400/30 bg-emerald-500/10"
-                  : "border-border bg-surface-2")
-              }
-            >
-              <p className="text-[11px] font-extrabold text-fg">
-                {p.name} - Exposed Ports
-              </p>
-              <span className="font-mono text-[10px] text-muted">{p.ports.length}</span>
+
+      {!sum.have ? (
+        <p className="text-[11px] text-muted">
+          No firewall collect yet. Pulseway-Collect-Firewall.ps1 or the Assure agent (hourly).
+        </p>
+      ) : (
+        <>
+          <div className={"rpma-fw-rx is-" + tone}>
+            <div>
+              <em>Risk</em>
+              <strong>{firewallLevelLabel(sum.level)}</strong>
             </div>
-            <div className="max-h-44 min-h-[4.5rem] overflow-auto px-2.5 py-1.5">
-              {p.ports.length === 0 ? (
-                <p className="text-[11px] text-muted">
-                  {have ? "No inbound allow ports on this profile." : "Waiting for collect."}
-                </p>
-              ) : (
-                <ul className="space-y-0.5">
-                  {p.ports.map((port, i) => (
-                    <li
-                      key={`${p.name}-${port.port}-${port.proto}-${i}`}
-                      className="flex items-baseline justify-between gap-2 font-mono text-[11px]"
-                    >
-                      <span className="shrink-0 font-bold text-fg">
-                        {port.proto} {port.port}
-                      </span>
-                      <span
-                        className="min-w-0 truncate text-right text-[10px] text-muted"
-                        title={port.name}
-                      >
-                        {port.name || "rule"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <b>×</b>
+            <div>
+              <em>Exposure</em>
+              <strong>{exposureLabel(sum.exposure, sum.activeProfile)}</strong>
+            </div>
+            <b>=</b>
+            <div>
+              <em>Score</em>
+              <span className="rpma-fw-score">{sum.score}</span>
             </div>
           </div>
-        ))}
+          <p className="text-[10px] text-muted">
+            {sum.activeProfile
+              ? `${sum.activeProfile} profile ${sum.firewallOn ? "on" : "off"}`
+              : "No active profile"}
+            {sum.findings[0] ? ` · worst ${sum.findings[0].label}` : " · no high-risk ports"}
+          </p>
+          {sum.findings.length > 0 ? (
+            <ul className="rpma-fw-hits">
+              {sum.findings.map((f) => (
+                <li key={f.key}>
+                  <span className="min-w-0 truncate font-bold text-fg">
+                    {f.label}
+                    {f.port !== "—" ? (
+                      <span className="ml-1.5 font-normal text-muted">
+                        {f.proto} {f.port}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="shrink-0 text-muted">
+                    {f.risk}×{f.exposure}
+                    <span className="ml-1.5 font-extrabold text-fg">{f.score}</span>
+                    <span className="ml-1.5 text-[10px]">{f.profile}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[11px] text-muted">No high-risk inbound exposure on last collect.</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function FirewallEstateStrip({
+  devices,
+  compact,
+}: {
+  devices: Array<{ firewall?: import("@/lib/data/types").HostFirewallSnapshot | null }>;
+  compact?: boolean;
+}) {
+  const rows = devices
+    .map((d) => summarizeFirewall(d.firewall))
+    .filter((s) => s.have);
+  if (rows.length === 0) return null;
+  const worst = rows.reduce((a, b) => (b.score > a.score ? b : a), rows[0]);
+  const high = rows.filter((s) => s.level === "high" || s.level === "critical").length;
+  const mid = rows.filter((s) => s.level === "medium").length;
+  const low = rows.filter((s) => s.level === "low").length;
+  const tone = firewallLevelTone(worst.level);
+  if (compact) {
+    return (
+      <p className="text-[11px] text-muted">
+        Firewall risk × exposure · {rows.length} host{rows.length === 1 ? "" : "s"} scored
+        {high ? ` · ${high} high` : ""}
+        {mid ? ` · ${mid} medium` : ""}
+        {low ? ` · ${low} low` : ""}
+        {` · worst ${worst.score}`}
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <ChartCaption
+        title="Firewall · Risk × Exposure"
+        why="Highest inbound risk times how exposed it is (Public / LAN / Domain). Not a full rule dump."
+      />
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Hosts scored"
+          value={rows.length}
+          hint="Last firewall collect"
+        />
+        <StatCard
+          label="Worst score"
+          value={worst.score}
+          tone={tone === "red" ? "red" : tone === "amber" ? "amber" : "default"}
+          hint={`${firewallLevelLabel(worst.level)} × ${exposureLabel(worst.exposure, worst.activeProfile)}`}
+        />
+        <StatCard label="High / critical" value={high} tone={high > 0 ? "red" : "default"} />
+        <StatCard label="Medium" value={mid} tone={mid > 0 ? "amber" : "default"} />
       </div>
     </div>
   );
@@ -4369,93 +4382,91 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
   }
 
   return (
-    <div className="space-y-3">
-      <ChartCaption
+    <div className="rpma-win-stack">
+      <DataWindow
         title="Customer incidents — Freshdesk + SLA clocks"
-        why="Tickets from Freshdesk (mapped companies only) land in Fact_Incident. Response/resolve scored against Dim_SlaPolicy. Manual log still available for Assure-only incidents."
-      />
+        subtitle="Tickets from Freshdesk (mapped companies only) land in Fact_Incident. Response/resolve scored against Dim_SlaPolicy."
+      >
+        <div className="p-2">
+          <EcoKpis
+            items={[
+              { label: "Open", value: open.length, tone: open.length > 0 ? "amber" : "green" },
+              {
+                label: "Major open",
+                value: summary?.majorOpenCount ?? open.filter((i) => i.isMajor).length,
+                tone: (summary?.majorOpenCount ?? 0) > 0 ? "red" : "default",
+              },
+              {
+                label: "Response breach",
+                value: summary?.responseBreach ?? incidents.filter((i) => i.responseSlaMet === false).length,
+                tone: (summary?.responseBreach ?? 0) > 0 ? "red" : "green",
+              },
+              {
+                label: "Resolve breach",
+                value: summary?.resolveBreach ?? incidents.filter((i) => i.resolveSlaMet === false).length,
+                tone: (summary?.resolveBreach ?? 0) > 0 ? "red" : "green",
+              },
+            ]}
+          />
+        </div>
+      </DataWindow>
 
-      <EcoKpis
-        items={[
-          { label: "Open", value: open.length, tone: open.length > 0 ? "amber" : "green" },
-          {
-            label: "Major open",
-            value: summary?.majorOpenCount ?? open.filter((i) => i.isMajor).length,
-            tone: (summary?.majorOpenCount ?? 0) > 0 ? "red" : "default",
-          },
-          {
-            label: "Response breach",
-            value: summary?.responseBreach ?? incidents.filter((i) => i.responseSlaMet === false).length,
-            tone: (summary?.responseBreach ?? 0) > 0 ? "red" : "green",
-          },
-          {
-            label: "Resolve breach",
-            value: summary?.resolveBreach ?? incidents.filter((i) => i.resolveSlaMet === false).length,
-            tone: (summary?.resolveBreach ?? 0) > 0 ? "red" : "green",
-          },
-        ]}
-      />
+      <DataWindow title="Ticket register (module data)" fill>
+        {incidents.length === 0 ? (
+          <p className="p-4 text-[12px] text-muted">
+            No Freshdesk or Assure incidents for this customer in the last 30 days.
+          </p>
+        ) : (
+          <table className="w-full text-left text-[12px]">
+            <thead className="rpma-table-head">
+              <tr>
+                <th className="px-2 py-1.5">Ticket</th>
+                <th className="px-2 py-1.5">Subject</th>
+                <th className="px-2 py-1.5">Pri</th>
+                <th className="px-2 py-1.5">Status</th>
+                <th className="px-2 py-1.5">Opened</th>
+                <th className="px-2 py-1.5">Response</th>
+                <th className="px-2 py-1.5">Restore</th>
+                <th className="px-2 py-1.5">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {incidents.map((inc, i) => {
+                const fd = inc.externalRef && /^FD-\d+$/i.test(inc.externalRef)
+                  ? inc.externalRef.replace(/^FD-/i, "")
+                  : null;
+                return (
+                  <tr key={inc.incidentId ?? i} className="border-t border-border">
+                    <td className="px-2 py-1.5 font-mono text-[11px] whitespace-nowrap">
+                      {fd ? (
+                        <a
+                          className="text-primary underline-offset-2 hover:underline"
+                          href={`https://rpmresourceshelp.freshdesk.com/a/tickets/${fd}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          #{fd}
+                        </a>
+                      ) : (
+                        inc.externalRef || "—"
+                      )}
+                    </td>
+                    <td className="px-2 py-1.5 font-medium text-fg">{inc.title}</td>
+                    <td className="px-2 py-1.5">{inc.priority || inc.severity}</td>
+                    <td className="px-2 py-1.5">{inc.status}</td>
+                    <td className="px-2 py-1.5 whitespace-nowrap">{formatSastDateTime(inc.openedAt)}</td>
+                    <td className="px-2 py-1.5">{slaBadge(inc.responseSlaMet, "Ack")}</td>
+                    <td className="px-2 py-1.5">{slaBadge(inc.resolveSlaMet, "Restore")}</td>
+                    <td className="px-2 py-1.5 text-muted">{inc.sourceSystem || "Assure"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </DataWindow>
 
-      <Card>
-        <CardHead>Ticket register (module data)</CardHead>
-        <CardContent className="overflow-x-auto p-0">
-          {incidents.length === 0 ? (
-            <p className="p-4 text-[12px] text-muted">
-              No Freshdesk or Assure incidents for this customer in the last 30 days.
-            </p>
-          ) : (
-            <table className="w-full text-left text-[12px]">
-              <thead className="rpma-table-head">
-                <tr>
-                  <th className="px-2 py-1.5">Ticket</th>
-                  <th className="px-2 py-1.5">Subject</th>
-                  <th className="px-2 py-1.5">Pri</th>
-                  <th className="px-2 py-1.5">Status</th>
-                  <th className="px-2 py-1.5">Opened</th>
-                  <th className="px-2 py-1.5">Response</th>
-                  <th className="px-2 py-1.5">Restore</th>
-                  <th className="px-2 py-1.5">Source</th>
-                </tr>
-              </thead>
-              <tbody>
-                {incidents.map((inc, i) => {
-                  const fd = inc.externalRef && /^FD-\d+$/i.test(inc.externalRef)
-                    ? inc.externalRef.replace(/^FD-/i, "")
-                    : null;
-                  return (
-                    <tr key={inc.incidentId ?? i} className="border-t border-border">
-                      <td className="px-2 py-1.5 font-mono text-[11px] whitespace-nowrap">
-                        {fd ? (
-                          <a
-                            className="text-primary underline-offset-2 hover:underline"
-                            href={`https://rpmresourceshelp.freshdesk.com/a/tickets/${fd}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            #{fd}
-                          </a>
-                        ) : (
-                          inc.externalRef || "—"
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 font-medium text-fg">{inc.title}</td>
-                      <td className="px-2 py-1.5">{inc.priority || inc.severity}</td>
-                      <td className="px-2 py-1.5">{inc.status}</td>
-                      <td className="px-2 py-1.5 whitespace-nowrap">{formatSastDateTime(inc.openedAt)}</td>
-                      <td className="px-2 py-1.5">{slaBadge(inc.responseSlaMet, "Ack")}</td>
-                      <td className="px-2 py-1.5">{slaBadge(inc.resolveSlaMet, "Restore")}</td>
-                      <td className="px-2 py-1.5 text-muted">{inc.sourceSystem || "Assure"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHead>Log incident (starts SLA clock)</CardHead>
+      <DataWindow title="Log incident (starts SLA clock)" className="is-fixed">
         <CardContent className="space-y-2 p-4">
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
@@ -4489,11 +4500,10 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
           </div>
           {msg ? <p className="text-[12px] text-muted">{msg}</p> : null}
         </CardContent>
-      </Card>
+      </DataWindow>
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        <Card>
-          <CardHead>Open / active incidents</CardHead>
+      <div className="rpma-win-row">
+        <DataWindow title="Open / active incidents" fill>
           <CardContent className="space-y-2 p-3">
             {open.length === 0 ? (
               <p className="text-[12px] text-muted">No open incidents on the live feed.</p>
@@ -4562,10 +4572,9 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
               ))
             )}
           </CardContent>
-        </Card>
+        </DataWindow>
 
-        <Card>
-          <CardHead>Problems</CardHead>
+        <DataWindow title="Problems" fill>
           <CardContent className="space-y-2 p-3">
             {(data.problems ?? []).length === 0 ? (
               <p className="text-[12px] text-muted">No open problems on Fact_Problem.</p>
@@ -4596,7 +4605,7 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
               </div>
             ) : null}
           </CardContent>
-        </Card>
+        </DataWindow>
       </div>
     </div>
   );
@@ -4604,9 +4613,9 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
 
 export function RisksSection({ data }: { data: CustomerDetailPayload }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
-      <Card>
-        <CardHead>Risks</CardHead>
+    <div className="rpma-win-stack">
+      <div className="rpma-win-row" style={{ flex: "1 1 auto" }}>
+        <DataWindow title="Risks" fill>
         <CardContent className="space-y-2">
           {(data.risks ?? []).map((r, i) => (
             <div key={i} className="rounded-md border border-border px-3 py-2 text-sm">
@@ -4620,9 +4629,8 @@ export function RisksSection({ data }: { data: CustomerDetailPayload }) {
             </div>
           ))}
         </CardContent>
-      </Card>
-      <Card>
-        <CardHead>Issues & priorities</CardHead>
+        </DataWindow>
+        <DataWindow title="Issues & priorities" fill>
         <CardContent className="space-y-2">
           {(data.issues ?? []).map((iss, i) => (
             <div key={`i${i}`} className="text-sm">
@@ -4637,7 +4645,8 @@ export function RisksSection({ data }: { data: CustomerDetailPayload }) {
             </div>
           ))}
         </CardContent>
-      </Card>
+        </DataWindow>
+      </div>
     </div>
   );
 }

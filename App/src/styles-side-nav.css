@@ -9,6 +9,7 @@
   grid-template-columns: 292px minmax(0, 1fr);
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 .rpma-side {
   background: #fff;
@@ -90,8 +91,12 @@
   place-items: center !important;
 }
 .rpma-emp.is-side .rpma-emp-work {
+  display: flex !important;
+  flex-direction: column !important;
   min-width: 0;
-  overflow: auto;
+  min-height: 0 !important;
+  height: 100%;
+  overflow: hidden !important;
   background: #f5f7fa;
 }
 .rpma-emp.is-side .rpma-emp-rag {
@@ -200,4 +205,158 @@ html.dark .dk-header-navrow .dk-link.is-active,
 html[data-theme="dark"] .dk-header-navrow .dk-link.is-active {
   background: #1e3a5f !important;
   color: #dbeafe !important;
+}
+
+/* ---- Right pane windows: heading bar stays, body scrolls ---- */
+.rpma-emp.is-side .rpma-emp-body,
+.rpma-emp.is-side .rpma-emp-body.is-pad {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 10px !important;
+}
+
+.rpma-win-stack,
+.rpma-emp.is-side .rpma-emp-body > .space-y-3,
+.rpma-emp.is-side .rpma-emp-body > .rpma-exco {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+.rpma-emp.is-side .rpma-emp-body > .space-y-3 > :not([hidden]) ~ :not([hidden]),
+.rpma-win-stack > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0 !important;
+}
+
+.rpma-win {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid #d5dde5;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+}
+.rpma-win.is-fill { flex: 1 1 auto; }
+.rpma-win.is-fixed { flex: 0 0 auto; }
+.rpma-win-row {
+  flex: 0 1 200px;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.rpma-win-row .rpma-win { min-height: 0; }
+.rpma-win-head {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 12px;
+  background: #eaf6df;
+  border-bottom: 1px solid #c8e0b0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: #163024;
+  line-height: 1.25;
+}
+.rpma-win-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: #163024;
+  line-height: 1.25;
+}
+.rpma-win-head p {
+  margin: 3px 0 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #4b6a4a;
+  line-height: 1.35;
+}
+.rpma-win-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.rpma-win-body table { width: 100%; border-collapse: collapse; }
+.rpma-win-body thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f3f8ee !important;
+  color: #163024 !important;
+  font-weight: 800 !important;
+}
+
+.rpma-panel-heading,
+.rpma-pane-head,
+.rpma-pane-head-row,
+.rpma-emp.is-side .rpma-card > .rpma-panel-heading,
+.rpma-emp.is-side .rpma-eco-head {
+  background: #eaf6df !important;
+  border-bottom: 1px solid #c8e0b0 !important;
+  color: #163024 !important;
+  font-weight: 800 !important;
+}
+.rpma-emp.is-side .rpma-eco-head h2,
+.rpma-emp.is-side .rpma-panel-heading,
+.rpma-emp.is-side .rpma-pane-head {
+  color: #163024 !important;
+  font-weight: 800 !important;
+}
+.rpma-emp.is-side .rpma-eco-head p { color: #4b6a4a !important; }
+
+.rpma-emp.is-side .rpma-card,
+.rpma-emp.is-side .rpma-pane,
+.rpma-emp.is-side .rpma-glass {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.rpma-emp.is-side .rpma-card:has(table),
+.rpma-emp.is-side .rpma-glass:has(table),
+.rpma-emp.is-side .rpma-pane:has(table) {
+  flex: 1 1 auto;
+}
+.rpma-emp.is-side .rpma-card:has(table) > :last-child,
+.rpma-emp.is-side .rpma-glass:has(table) > :last-child,
+.rpma-emp.is-side .rpma-pane:has(table) > :last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+html.dark .rpma-win,
+html[data-theme="dark"] .rpma-win {
+  background: #12202c;
+  border-color: #243444;
+}
+html.dark .rpma-win-head,
+html.dark .rpma-panel-heading,
+html.dark .rpma-pane-head,
+html.dark .rpma-pane-head-row,
+html.dark .rpma-emp.is-side .rpma-eco-head,
+html[data-theme="dark"] .rpma-win-head,
+html[data-theme="dark"] .rpma-panel-heading,
+html[data-theme="dark"] .rpma-pane-head {
+  background: #1a3324 !important;
+  border-bottom-color: #2d5a3c !important;
+  color: #d8f5d2 !important;
+}
+html.dark .rpma-win-head h2,
+html[data-theme="dark"] .rpma-win-head h2 { color: #d8f5d2 !important; }
+html.dark .rpma-win-head p,
+html.dark .rpma-emp.is-side .rpma-eco-head p,
+html[data-theme="dark"] .rpma-win-head p { color: #9ccc96 !important; }
+html.dark .rpma-win-body thead th,
+html[data-theme="dark"] .rpma-win-body thead th {
+  background: #1a3324 !important;
+  color: #d8f5d2 !important;
 }

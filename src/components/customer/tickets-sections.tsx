@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Ticket } from "lucide-react";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
-import { EcoHead } from "@/components/customer/eco-kpis";
+import { EcoKpis } from "@/components/customer/eco-kpis";
+import { DataWindow } from "@/components/customer/data-window";
 import { formatSastDateTime } from "@/lib/utils";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
 import {
@@ -117,39 +117,42 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   const code = data.customer.customerCode;
   const base = `/customers/${code}/tickets`;
   return (
-    <div className="rpma-exco">
-      <EcoHead
+    <div className="rpma-win-stack">
+      <DataWindow
         title="Customer Tickets"
         subtitle={`${data.customer.displayName} · Freshdesk · last 90 days · ${s.total} tickets`}
-        icon={<Ticket className="h-4 w-4 text-primary" aria-hidden />}
-        kpis={[
-          { label: "Open", value: s.open, tone: s.open > 0 ? "amber" : "green", href: `${base}/open` },
-          { label: "Resolved", value: s.resolved, href: `${base}/resolved` },
-          { label: "Closed", value: s.closed, href: `${base}/closed` },
-          {
-            label: "SLA",
-            value: sla.overallPct != null ? `${sla.overallPct}%` : "—",
-            tone: (sla.overallPct ?? 100) < 90 ? "amber" : "green",
-            href: `${base}/sla`,
-          },
-          {
-            label: "Response",
-            value: sla.responsePct != null ? `${sla.responsePct}%` : "—",
-            tone: (sla.responsePct ?? 100) < 90 ? "amber" : "green",
-            href: `${base}/sla`,
-          },
-          {
-            label: "Restore",
-            value: sla.resolvePct != null ? `${sla.resolvePct}%` : "—",
-            tone: (sla.resolvePct ?? 100) < 90 ? "amber" : "green",
-            href: `${base}/sla`,
-          },
-        ]}
-      />
-      <div className="rpma-glass">
-        <p className="px-3 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">Latest tickets</p>
+      >
+        <div className="p-2">
+          <EcoKpis
+            items={[
+              { label: "Open", value: s.open, tone: s.open > 0 ? "amber" : "green", href: `${base}/open` },
+              { label: "Resolved", value: s.resolved, href: `${base}/resolved` },
+              { label: "Closed", value: s.closed, href: `${base}/closed` },
+              {
+                label: "SLA",
+                value: sla.overallPct != null ? `${sla.overallPct}%` : "—",
+                tone: (sla.overallPct ?? 100) < 90 ? "amber" : "green",
+                href: `${base}/sla`,
+              },
+              {
+                label: "Response",
+                value: sla.responsePct != null ? `${sla.responsePct}%` : "—",
+                tone: (sla.responsePct ?? 100) < 90 ? "amber" : "green",
+                href: `${base}/sla`,
+              },
+              {
+                label: "Restore",
+                value: sla.resolvePct != null ? `${sla.resolvePct}%` : "—",
+                tone: (sla.resolvePct ?? 100) < 90 ? "amber" : "green",
+                href: `${base}/sla`,
+              },
+            ]}
+          />
+        </div>
+      </DataWindow>
+      <DataWindow title="Latest tickets" fill>
         <TicketTable rows={rows.slice(0, 16)} empty="No tickets exist for this customer." />
-      </div>
+      </DataWindow>
     </div>
   );
 }
@@ -178,28 +181,37 @@ export function TicketsListSection({
   const code = data.customer.customerCode;
   const base = `/customers/${code}/tickets`;
   return (
-    <div className="rpma-exco">
-      <EcoHead
+    <div className="rpma-win-stack">
+      <DataWindow
         title={title}
         subtitle={`${data.customer.displayName} · ${rows.length} ticket${rows.length === 1 ? "" : "s"}`}
-        kpis={[
-          { label: "Open", value: all.open, tone: all.open > 0 ? "amber" : "green", href: `${base}/open` },
-          { label: "Resolved", value: all.resolved, href: `${base}/resolved` },
-          { label: "Closed", value: all.closed, href: `${base}/closed` },
-          {
-            label: "SLA",
-            value: all.sla.overallPct != null ? `${all.sla.overallPct}%` : "—",
-            tone: (all.sla.overallPct ?? 100) < 90 ? "amber" : "green",
-            href: `${base}/sla`,
-          },
-        ]}
-      />
+      >
+        <div className="p-2">
+          <EcoKpis
+            items={[
+              { label: "Open", value: all.open, tone: all.open > 0 ? "amber" : "green", href: `${base}/open` },
+              { label: "Resolved", value: all.resolved, href: `${base}/resolved` },
+              { label: "Closed", value: all.closed, href: `${base}/closed` },
+              {
+                label: "SLA",
+                value: all.sla.overallPct != null ? `${all.sla.overallPct}%` : "—",
+                tone: (all.sla.overallPct ?? 100) < 90 ? "amber" : "green",
+                href: `${base}/sla`,
+              },
+            ]}
+          />
+        </div>
+      </DataWindow>
       {rows.length === 0 ? (
-        <p className="px-3 py-4 text-[12px] text-muted">{empty}</p>
+        <DataWindow title={title} fill>
+          <p className="px-3 py-4 text-[12px] text-muted">{empty}</p>
+        </DataWindow>
       ) : (
-        <StickyPickSplit title={title} items={items} selected={items.some((i) => i.id === sel) ? sel : items[0].id} onSelect={setSel}>
-          {picked ? <TicketTable rows={[picked]} empty={empty} /> : null}
-        </StickyPickSplit>
+        <DataWindow title={title} fill>
+          <StickyPickSplit title={title} items={items} selected={items.some((i) => i.id === sel) ? sel : items[0].id} onSelect={setSel}>
+            {picked ? <TicketTable rows={[picked]} empty={empty} /> : null}
+          </StickyPickSplit>
+        </DataWindow>
       )}
     </div>
   );
@@ -224,39 +236,41 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
   const code = data.customer.customerCode;
   const base = `/customers/${code}/tickets`;
   return (
-    <div className="rpma-exco">
-      <EcoHead
+    <div className="rpma-win-stack">
+      <DataWindow
         title="Customer Tickets · SLA"
         subtitle="SAST 08:00–17:00 · 90% target · open clocks are not misses"
-        kpis={[
-          {
-            label: "SLA",
-            value: pack.overallPct != null ? `${pack.overallPct}%` : "—",
-            tone: (pack.overallPct ?? 100) < 90 ? "amber" : "green",
-          },
-          {
-            label: "Response",
-            value: pack.responsePct != null ? `${pack.responsePct}%` : "—",
-            tone: (pack.responsePct ?? 100) < 90 ? "amber" : "green",
-          },
-          {
-            label: "Restore",
-            value: pack.resolvePct != null ? `${pack.resolvePct}%` : "—",
-            tone: (pack.resolvePct ?? 100) < 90 ? "amber" : "green",
-          },
-          { label: "Open", value: pack.open, tone: pack.open > 0 ? "amber" : "green", href: `${base}/open` },
-          { label: "Met", value: `${pack.responseMet}/${pack.responseScored || 0}` },
-          {
-            label: "Breach",
-            value: pack.responseBreach + pack.resolveBreach,
-            tone: pack.responseBreach + pack.resolveBreach > 0 ? "red" : "green",
-          },
-        ]}
-      />
-      <div className="rpma-glass overflow-x-auto">
-        <p className="px-3 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-          Actual vs signed clock (30 days)
-        </p>
+      >
+        <div className="p-2">
+          <EcoKpis
+            items={[
+              {
+                label: "SLA",
+                value: pack.overallPct != null ? `${pack.overallPct}%` : "—",
+                tone: (pack.overallPct ?? 100) < 90 ? "amber" : "green",
+              },
+              {
+                label: "Response",
+                value: pack.responsePct != null ? `${pack.responsePct}%` : "—",
+                tone: (pack.responsePct ?? 100) < 90 ? "amber" : "green",
+              },
+              {
+                label: "Restore",
+                value: pack.resolvePct != null ? `${pack.resolvePct}%` : "—",
+                tone: (pack.resolvePct ?? 100) < 90 ? "amber" : "green",
+              },
+              { label: "Open", value: pack.open, tone: pack.open > 0 ? "amber" : "green", href: `${base}/open` },
+              { label: "Met", value: `${pack.responseMet}/${pack.responseScored || 0}` },
+              {
+                label: "Breach",
+                value: pack.responseBreach + pack.resolveBreach,
+                tone: pack.responseBreach + pack.resolveBreach > 0 ? "red" : "green",
+              },
+            ]}
+          />
+        </div>
+      </DataWindow>
+      <DataWindow title="Actual vs signed clock (30 days)" fill>
         <table className="w-full text-left text-[12px]">
           <thead className="rpma-table-head">
             <tr>
@@ -293,7 +307,7 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
         <p className="px-3 py-2 text-[11px] text-subtle">
           {RPM_CONTRACT_RULES.businessHours} {RPM_CONTRACT_RULES.measuredAs}
         </p>
-      </div>
+      </DataWindow>
     </div>
   );
 }
