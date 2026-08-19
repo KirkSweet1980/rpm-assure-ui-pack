@@ -73,7 +73,7 @@ export function ClassicTenantNav({
   const picked = pillarFromPath(path, base);
   const pillar = CUSTOMER_PILLARS.find((p) => p.id === picked);
   const modules = picked === "eco" ? ECOSYSTEM_MODULES : pillar?.modules ?? ECOSYSTEM_MODULES;
-  const heading = picked === "eco" ? "Tenant Modules" : pillar?.modulesHeading ?? "Modules";
+  const heading = picked === "eco" ? "RPM Service Modules" : pillar?.modulesHeading ?? "RPM Service Modules";
   const dormant = isDormantCover(cover);
 
   return (

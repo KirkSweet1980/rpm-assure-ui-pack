@@ -191,7 +191,7 @@ export function EmpChrome({
       </div>
       <div className="rpma-emp-bodyrow">
         <nav className="rpma-side" aria-label="Tenant navigation">
-          <p className="rpma-side-h">Services</p>
+          <p className="rpma-side-h">RPM Services</p>
           <div className="rpma-emp-titles">
             {RIBBON.filter((g) => g.id === "estate" || g.id === group.id || pillarCovered(g.id, live)).map((g) => {
               const on =
@@ -215,7 +215,7 @@ export function EmpChrome({
               );
             })}
           </div>
-          <p className="rpma-side-h">Modules</p>
+          <p className="rpma-side-h">RPM Service Modules</p>
           <div className="rpma-emp-tools">
             {group.items.filter((it) => itemVisible(it, rest, live)).map((it) => {
               const Icon = it.icon;

@@ -20,8 +20,8 @@ export function CorpWorkspaceRail({
   homeHref,
   services,
   pathname,
-  servicesHeading = "Services",
-  modulesHeading = "Service Modules",
+  servicesHeading = "RPM Services",
+  modulesHeading = "RPM Service Modules",
   stacked = false,
   homeLabel = "Overview",
 }: {
@@ -93,7 +93,7 @@ export function CorpWorkspaceRail({
       {stacked ? (
         <section className="rpma-nav-block">
           <div className="rpma-pillar-rail-head">
-            <h2>{active ? `${active.title} Modules` : modulesHeading}</h2>
+            <h2>{active ? "RPM Service Modules" : modulesHeading}</h2>
             <HelpTip text="Pages inside the selected service. Forms and inputs open on the right." />
           </div>
           <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>

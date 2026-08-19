@@ -188,7 +188,7 @@ const ECO_PILLAR = {
   id: "eco",
   title: "Tenant",
   short: "Tenant",
-  modulesHeading: "Tenant modules",
+  modulesHeading: "RPM Service Modules",
   overview: "",
   icon: LayoutDashboard,
   color: "#0d9488",
@@ -287,7 +287,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
 
       <section className="rpma-mod-col">
         <div className="rpma-pillar-rail-head">
-          <h2>{modulesHeading}</h2>
+          <h2>RPM Service Modules</h2>
           <HelpTip text="Modules for the selected service. Robot is live RAG. Cover chip is scope." />
         </div>
         <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
