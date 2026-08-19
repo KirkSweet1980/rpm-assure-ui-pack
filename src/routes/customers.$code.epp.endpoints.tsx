@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { Route as PillarRoute } from "./customers.$code.epp";
 import { NoCoverPanel } from "@/components/ui/no-cover";
-import { StickyPickSplit } from "@/components/customer/tenant-tree";
+import { DataWindow } from "@/components/customer/data-window";
+import { ServerKindIcon } from "@/components/customer/server-kind-icon";
 import { formatSastDateTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/customers/$code/epp/endpoints")({
   component: function CustomerChild() {
@@ -19,47 +20,101 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
     if (!covered) {
       return (
         <NoCoverPanel
-          service="RPM EndPoint Protection · Endpoints"
-          hint={epp?.message || "No cover — no RPM EndPoint Protection endpoints mapped to this customer."}
+          service="RPM End Point Protection · EndPoint Agents"
+          hint={epp?.message || "No cover — no RPM End Point Protection endpoints mapped to this customer."}
         />
       );
     }
     const picked = devices.find((d) => d.endpointId === sel) ?? devices[0];
+    const updateLabel = (d: (typeof devices)[0] | undefined) => {
+      if (!d) return "—";
+      if (d.productOutdated || d.signatureOutdated) return "Outdated";
+      const name = d.policyName ? `Current · ${d.policyName}` : "Current";
+      return name;
+    };
+    const scanLabel = (d: (typeof devices)[0] | undefined) => {
+      if (!d?.lastSuccessfulScanAt) return "No Last Scan on last collect";
+      return formatSastDateTime(d.lastSuccessfulScanAt);
+    };
     return (
-      <div className="space-y-3">
-        <Card>
-          <CardHead>RPM EndPoint Protection · Endpoints ({devices.length})</CardHead>
-          <CardContent>
-            {devices.length === 0 ? (
-              <p className="text-sm text-muted">No endpoint rows for this customer on the latest snapshot.</p>
-            ) : (
-              <StickyPickSplit
-                title="Endpoints"
-                items={devices.map((d) => ({
-                  id: d.endpointId,
-                  label: d.deviceName ?? d.fqdn ?? d.endpointId,
-                  meta: d.infected || d.malwareDetected ? "Threat" : "Clean",
-                  tone: d.infected || d.malwareDetected ? "red" : "green",
-                }))}
-                selected={picked?.endpointId ?? ""}
-                onSelect={setSel}
-              >
-                {picked ? (
-                  <dl className="grid gap-2 text-[12px] sm:grid-cols-2">
-                    <div><em className="text-muted">Device</em><p className="font-bold">{picked.deviceName ?? "—"}</p></div>
-                    <div><em className="text-muted">FQDN</em><p>{picked.fqdn ?? "—"}</p></div>
-                    <div className="sm:col-span-2"><em className="text-muted">OS</em><p>{picked.operatingSystem ?? "—"}</p></div>
-                    <div><em className="text-muted">Managed</em><p>{picked.isManaged === true ? "Yes" : picked.isManaged === false ? "No" : "—"}</p></div>
-                    <div><em className="text-muted">Policy</em><p>{picked.policyName ?? "—"}</p></div>
-                    <div><em className="text-muted">Last scan</em><p>{picked.lastSuccessfulScanAt ? formatSastDateTime(picked.lastSuccessfulScanAt) : "—"}</p></div>
-                    <div><em className="text-muted">Threat</em><p>{picked.infected || picked.malwareDetected ? "Detected" : "Clean"}</p></div>
-                    <div><em className="text-muted">Update</em><p>{picked.productOutdated || picked.signatureOutdated ? "Outdated" : "Current"}</p></div>
-                  </dl>
-                ) : null}
-              </StickyPickSplit>
-            )}
-          </CardContent>
-        </Card>
+      <div className="rpma-win-row" style={{ minHeight: 0 }}>
+        <DataWindow title="EndPoint Agents" subtitle={`${devices.length} agent${devices.length === 1 ? "" : "s"}`} fill>
+          <ul className="rpma-epp-agent-list">
+            {devices.map((d) => {
+              const threat = Boolean(d.infected || d.malwareDetected);
+              const on = d.endpointId === picked?.endpointId;
+              return (
+                <li key={d.endpointId}>
+                  <button
+                    type="button"
+                    className={cn("rpma-epp-agent", on && "is-on", threat && "is-bad")}
+                    onClick={() => setSel(d.endpointId)}
+                  >
+                    <ServerKindIcon
+                      device={{
+                        name: d.deviceName,
+                        osName: d.operatingSystem,
+                        deviceType: d.machineType === 6 ? "Server" : "Workstation",
+                      }}
+                      size={18}
+                    />
+                    <span>
+                      <strong>{d.deviceName ?? d.fqdn ?? d.endpointId}</strong>
+                      <em>
+                        {threat ? "Threat" : "Clean"}
+                        {d.lastSuccessfulScanAt ? ` · Scan ${scanLabel(d)}` : " · No Last Scan"}
+                      </em>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </DataWindow>
+        <DataWindow
+          title={picked?.deviceName ?? "Agent"}
+          subtitle={picked?.fqdn ?? picked?.operatingSystem ?? "EndPoint Detail"}
+          fill
+        >
+          {picked ? (
+            <dl className="rpma-epp-detail">
+              <div>
+                <em>Device</em>
+                <p>{picked.deviceName ?? "—"}</p>
+              </div>
+              <div>
+                <em>FQDN</em>
+                <p>{picked.fqdn ?? "—"}</p>
+              </div>
+              <div className="is-wide">
+                <em>Operating System</em>
+                <p>{picked.operatingSystem ?? "—"}</p>
+              </div>
+              <div>
+                <em>Managed</em>
+                <p>{picked.isManaged === true ? "Yes" : picked.isManaged === false ? "No" : "—"}</p>
+              </div>
+              <div>
+                <em>Policy</em>
+                <p>{picked.policyName ?? "—"}</p>
+              </div>
+              <div>
+                <em>Last Scan</em>
+                <p>{scanLabel(picked)}</p>
+              </div>
+              <div>
+                <em>Threat</em>
+                <p>{picked.infected || picked.malwareDetected ? "Detected" : "Clean"}</p>
+              </div>
+              <div>
+                <em>Update</em>
+                <p>{updateLabel(picked)}</p>
+              </div>
+            </dl>
+          ) : (
+            <p className="p-4 text-[12px] text-muted">Select an agent.</p>
+          )}
+        </DataWindow>
       </div>
     );
   },

@@ -52,8 +52,10 @@ const SHORT: Record<string, string> = {
   "Open Tickets": "Open Tickets",
   "Resolved Tickets": "Resolved Tickets",
   "Closed Tickets": "Closed Tickets",
-  "Secure Score": "Score",
-  "Global Admins": "Admins",
+  "Tenant Health": "Tenant Health",
+  "MFA Registration": "MFA Registration",
+  "Licensed Users": "Licensed Users",
+  "License Stats": "License Stats",
 };
 
 function shortLabel(label: string) {

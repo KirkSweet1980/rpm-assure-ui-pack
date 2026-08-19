@@ -395,6 +395,136 @@ html:has(.rpma-emp.is-side) .rpma-amx-workspace {
   color: #1e3a4c !important;
   font-weight: 800 !important;
 }
+.rpma-est.is-compact .col-wide { display: none !important; }
+.rpma-est.is-compact .rpma-est-table { font-size: 11px !important; }
+.rpma-est.is-compact .rpma-est-table td { padding: 4px 8px !important; }
+.rpma-est:not(.is-compact) .rpma-est-table { font-size: 13px !important; }
+.rpma-est:not(.is-compact) .rpma-est-table td { padding: 10px 12px !important; }
+.rpma-est:not(.is-compact) .rpma-est-table th { padding: 10px 12px !important; }
+.rpma-ams-cov-h {
+  padding: 8px 12px;
+  background: #d9e7f5;
+  color: #1e3a4c;
+  font-weight: 800;
+  font-size: 13px;
+  border-bottom: 1px solid #c5d4e4;
+}
+.rpma-ams-cov .rpma-cmd-heat {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+/* Drive type glyphs on IOPS */
+.rpma-drive-chip { display: inline-flex; align-items: center; gap: 6px; }
+.rpma-drive-glyph {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: #fff;
+}
+.rpma-drive-glyph[data-bus="NVMe"], .rpma-drive-glyph[data-bus="nvme"] { background: #7c3aed; }
+.rpma-drive-glyph[data-bus="SAS"], .rpma-drive-glyph[data-bus="sas"] { background: #2563eb; }
+.rpma-drive-glyph[data-bus="SATA"], .rpma-drive-glyph[data-bus="sata"] { background: #0f766e; }
+.rpma-drive-glyph[data-bus="SSD"], .rpma-drive-glyph[data-bus="ssd"] { background: #0891b2; }
+.rpma-drive-glyph[data-bus="HDD"], .rpma-drive-glyph[data-bus="hdd"] { background: #64748b; }
+.rpma-drive-glyph[data-bus="Virtual"], .rpma-drive-glyph[data-bus="virtual"] { background: #0d9488; }
+
+.rpma-tix-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+.rpma-tix-card {
+  background: #fff;
+  border: 1px solid #d5dde5;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: left;
+}
+.rpma-tix-card strong { display: block; font-size: 13px; font-weight: 800; color: #1e3a4c; }
+.rpma-tix-card em { display: block; margin-top: 4px; font-style: normal; font-size: 11px; color: #5b6b7c; }
+.rpma-tix-card span { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #eef5fb; }
+.rpma-tix-sla { display: flex; gap: 6px; margin-top: 8px; }
+
+.rpma-drive-ico { display: inline-grid; place-items: center; flex: 0 0 auto; }
+.rpma-est-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e3a4c;
+  cursor: pointer;
+  user-select: none;
+}
+.rpma-est-compact input {
+  width: 34px;
+  height: 18px;
+  appearance: none;
+  background: #c5d4e4;
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+}
+.rpma-est-compact input:checked { background: #0d9488; }
+.rpma-est-compact input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s ease;
+}
+.rpma-est-compact input:checked::after { left: 18px; }
+
+.rpma-epp-agent-list { list-style: none; margin: 0; padding: 8px; display: grid; gap: 6px; }
+.rpma-epp-agent {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #d5dde5;
+  background: #fff;
+  cursor: pointer;
+}
+.rpma-epp-agent strong { display: block; font-size: 12px; font-weight: 800; color: #1e3a4c; }
+.rpma-epp-agent em { display: block; font-style: normal; font-size: 10px; color: #5b6b7c; }
+.rpma-epp-agent.is-on { border-color: #0d9488; background: #e7f8ee; }
+.rpma-epp-agent.is-bad { border-color: #fca5a5; }
+.rpma-epp-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px;
+}
+.rpma-epp-detail em { display: block; font-style: normal; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #5b6b7c; }
+.rpma-epp-detail p { margin: 2px 0 0; font-size: 13px; font-weight: 700; color: #1e3a4c; }
+.rpma-epp-detail .is-wide { grid-column: 1 / -1; }
+.rpma-cmd-banner { display: flex; align-items: center; gap: 8px; }
+
+html.dark .rpma-epp-agent,
+html[data-theme="dark"] .rpma-epp-agent { background: #15202c; border-color: #2a3a4c; }
+html.dark .rpma-epp-agent strong,
+html[data-theme="dark"] .rpma-epp-agent strong,
+html.dark .rpma-epp-detail p { color: #e8f0f8; }
+
+html.dark .rpma-tix-card,
+html[data-theme="dark"] .rpma-tix-card { background: #15202c; border-color: #2a3a4c; }
+html.dark .rpma-tix-card strong { color: #e8f0f8; }
 
 html.dark .rpma-win,
 html[data-theme="dark"] .rpma-win,

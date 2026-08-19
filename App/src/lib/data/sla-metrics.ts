@@ -262,7 +262,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 95–99% within 24 hours",
       contractual: true,
       measurable: true,
-      how: "From GravityZone: lastSuccessfulScan (inventory or getManagedEndpointDetails) within 24 hours, and productOutdated / signatureOutdated when the detail call returns them. If last collect has neither field, the line is not scored — missing is not treated as current.",
+      how: "From GravityZone productOutdated / signatureOutdated flags. Missing flags are treated as current — last scan age is shown on EndPoint Agents, not scored as update compliance.",
     },
     {
       id: "epp-open",

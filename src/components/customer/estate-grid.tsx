@@ -4,9 +4,10 @@ import { tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
 import { coverFromDetail, isDormantCover } from "@/lib/data/cover";
 import { ticketStats } from "@/lib/data/ticket-feed";
+import { ServerKindIcon } from "@/components/customer/server-kind-icon";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
 import { SpaLink } from "@/components/nav/spa-link";
-import { CoverTag } from "@/components/ui/status-robot";
+import { CoverTag, StatusRobot } from "@/components/ui/status-robot";
 import { RagBadge } from "@/components/portfolio/rag-badge";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import { cn, formatSastDateTime } from "@/lib/utils";
@@ -64,9 +65,31 @@ type Row = {
   last: string;
   ip: string;
   location: string;
+  device?: {
+    name?: string | null;
+    osName?: string | null;
+    deviceType?: string | null;
+    disks?: { mediaType?: string | null }[] | null;
+  };
 };
 
-export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
+export type EstateFocus = "eco" | "syspro" | "rmm" | "cove" | "epp";
+
+const DECK_TITLE: Record<EstateFocus, string> = {
+  eco: "Customer Eco System",
+  syspro: "SYSPRO Landscape",
+  rmm: "RPM Remote Management",
+  cove: "RPM Cloud Backup",
+  epp: "RPM End Point Protection",
+};
+
+export function EstateGrid({
+  data,
+  focus = "eco",
+}: {
+  data: CustomerDetailPayload;
+  focus?: EstateFocus;
+}) {
   const { customer } = data;
   const [page, setPage] = useState(1);
   const [starred, setStarred] = useState<Record<string, boolean>>({});
@@ -132,7 +155,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
         : ep.infected || ep.malwareDetected || ep.productOutdated || ep.signatureOutdated
           ? "Warning"
           : "Protected";
-      if (estate !== "Server") return;
+      if (estate !== "Server" && focus === "syspro") return;
       push({
         id: d.deviceId || host,
         site: d.organizationName || org,
@@ -147,6 +170,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
         last: ageLabel(d.lastSeenOnline),
         ip: d.ipAddress || "—",
         location: d.organizationName || "—",
+        device: d,
       });
     });
 
@@ -156,7 +180,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
       if (seen.has(k)) return;
       const ep = eppBy.get(k);
       const estate = /server|sql|srv/i.test(host) ? "Server" : "Device";
-      if (estate !== "Server") return;
+      if (estate !== "Server" && focus === "syspro") return;
       push({
         id: String(c.accountId ?? host),
         site: c.partnerName || org,
@@ -175,6 +199,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
         last: ageLabel(c.lastSuccessTime),
         ip: "—",
         location: c.partnerName || "—",
+        device: { name: host, deviceType: estate },
       });
     });
 
@@ -183,7 +208,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
       const k = keyOf(host);
       if (seen.has(k)) return;
       const estate = e.machineType === 6 ? "Server" : "Workstation";
-      if (estate !== "Server") return;
+      if (estate !== "Server" && focus === "syspro") return;
       push({
         id: e.endpointId || host,
         site: org,
@@ -197,11 +222,21 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
         last: ageLabel(e.lastSeenAt || e.lastSuccessfulScanAt),
         ip: e.ipAddress || "—",
         location: "—",
+        device: { name: host, osName: e.operatingSystem, deviceType: estate },
       });
     });
 
+    out.sort((a, b) => {
+      const rank = (e: string) => (e === "Server" ? 0 : e === "Workstation" ? 1 : 2);
+      const d = rank(a.estate) - rank(b.estate);
+      if (d) return d;
+      return a.host.localeCompare(b.host);
+    });
+    if (focus === "syspro") return out.filter((r) => r.estate === "Server");
+    if (focus === "cove") return out.filter((r) => r.backup !== "none");
+    if (focus === "epp") return out.filter((r) => r.epp !== "—");
     return out;
-  }, [customer, data]);
+  }, [customer, data, focus]);
 
   const cover = coverFromDetail(data);
   const dormant = isDormantCover(cover);
@@ -271,28 +306,70 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
     },
   ];
 
-  const heat = [
+  const heatAll = [
     { label: "Finance Modules", href: `${base}/syspro/dtr`, on: cover.syspro, rag: live.modules["/syspro/dtr"]?.rag ?? live.pillars.syspro?.rag },
     { label: "Operators", href: `${base}/syspro/operators`, on: cover.syspro, rag: live.modules["/syspro/operators"]?.rag ?? live.pillars.syspro?.rag },
+    { label: "Job Logging", href: `${base}/syspro/jobs`, on: cover.syspro, rag: live.modules["/syspro/jobs"]?.rag ?? live.pillars.syspro?.rag },
+    { label: "Day End", href: `${base}/syspro/day-end`, on: cover.syspro, rag: live.modules["/syspro/day-end"]?.rag ?? live.pillars.syspro?.rag },
     { label: "Servers", href: `${base}/rmm/devices`, on: cover.rmm, rag: live.modules["/rmm/devices"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Workstations", href: `${base}/rmm/workstations`, on: cover.rmm, rag: live.modules["/rmm/workstations"]?.rag ?? "Off" },
+    { label: "Patch Compliance", href: `${base}/rmm/patch`, on: cover.rmm, rag: live.modules["/rmm/patch"]?.rag ?? live.pillars.rmm?.rag },
+    { label: "Disk Performance", href: `${base}/rmm/iops`, on: cover.rmm, rag: live.modules["/rmm/iops"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Backup Agents", href: `${base}/cove/devices`, on: cover.cove, rag: live.modules["/cove/devices"]?.rag ?? live.pillars.cove?.rag },
     { label: "Recovery Testing", href: `${base}/cove/recovery`, on: cover.cove, rag: live.modules["/cove/recovery"]?.rag ?? live.pillars.cove?.rag },
-    { label: "EndPoint Agents", href: `${base}/epp`, on: Boolean(cover.epp), rag: live.pillars.epp?.rag },
+    { label: "Backup Retention", href: `${base}/cove/retention`, on: cover.cove, rag: live.modules["/cove/retention"]?.rag ?? live.pillars.cove?.rag },
+    { label: "EndPoint Agents", href: `${base}/epp/endpoints`, on: Boolean(cover.epp), rag: live.pillars.epp?.rag },
+    { label: "Policies & Modules", href: `${base}/epp/modules`, on: Boolean(cover.epp), rag: live.modules["/epp/modules"]?.rag ?? live.pillars.epp?.rag },
+    { label: "Security Incidents", href: `${base}/epp/incidents`, on: Boolean(cover.epp), rag: live.modules["/epp/incidents"]?.rag ?? live.pillars.epp?.rag },
     { label: "Open Tickets", href: `${base}/tickets/open`, on: Boolean(cover.tickets), rag: tix.open > 0 ? "Amber" : "Green" },
-  ].map((h) => ({
-    ...h,
-    tone: !h.on ? "off" : h.rag === "Red" ? "red" : h.rag === "Amber" ? "amber" : "green",
-  }));
+  ]
+    .filter((h) => {
+      if (focus === "syspro") return h.href.includes("/syspro");
+      if (focus === "rmm") return h.href.includes("/rmm");
+      if (focus === "cove") return h.href.includes("/cove");
+      if (focus === "epp") return h.href.includes("/epp");
+      return true;
+    })
+    .map((h) => ({
+      ...h,
+      tone: !h.on ? "off" : h.rag === "Red" ? "red" : h.rag === "Amber" ? "amber" : "green",
+    }));
 
-  const kpis = [
-    { label: "Assurance", value: dormant || score == null ? "—" : `${score}%`, href: `${base}/ams` },
-    { label: "Open tickets", value: tix.open, href: `${base}/tickets/open` },
-    { label: "Open risks", value: openRisks.length, href: `${base}/ams/risks` },
-    { label: "Job errors", value: cover.syspro ? jobs : "—", href: `${base}/syspro/jobs` },
-    { label: "Servers offline", value: cover.rmm ? srvOff : "—", href: `${base}/rmm/devices` },
-    { label: "Backup issues", value: cover.cove ? coveFail : "—", href: `${base}/cove/devices` },
-  ];
+  const kpis =
+    focus === "syspro"
+      ? [
+          { label: "Active Users", value: customer.activeUserCount, href: `${base}/syspro/operators` },
+          { label: "Job Errors", value: jobs, href: `${base}/syspro/jobs` },
+          { label: "FinSight OOB", value: dtr, href: `${base}/syspro/dtr` },
+          { label: "Open Tickets", value: tix.open, href: `${base}/tickets/open` },
+        ]
+      : focus === "rmm"
+        ? [
+            { label: "Servers Online", value: srvOn, href: `${base}/rmm/devices` },
+            { label: "Servers Offline", value: srvOff, href: `${base}/rmm/devices` },
+            { label: "Workstations", value: (customer.pulsewayWorkstationOnline ?? 0) + (customer.pulsewayWorkstationOffline ?? 0), href: `${base}/rmm/workstations` },
+            { label: "Disk Volumes", value: iopsN, href: `${base}/rmm/iops` },
+          ]
+        : focus === "cove"
+          ? [
+              { label: "Backup Agents", value: coveN, href: `${base}/cove/devices` },
+              { label: "Backup Issues", value: coveFail, href: `${base}/cove/devices` },
+              { label: "Open Tickets", value: tix.open, href: `${base}/tickets/open` },
+            ]
+          : focus === "epp"
+            ? [
+                { label: "EndPoint Agents", value: eppN, href: `${base}/epp/endpoints` },
+                { label: "Infected", value: infected, href: `${base}/epp/incidents` },
+                { label: "Open Tickets", value: tix.open, href: `${base}/tickets/open` },
+              ]
+            : [
+                { label: "Assurance", value: dormant || score == null ? "—" : `${score}%`, href: `${base}/ams` },
+                { label: "Open Tickets", value: tix.open, href: `${base}/tickets/open` },
+                { label: "Open Risks", value: openRisks.length, href: `${base}/ams/risks` },
+                { label: "Job Errors", value: cover.syspro ? jobs : "—", href: `${base}/syspro/jobs` },
+                { label: "Servers Offline", value: cover.rmm ? srvOff : "—", href: `${base}/rmm/devices` },
+                { label: "Backup Issues", value: cover.cove ? coveFail : "—", href: `${base}/cove/devices` },
+              ];
 
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const safe = Math.min(page, pages);
@@ -309,18 +386,18 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
               <tr>
                 <th className="w-star" />
                 <th>Org ID</th>
-                <th>Organization</th>
-                <th>Site</th>
+                <th className="col-wide">Organization</th>
+                <th className="col-wide">Site</th>
                 <th>Device / Hostname</th>
                 <th>Status</th>
-                <th>Estate type</th>
-                <th>SYSPRO ID</th>
+                <th>Estate Type</th>
+                <th className="col-wide">SYSPRO ID</th>
                 <th>Backup</th>
                 <th>EPP</th>
                 <th>Tickets</th>
-                <th>Last active</th>
-                <th>IP address</th>
-                <th>Location</th>
+                <th>Last Active</th>
+                <th className="col-wide">IP Address</th>
+                <th className="col-wide">Location</th>
               </tr>
             </thead>
             <tbody>
@@ -344,9 +421,14 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
                       </button>
                     </td>
                     <td className="mono">{r.orgId}-{String((safe - 1) * PAGE + i + 1).padStart(3, "0")}</td>
-                    <td>{r.org}</td>
-                    <td>{r.site}</td>
-                    <td className="strong">{r.host}</td>
+                    <td className="col-wide">{r.org}</td>
+                    <td className="col-wide">{r.site}</td>
+                    <td className="strong">
+                      <span className="inline-flex items-center gap-2">
+                        {r.device ? <ServerKindIcon device={r.device} size={18} /> : null}
+                        {r.host}
+                      </span>
+                    </td>
                     <td>
                       <span
                         className={cn(
@@ -359,7 +441,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
                       </span>
                     </td>
                     <td>{r.estate}</td>
-                    <td className="mono">{r.sysproId}</td>
+                    <td className="mono col-wide">{r.sysproId}</td>
                     <td className="center">
                       {r.backup === "ok" ? (
                         <CheckCircle2 className="rpma-est-ok" />
@@ -382,8 +464,8 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
                     </td>
                     <td className={cn(r.tickets > 0 && "warn")}>{r.tickets}</td>
                     <td>{r.last}</td>
-                    <td className="mono">{r.ip}</td>
-                    <td>{r.location}</td>
+                    <td className="mono col-wide">{r.ip}</td>
+                    <td className="col-wide">{r.location}</td>
                   </tr>
                 ))
               )}
@@ -414,7 +496,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
             </button>
           </nav>
           <label className="rpma-est-compact">
-            Compact
+            {compact ? "Compact" : "Comfortable"}
             <input
               type="checkbox"
               checked={compact}
@@ -429,7 +511,7 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
           <RagBadge rag={dormant ? "Off" : customer.healthRag} title={customer.healthSummary} />
           <div>
             <h2>{customer.displayName}</h2>
-            <p>Customer Eco System · last collect {formatSastDateTime(lastCollect)}</p>
+            <p>{DECK_TITLE[focus]} · last collect {formatSastDateTime(lastCollect)}</p>
           </div>
         </div>
         {dormant ? (
@@ -450,13 +532,19 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
           ))}
         </div>
         <div className="rpma-cmd-banners">
-          {banners.map((s) => (
+          {(focus === "eco" ? banners : banners.filter((s) =>
+            focus === "syspro" ? s.href.includes("/syspro") :
+            focus === "rmm" ? s.href.includes("/rmm") :
+            focus === "cove" ? s.href.includes("/cove") :
+            focus === "epp" ? s.href.includes("/epp") : true,
+          )).map((s) => (
             <SpaLink
               key={s.name}
               href={s.href}
               className={cn("rpma-cmd-banner", s.on ? "is-on" : "is-off")}
             >
               <i style={{ background: s.bar }} />
+              <StatusRobot rag={s.rag} title={s.name} size={18} />
               <div>
                 <strong>{s.name}</strong>
                 <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
@@ -465,15 +553,22 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
             </SpaLink>
           ))}
         </div>
-        <div className="rpma-cmd-heat" aria-label="Module heat">
-          {heat.map((h) => (
+      </header>
+
+      <div className="rpma-est-focus rpma-ams-cov">
+        <div className="rpma-ams-cov-h">AMS Coverage</div>
+        <div className="rpma-cmd-heat" aria-label="AMS Coverage">
+          {heatAll.filter((h) => h.on).map((h) => (
             <SpaLink key={h.label} href={h.href} className={cn("rpma-cmd-cell", `is-${h.tone}`)}>
               <em>{h.label}</em>
-              <strong>{h.on ? (h.rag === "Off" ? "Cover" : String(h.rag)) : "No Cover"}</strong>
+              <strong>{h.rag === "Off" ? "Cover" : String(h.rag)}</strong>
             </SpaLink>
           ))}
+          {heatAll.filter((h) => h.on).length === 0 ? (
+            <p className="px-3 py-3 text-[12px] text-muted">No modules on cover for this customer.</p>
+          ) : null}
         </div>
-      </header>
+      </div>
     </div>
   );
 }

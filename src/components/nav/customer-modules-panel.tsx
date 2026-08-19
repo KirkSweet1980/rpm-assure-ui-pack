@@ -69,7 +69,7 @@ export const CUSTOMER_PILLARS: {
 }[] = [
   {
     id: "syspro",
-    title: "SYSPRO EcoSystem",
+    title: "SYSPRO Landscape",
     modulesHeading: "SYSPRO Service Modules",
     overview: "/syspro",
     icon: Database,
@@ -126,7 +126,7 @@ export const CUSTOMER_PILLARS: {
   },
   {
     id: "epp",
-    title: "RPM EndPoint Protection",
+    title: "RPM End Point Protection",
     modulesHeading: "EPP Service Modules",
     overview: "/epp",
     icon: Shield,
@@ -150,18 +150,18 @@ export const CUSTOMER_PILLARS: {
     color: "#ea580c",
     covered: (c) => Boolean(c?.csp),
     modules: [
-      { label: "Tenant", path: "/csp", icon: Building2, color: "#ea580c" },
+      { label: "Tenant Health", path: "/csp", icon: Building2, color: "#ea580c" },
       { label: "Secure Score", path: "/csp/secure-score", icon: ShieldCheck, color: "#16a34a" },
       { label: "Global Admins", path: "/csp/global-admins", icon: UserCog, color: "#dc2626" },
-      { label: "MFA", path: "/csp/mfa", icon: KeyRound, color: "#2563eb" },
-      { label: "Users", path: "/csp/users", icon: Users, color: "#0891b2" },
-      { label: "Licences", path: "/csp/licenses", icon: KeyRound, color: "#7c3aed" },
+      { label: "MFA Registration", path: "/csp/mfa", icon: KeyRound, color: "#2563eb" },
+      { label: "Licensed Users", path: "/csp/users", icon: Users, color: "#0891b2" },
+      { label: "License Stats", path: "/csp/licenses", icon: KeyRound, color: "#7c3aed" },
       { label: "Service SLA", path: "/csp/sla", icon: Gauge, color: "#7c3aed" },
     ],
   },
   {
     id: "tickets",
-    title: "Customer Tickets",
+    title: "RPM Service Desk",
     modulesHeading: "Ticket Service Modules",
     overview: "/tickets",
     icon: Ticket,

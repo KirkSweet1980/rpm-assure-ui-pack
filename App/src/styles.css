@@ -2918,7 +2918,11 @@ html.snow .rpma-eco-kpi.is-ok strong { color: #047857; }
 .rpma-est-pages button.is-on,
 .rpma-est-pages button:hover:not(:disabled) { background: #14b8a6; color: #042018; border-color: #14b8a6; }
 .rpma-est-pages button:disabled { opacity: 0.4; }
-.rpma-est-compact { display: inline-flex; align-items: center; gap: 6px; }
+.rpma-est-compact { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #1e3a4c; cursor: pointer; user-select: none; }
+.rpma-est-compact input { width: 34px; height: 18px; appearance: none; background: #c5d4e4; border-radius: 999px; position: relative; cursor: pointer; }
+.rpma-est-compact input:checked { background: #0d9488; }
+.rpma-est-compact input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.rpma-est-compact input:checked::after { left: 18px; }
 @media (max-width: 860px) {
   .rpma-emp-title em { display: none; }
   .rpma-emp-tool { font-size: 8px; }
@@ -5239,6 +5243,17 @@ html.dark .rpma-emp.is-side .rpma-win-head h2,
 html[data-theme="dark"] .rpma-emp.is-side .rpma-win-head h2 { color: #ffffff !important; }
 html.dark .rpma-emp.is-side .rpma-emp-work,
 html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-work { background: #101820 !important; }
+
+.rpma-epp-agent-list { list-style: none; margin: 0; padding: 8px; display: grid; gap: 6px; }
+.rpma-epp-agent { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid #d5dde5; background: #fff; cursor: pointer; }
+.rpma-epp-agent strong { display: block; font-size: 12px; font-weight: 800; color: #1e3a4c; }
+.rpma-epp-agent em { display: block; font-style: normal; font-size: 10px; color: #5b6b7c; }
+.rpma-epp-agent.is-on { border-color: #0d9488; background: #e7f8ee; }
+.rpma-epp-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; }
+.rpma-epp-detail em { display: block; font-style: normal; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #5b6b7c; }
+.rpma-epp-detail p { margin: 2px 0 0; font-size: 13px; font-weight: 700; color: #1e3a4c; }
+.rpma-epp-detail .is-wide { grid-column: 1 / -1; }
+.rpma-drive-ico { display: inline-grid; place-items: center; }
 
 
 

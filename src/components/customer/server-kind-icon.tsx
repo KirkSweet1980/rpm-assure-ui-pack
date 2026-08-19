@@ -71,3 +71,69 @@ export function ServerKindMark({ kind, size = 36 }: { kind: ServerHardwareKind; 
     </span>
   );
 }
+
+/** Drive type glyph used on Disk Performance. */
+export function DriveTypeIcon({
+  bus,
+  size = 18,
+}: {
+  bus: string | null | undefined;
+  size?: number;
+}) {
+  const k = String(bus ?? "unknown").toLowerCase();
+  const kind = k.includes("nvme")
+    ? "nvme"
+    : k.includes("sas")
+      ? "sas"
+      : k.includes("virtual")
+        ? "virtual"
+        : k.includes("ssd")
+          ? "ssd"
+          : k.includes("hdd") || k.includes("sata")
+            ? "hdd"
+            : "unknown";
+  const fill =
+    kind === "nvme"
+      ? "#7c3aed"
+      : kind === "sas"
+        ? "#2563eb"
+        : kind === "ssd"
+          ? "#0891b2"
+          : kind === "virtual"
+            ? "#0d9488"
+            : kind === "hdd"
+              ? "#64748b"
+              : "#94a3b8";
+  return (
+    <span className="rpma-drive-ico" title={bus || "Drive type"} aria-hidden style={{ width: size, height: size }}>
+      {kind === "nvme" ? (
+        <svg viewBox="0 0 24 24" width={size} height={size}>
+          <rect x="2" y="7" width="20" height="10" rx="2" fill={fill} />
+          <rect x="4" y="9.5" width="10" height="2" rx="1" fill="#ede9fe" />
+          <rect x="4" y="13" width="6" height="1.6" rx="0.8" fill="#c4b5fd" />
+          <circle cx="18" cy="12" r="1.6" fill="#fde68a" />
+        </svg>
+      ) : kind === "ssd" || kind === "sas" ? (
+        <svg viewBox="0 0 24 24" width={size} height={size}>
+          <rect x="3" y="5" width="18" height="14" rx="2" fill={fill} />
+          <rect x="6" y="8" width="12" height="2" rx="1" fill="#e0f2fe" />
+          <rect x="6" y="12" width="8" height="2" rx="1" fill="#bae6fd" />
+          <circle cx="16.5" cy="15.5" r="1.4" fill="#17c666" />
+        </svg>
+      ) : kind === "virtual" ? (
+        <svg viewBox="0 0 24 24" width={size} height={size}>
+          <rect x="4" y="4" width="16" height="10" rx="2" fill="#263544" />
+          <rect x="2" y="14" width="14" height="7" rx="1.5" fill={fill} />
+          <rect x="7" y="7" width="8" height="1.6" rx="0.8" fill="#1bb8a6" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" width={size} height={size}>
+          <ellipse cx="12" cy="7" rx="8" ry="3.2" fill={fill} />
+          <path d="M4 7v10c0 1.8 3.6 3.2 8 3.2s8-1.4 8-3.2V7" fill={fill} opacity="0.92" />
+          <ellipse cx="12" cy="7" rx="8" ry="3.2" fill="#cbd5e1" opacity="0.45" />
+          <path d="M4 12c0 1.8 3.6 3.2 8 3.2s8-1.4 8-3.2" fill="none" stroke="#e2e8f0" strokeWidth="1.2" />
+        </svg>
+      )}
+    </span>
+  );
+}

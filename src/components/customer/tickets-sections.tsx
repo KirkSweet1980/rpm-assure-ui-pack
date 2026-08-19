@@ -11,6 +11,9 @@ import {
 } from "@/lib/data/ticket-feed";
 import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
 import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ChartTooltip, CHART_TOOLTIP_CURSOR } from "@/components/portfolio/chart-tooltip";
+import { CHART } from "@/lib/brand-colors";
 
 function slaChip(met: boolean | null | undefined) {
   if (met === true) {
@@ -119,15 +122,15 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="rpma-win-stack">
       <DataWindow
-        title="Customer Tickets"
-        subtitle={`${data.customer.displayName} · Freshdesk · last 90 days · ${s.total} tickets`}
+        title="RPM Service Desk"
+        subtitle={`${data.customer.displayName} · last 90 days · ${s.total} tickets`}
       >
         <div className="p-2">
           <EcoKpis
             items={[
-              { label: "Open", value: s.open, tone: s.open > 0 ? "amber" : "green", href: `${base}/open` },
-              { label: "Resolved", value: s.resolved, href: `${base}/resolved` },
-              { label: "Closed", value: s.closed, href: `${base}/closed` },
+              { label: "Open Tickets", value: s.open, tone: s.open > 0 ? "amber" : "green", href: `${base}/open` },
+              { label: "Resolved Tickets", value: s.resolved, href: `${base}/resolved` },
+              { label: "Closed Tickets", value: s.closed, href: `${base}/closed` },
               {
                 label: "SLA",
                 value: sla.overallPct != null ? `${sla.overallPct}%` : "—",
@@ -150,7 +153,61 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
           />
         </div>
       </DataWindow>
-      <DataWindow title="Latest tickets" fill>
+      <div className="grid gap-3 px-1 lg:grid-cols-2">
+        <div className="rpma-glass p-3">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Ticket Mix</p>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Open", value: s.open, fill: "#ffa21d" },
+                    { name: "Resolved", value: s.resolved, fill: "#2563eb" },
+                    { name: "Closed", value: s.closed, fill: "#17c666" },
+                  ].filter((d) => d.value > 0)}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={42}
+                  outerRadius={64}
+                  paddingAngle={2}
+                  isAnimationActive={false}
+                >
+                  {["#ffa21d", "#2563eb", "#17c666"].map((fill) => (
+                    <Cell key={fill} fill={fill} stroke="transparent" />
+                  ))}
+                </Pie>
+                <Tooltip content={<ChartTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="rpma-glass p-3">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">SLA Clocks</p>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: "Overall", value: sla.overallPct ?? 0, fill: "#0d9488" },
+                  { name: "Response", value: sla.responsePct ?? 0, fill: "#2563eb" },
+                  { name: "Restore", value: sla.resolvePct ?? 0, fill: "#7c3aed" },
+                ]}
+                margin={{ top: 8, right: 8, left: 0, bottom: 8 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} width={28} tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36} isAnimationActive={false}>
+                  {["#0d9488", "#2563eb", "#7c3aed"].map((fill) => (
+                    <Cell key={fill} fill={fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+      <DataWindow title="Latest Tickets" fill>
         <TicketTable rows={rows.slice(0, 16)} empty="No tickets exist for this customer." />
       </DataWindow>
     </div>
@@ -205,6 +262,28 @@ export function TicketsListSection({
       {rows.length === 0 ? (
         <DataWindow title={title} fill>
           <p className="px-3 py-4 text-[12px] text-muted">{empty}</p>
+        </DataWindow>
+      ) : bucket === "resolved" ? (
+        <DataWindow title="Resolved Tickets" fill>
+          <div className="rpma-tix-cards">
+            {rows.map((r, i) => {
+              const scored = scoreTicket(r);
+              return (
+              <article key={String(r.incidentId ?? r.externalRef ?? i)} className="rpma-tix-card">
+                <strong>{r.title || r.externalRef || `Ticket ${i + 1}`}</strong>
+                <em>
+                  {r.priority || r.severity || "—"} · {r.status || "Resolved"}
+                  {r.openedAt ? ` · Opened ${formatSastDateTime(r.openedAt)}` : ""}
+                </em>
+                <span>{r.externalRef || r.sourceSystem || "Service Desk"}</span>
+                <div className="rpma-tix-sla">
+                  {slaChip(scored.response)}
+                  {slaChip(scored.resolve)}
+                </div>
+              </article>
+              );
+            })}
+          </div>
         </DataWindow>
       ) : (
         <DataWindow title={title} fill>

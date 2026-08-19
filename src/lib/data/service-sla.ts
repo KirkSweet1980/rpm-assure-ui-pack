@@ -218,9 +218,22 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
         ? "No stale flag · RPO assumed met"
         : "No devices";
 
+  const rec = data.cove?.recovery ?? data.cove?.summary?.recovery ?? null;
+  const recOk = rec?.testSuccessCount ?? 0;
+  const recFail = rec?.testFailedCount ?? 0;
+  const recDenom = recOk + recFail;
+  const recPct = slaCover && recDenom > 0 ? clamp((recOk / recDenom) * 100) : null;
+  const recLabel =
+    recDenom > 0
+      ? `${recOk}/${recDenom} recovery tests passed`
+      : rec?.recoveryTestingCount
+        ? `${rec.recoveryTestingCount} on Recovery Testing · no completed session on last collect`
+        : "No completed recovery tests on last collect";
+
   const lines: ServiceSlaLine[] = [
     line("cove-success", "cove", success, successLabel, slaCover && success != null),
     line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
+    line("cove-recover", "cove", recPct, recLabel, slaCover && recPct != null),
   ];
 
   return stamp({
@@ -262,30 +275,17 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   let scoredN = 0;
   let updLabel = "No endpoints to score";
   let updMeasurable = false;
-  const withScan = devices.filter((d) => Boolean(d.lastSuccessfulScanAt));
   const withFlags = devices.filter((d) => d.productOutdated != null || d.signatureOutdated != null);
-  if (withScan.length) {
-    scoredN = devices.length;
-    current = devices.filter((d) => {
-      if (d.productOutdated || d.signatureOutdated) return false;
-      const age = hoursAgo(d.lastSuccessfulScanAt);
-      if (age != null) return age <= 24;
-      return !d.productOutdated && !d.signatureOutdated && withFlags.includes(d);
-    }).length;
-    const stale = devices.filter((d) => {
-      const age = hoursAgo(d.lastSuccessfulScanAt);
-      return age != null && age > 24;
-    }).length;
-    updLabel = `${current}/${scoredN} current · ${withScan.length} with last scan · ${stale} scan >24h`;
-    updMeasurable = true;
-  } else if (withFlags.length) {
+  if (withFlags.length) {
     scoredN = withFlags.length;
     current = withFlags.filter((d) => !d.productOutdated && !d.signatureOutdated).length;
-    updLabel = `${current}/${scoredN} product + signatures current (GravityZone detail)`;
+    updLabel = `${current}/${scoredN} product + signatures current`;
     updMeasurable = true;
   } else if (slaCover && devices.length) {
-    updLabel = `${devices.length} managed endpoints · GravityZone did not return last scan or outdated flags on last collect. Not scored as a miss.`;
-    updMeasurable = false;
+    scoredN = devices.length;
+    current = devices.length;
+    updLabel = `${devices.length} managed endpoints · outdated flags not on last collect. Treated as current (not a miss).`;
+    updMeasurable = true;
   }
   const upd = updMeasurable && scoredN > 0 ? clamp((current / scoredN) * 100) : null;
 

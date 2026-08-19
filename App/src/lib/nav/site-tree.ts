@@ -318,7 +318,7 @@ export function customerTree(code: string, displayName: string): NavNode {
         children: [
           {
             id: `${code}-csp-overview`,
-            label: "Tenant health",
+            label: "Tenant Health",
             blurb: "Domain, health score, module overview",
             href: `${base}/csp`,
             match: "exact",
@@ -342,7 +342,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-csp-mfa`,
-            label: "MFA registration",
+            label: "MFA Registration",
             blurb: "MFA registered vs capable users",
             href: `${base}/csp/mfa`,
             match: "exact",
@@ -350,7 +350,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-csp-users`,
-            label: "Licensed users",
+            label: "Licensed Users",
             blurb: "Directory users and assigned SKUs",
             href: `${base}/csp/users`,
             match: "exact",
@@ -358,7 +358,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           },
           {
             id: `${code}-csp-licenses`,
-            label: "License stats",
+            label: "License Stats",
             blurb: "Purchased vs assigned by product",
             href: `${base}/csp/licenses`,
             match: "exact",
@@ -426,21 +426,21 @@ export function customerTree(code: string, displayName: string): NavNode {
         children: [
           {
             id: `${code}-ams-incidents`,
-            label: "Incidents & problems",
+            label: "Incidents & Problems",
             href: `${base}/ams/incidents`,
             match: "exact",
             audience: "ops",
           },
           {
             id: `${code}-ams-risks`,
-            label: "Risks & issues",
+            label: "Risks & Issues",
             href: `${base}/ams/risks`,
             match: "exact",
             audience: "exco",
           },
           {
             id: `${code}-ams-sla`,
-            label: "SLA & availability",
+            label: "SLA & Availability",
             href: `${base}/ams/sla`,
             match: "exact",
             audience: "ops",

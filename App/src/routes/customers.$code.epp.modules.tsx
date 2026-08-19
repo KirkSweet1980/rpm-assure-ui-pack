@@ -86,14 +86,20 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
       const bOn = b.onPolicies > 0 ? 0 : 1;
       return aOn - bOn || b.devicesOn - a.devicesOn || a.label.localeCompare(b.label);
     });
-    const policyCards = policies.length
+    const assignedName = [...byPolicy.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    const policyCards = (policies.length
       ? policies
       : [...byPolicy.entries()].map(([name, n]) => ({
           policyId: name,
           policyName: name,
           deviceCount: n,
           modules: [] as { id: string; label: string; enabled: boolean }[],
-        }));
+        }))
+    ).slice().sort((a, b) => {
+      const aOn = String(a.policyName ?? "") === assignedName ? 0 : 1;
+      const bOn = String(b.policyName ?? "") === assignedName ? 0 : 1;
+      return aOn - bOn || b.deviceCount - a.deviceCount;
+    });
     const armed = installed.filter((m) => m.onPolicies > 0).length;
 
     return (
@@ -145,10 +151,21 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
             ) : (
               policyCards.map((p) => {
                 const mods = p.modules ?? [];
+                const assigned = assignedName && (p.policyName === assignedName || p.policyId === assignedName);
                 return (
-                  <div key={p.policyId} className="rounded-md border border-border px-3 py-2">
+                  <div
+                    key={p.policyId}
+                    className={cn("rounded-md border px-3 py-2", assigned ? "border-emerald-500/50 bg-emerald-500/8" : "border-border")}
+                  >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold">{p.policyName || p.policyId}</p>
+                      <p className="font-semibold">
+                        {p.policyName || p.policyId}
+                        {assigned ? (
+                          <span className="ml-2 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                            Assigned Policy
+                          </span>
+                        ) : null}
+                      </p>
                       <span className="tabular-nums text-[12px] text-muted">{p.deviceCount} device(s)</span>
                     </div>
                     {mods.length ? (

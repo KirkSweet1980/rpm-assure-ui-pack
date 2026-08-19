@@ -55,7 +55,8 @@ import {
   firewallLevelLabel,
   exposureLabel,
 } from "@/lib/data/firewall-risk";
-import { ServerKindIcon } from "@/components/customer/server-kind-icon";
+import { DriveTypeIcon, ServerKindIcon } from "@/components/customer/server-kind-icon";
+import { EstateGrid } from "@/components/customer/estate-grid";
 import { assuranceTone } from "@/lib/data/rag-score";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { DataWindow } from "@/components/customer/data-window";
@@ -106,11 +107,6 @@ import {
   m365UtilPct,
 } from "@/lib/brand/m365";
 import {
-  autoOpenFinSightReconCases,
-  updateFinSightReconCase,
-} from "@/lib/data/finsight-recon-api";
-import {
-  upsertAmsIncident,
   transitionAmsIncident,
 } from "@/lib/data/ams-incident-api";
 import type { FactIncidentRow } from "@/lib/data/types";
@@ -120,7 +116,7 @@ function axisLabel(v: unknown, max = 14) {
   const s = String(v ?? "").trim();
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
-import type { DtrDetailLine, FinSightReconCase, FinSightReconStatus } from "@/lib/data/types";
+import type { DtrDetailLine } from "@/lib/data/types";
 import { FinSightD3Hierarchy } from "@/components/finsight/d3-hierarchy";
 
 function formatZar(n: number | null | undefined): string {
@@ -297,7 +293,7 @@ export function TicketStrip({
   return (
     <div className="rpma-eco-head">
       <div className="rpma-eco-head-row">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Freshdesk tickets</p>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Customer Incidents</p>
         <SpaLink href={href} className="ml-auto text-[11px] font-semibold text-primary hover:underline">
           Customer Incidents
         </SpaLink>
@@ -306,7 +302,7 @@ export function TicketStrip({
         items={[
           { label: "30d", value: s.total, href },
           { label: "Open", value: s.open, tone: s.open > 0 ? "amber" : "green", href: `${href}/open` },
-          { label: "SLA breach", value: s.breaches, tone: s.breaches > 0 ? "red" : "green", href: `${href}/sla` },
+          { label: "SLA Breach", value: s.breaches, tone: s.breaches > 0 ? "red" : "green", href: `${href}/sla` },
         ]}
       />
     </div>
@@ -594,73 +590,22 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
 }
 
 export function SysproHubSection({ data }: { data: CustomerDetailPayload }) {
-  const c = data.customer;
   const cover = effectiveCover(data);
-  const base = `/customers/${c.customerCode}/syspro`;
   if (!cover.syspro) {
     return (
       <NoCoverPanel
-        service="SYSPRO Deployment"
+        service="SYSPRO Landscape"
         hint="No cover — no SYSPRO data for this customer (no instance map / operators / collect). Deferred customers stay No Cover until enabled."
       />
     );
   }
-  const ops = data.operators ?? [];
-  const activeOps = c.activeUserCount;
-  const totalOps = Math.max(c.operatorCount, ops.length, 1);
-  const idleOps = Math.max(0, totalOps - activeOps);
-  return (
-    <div className="space-y-3">
-      <ServiceVisuals
-      title="SYSPRO"
-      subtitle={`${c.displayName} · last collect ${formatSastDateTime(c.lastImportAt)}`}
-      kpis={[
-        ...slaHeadKpis(data, "syspro"),
-        { label: "Active Users", value: activeOps, tone: activeOps > 0 ? "green" : "amber" },
-        { label: "Job Logging", value: c.sysproJobErrorCount, tone: c.sysproJobErrorCount > 0 ? "amber" : "green" },
-        { label: "FinSight OOB", value: c.sysproDtrVarianceLines, tone: c.sysproDtrVarianceLines > 0 ? "amber" : "green" },
-        { label: "Tickets", value: ticketStats(ticketsForPillar(data.incidents, "syspro")).total },
-      ]}
-      pie={[
-        { name: "Active", value: activeOps, fill: "#17c666" },
-        { name: "Quiet", value: idleOps, fill: "#5c6570" },
-      ]}
-      bars={[
-        { name: "Job Errors", value: c.sysproJobErrorCount, fill: "#ffa21d" },
-        { name: "FinSight", value: c.sysproDtrVarianceLines, fill: "#ea4d4d" },
-        { name: "Hotfixes", value: (data.sysproHotfixes ?? []).length, fill: "#4f46e0" },
-      ]}
-      tiles={[
-        { label: "Finance Modules", href: `${base}/dtr`, n: c.sysproDtrVarianceLines, hint: "Control Recons" },
-        { label: "Job Logging", href: `${base}/jobs`, n: c.sysproJobErrorCount, hint: "Batch Errors" },
-        { label: "Day End", href: `${base}/day-end`, n: data.dayEnd?.label ?? "—", hint: "Close Status" },
-        { label: "Operators", href: `${base}/operators`, n: totalOps, hint: "Accounts" },
-      ]}
-    />
-    </div>
-  );
+  return <EstateGrid data={data} focus="syspro" />;
 }
 
-/** RMM hub — parallel structure to SYSPRO hub */
+/** RMM hub — Exco estate deck */
 export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
-  const c = data.customer;
   const rmm = data.rmm;
   const cover = effectiveCover(data);
-  const base = `/customers/${c.customerCode}/rmm`;
-  const s = rmm?.summary;
-  const devices = rmm?.devices ?? [];
-  const fromDevices = useMemo(() => {
-    let serverOnline = 0, serverOffline = 0, workstationOnline = 0, workstationOffline = 0;
-    for (const d of devices) {
-      const on = d.isOnline === true;
-      if (isRmmServer(d)) {
-        if (on) serverOnline += 1;
-        else serverOffline += 1;
-      } else if (on) workstationOnline += 1;
-      else workstationOffline += 1;
-    }
-    return { serverOnline, serverOffline, workstationOnline, workstationOffline };
-  }, [devices]);
   if (!cover.rmm && !(rmm?.agentIops?.length || rmm?.windowsEvents?.length)) {
     return (
       <NoCoverPanel
@@ -669,199 +614,11 @@ export function RmmHubSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
-  const online = s?.serverOnline || fromDevices.serverOnline;
-  const offline = s?.serverOffline || fromDevices.serverOffline;
-  const wsOn = s?.workstationOnline || fromDevices.workstationOnline;
-  const wsOff = s?.workstationOffline || fromDevices.workstationOffline;
-  return (
-    <div className="space-y-4">
-    <ServiceVisuals
-      title="RPM Remote Management"
-      subtitle={`${c.displayName}${rmm?.pulsewayOrgName ? ` · ${rmm.pulsewayOrgName}` : ""}`}
-      kpis={[
-        ...slaHeadKpis(data, "rmm"),
-        { label: "Servers Online", value: online, tone: offline > 0 ? "amber" : "green" },
-        { label: "Servers Offline", value: offline, tone: offline > 0 ? "red" : "green" },
-        { label: "Critical Alerts", value: s?.criticalAlerts ?? 0, tone: (s?.criticalAlerts ?? 0) > 0 ? "red" : "green" },
-      ]}
-      pie={[
-        { name: "Online", value: online, fill: "#17c666" },
-        { name: "Offline", value: offline, fill: "#ea4d4d" },
-      ]}
-      bars={[
-        { name: "Critical", value: s?.criticalAlerts ?? 0, fill: "#ea4d4d" },
-        { name: "Elevated", value: s?.elevatedAlerts ?? 0, fill: "#ffa21d" },
-        { name: "Patch Gaps", value: s?.patchMissing ?? 0, fill: "#5c6570" },
-      ]}
-      tiles={[
-        { label: "Servers", href: `${base}/devices`, n: online + offline, hint: "Fleet" },
-        { label: "Workstations", href: `${base}/workstations`, n: wsOn + wsOff, hint: "Endpoints" },
-        { label: "Patch Compliance", href: `${base}/patch`, n: s?.patchMissing ?? 0, hint: "Missing" },
-        { label: "Server Alerts", href: `${base}/alerts`, n: s?.criticalAlerts ?? 0, hint: "Critical" },
-        { label: "Disk Performance", href: `${base}/iops`, n: rmm?.agentIops?.length ?? 0, hint: "Volumes" },
-        { label: "Windows Events", href: `${base}/events`, n: rmm?.windowsEvents?.length ?? 0, hint: "Errors" },
-      ]}
-    />
-    </div>
-  );
+  return <EstateGrid data={data} focus="rmm" />;
 }
 
 export function RmmOverviewSection({ data }: { data: CustomerDetailPayload }) {
-  const rmm = data.rmm;
-  const s = rmm?.summary;
-  const cover = effectiveCover(data);
-  if (!cover.rmm) {
-    return (
-      <NoCoverPanel
-        service="RPM Remote Management overview"
-        hint="No cover — no RMM data for this customer."
-      />
-    );
-  }
-  return (
-    <div className="space-y-4">
-      <ChartCaption
-        title="RPM Remote Management overview"
-        why="Day snapshot from RPM RMM (RPM Remote Management). RAG: Red if critical alerts or 5+ offline; Amber if any offline / elevated / disk pressure."
-      />
-      {rmm?.message ? (
-        <p className="text-sm text-muted">{rmm.message}</p>
-      ) : null}
-      {!s ? (
-        <p className="text-sm text-muted">
-          No org summary yet. Map the org and import a snapshot (or run central 421 demo seed for AHIC).
-        </p>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            <RagBadge rag={s.healthRag} />
-            <span className="text-sm text-muted">{s.healthSummary}</span>
-            {s.asOfDate ? (
-              <span className="text-xs text-muted">As of {formatSastDate(s.asOfDate)}</span>
-            ) : null}
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Devices" value={s.deviceCount} />
-            <StatCard label="Online" value={s.onlineCount} />
-            <StatCard label="Offline" value={s.offlineCount} />
-            <StatCard label="Maintenance" value={s.maintenanceCount} />
-            <StatCard label="Critical alerts" value={s.criticalAlerts} />
-            <StatCard label="Elevated alerts" value={s.elevatedAlerts} />
-            <StatCard
-              label="Windows events (24h)"
-              value={rmm?.windowsEvents?.length ?? 0}
-              hint="Critical / Error from Assure agents"
-            />
-            <StatCard
-              label="Devices with alerts"
-              value={s.devicesWithAlerts ?? "—"}
-              hint="Any critical or elevated on the device"
-            />
-            <StatCard label="Notifications" value={s.notificationCount} />
-            <StatCard label="Servers" value={s.serverCount} />
-            <StatCard label="Workstations" value={s.workstationCount} />
-          </div>
-
-          <ChartCaption
-            title="Customer Storage"
-            why="Sum of RMM disk inventory for this customer. Used = total − free when both are reported."
-          />
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              label="Used space"
-              value={
-                s.diskUsedGb != null
-                  ? `${s.diskUsedGb.toLocaleString("en-ZA")} GB`
-                  : "—"
-              }
-            />
-            <StatCard
-              label="Free space"
-              value={
-                s.diskFreeGb != null
-                  ? `${s.diskFreeGb.toLocaleString("en-ZA")} GB`
-                  : "—"
-              }
-            />
-            <StatCard
-              label="Total capacity"
-              value={
-                s.diskTotalGb != null
-                  ? `${s.diskTotalGb.toLocaleString("en-ZA")} GB`
-                  : "—"
-              }
-            />
-            <StatCard label="Disk high" value={s.diskHighCount} hint="Volumes near full" />
-          </div>
-
-          <ChartCaption
-            title="Customer Reboot Age"
-            why="Days since last reboot, parsed from RMM uptime (e.g. Online 23d). Max is the oldest reboot in the fleet."
-          />
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              label="Max days since reboot"
-              value={s.maxDaysSinceReboot ?? "—"}
-              tone={
-                s.maxDaysSinceReboot != null && s.maxDaysSinceReboot >= 60
-                  ? "amber"
-                  : "default"
-              }
-            />
-            <StatCard
-              label="Avg days since reboot"
-              value={s.avgDaysSinceReboot ?? "—"}
-            />
-          </div>
-
-          <ChartCaption
-            title="Customer Patches - Not Deployed"
-            why="Outstanding updates from RMM updates (Critical + Important + Unspecified). SYSPRO hotfixes remain under SYSPRO → Hotfix Information."
-          />
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              label="Outstanding"
-              value={s.patchMissing ?? "—"}
-              tone={
-                s.patchMissing != null && s.patchMissing > 0 ? "amber" : "default"
-              }
-              hint="Critical + Important + Unspecified across agents"
-            />
-            <StatCard
-              label="Clean agents"
-              value={
-                s.patchDevicesReporting != null
-                  ? Math.max(
-                      0,
-                      (s.patchDevicesReporting ?? 0) -
-                        (rmm?.devices ?? []).filter(
-                          (d) => (d.patchMissing ?? 0) > 0,
-                        ).length,
-                    )
-                  : "—"
-              }
-              hint="Reporting agents with 0 outstanding"
-            />
-            <StatCard label="Still pending" value={s.patchPending ?? "—"} />
-            <StatCard
-              label="Devices reporting"
-              value={s.patchDevicesReporting ?? 0}
-              hint="Agents that sent Updates counters"
-            />
-          </div>
-
-          <FirewallEstateStrip devices={rmm?.devices ?? []} />
-
-          {s.lastImportAt ? (
-            <p className="text-xs text-muted">
-              Last import {formatSastDateTime(s.lastImportAt)} · org{" "}
-              {s.organizationName ?? rmm.pulsewayOrgName ?? "—"}
-            </p>
-          ) : null}
-        </>
-      )}
-    </div>
-  );
+  return <RmmHubSection data={data} />;
 }
 
 export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
@@ -1307,7 +1064,10 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                 return (
                   <tr key={d.deviceId} className="border-b border-border/70">
                     <td className="px-3 py-2 font-medium">
-                      {d.name ?? d.deviceId}
+                      <span className="inline-flex items-center gap-2">
+                        <ServerKindIcon device={d} size={16} />
+                        {d.name ?? d.deviceId}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-muted text-xs">
                       {d.deviceType ?? "—"}
@@ -1447,7 +1207,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                           </button>
                         </td>
                         <td className="px-3 py-2">{p.title}</td>
-                        <td className="px-3 py-2 font-mono text-[11px]">{p.kb || "—"}</td>
+                        <td className="px-3 py-2 font-mono text-[11px]">{p.kb || (String(p.title || "").match(/KB\d{5,}/i)?.[0]?.toUpperCase() ?? "—")}</td>
                         <td className="px-3 py-2 text-[12px] text-muted">{p.classification || "—"}</td>
                         <td className="px-3 py-2">{p.status}</td>
                         <td className="px-3 py-2 text-[12px] text-muted">
@@ -1756,7 +1516,7 @@ export function RmmDevicesSection({
                     >
                       <span className="flex items-center justify-between gap-1.5">
                         <span className="flex min-w-0 items-center gap-1.5">
-                          {mode === "servers" ? <ServerKindIcon device={d} size={20} showLabel /> : null}
+                          {<ServerKindIcon device={d} size={20} showLabel />}
                           <span className="truncate text-[12px] font-semibold text-fg">
                             {d.name ?? d.deviceId}
                           </span>
@@ -2483,10 +2243,12 @@ function IopsPerfMatrix({
                 <strong>{r.driveLetter || "?"}</strong>
                 <span className="rpma-drive-chips">
                   <span className="rpma-drive-chip" data-kind={kind}>
+                    <DriveTypeIcon bus={DRIVE_STATS[kind].label} size={16} />
                     {DRIVE_STATS[kind].label}
                   </span>
                   <span className="rpma-drive-chip" data-bus={busLabel}>
-                    Drive type {busLabel}
+                    <DriveTypeIcon bus={busLabel} size={16} />
+                    Drive Type {busLabel}
                   </span>
                 </span>
               </div>
@@ -2743,9 +2505,9 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
             value: score == null ? "—" : `${score}%`,
             tone: score == null ? "default" : assuranceTone(score, c.healthRag),
           },
-          { label: "Open risks", value: openRisks.length, tone: openRisks.length === 0 ? "green" : "amber" },
-          { label: "Closed risks", value: closedRisks },
-          { label: "Open tickets", value: openInc.length, tone: openInc.length === 0 ? "green" : "red" },
+          { label: "Open Risks", value: openRisks.length, tone: openRisks.length === 0 ? "green" : "amber" },
+          { label: "Closed Risks", value: closedRisks },
+          { label: "Open Tickets", value: openInc.length, tone: openInc.length === 0 ? "green" : "red" },
           { label: "Major", value: major.length, tone: major.length === 0 ? "green" : "red" },
           { label: "Issues", value: openIssues.length },
           ...slaBars.slice(0, 2).map((s) => ({
@@ -2755,6 +2517,64 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
           })),
         ]}
       />
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="rpma-glass p-3">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">SLA By Service</p>
+          <div className="h-52">
+            {slaBars.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={slaBars} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: CHART.axis, fontSize: 10 }} interval={0} axisLine={false} tickLine={false} tickFormatter={(v) => axisLabel(v, 10)} />
+                  <YAxis domain={[0, 100]} width={28} tick={{ fill: CHART.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip />} cursor={CHART_TOOLTIP_CURSOR} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36} isAnimationActive={false}>
+                    {slaBars.map((e, i) => (
+                      <Cell key={i} fill={e.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="px-2 py-8 text-center text-[12px] text-muted">No scored SLA lines on cover yet.</p>
+            )}
+          </div>
+        </div>
+        <div className="rpma-glass p-3">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Incidents & Risks</p>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Open Incidents", value: Math.max(openInc.length, 0), fill: "#ea4d4d" },
+                    { name: "Open Risks", value: Math.max(openRisks.length, 0), fill: "#ffa21d" },
+                    { name: "Issues", value: Math.max(openIssues.length, 0), fill: "#4f46e0" },
+                    { name: "Clear", value: openInc.length + openRisks.length + openIssues.length === 0 ? 1 : 0, fill: "#17c666" },
+                  ].filter((d) => d.value > 0)}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={48}
+                  outerRadius={70}
+                  paddingAngle={2}
+                  isAnimationActive={false}
+                >
+                  {[
+                    { name: "Open Incidents", fill: "#ea4d4d" },
+                    { name: "Open Risks", fill: "#ffa21d" },
+                    { name: "Issues", fill: "#4f46e0" },
+                    { name: "Clear", fill: "#17c666" },
+                  ].map((e) => (
+                    <Cell key={e.name} fill={e.fill} stroke="transparent" />
+                  ))}
+                </Pie>
+                <Tooltip content={<ChartTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
 
       <div className="rpma-eco-svcs">
         {[
@@ -2779,10 +2599,9 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
 
       <SpaLink
         href={`/reports?format=ams-monthly&customer=${encodeURIComponent(c.customerCode)}`}
-        className="rpma-glass flex min-h-11 items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-fg"
+        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#3a424c] px-4 py-2 text-[13px] font-extrabold text-white hover:bg-[#2c333c]"
       >
-        Print monthly AMS pack
-        <span className="font-normal text-muted">Health · day-end · jobs · FinSight · clocks</span>
+        Print Monthly AMS Pack
       </SpaLink>
     </div>
   );
@@ -3037,9 +2856,6 @@ export function DtrSection({ data }: { data: CustomerDetailPayload }) {
     () => rows.find((r) => (r.varianceLineCount || 0) > 0)?.balanceTypeCode ?? rows[0]?.balanceTypeCode ?? null,
   );
   const [selectedL2Key, setSelectedL2Key] = useState<string | null>(null);
-  const [cases, setCases] = useState<FinSightReconCase[]>(data.finsightReconCases ?? []);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
 
   const chart = useMemo(
     () =>
@@ -3115,50 +2931,6 @@ export function DtrSection({ data }: { data: CustomerDetailPayload }) {
   }, [modDetail, selectedL2Key]);
 
   const hasL23 = detailAll.some((d) => Number(d.informationLevel) >= 2);
-
-  async function runAutoOpen() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = (await autoOpenFinSightReconCases({
-        data: { customerCode: data.customer.customerCode },
-      })) as {
-        ok?: boolean;
-        message?: string;
-        cases?: FinSightReconCase[];
-      };
-      if (res.cases?.length) setCases(res.cases);
-      setMsg(res.message ?? (res.ok ? "Done" : "Failed"));
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function advanceCase(c: FinSightReconCase, status: FinSightReconStatus) {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = (await updateFinSightReconCase({
-        data: {
-          reconCaseId: c.reconCaseId,
-          status,
-          actorName: "Staff",
-          stepNote: `Status to ${status}`,
-        },
-      })) as { ok?: boolean; case?: FinSightReconCase };
-      if (res.case) {
-        const updated = res.case;
-        setCases((prev) => prev.map((x) => (x.reconCaseId === updated.reconCaseId ? updated : x)));
-      }
-      setMsg(`Case ${c.balanceTypeCode} → ${status}`);
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   function displayKey(line: DtrDetailLine): string {
     return (
@@ -3323,7 +3095,7 @@ export function DtrSection({ data }: { data: CustomerDetailPayload }) {
     <div className="space-y-3">
       <ChartCaption
         title={`${FINSIGHT_PRODUCT} · control recons`}
-        why="Control totals (L1) roll from mid-level (L2) and detail (L3). Variance = sub-ledger close vs GL control close. Open recon cases to track clear-down."
+        why="Control totals (L1) roll from mid-level (L2) and detail (L3). Variance = sub-ledger close vs GL control close."
       />
 
       {(detailAll.length > 0 || rows.length > 0) ? (
@@ -3357,10 +3129,6 @@ export function DtrSection({ data }: { data: CustomerDetailPayload }) {
             <li>
               <strong className="text-fg">{finsightLevelLabel(3)}</strong> —{" "}
               {finsightLevelHint(3)}
-            </li>
-            <li>
-              <strong className="text-fg">Workflow</strong> — auto-open cases for out-of-balance
-              controls; track to Cleared / Accepted
             </li>
           </ul>
           <p className="text-[12px] text-subtle">
@@ -3432,91 +3200,11 @@ export function DtrSection({ data }: { data: CustomerDetailPayload }) {
             >
               {integrationOk
                 ? "Holding — all collected control accounts reconcile."
-                : `${modulesOob} control module(s) out of balance — drill mid-level / detail and open recon cases.`}
+                : `${modulesOob} control module(s) out of balance — drill mid-level and detail.`}
             </p>
           </CardContent>
         </Card>
       ) : null}
-
-      {/* Automated recon workflow */}
-      <Card>
-        <CardHead>Recon workflow</CardHead>
-        <CardContent className="space-y-3 p-4">
-          <p className="text-[13px] text-muted">
-            Opens one active case per control module with out-of-balance lines. Advance status as
-            RPM Assure and finance clear the recon: Open → Investigating → Waiting finance → Cleared
-            / Accepted.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={busy || modulesOob === 0}
-              onClick={() => void runAutoOpen()}
-              className="rounded-lg bg-primary px-3 py-1.5 text-[13px] font-semibold text-primary-fg disabled:opacity-50"
-            >
-              {busy ? "Working…" : "Auto-open cases from out-of-balance controls"}
-            </button>
-            <span className="text-[12px] text-subtle">{cases.length} active case(s)</span>
-          </div>
-          {msg ? <p className="text-[12px] text-muted">{msg}</p> : null}
-          {cases.length === 0 ? (
-            <p className="text-[12px] text-muted">
-              No open recon cases. Run auto-open when out-of-balance controls are greater than zero.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {cases.map((c) => (
-                <div
-                  key={c.reconCaseId}
-                  className="flex flex-col gap-2 rounded-lg border border-border bg-surface-2/40 p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-fg">
-                      <button
-                        type="button"
-                        className="text-left hover:underline"
-                        onClick={() => {
-                          setSelectedMod(c.balanceTypeCode);
-                          setSelectedL2Key(null);
-                        }}
-                      >
-                        {finsightModuleTitle(c.balanceTypeCode)}
-                      </button>{" "}
-                      <span className="font-normal text-muted">· {c.status}</span>
-                    </p>
-                    <p className="truncate text-[12px] text-muted">{c.title}</p>
-                    <p className="text-[11px] text-subtle">
-                      {FINSIGHT_COL.oobLines} {c.oobLines} · {FINSIGHT_COL.absVariance}{" "}
-                      {formatZar(c.absVariance)} · Owner {c.ownerName || "—"}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {(
-                      [
-                        ["Investigating", "Investigate"],
-                        ["WaitingFinance", "Wait finance"],
-                        ["Cleared", "Cleared"],
-                        ["Accepted", "Accept"],
-                        ["Closed", "Close"],
-                      ] as const
-                    ).map(([st, label]) => (
-                      <button
-                        key={st}
-                        type="button"
-                        disabled={busy || c.status === st}
-                        onClick={() => void advanceCase(c, st)}
-                        className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-surface disabled:opacity-40"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {chart.length > 0 ? (
         <Card>
@@ -4293,47 +3981,10 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
   const [incidents, setIncidents] = useState<FactIncidentRow[]>(data.incidents ?? []);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [severity, setSeverity] = useState<"Critical" | "High" | "Medium" | "Low">("Medium");
-  const [isMajor, setIsMajor] = useState(false);
   const summary = data.amsSlaSummary;
 
   const open = incidents.filter((i) => !/closed|cancelled/i.test(i.status));
   const recentClosed = incidents.filter((i) => /closed|resolved/i.test(i.status));
-
-  async function createIncident() {
-    if (title.trim().length < 3) {
-      setMsg("Title needs at least 3 characters");
-      return;
-    }
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = (await upsertAmsIncident({
-        data: {
-          customerCode: data.customer.customerCode,
-          title: title.trim(),
-          severity,
-          status: "New",
-          isMajor,
-          sourceSystem: "RPM Assure",
-          ownerName: "RPM Assure Ops",
-        },
-      })) as { ok?: boolean; error?: string; incident?: FactIncidentRow };
-      if (!res.ok || !res.incident) {
-        setMsg(res.error || "Create failed — deploy 313 SQL and ensure Fact_Incident exists");
-      } else {
-        setIncidents((prev) => [res.incident!, ...prev]);
-        setTitle("");
-        setIsMajor(false);
-        setMsg("Incident opened — SLA clock started");
-      }
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function act(inc: FactIncidentRow, action: "respond" | "resolve" | "close" | "reopen") {
     if (!inc.incidentId) {
@@ -4383,26 +4034,23 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <div className="rpma-win-stack">
-      <DataWindow
-        title="Customer incidents — Freshdesk + SLA clocks"
-        subtitle="Tickets from Freshdesk (mapped companies only) land in Fact_Incident. Response/resolve scored against Dim_SlaPolicy."
-      >
+      <DataWindow title="Customer Incidents" subtitle="RPM AMS SLA — Open / Active Incidents and Problems.">
         <div className="p-2">
           <EcoKpis
             items={[
               { label: "Open", value: open.length, tone: open.length > 0 ? "amber" : "green" },
               {
-                label: "Major open",
+                label: "Major Open",
                 value: summary?.majorOpenCount ?? open.filter((i) => i.isMajor).length,
                 tone: (summary?.majorOpenCount ?? 0) > 0 ? "red" : "default",
               },
               {
-                label: "Response breach",
+                label: "Response Breach",
                 value: summary?.responseBreach ?? incidents.filter((i) => i.responseSlaMet === false).length,
                 tone: (summary?.responseBreach ?? 0) > 0 ? "red" : "green",
               },
               {
-                label: "Resolve breach",
+                label: "Resolve Breach",
                 value: summary?.resolveBreach ?? incidents.filter((i) => i.resolveSlaMet === false).length,
                 tone: (summary?.resolveBreach ?? 0) > 0 ? "red" : "green",
               },
@@ -4411,102 +4059,11 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
         </div>
       </DataWindow>
 
-      <DataWindow title="Ticket register (module data)" fill>
-        {incidents.length === 0 ? (
-          <p className="p-4 text-[12px] text-muted">
-            No Freshdesk or Assure incidents for this customer in the last 30 days.
-          </p>
-        ) : (
-          <table className="w-full text-left text-[12px]">
-            <thead className="rpma-table-head">
-              <tr>
-                <th className="px-2 py-1.5">Ticket</th>
-                <th className="px-2 py-1.5">Subject</th>
-                <th className="px-2 py-1.5">Pri</th>
-                <th className="px-2 py-1.5">Status</th>
-                <th className="px-2 py-1.5">Opened</th>
-                <th className="px-2 py-1.5">Response</th>
-                <th className="px-2 py-1.5">Restore</th>
-                <th className="px-2 py-1.5">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {incidents.map((inc, i) => {
-                const fd = inc.externalRef && /^FD-\d+$/i.test(inc.externalRef)
-                  ? inc.externalRef.replace(/^FD-/i, "")
-                  : null;
-                return (
-                  <tr key={inc.incidentId ?? i} className="border-t border-border">
-                    <td className="px-2 py-1.5 font-mono text-[11px] whitespace-nowrap">
-                      {fd ? (
-                        <a
-                          className="text-primary underline-offset-2 hover:underline"
-                          href={`https://rpmresourceshelp.freshdesk.com/a/tickets/${fd}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          #{fd}
-                        </a>
-                      ) : (
-                        inc.externalRef || "—"
-                      )}
-                    </td>
-                    <td className="px-2 py-1.5 font-medium text-fg">{inc.title}</td>
-                    <td className="px-2 py-1.5">{inc.priority || inc.severity}</td>
-                    <td className="px-2 py-1.5">{inc.status}</td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">{formatSastDateTime(inc.openedAt)}</td>
-                    <td className="px-2 py-1.5">{slaBadge(inc.responseSlaMet, "Ack")}</td>
-                    <td className="px-2 py-1.5">{slaBadge(inc.resolveSlaMet, "Restore")}</td>
-                    <td className="px-2 py-1.5 text-muted">{inc.sourceSystem || "Assure"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </DataWindow>
-
-      <DataWindow title="Log incident (starts SLA clock)" className="is-fixed">
-        <CardContent className="space-y-2 p-4">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-              placeholder="Incident title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <select
-              className="rounded-lg border border-border bg-surface px-2 py-2 text-sm"
-              value={severity}
-              onChange={(e) => setSeverity(e.target.value as typeof severity)}
-            >
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-            <label className="flex items-center gap-1.5 text-[12px] text-muted">
-              <input type="checkbox" checked={isMajor} onChange={(e) => setIsMajor(e.target.checked)} />
-              Major
-            </label>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void createIncident()}
-              className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-fg disabled:opacity-50"
-            >
-              Open
-            </button>
-          </div>
-          {msg ? <p className="text-[12px] text-muted">{msg}</p> : null}
-        </CardContent>
-      </DataWindow>
-
       <div className="rpma-win-row">
-        <DataWindow title="Open / active incidents" fill>
+        <DataWindow title="Open / Active Incidents" fill>
           <CardContent className="space-y-2 p-3">
             {open.length === 0 ? (
-              <p className="text-[12px] text-muted">No open incidents on the live feed.</p>
+              <p className="text-[12px] text-muted">No Open Incidents on the live feed.</p>
             ) : (
               open.map((inc, i) => (
                 <div key={inc.incidentId ?? i} className="rounded-lg border border-border px-3 py-2 text-sm">
@@ -4630,7 +4187,7 @@ export function RisksSection({ data }: { data: CustomerDetailPayload }) {
           ))}
         </CardContent>
         </DataWindow>
-        <DataWindow title="Issues & priorities" fill>
+        <DataWindow title="Issues & Priorities" fill>
         <CardContent className="space-y-2">
           {(data.issues ?? []).map((iss, i) => (
             <div key={`i${i}`} className="text-sm">
@@ -4851,10 +4408,6 @@ function CoveRecentDaysPanel({
 
 export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
   const cover = effectiveCover(data);
-  const c = data.customer;
-  const devices = data.cove?.devices ?? [];
-  const n = c.coveDeviceCount ?? devices.length;
-  const fail = (c.coveFailedDeviceCount ?? 0) + (c.coveStaleDeviceCount ?? 0);
   if (!cover.cove) {
     return (
       <NoCoverPanel
@@ -4863,28 +4416,7 @@ export function CoveHubSection({ data }: { data: CustomerDetailPayload }) {
       />
     );
   }
-  const code = c.customerCode;
-  return (
-    <div className="space-y-3">
-      <ServiceVisuals
-        title="RPM Cloud Backup"
-        subtitle={c.displayName}
-        kpis={[
-          ...slaHeadKpis(data, "cove"),
-          { label: "Devices", value: n },
-          { label: "Healthy", value: c.coveOkDeviceCount ?? Math.max(0, n - fail), tone: "green" },
-          { label: "Failed / stale", value: fail, tone: fail > 0 ? "amber" : "green" },
-          { label: "Tickets", value: ticketStats(ticketsForPillar(data.incidents, "cove")).open },
-        ]}
-        tiles={[
-          { label: "Devices", href: `/customers/${code}/cove/devices`, n, hint: "Protected" },
-          { label: "Recovery Testing", href: `/customers/${code}/cove/recovery`, n: devices.filter((d) => d.lastRecoveryTestAt).length, hint: "Tests" },
-          { label: "Backup Retention", href: `/customers/${code}/cove/retention`, n: devices.length, hint: "Policy" },
-          { label: "Service SLA", href: `/customers/${code}/cove/sla`, n: "Open", hint: "Clocks" },
-        ]}
-      />
-    </div>
-  );
+  return <EstateGrid data={data} focus="cove" />;
 }
 
 export function CoveOverviewSection({ data }: { data: CustomerDetailPayload }) {
@@ -4902,54 +4434,15 @@ export function CoveOverviewSection({ data }: { data: CustomerDetailPayload }) {
 export function EppHubSection({ data }: { data: CustomerDetailPayload }) {
   const cover = effectiveCover(data);
   const epp = data.epp;
-  const s = epp?.summary;
-  const devices = epp?.devices ?? [];
-  const code = data.customer.customerCode;
   if (!cover.epp) {
     return (
       <NoCoverPanel
-        service="RPM EndPoint Protection"
-        hint={epp?.message || "No cover — no RPM EndPoint Protection endpoints mapped for this customer."}
+        service="RPM End Point Protection"
+        hint={epp?.message || "No cover — no RPM End Point Protection endpoints mapped for this customer."}
       />
     );
   }
-  const managed = s?.managedCount ?? devices.filter((d) => d.isManaged).length;
-  const servers = s?.serverCount ?? 0;
-  const workstations = s?.workstationCount ?? 0;
-  const incidents = epp?.incidents?.length ?? 0;
-  const infected = devices.filter((d) => d.infected || d.malwareDetected).length;
-  const outdated = devices.filter((d) => d.productOutdated || d.signatureOutdated).length;
-  const fdTickets = ticketStats(ticketsForPillar(data.incidents, "epp"));
-  return (
-    <div className="space-y-3">
-    <ServiceVisuals
-      title="RPM EndPoint Protection"
-      subtitle={data.customer.displayName}
-      kpis={[
-        ...slaHeadKpis(data, "epp"),
-        { label: "Endpoints", value: s?.deviceCount ?? devices.length },
-        { label: "Managed", value: managed, tone: "green" },
-        { label: "Infected", value: infected, tone: infected > 0 ? "red" : "green" },
-        { label: "Tickets", value: fdTickets.total, tone: fdTickets.open > 0 ? "amber" : "green" },
-      ]}
-      pie={[
-        { name: "Managed", value: managed, fill: "#17c666" },
-        { name: "Other", value: Math.max(0, (s?.deviceCount ?? devices.length) - managed), fill: "#5c6570" },
-      ]}
-      bars={[
-        { name: "Servers", value: servers, fill: "#4f46e0" },
-        { name: "Workstations", value: workstations, fill: "#17c666" },
-        { name: "Incidents", value: incidents, fill: "#ea4d4d" },
-      ]}
-      tiles={[
-        { label: "EndPoint Agents", href: `/customers/${code}/epp/endpoints`, n: s?.deviceCount ?? devices.length, hint: "Fleet" },
-        { label: "Policies & Modules", href: `/customers/${code}/epp/modules`, n: "Open", hint: "Policy" },
-        { label: "Security Incidents", href: `/customers/${code}/epp/incidents`, n: incidents, hint: "Open" },
-        { label: "Quarantine", href: `/customers/${code}/epp/quarantine`, n: epp?.quarantine?.length ?? 0, hint: "Items" },
-      ]}
-    />
-    </div>
-  );
+  return <EstateGrid data={data} focus="epp" />;
 }
 
 function formatCoveBytes(bytes: number | null | undefined): string {
@@ -5212,12 +4705,12 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
             <StatCard label="Recovery Testing plan" value={rec.recoveryTestingCount} />
             <StatCard label="Standby Image plan" value={rec.standbyImageCount} />
             <StatCard
-              label="Verification success"
+              label="Successful Recoveries"
               value={rec.testSuccessCount}
               tone={rec.testSuccessCount > 0 ? "green" : "default"}
             />
             <StatCard
-              label="Verification failed"
+              label="Failed Recoveries"
               value={rec.testFailedCount}
               tone={rec.testFailedCount > 0 ? "red" : "default"}
             />
@@ -5265,7 +4758,6 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
                 <th className="px-3 py-2">Test status</th>
                 <th className="px-3 py-2">Last test</th>
                 <th className="px-3 py-2">Physicality</th>
-                <th className="px-3 py-2">Verification detail</th>
               </tr>
             </thead>
             <tbody>
@@ -5301,12 +4793,6 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
                       : "—"}
                   </td>
                   <td className="px-3 py-2 text-muted">{d.physicality || "—"}</td>
-                  <td
-                    className="max-w-[280px] truncate px-3 py-2 text-xs text-muted"
-                    title={d.recoveryVerification || undefined}
-                  >
-                    {d.recoveryVerification || "—"}
-                  </td>
                 </tr>
               ))}
             </tbody>
