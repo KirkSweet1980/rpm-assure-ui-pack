@@ -302,6 +302,128 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
 
   return (
     <div className={cn("rpma-est", compact && "is-compact")}>
+      <div className="rpma-est-focus">
+        <div className="rpma-est-scroll">
+          <table className="rpma-est-table">
+            <thead>
+              <tr>
+                <th className="w-star" />
+                <th>Org ID</th>
+                <th>Organization</th>
+                <th>Site</th>
+                <th>Device / Hostname</th>
+                <th>Status</th>
+                <th>Estate type</th>
+                <th>SYSPRO ID</th>
+                <th>Backup</th>
+                <th>EPP</th>
+                <th>Tickets</th>
+                <th>Last active</th>
+                <th>IP address</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slice.length === 0 ? (
+                <tr>
+                  <td colSpan={14} className="rpma-est-empty">
+                    No estate devices on last collect for {customer.displayName}.
+                  </td>
+                </tr>
+              ) : (
+                slice.map((r, i) => (
+                  <tr key={r.id}>
+                    <td>
+                      <button
+                        type="button"
+                        className={cn("rpma-est-star", starred[r.id] && "is-on")}
+                        onClick={() => setStarred((s) => ({ ...s, [r.id]: !s[r.id] }))}
+                        aria-label="Star"
+                      >
+                        <Star className="size-3.5" />
+                      </button>
+                    </td>
+                    <td className="mono">{r.orgId}-{String((safe - 1) * PAGE + i + 1).padStart(3, "0")}</td>
+                    <td>{r.org}</td>
+                    <td>{r.site}</td>
+                    <td className="strong">{r.host}</td>
+                    <td>
+                      <span
+                        className={cn(
+                          "rpma-est-st",
+                          r.status === "Online" && "is-ok",
+                          r.status === "Offline" && "is-bad",
+                        )}
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                    <td>{r.estate}</td>
+                    <td className="mono">{r.sysproId}</td>
+                    <td className="center">
+                      {r.backup === "ok" ? (
+                        <CheckCircle2 className="rpma-est-ok" />
+                      ) : r.backup === "fail" ? (
+                        <XCircle className="rpma-est-bad" />
+                      ) : (
+                        <span className="muted">N/A</span>
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className={cn(
+                          "rpma-est-st",
+                          r.epp === "Protected" && "is-ok",
+                          r.epp === "Warning" && "is-warn",
+                        )}
+                      >
+                        {r.epp}
+                      </span>
+                    </td>
+                    <td className={cn(r.tickets > 0 && "warn")}>{r.tickets}</td>
+                    <td>{r.last}</td>
+                    <td className="mono">{r.ip}</td>
+                    <td>{r.location}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <footer className="rpma-est-foot">
+          <span>
+            Showing {from} to {to} of {rows.length} entries
+          </span>
+          <nav className="rpma-est-pages" aria-label="Pages">
+            <button type="button" disabled={safe <= 1} onClick={() => setPage(safe - 1)}>
+              ‹
+            </button>
+            {Array.from({ length: Math.min(pages, 5) }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={n === safe ? "is-on" : undefined}
+                onClick={() => setPage(n)}
+              >
+                {n}
+              </button>
+            ))}
+            {pages > 5 ? <span>… {pages}</span> : null}
+            <button type="button" disabled={safe >= pages} onClick={() => setPage(safe + 1)}>
+              ›
+            </button>
+          </nav>
+          <label className="rpma-est-compact">
+            Compact
+            <input
+              type="checkbox"
+              checked={compact}
+              onChange={(e) => setCompact(e.target.checked)}
+            />
+          </label>
+        </footer>
+      </div>
+
       <header className="rpma-eco-head">
         <div className="rpma-eco-head-row">
           <RagBadge rag={dormant ? "Off" : customer.healthRag} title={customer.healthSummary} />
@@ -352,125 +474,6 @@ export function EstateGrid({ data }: { data: CustomerDetailPayload }) {
           ))}
         </div>
       </header>
-      <div className="rpma-est-scroll">
-        <table className="rpma-est-table">
-          <thead>
-            <tr>
-              <th className="w-star" />
-              <th>Org ID</th>
-              <th>Organization</th>
-              <th>Site</th>
-              <th>Device / Hostname</th>
-              <th>Status</th>
-              <th>Estate type</th>
-              <th>SYSPRO ID</th>
-              <th>Backup</th>
-              <th>EPP</th>
-              <th>Tickets</th>
-              <th>Last active</th>
-              <th>IP address</th>
-              <th>Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            {slice.length === 0 ? (
-              <tr>
-                <td colSpan={14} className="rpma-est-empty">
-                  No estate devices on last collect for {customer.displayName}.
-                </td>
-              </tr>
-            ) : (
-              slice.map((r, i) => (
-                <tr key={r.id}>
-                  <td>
-                    <button
-                      type="button"
-                      className={cn("rpma-est-star", starred[r.id] && "is-on")}
-                      onClick={() => setStarred((s) => ({ ...s, [r.id]: !s[r.id] }))}
-                      aria-label="Star"
-                    >
-                      <Star className="size-3.5" />
-                    </button>
-                  </td>
-                  <td className="mono">{r.orgId}-{String((safe - 1) * PAGE + i + 1).padStart(3, "0")}</td>
-                  <td>{r.org}</td>
-                  <td>{r.site}</td>
-                  <td className="strong">{r.host}</td>
-                  <td>
-                    <span
-                      className={cn(
-                        "rpma-est-st",
-                        r.status === "Online" && "is-ok",
-                        r.status === "Offline" && "is-bad",
-                      )}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
-                  <td>{r.estate}</td>
-                  <td className="mono">{r.sysproId}</td>
-                  <td className="center">
-                    {r.backup === "ok" ? (
-                      <CheckCircle2 className="rpma-est-ok" />
-                    ) : r.backup === "fail" ? (
-                      <XCircle className="rpma-est-bad" />
-                    ) : (
-                      <span className="muted">N/A</span>
-                    )}
-                  </td>
-                  <td>
-                    <span
-                      className={cn(
-                        "rpma-est-st",
-                        r.epp === "Protected" && "is-ok",
-                        r.epp === "Warning" && "is-warn",
-                      )}
-                    >
-                      {r.epp}
-                    </span>
-                  </td>
-                  <td className={cn(r.tickets > 0 && "warn")}>{r.tickets}</td>
-                  <td>{r.last}</td>
-                  <td className="mono">{r.ip}</td>
-                  <td>{r.location}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      <footer className="rpma-est-foot">
-        <span>
-          Showing {from} to {to} of {rows.length} entries
-        </span>
-        <nav className="rpma-est-pages" aria-label="Pages">
-          <button type="button" disabled={safe <= 1} onClick={() => setPage(safe - 1)}>
-            ‹
-          </button>
-          {Array.from({ length: Math.min(pages, 5) }, (_, i) => i + 1).map((n) => (
-            <button
-              key={n}
-              type="button"
-              className={n === safe ? "is-on" : undefined}
-              onClick={() => setPage(n)}
-            >
-              {n}
-            </button>
-          ))}
-          {pages > 5 ? <span>… {pages}</span> : null}
-          <button type="button" disabled={safe >= pages} onClick={() => setPage(safe + 1)}>
-            ›
-          </button>
-        </nav>
-        <label className="rpma-est-compact">
-          Compact
-          <input
-            type="checkbox"
-            checked={compact}
-            onChange={(e) => setCompact(e.target.checked)}
-          />
-        </label>
-      </footer>
     </div>
   );
 }

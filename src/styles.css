@@ -3608,6 +3608,50 @@ html.snow .rpma-vision input { background: #f4f6f8; color: #1d2630; border-color
   padding: 8px 10px;
 }
 .rpma-rmm-detail h3 { font-size: 13px !important; margin: 0; }
+
+.rpma-fw-rx {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 4.6rem;
+  align-items: center;
+  gap: 2px 6px;
+  border: 1px solid #143044;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.rpma-fw-rx em {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.rpma-fw-rx strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.rpma-fw-rx b { font-size: 15px; font-weight: 900; opacity: 0.45; }
+.rpma-fw-rx .rpma-fw-score { text-align: right; font-family: var(--font-mono); font-size: 18px; font-weight: 800; line-height: 1; }
+.rpma-fw-rx.is-green { border-color: color-mix(in srgb, var(--color-rag-green) 55%, #143044); background: var(--color-rag-green-bg); color: var(--color-rag-green); }
+.rpma-fw-rx.is-amber { border-color: color-mix(in srgb, var(--color-rag-amber) 55%, #143044); background: var(--color-rag-amber-bg); color: var(--color-rag-amber); }
+.rpma-fw-rx.is-red { border-color: color-mix(in srgb, var(--color-rag-red) 55%, #143044); background: var(--color-rag-red-bg); color: var(--color-rag-red); }
+.rpma-fw-rx.is-muted { color: var(--color-muted); }
+html[data-theme="light"] .rpma-fw-rx,
+html.snow .rpma-fw-rx { border-color: #c5d0da; }
+.rpma-fw-hits { margin: 0; padding: 0; list-style: none; border: 1px solid #143044; border-radius: 8px; overflow: hidden; }
+.rpma-fw-hits li {
+  display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+  padding: 4px 8px; border-top: 1px solid #143044; font-family: var(--font-mono); font-size: 11px;
+}
+.rpma-fw-hits li:first-child { border-top: 0; }
+html[data-theme="light"] .rpma-fw-hits,
+html.snow .rpma-fw-hits,
+html[data-theme="light"] .rpma-fw-hits li,
+html.snow .rpma-fw-hits li { border-color: #c5d0da; }
+
 html[data-theme="light"] .rpma-rmm-list,
 html.snow .rpma-rmm-list,
 html[data-theme="light"] .rpma-rmm-detail,
@@ -5095,5 +5139,106 @@ html.dark .rpma-emp-tool.is-on { background: #1c3348 !important; color: #e8edf3 
 .rpma-sql-live,
 .rpma-system-clock,
 .rpma-hud { display: none !important; }
+
+/* ===== Locked tenant window: each menu item scrolls inside, never the page ===== */
+html:has(.rpma-emp.is-side),
+html:has(.rpma-emp.is-side) body {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+.dk-shell.is-topnav:has(.rpma-emp.is-side),
+.dk-shell.is-topnav:has(.rpma-emp.is-side) .dk-main,
+.dk-shell.is-topnav:has(.rpma-emp.is-side) .dk-content.rpma-topnav-main,
+.dk-shell.is-topnav:has(.rpma-emp.is-side) .rpma-topnav-canvas,
+.rpma-amx-workspace:has(.rpma-emp.is-side) {
+  overflow: hidden !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+.rpma-emp.is-side {
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+.rpma-emp.is-side .rpma-emp-bodyrow {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.rpma-emp.is-side .rpma-emp-work {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 10px !important;
+  background: #dce8f5 !important;
+}
+.rpma-emp.is-side .rpma-work-window {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid #c5d4e4 !important;
+  border-radius: 10px !important;
+  background: #eaf2fb !important;
+}
+.rpma-emp.is-side .rpma-win-head {
+  flex: 0 0 auto !important;
+  padding: 8px 14px !important;
+  background: #3a424c !important;
+  border-bottom: 1px solid #2c333c !important;
+  color: #ffffff !important;
+}
+.rpma-emp.is-side .rpma-win-head h2 {
+  margin: 0 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+}
+.rpma-emp.is-side .rpma-win-head p {
+  margin: 2px 0 0 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #d7dde4 !important;
+}
+.rpma-emp.is-side .rpma-work-scroll,
+.rpma-emp.is-side .rpma-emp-body.rpma-work-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  height: auto !important;
+  padding: 10px !important;
+  display: block !important;
+  background: #eaf2fb !important;
+}
+.rpma-emp.is-side .rpma-panel-heading,
+.rpma-emp.is-side .rpma-pane-head,
+.rpma-emp.is-side .rpma-card > .rpma-panel-heading {
+  background: #3a424c !important;
+  border-bottom: 1px solid #2c333c !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+html.dark .rpma-emp.is-side .rpma-work-window,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-work-window {
+  background: #15202c !important;
+  border-color: #2a3a4c !important;
+}
+html.dark .rpma-emp.is-side .rpma-win-head,
+html.dark .rpma-emp.is-side .rpma-panel-heading,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-win-head {
+  background: #2a3138 !important;
+  border-bottom-color: #1c2228 !important;
+  color: #ffffff !important;
+}
+html.dark .rpma-emp.is-side .rpma-win-head h2,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-win-head h2 { color: #ffffff !important; }
+html.dark .rpma-emp.is-side .rpma-emp-work,
+html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-work { background: #101820 !important; }
+
 
 
