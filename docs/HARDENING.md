@@ -2,34 +2,48 @@
 
 Live box: `C:\RPM-Assure`. Pack: `C:\RPM-Assure\deploy\ui-pack`.
 
-## Done in this slice (run once)
+## 1. Lock bootstrap + seed secrets (done)
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Harden-Production.ps1
 Restart-Service RPMAssure-App
 ```
 
-| Control | What it does |
-|---------|----------------|
-| `/api/bootstrap-admin` | **404** unless `X-Assure-Bootstrap: <RPM_ASSURE_BOOTSTRAP_SECRET>`. Lock default **on**. |
-| Admin reset | Only if `admin-bootstrap.json` has `"reset": true` **or** `RPM_ASSURE_RESET_ADMIN=1`. A leftover password file no longer resets login. |
-| SQL password | Collectors read `RPM_ASSURE_SQL_PASSWORD` or `C:\RPM-Assure\secrets\sql-collect.json`. **Not in git.** |
-| Collect SQL | Pulseway / Cove / Bitdefender / Freshdesk / all-API use `.\RPMREPORTS`, not the public `14333` listener. |
-| Secrets ACL | `C:\RPM-Assure\secrets` = Administrators + SYSTEM. |
+`/api/bootstrap-admin` is **404** unless `X-Assure-Bootstrap: <secret>`.
 
-Emergency bootstrap (on the box only):
+## 2. Box backup (do this before rotate)
 
 ```powershell
-$sec = Get-Content C:\RPM-Assure\secrets\bootstrap-secret.txt -Raw
-Invoke-RestMethod -Uri http://127.0.0.1:8081/api/bootstrap-admin -Headers @{ 'X-Assure-Bootstrap' = $sec.Trim() }
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Backup-Assure-Box.ps1
 ```
 
-## Still parked (do after a change window)
+Writes `C:\RPM-Assure\backups\<stamp>\RPMAssure_App.bak` + `secrets.zip`. Copy off-box when you can.
 
-1. **Rotate `Rpm_collect` SQL password** — currently harvested from old Config.ps1 files. After rotate: update `secrets\sql-collect.json` + machine env + customer Config.ps1, then re-run collects.
-2. **SQL TCP 14333** — still public for SYSPRO edge if they have not switched to HTTPS ingest. Restrict firewall to known customer IPs; then drop public.
-3. **Git history** — `RpmCollect#AHIC2026` was in the ui-pack repo. Treat as leaked; rotation (1) is the fix.
-4. **Single-box** — App + SQL + Caddy on one host. No HA. Back up `RPMAssure_App` + `C:\RPM-Assure\secrets`.
-5. **Downloads zip** — public `/downloads/rpm-assure-agent.zip` is intentional (agents). Do not put secrets in the zip.
+## 3. Rotate `Rpm_collect` (this slice)
 
-**Rule:** agents still fetch **only** `https://assure.rpmresources.co.za/downloads` (never GitHub).
+Dry-run first (lists current SQL sessions, does not change the login):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Rotate-SqlCollectPassword.ps1
+```
+
+Then apply:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Rotate-SqlCollectPassword.ps1 -Apply
+```
+
+Updates `secrets\sql-collect.json` + machine env. Central collectors keep working.
+
+**Edge SYSPRO** that still logs in over TCP `102.222.21.220,14333` with the old password will fail until those machines use HTTPS ingest (`POST /api/agent/sql`) or their local Config.ps1 is updated. **Do not firewall 14333 until that is done.**
+
+## 4. Still parked
+
+| Item | Why it waits |
+|------|----------------|
+| Firewall SQL 14333 (`0.0.0.0`) | SYSPRO edge may still use it |
+| `rpmassure` / other SQL logins | Separate from `Rpm_collect`; confirm app Settings user first |
+| Single-box HA | App + SQL + Caddy on one host |
+| Git history | Old password was committed; rotation is the fix |
+
+**Rule:** agents fetch **only** `https://assure.rpmresources.co.za/downloads` (never GitHub).

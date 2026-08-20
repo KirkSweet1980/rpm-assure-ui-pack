@@ -1,0 +1,12 @@
+# UVSS direct collect config - protect this file
+$CustomerCode = 'UVSS'
+$DisplayName = 'Unique Ventilation Systems'
+$InstanceName = 'UVSS-SYSPRO'
+$LocalSqlUser = 'Rpm_collect'
+$LocalSqlPassword = ''
+$CentralSqlUser = 'rpmassure'
+$CentralSqlPassword = '@ssuR3me!'
+$CentralDataSource = '102.222.21.220,14333'
+$CentralDatabase = 'RPMAssure_App'
+$CollectDir = 'C:\RPM-Assure\Sql\customers\UVSS'
+$LogDir = 'C:\RPM-Assure\Sql\customers\UVSS\logs'
