@@ -5630,16 +5630,16 @@ html.dark .rpma-orion-tbl td, html[data-theme="dark"] .rpma-orion-tbl td { color
   .rpma-emp.is-triple .rpma-emp-work { flex: 1 1 100%; min-height: 50vh; }
 }
 
-/* Top nav: navy brand bar, gap, white menu strip, gap to tenant rails */
+/* Top nav: navy brand bar, 1cm gap, white menu strip, 1cm to page */
 .dk-shell.is-topnav {
-  --pc-header-height: 128px;
+  --pc-header-height: 178px;
   --rpma-hud-h: 0px;
 }
-.dk-shell.is-topnav.is-menu-open { --pc-header-height: 128px; }
+.dk-shell.is-topnav.is-menu-open { --pc-header-height: 178px; }
 .dk-header-one, .dk-header-tall {
-  background: #1b2838 !important;
+  background: var(--color-bg, #f4f7fa) !important;
   gap: 0;
-  padding: 0 0 12px;
+  padding: 0 0 40px;
 }
 .dk-header-row {
   min-height: 56px;
@@ -5649,7 +5649,7 @@ html.dark .rpma-orion-tbl td, html[data-theme="dark"] .rpma-orion-tbl td { color
 .dk-header-navrow {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 12px 12px 0;
+  margin: 40px 16px 0;
   width: auto;
   min-height: 42px;
   background: #ffffff !important;
@@ -5679,7 +5679,13 @@ html.dark .rpma-orion-tbl td, html[data-theme="dark"] .rpma-orion-tbl td { color
   color: #1d4ed8 !important;
 }
 .dk-shell.is-topnav .dk-content.rpma-topnav-main {
-  padding: 12px 12px 12px !important;
+  padding: 0 16px 16px !important;
+}
+.rpma-emp.is-triple {
+  padding: 0 16px 16px !important;
+  gap: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 .dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-content.rpma-topnav-main,
 .dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-canvas.rpma-topnav-canvas {
@@ -5687,9 +5693,9 @@ html.dark .rpma-orion-tbl td, html[data-theme="dark"] .rpma-orion-tbl td { color
   background: transparent !important;
 }
 
-/* Tenant panes: 12px gutters between rails and the nav above */
+/* Tenant panes sit 1cm below the nav via header padding */
 .rpma-emp.is-triple {
-  padding: 12px !important;
+  padding: 0 16px 16px !important;
   gap: 12px !important;
   display: flex !important;
   flex-direction: column !important;
@@ -5717,7 +5723,7 @@ html.dark .rpma-orion-tbl td, html[data-theme="dark"] .rpma-orion-tbl td { color
 .rpma-emp.is-triple .rpma-work-window { border-radius: 10px !important; }
 
 @media (max-width: 1023px) {
-  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 188px; }
+  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 240px; }
 }
 
 /* Quiet robots: small, theme-fit, red still flashes but no halo */
