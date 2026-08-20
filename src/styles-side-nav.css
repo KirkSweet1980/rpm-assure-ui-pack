@@ -77,6 +77,24 @@
   line-height: 1.2 !important;
   font-weight: 700 !important;
 }
+.rpma-emp-nocover {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  background: #eef2f6;
+  border: 1px solid #d5dde5;
+  border-radius: 999px;
+  padding: 3px 7px;
+  white-space: nowrap;
+  line-height: 1;
+}
+.rpma-emp-gtab.is-nocover .rpma-emp-gtab-name { color: #64748b; }
 .rpma-emp.is-side .rpma-emp-gtab:hover,
 .rpma-emp.is-side .rpma-emp-tool:hover {
   background: #f1f5f9 !important;

@@ -62,8 +62,6 @@ function shortLabel(label: string) {
   return SHORT[label] ?? label;
 }
 
-const ALWAYS_ON = new Set(["", "/ams", "/ams/sla", "/ams/incidents", "/ams/risks", "/tickets", "/tickets/open", "/tickets/resolved", "/tickets/closed", "/tickets/sla"]);
-
 const RIBBON: RibbonGroup[] = [
   {
     id: "estate",
@@ -134,21 +132,6 @@ function pillarCovered(
   return live?.pillars[id]?.cover === true;
 }
 
-function itemVisible(
-  it: RibbonItem,
-  rest: string,
-  live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
-) {
-  if (ALWAYS_ON.has(it.rel)) return true;
-  if ((it.rel === "" && (rest === "" || rest === "/ams")) || rest === it.rel) return true;
-  const p = it.rel.replace(/^\//, "").split("/")[0];
-  if (p && live?.pillars[p]?.cover) return true;
-  if (it.rel.startsWith("/ams") || it.rel === "") return true;
-  const flag = live?.modules[it.rel];
-  if (flag) return Boolean(flag.cover);
-  return ragOf(it.rel, live) !== "Off";
-}
-
 export function EmpChrome({
   customerCode,
   customerName,
@@ -195,31 +178,32 @@ export function EmpChrome({
         <nav className="rpma-side" aria-label="Tenant navigation">
           <p className="rpma-side-h">RPM Services</p>
           <div className="rpma-emp-titles">
-            {RIBBON.filter((g) => g.id === "estate" || g.id === group.id || pillarCovered(g.id, live)).map((g) => {
+            {RIBBON.map((g) => {
               const on =
                 g.match === ""
                   ? rest === "" || rest.startsWith("/ams")
                   : rest === g.match || rest.startsWith(`${g.match}/`);
               const href = `${base}${g.items[0]?.rel ?? g.match}`;
-              const tone = worstRag(g, live);
+              const covered = pillarCovered(g.id, live);
+              const tone = covered ? worstRag(g, live) : "Off";
               return (
                 <SpaLink
                   key={g.id}
                   href={href}
-                  className={cn("rpma-emp-gtab", on && "is-on")}
+                  className={cn("rpma-emp-gtab", on && "is-on", !covered && "is-nocover")}
                   data-rag={tone}
-                  title={`${g.title} · ${tone}`}
+                  title={`${g.title} · ${covered ? tone : "No Cover"}`}
                 >
                   <g.icon className="rpma-emp-gtab-ico" style={{ color: g.color }} aria-hidden />
                   <span className="rpma-emp-gtab-name">{g.title}</span>
-                  <RagLamps tone={tone} />
+                  {covered ? <RagLamps tone={tone} /> : <em className="rpma-emp-nocover">No Cover</em>}
                 </SpaLink>
               );
             })}
           </div>
           <p className="rpma-side-h">RPM Service Modules</p>
           <div className="rpma-emp-tools">
-            {group.items.filter((it) => itemVisible(it, rest, live)).map((it) => {
+            {group.items.map((it) => {
               const Icon = it.icon;
               const href = `${base}${it.rel}`;
               const active = (it.rel === "" && rest === "") || rest === it.rel;
