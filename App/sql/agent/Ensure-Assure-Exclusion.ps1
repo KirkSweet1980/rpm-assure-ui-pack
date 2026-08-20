@@ -1,5 +1,5 @@
-# Local exclusions for C:\RPM-Assure. Defender sticks. Bitdefender follows GravityZone policy
-# (local add is overwritten unless the policy allows it). Safe to run every agent cycle.
+# Local Windows Defender exclusion for C:\RPM-Assure. Bitdefender is GravityZone policy only —
+# do not call product.console.exe (it hangs the agent loop waiting on stdin).
 # ASCII only.
 param([string]$Root = 'C:\RPM-Assure')
 
@@ -32,20 +32,5 @@ try {
   W ('Defender warn ' + $_.Exception.Message)
 }
 
-$bd = @(
-  "${env:ProgramFiles}\Bitdefender\Endpoint Security\product.console.exe",
-  "${env:ProgramFiles(x86)}\Bitdefender\Endpoint Security\product.console.exe"
-) | Where-Object { Test-Path $_ } | Select-Object -First 1
-if ($bd) {
-  try {
-    $out = & $bd /exclusions add folder $Root 2>&1 | Out-String
-    W ('Bitdefender CLI ' + $out.Trim())
-    W 'If policy-locked, GravityZone must exclude C:\RPM-Assure (On-Access + ATC).'
-  } catch {
-    W ('Bitdefender CLI warn ' + $_.Exception.Message)
-  }
-} else {
-  W 'Bitdefender product.console.exe not on this host'
-}
-
+W 'Bitdefender exclusions come from GravityZone policy (no local product.console).'
 [IO.File]::WriteAllText($stamp, [datetime]::UtcNow.ToString('o'))
