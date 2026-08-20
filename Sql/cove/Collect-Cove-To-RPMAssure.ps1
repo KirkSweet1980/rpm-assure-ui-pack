@@ -359,7 +359,27 @@ function Draas-Attr($item, [string]$name) {
     $p = $src.PSObject.Properties[$name]
     if ($p -and $null -ne $p.Value -and "$($p.Value)" -ne '') { return (One-Draas $p.Value) }
   }
+  $relName = $name
+  if ($name -match '_id$') { $relName = $name -replace '_id$', '' }
+  try {
+    $rel = $item.relationships
+    if ($rel) {
+      foreach ($rn in @($name, $relName)) {
+        $rp = $rel.PSObject.Properties[$rn]
+        if (-not $rp -or $null -eq $rp.Value) { continue }
+        $data = $null
+        try { $data = $rp.Value.data } catch {}
+        if ($data -and $data.id) { return (One-Draas $data.id) }
+      }
+    }
+  } catch {}
   return $null
+}
+function Compact-CoveName([string]$n) {
+  if ([string]::IsNullOrWhiteSpace($n)) { return '' }
+  $s = $n.Trim().ToLowerInvariant()
+  $s = [regex]::Replace($s, '_[a-z0-9]{4,8}$', '')
+  return [regex]::Replace($s, '[^a-z0-9]', '')
 }
 function Parse-DurationSec($raw) {
   if ($null -eq $raw -or "$raw" -eq '') { return $null }
@@ -398,20 +418,40 @@ function ColorBar-Text($v) {
     if ($s.StartsWith('{') -or $s.StartsWith('[')) {
       try {
         $j = $s | ConvertFrom-Json
-        if ($j -is [System.Array]) { $items = @($j) } else { $items = @($j) }
+        if ($j -is [System.Array]) { $items = @($j) }
+        elseif ($j.data) { $items = @($j.data) }
+        else { $items = @($j) }
       } catch { return $s }
     } else { return $s }
-  } else { $items = @($v) }
+  } else {
+    try {
+      if ($v.data) { $items = @($v.data) }
+      else { $items = @($v) }
+    } catch { $items = @($v) }
+  }
   $parts = New-Object System.Collections.Generic.List[string]
   foreach ($it in $items) {
     if ($null -eq $it) { continue }
     $st = $null
     if ($it -is [string] -or $it -is [ValueType]) { $st = [string]$it }
     else {
-      try {
-        $p = $it.PSObject.Properties['status']
-        if ($p -and "$($p.Value)") { $st = [string]$p.Value }
-      } catch {}
+      foreach ($nm in @('status','state','result','recovery_status')) {
+        try {
+          $p = $it.PSObject.Properties[$nm]
+          if ($p -and "$($p.Value)") { $st = [string]$p.Value; break }
+        } catch {}
+      }
+      if (-not $st) {
+        try {
+          $aa = $it.attributes
+          if ($aa) {
+            foreach ($nm in @('status','state','result')) {
+              $p = $aa.PSObject.Properties[$nm]
+              if ($p -and "$($p.Value)") { $st = [string]$p.Value; break }
+            }
+          }
+        } catch {}
+      }
     }
     if ([string]::IsNullOrWhiteSpace($st)) { continue }
     if ($st.StartsWith('@{')) { continue }
@@ -447,6 +487,8 @@ function Index-DraasName($it, [string]$nm) {
   if ([string]::IsNullOrWhiteSpace($nm)) { return }
   $k = $nm.Trim().ToLowerInvariant()
   if (-not $script:DraasByName.ContainsKey($k)) { $script:DraasByName[$k] = $it }
+  $ck = Compact-CoveName $nm
+  if ($ck.Length -ge 6 -and -not $script:DraasByName.ContainsKey($ck)) { $script:DraasByName[$ck] = $it }
 }
 try {
   $fields = @(
@@ -459,7 +501,7 @@ try {
   $offset = 0
   $draasN = 0
   while ($offset -lt 2000) {
-    $q = 'offset={0}&limit=200&fields={1}&sort=last_recovery_timestamp&filter[type.in]=RECOVERY_TESTING,SELF_HOSTED,AZURE_SELF_HOSTED,ESXI_SELF_HOSTED' -f $offset, [uri]::EscapeDataString(($fields -join ','))
+    $q = 'offset={0}&limit=200&sort=last_recovery_timestamp&filter[type.in]=RECOVERY_TESTING,SELF_HOSTED,AZURE_SELF_HOSTED,ESXI_SELF_HOSTED' -f $offset
     $uri = 'https://api.backup.management/draas/actual-statistics/v1/dashboard/?' + $q
     $resp = Invoke-WebRequest -Uri $uri -Method GET -Headers @{ Authorization = ('Bearer ' + $visa) } -UseBasicParsing -TimeoutSec 120
     $body = ConvertTo-Text $resp.Content
@@ -479,6 +521,16 @@ try {
       $draasN++
     }
     Write-Log ('DRaaS dashboard page offset=' + $offset + ' got=' + $items.Count + ' total=' + $draasN)
+    if ($offset -eq 0 -and $items.Count -gt 0) {
+      $sample = $items[0]
+      $attrNames = @()
+      try {
+        if ($sample.attributes) { $attrNames = @($sample.attributes.PSObject.Properties.Name) }
+        elseif ($sample.PSObject) { $attrNames = @($sample.PSObject.Properties.Name) }
+      } catch {}
+      Write-Log ('DRaaS sample id=' + (One-Draas $sample.id) + ' attrs=' + ($attrNames -join ','))
+      Write-Log ('DRaaS sample name=' + (Draas-Attr $sample 'backup_cloud_device_name') + ' au=' + (Draas-Attr $sample 'backup_cloud_device_id') + ' bar=' + (ColorBar-Text (Draas-Attr $sample 'colorbar')))
+    }
     if ($items.Count -lt 200) { break }
     $offset += 200
   }
@@ -492,6 +544,16 @@ function Find-Draas([string]$au, [string]$an, [string]$mn) {
     if ([string]::IsNullOrWhiteSpace($n)) { continue }
     $k = $n.Trim().ToLowerInvariant()
     if ($script:DraasByName.ContainsKey($k)) { return $script:DraasByName[$k] }
+    $ck = Compact-CoveName $n
+    if ($ck.Length -ge 6 -and $script:DraasByName.ContainsKey($ck)) { return $script:DraasByName[$ck] }
+  }
+  foreach ($n in @($an, $mn)) {
+    $ck = Compact-CoveName $n
+    if ($ck.Length -lt 8) { continue }
+    foreach ($key in @($script:DraasByName.Keys)) {
+      if ($key.Length -lt 6) { continue }
+      if ($ck.Contains($key) -or $key.Contains($ck)) { return $script:DraasByName[$key] }
+    }
   }
   return $null
 }
@@ -747,7 +809,9 @@ foreach ($row in $allRows) {
   $recSessId = $null; $shotPresented = $null; $shotPath = $null
   if ($draas) {
     $planName = [string](Draas-Attr $draas 'plan_name')
-    if ($planName) { $planLabel = $planName; if ($planType -eq 0) { $planType = 1 } }
+    $freq = [string](Draas-Attr $draas 'device_recovery_frequency')
+    if ($freq) { $planLabel = (Title-Status $freq); if ($planType -eq 0) { $planType = 1 } }
+    elseif ($planName) { $planLabel = $planName; if ($planType -eq 0) { $planType = 1 } }
     $colorBar = ColorBar-Text (Draas-Attr $draas 'colorbar')
     $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
     if (-not $recStatus) { $recStatus = Title-Status ([string](Draas-Attr $draas 'current_recovery_status')) }
@@ -854,6 +918,7 @@ foreach ($row in $allRows) {
     AccountId = $auKey
     DeviceName = [string]$an
     MachineName = [string]$mn
+    CompactKey = (Compact-CoveName ([string]$an + ' ' + [string]$mn))
     ColorBar = $colorBar
     RecStatus = $recStatus
     Errors = $recErrN
@@ -914,6 +979,8 @@ if ($script:DraasByAu) {
     $auNum = 0L
     if (-not [int64]::TryParse($dkey, [ref]$auNum) -or $auNum -le 0) { continue }
     $planName = [string](Draas-Attr $draas 'plan_name')
+    $freq = [string](Draas-Attr $draas 'device_recovery_frequency')
+    if ($freq) { $planName = Title-Status $freq }
     if (-not $planName) { $planName = 'Recovery Testing' }
     $colorBar = ColorBar-Text (Draas-Attr $draas 'colorbar')
     $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
@@ -945,6 +1012,7 @@ if ($script:DraasByAu) {
       AccountId = $dkey
       DeviceName = $anX
       MachineName = $mnX
+      CompactKey = (Compact-CoveName ($anX + ' ' + $mnX))
       ColorBar = $colorBar
       RecStatus = $recStatus
       Errors = $recErrN
@@ -1134,6 +1202,11 @@ if ($script:RtPatch -and $script:RtPatch.Count -gt 0) {
     $namePred = ''
     if ($p.DeviceName) { $namePred += ' OR DeviceName = ' + (Sql-Str $p.DeviceName) }
     if ($p.MachineName) { $namePred += ' OR MachineName = ' + (Sql-Str $p.MachineName) }
+    $ck = [string]$p.CompactKey
+    if ([string]::IsNullOrWhiteSpace($ck)) { $ck = Compact-CoveName ([string]$p.DeviceName + ' ' + [string]$p.MachineName) }
+    if ($ck.Length -ge 8) {
+      $namePred += " OR REPLACE(REPLACE(LOWER(ISNULL(DeviceName,N'') + ISNULL(MachineName,N'')), N'_', N''), N'-', N'') LIKE N'%" + $ck + "%'"
+    }
     [void]$up.AppendLine(('UPDATE dbo.Cove_DeviceStatistics SET ' + ($set -join ', ') + ' WHERE SnapshotDate = ''' + $snap + ''' AND (AccountId = ' + $p.AccountId + $namePred + ');'))
   }
   Write-Log ('DRaaS overlay updates=' + $nUp)

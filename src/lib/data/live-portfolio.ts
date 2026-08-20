@@ -305,11 +305,6 @@ function coveOwnedSql(alias: string): string {
         OR (m.PartnerId IS NOT NULL AND ${alias}.PartnerId IS NOT NULL AND m.PartnerId = ${alias}.PartnerId)
       )
   )
-  OR EXISTS (
-    SELECT 1 FROM dbo.Dim_Cove_PartnerAlias AS a WITH (NOLOCK)
-    WHERE a.CustomerCode = @code AND ISNULL(a.Active, 1) = 1
-      AND UPPER(LTRIM(RTRIM(a.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(${alias}.Product, N''))))
-  )
   OR (@code = N'AHIC' AND (
     ${alias}.DeviceName LIKE N'AHI%' OR ${alias}.MachineName LIKE N'AHI%' OR ISNULL(${alias}.Product, N'') LIKE N'AHI%'
   ))
@@ -6496,32 +6491,24 @@ SELECT TOP 800
   d.AccountId, d.DeviceName, d.MachineName, d.Product AS PartnerName, d.PartnerId,
   d.LastBackupStatus, d.LastSuccessTime, d.UsedBytes, d.SnapshotDate, d.ImportedAt, d.CustomerCode,
   d.RecoveryPlanType, d.RecoveryPlanLabel, d.RecoveryVerification, d.RecoveryTestStatus, d.Physicality,
-  d.LastRecoveryTestAt
+  d.LastRecoveryTestAt,
+  d.RecoveryColorBar, d.RecoveryStatus, d.RecoveryErrors, d.LastCompletedSessionAt, d.BackupSessionAt,
+  d.RecoveryDurationSec, d.RecoveryDurationLabel, d.BootStatus, d.RecoverySessionId,
+  d.ScreenshotPresented, d.ScreenshotPath
 FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
+WHERE d.SnapshotDate >= DATEADD(day, -14, CAST(SYSUTCDATETIME() AS date))
   AND (
     d.CustomerCode = @code
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
-        AND (
-          (
-            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
-            OR (
-              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
-              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
-            )
-          )
-          OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
-        )
-    )
+    OR d.DeviceName LIKE N'AHI%' AND @code = N'AHIC'
+    OR ${coveOwnedSql("d")}
   )
   AND (
     ISNULL(d.RecoveryPlanType, 0) > 0
     OR d.LastRecoveryTestAt IS NOT NULL
     OR d.RecoveryTestStatus IN (N'Success', N'Failed', N'InProgress', N'NotStarted', N'Unknown')
+    OR d.RecoveryColorBar IS NOT NULL
+    OR d.BootStatus IS NOT NULL
   )
-  AND ISNULL(d.RecoveryTestStatus, N'') <> N'NotInPlan' 
 ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
         cove.recoveryHistory = (rh2.recordset ?? []).map(mapCoveDeviceRow);
       } catch {

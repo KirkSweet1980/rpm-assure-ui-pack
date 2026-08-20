@@ -4744,7 +4744,7 @@ function Last14Bar({ colorBar }: { colorBar?: string | null }) {
       {slots.map((st, i) => (
         <span
           key={i}
-          className="inline-block h-[14px] w-[7px] rounded-[1px]"
+          className="inline-block h-[16px] w-[8px] rounded-[2px]"
           style={{ backgroundColor: last14Color(st) }}
         />
       ))}
