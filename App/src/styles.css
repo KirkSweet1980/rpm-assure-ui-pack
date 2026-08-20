@@ -67,7 +67,7 @@
   --rpma-bot-flash-red: 0.28s;
 }
 
-html[data-theme="dark"], html.dark, html.snow, html[data-theme="light"] {
+html.snow, html[data-theme="light"] {
   color-scheme: light;
   --color-bg: #f4f7fa;
   --color-surface: #ffffff;

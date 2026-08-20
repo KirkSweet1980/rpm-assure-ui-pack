@@ -1,50 +1,74 @@
 /**
- * RPM Assure chrome contract — imported LAST.
- * Change a token here; do not add one-off header colours in styles.css.
+ * RPM Assure chrome contract — imported LAST. One layout for the whole site.
  *
- * Navy chrome is the same in light and dark.
- * Dark Mode only paints page surfaces (cards, tables, EXCO widgets).
+ * Light: white services rail, navy modules, light main.
+ * Dark: dark services rail, navy modules, dark main. Header always navy.
+ * 12px gap between every pane. Help = tenant 2-pane (menu left, big right).
  */
 
-:root,
-html,
-html.dark,
-html.snow,
-html[data-theme="dark"],
-html[data-theme="light"] {
+:root {
   --nav-bg: #1b2838;
   --nav-fg: #ffffff;
   --nav-hover-bg: #c8ecd4;
   --nav-hover-fg: #0f3d24;
   --nav-selected-bg: transparent;
-  --nav-muted: #9fb0c3;
   --gap: 12px;
   --pane-r: 12px;
   --rail-svc-w: 220px;
   --rail-mod-w: 220px;
   --header-h: 64px;
   --pc-header-height: 64px;
-  --pc-header-background: #1b2838;
-  --pc-header-color: #ffffff;
-  --rpma-chrome: #1b2838;
-  --rpma-chrome-fg: #ffffff;
-  --rpma-chrome-hover: #c8ecd4;
-  --rpma-chrome-selected: transparent;
+  --page-bg: #e8eef4;
+  --pane-bg: #ffffff;
+  --pane-fg: #1f2937;
+  --pane-muted: #6b7280;
+  --pane-line: #e8eaed;
 }
 
-/* ---------- Header: one navy row, all controls identical ---------- */
-.dk-shell.is-topnav,
-.dk-shell.is-topnav.is-menu-open {
+html.snow,
+html[data-theme="light"] {
+  color-scheme: light;
+  --page-bg: #e8eef4;
+  --pane-bg: #ffffff;
+  --pane-fg: #1f2937;
+  --pane-muted: #6b7280;
+  --pane-line: #e8eaed;
+  --color-bg: #e8eef4;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef3f7;
+  --color-fg: #101820;
+  --color-muted: #5c6b78;
+  --color-border: #d5dde5;
+}
+
+html.dark,
+html.carbon,
+html[data-theme="dark"] {
+  color-scheme: dark !important;
+  --page-bg: #0f1720;
+  --pane-bg: #15202c;
+  --pane-fg: #e8eef4;
+  --pane-muted: #9fb0c3;
+  --pane-line: #2a3a4c;
+  --color-bg: #0f1720 !important;
+  --color-surface: #15202c !important;
+  --color-surface-2: #1b2838 !important;
+  --color-fg: #e8eef4 !important;
+  --color-muted: #9fb0c3 !important;
+  --color-border: #2a3a4c !important;
+  --bs-body-bg: #0f1720 !important;
+  --bs-body-color: #e8eef4 !important;
+}
+
+html, body, .dk-shell.is-topnav { background: var(--page-bg) !important; }
+
+/* ---------- Header (navy, both themes) ---------- */
+.dk-shell.is-topnav, .dk-shell.is-topnav.is-menu-open {
   --pc-header-height: var(--header-h) !important;
 }
-.dk-header,
-.dk-header-one,
-.dk-header-tall {
+.dk-header, .dk-header-one, .dk-header-tall, .dk-header-row {
   background: var(--nav-bg) !important;
   color: var(--nav-fg) !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-  border: 0 !important;
 }
 .dk-header-row {
   display: grid !important;
@@ -53,122 +77,70 @@ html[data-theme="light"] {
   min-height: var(--header-h) !important;
   padding: 0 16px !important;
   gap: 18px !important;
-  background: var(--nav-bg) !important;
 }
 .dk-header-navrow {
   display: flex !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  gap: 4px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  width: auto !important;
-  min-height: 0 !important;
   background: transparent !important;
   border: 0 !important;
-  border-radius: 0 !important;
   box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
-
-.dk-header-row a,
-.dk-header-row button,
-.dk-header-row span,
-.dk-header-row strong,
-.dk-header-row .dk-link,
-.dk-header-row .dk-help-btn,
-.dk-header-row .rpma-theme-switch,
-.dk-header-row .rpma-theme-switch-label,
-.dk-header-row .rpma-userchip,
-.dk-header-row .rpma-userchip-name,
-.dk-header-row .rpma-userchip-out,
-.dk-header-row .dk-iconbtn,
-.dk-header-row .rpma-nav-seg-btn,
-.dk-header-row .dk-brand-text,
-.dk-header-row .dk-brand-text strong {
+.dk-header-row a, .dk-header-row button, .dk-header-row span, .dk-header-row strong,
+.dk-header-row .dk-link, .dk-header-row .dk-help-btn, .dk-header-row .rpma-theme-switch-label,
+.dk-header-row .rpma-userchip-name, .dk-header-row .rpma-userchip-out, .dk-header-row .dk-iconbtn,
+.dk-header-row .dk-brand-text, .dk-header-row .dk-brand-text strong {
   color: var(--nav-fg) !important;
-  fill: var(--nav-fg) !important;
 }
-
 .dk-header-navrow .dk-link,
-.dk-header-navrow .rpma-top-tab-wrap > .dk-link,
 .dk-header-right .dk-help-btn,
 .dk-header-right .rpma-userchip-out {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  min-height: 36px !important;
-  padding: 6px 12px !important;
-  border: 0 !important;
-  border-radius: 8px !important;
   background: transparent !important;
+  border: 0 !important;
   color: var(--nav-fg) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  box-shadow: none !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
 }
-
 .dk-header-navrow .dk-link:hover,
-.dk-header-navrow .rpma-top-tab-wrap > .dk-link:hover,
 .dk-header-right .dk-help-btn:hover,
-.dk-header-right .rpma-userchip-out:hover,
-.dk-header-right .rpma-nav-seg-btn:hover,
-.dk-header-right .dk-iconbtn:hover,
-.dk-header-right .rpma-theme-switch:hover .rpma-theme-switch-label {
+.dk-header-right .rpma-userchip-out:hover {
   background: var(--nav-hover-bg) !important;
   color: var(--nav-hover-fg) !important;
 }
-
 .dk-header-navrow .dk-link.is-active,
-.dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
-.dk-header-navrow .rpma-top-link-active,
-.dk-header-right .dk-help-btn.is-active,
-.dk-header-right .rpma-nav-seg-btn-active {
-  background: var(--nav-selected-bg) !important;
-  color: var(--nav-fg) !important;
-  box-shadow: none !important;
-}
-
-.dk-header-right .rpma-nav-seg {
+.dk-header-right .dk-help-btn.is-active {
   background: transparent !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: var(--nav-fg) !important;
 }
 
-/* ---------- Shell: gap then one large pane ---------- */
+/* ---------- Shell: 12px around one fill pane ---------- */
 .dk-shell.is-topnav .dk-main {
   padding: var(--gap) 16px 16px !important;
-  min-height: 0 !important;
   overflow: hidden !important;
+  min-height: 0 !important;
+  background: var(--page-bg) !important;
 }
 .dk-shell.is-topnav .dk-content.rpma-topnav-main {
   padding: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  min-height: 0 !important;
   height: 100% !important;
+  min-height: 0 !important;
   overflow: hidden !important;
-  gap: var(--gap) !important;
+  background: transparent !important;
 }
 .dk-shell.is-topnav .dk-canvas.rpma-topnav-canvas {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  overflow: auto !important;
-  background: #ffffff !important;
-  border: 1px solid #e8eaed !important;
-  border-radius: var(--pane-r) !important;
-  padding: 16px !important;
-}
-
-/* Tenant: the canvas IS the three rails — no extra white wrap */
-.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-content.rpma-topnav-main,
-.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-canvas.rpma-topnav-canvas {
-  padding: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
   background: transparent !important;
   border: 0 !important;
-  overflow: hidden !important;
+  padding: 0 !important;
 }
 
-/* ---------- Tenant: 3 columns, full height ---------- */
-.rpma-emp.is-side.is-triple,
+/* ---------- Tenant: 12px between 3 full-height panes ---------- */
 .rpma-emp.is-triple {
   display: flex !important;
   flex-direction: column !important;
@@ -177,101 +149,150 @@ html[data-theme="light"] {
   padding: 0 !important;
   gap: 0 !important;
   overflow: hidden !important;
+  background: transparent !important;
 }
-.rpma-emp.is-triple .rpma-emp-title {
-  flex: 0 0 auto !important;
-}
+.rpma-emp.is-triple .rpma-emp-title { flex: 0 0 auto !important; margin: 0 0 12px 0 !important; }
 .rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
 .rpma-emp.is-triple .rpma-emp-bodyrow {
-  display: grid !important;
-  grid-template-columns: var(--rail-svc-w) var(--rail-mod-w) minmax(0, 1fr) !important;
-  grid-template-rows: minmax(0, 1fr) !important;
-  gap: var(--gap) !important;
+  display: flex !important;
+  flex-direction: row !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
   height: 100% !important;
-  overflow: hidden !important;
   align-items: stretch !important;
-}
-.rpma-emp.is-triple .rpma-rail,
-.rpma-emp.is-triple .rpma-emp-work {
-  min-height: 0 !important;
-  height: 100% !important;
-  max-height: none !important;
-  align-self: stretch !important;
-  overflow: auto !important;
-  border-radius: var(--pane-r) !important;
-}
-.rpma-emp.is-triple .rpma-emp-work {
-  display: flex !important;
-  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 0 !important;
   overflow: hidden !important;
+}
+.rpma-emp.is-triple .rpma-rail-svc,
+.rpma-emp.is-triple .rpma-rail-mod {
+  flex: 0 0 var(--rail-svc-w) !important;
+  width: var(--rail-svc-w) !important;
+  min-width: var(--rail-svc-w) !important;
+  max-width: var(--rail-svc-w) !important;
+  height: 100% !important;
+  margin: 0 12px 0 0 !important;
+  border: 0 !important;
+  border-right: 0 !important;
+  border-radius: var(--pane-r) !important;
+  overflow: auto !important;
+}
+.rpma-emp.is-triple .rpma-emp-work {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  border-radius: var(--pane-r) !important;
 }
 .rpma-emp.is-triple .rpma-work-window,
 .rpma-emp.is-triple .rpma-win.is-fill {
-  flex: 1 1 auto !important;
   height: 100% !important;
-  min-height: 0 !important;
   width: 100% !important;
   margin: 0 !important;
   border-radius: var(--pane-r) !important;
+  background: var(--pane-bg) !important;
+  color: var(--pane-fg) !important;
+  overflow: auto !important;
 }
 
-/* ---------- Help: two panes, always readable ---------- */
-.rpma-help.is-page {
-  display: grid !important;
-  grid-template-columns: 240px minmax(0, 1fr) !important;
-  gap: var(--gap) !important;
-  height: 100% !important;
-  min-height: 480px !important;
-  color: #1f2937 !important;
+.rpma-rail-svc {
+  background: var(--pane-bg) !important;
+  color: var(--pane-fg) !important;
 }
-.rpma-help-nav {
-  min-height: 480px !important;
-  height: 100% !important;
-  overflow: auto !important;
-  background: var(--nav-bg) !important;
-  color: var(--nav-fg) !important;
-  border: 0 !important;
-  border-radius: var(--pane-r) !important;
+.rpma-rail-svc .rpma-rail-kicker { color: var(--pane-muted) !important; }
+.rpma-rail-svc .rpma-rail-item { color: var(--pane-fg) !important; }
+.rpma-rail-svc .rpma-rail-item.is-on {
+  background: #eef2ff !important;
+  color: #1d4ed8 !important;
 }
-.rpma-help-link { color: var(--nav-fg) !important; background: transparent !important; }
-.rpma-help-link:hover,
-.rpma-help-link.is-on {
+.rpma-rail-mod { background: var(--nav-bg) !important; color: var(--nav-fg) !important; }
+
+html.dark .rpma-rail-svc .rpma-rail-item.is-on,
+html[data-theme="dark"] .rpma-rail-svc .rpma-rail-item.is-on {
   background: var(--nav-hover-bg) !important;
   color: var(--nav-hover-fg) !important;
 }
-.rpma-help-body {
-  min-height: 480px !important;
+
+/* Tables / AMS / pager follow the pane, not leftover white */
+.rpma-est-foot,
+.rpma-ams-cov-h,
+.rpma-est-table,
+.rpma-xls,
+.rpma-win,
+.rpma-work-window {
+  background: var(--pane-bg) !important;
+  color: var(--pane-fg) !important;
+  border-color: var(--pane-line) !important;
+}
+.rpma-ams-cov-h {
+  background: var(--color-surface-2) !important;
+  color: var(--pane-fg) !important;
+}
+
+/* ---------- Help / Settings / Reports: left menu + big right ---------- */
+.dk-shell.is-topnav:has(.rpma-help) .dk-canvas.rpma-topnav-canvas,
+.dk-shell.is-topnav:has(.rpma-settings-body) .dk-canvas.rpma-topnav-canvas {
+  overflow: hidden !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+.rpma-help.is-page,
+.rpma-split {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+.rpma-help-nav,
+.rpma-split > aside,
+.rpma-settings-nav {
+  flex: 0 0 220px !important;
+  width: 220px !important;
+  min-width: 220px !important;
+  height: 100% !important;
+  margin: 0 12px 0 0 !important;
   overflow: auto !important;
-  background: #ffffff !important;
-  color: #1f2937 !important;
-  border: 1px solid #e8eaed !important;
+  background: var(--nav-bg) !important;
+  color: var(--nav-fg) !important;
+  border-radius: var(--pane-r) !important;
+  padding: 14px 10px 18px !important;
+}
+.rpma-help-body,
+.rpma-split > .rpma-help-body,
+.rpma-settings-body {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  overflow: auto !important;
+  background: var(--pane-bg) !important;
+  color: var(--pane-fg) !important;
   border-radius: var(--pane-r) !important;
   padding: 24px 28px !important;
 }
-
-/* ---------- Dark Mode: page surfaces only, not the header ---------- */
-html.dark .dk-shell.is-topnav .dk-canvas.rpma-topnav-canvas,
-html[data-theme="dark"] .dk-shell.is-topnav .dk-canvas.rpma-topnav-canvas {
-  background: #15202c !important;
-  border-color: #243040 !important;
-  color: #e8eef4 !important;
-}
-html.dark .rpma-help-body,
-html[data-theme="dark"] .rpma-help-body {
-  background: #15202c !important;
-  color: #e8eef4 !important;
-  border-color: #243040 !important;
+.rpma-help-article { max-width: none !important; }
+.rpma-help-link { color: var(--nav-fg) !important; }
+.rpma-help-link:hover, .rpma-help-link.is-on {
+  background: var(--nav-hover-bg) !important;
+  color: var(--nav-hover-fg) !important;
 }
 
 @media (max-width: 960px) {
-  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 168px !important; }
-  .dk-header-navrow.is-collapsed { display: none !important; }
-  .rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
-  .rpma-emp.is-triple .rpma-emp-bodyrow {
-    grid-template-columns: 1fr !important;
-    grid-template-rows: auto auto minmax(40vh, 1fr) !important;
+  .rpma-emp.is-triple .rpma-emp-bodyrow,
+  .rpma-help.is-page { flex-wrap: wrap !important; }
+  .rpma-emp.is-triple .rpma-rail-svc,
+  .rpma-emp.is-triple .rpma-rail-mod,
+  .rpma-help-nav {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 0 12px 0 !important;
+    height: auto !important;
   }
-  .rpma-help.is-page { grid-template-columns: 1fr !important; }
 }
