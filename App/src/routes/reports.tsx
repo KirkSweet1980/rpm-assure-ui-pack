@@ -17,6 +17,9 @@ import { TenantTree } from "@/components/customer/tenant-tree";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/reports")({
+  staleTime: 120_000,
+  preloadStaleTime: 120_000,
+  shouldReload: false,
   validateSearch: (search: Record<string, unknown>) => ({
     format:
       typeof search.format === "string" ? search.format : undefined,

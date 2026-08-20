@@ -3267,7 +3267,7 @@ export async function fetchLiveCustomerDetail(
   const want = (leg: DetailLeg) => loadAll || legSet.has(leg);
 
   // P0: short-lived per-customer cache (pillar tab clicks / back-nav)
-  const DETAIL_TTL_MS = 90_000;
+  const DETAIL_TTL_MS = 180_000;
   const legKey = loadAll
     ? "all"
     : [...legSet].sort().join("+");
@@ -3280,6 +3280,18 @@ export async function fetchLiveCustomerDetail(
         `[rpm-assure] customer detail ${codeIn} cache-hit ${Date.now() - t0}ms`,
       );
       return hit;
+    }
+    if (!loadAll) {
+      const full = cacheGet<CustomerDetailPayload>(
+        `customer-detail:${codeIn.toUpperCase()}:all`,
+        DETAIL_TTL_MS,
+      );
+      if (full) {
+        console.info(
+          `[rpm-assure] customer detail ${codeIn} cache-hit-all ${Date.now() - t0}ms`,
+        );
+        return full;
+      }
     }
   } catch {
     /* ignore */

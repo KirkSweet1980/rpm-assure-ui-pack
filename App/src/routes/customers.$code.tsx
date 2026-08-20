@@ -49,14 +49,14 @@ function SyncRailHealth({
 }
 
 export const Route = createFileRoute("/customers/$code")({
-  // Keep parent loader warm so pillar/module clicks do not re-hit SQL every time
-  staleTime: 60_000,
-  preloadStaleTime: 30_000,
-  shouldReload: true,
+  // Shell only — pillar pages fetch their own legs. Do not re-hit SQL on every tab.
+  staleTime: 180_000,
+  preloadStaleTime: 180_000,
+  shouldReload: false,
   loader: async ({ params }) => {
     const code = decodeCode(params.code);
     const detail = await fetchCustomerDetail({
-      data: { code, legs: ["shell", "syspro", "ams", "rmm", "cove", "epp", "csp"] },
+      data: { code, legs: ["shell"] },
     });
     // Soft-fail: never throw notFound — that nests a second AppShell under RMM/Cove tabs
     if (!detail) {

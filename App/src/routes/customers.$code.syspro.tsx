@@ -14,8 +14,9 @@ function decodeCode(raw: string): string {
 }
 
 export const Route = createFileRoute("/customers/$code/syspro")({
-  staleTime: 60_000,
-  preloadStaleTime: 30_000,
+  staleTime: 90_000,
+  preloadStaleTime: 90_000,
+  shouldReload: false,
   loader: async ({ params }) => {
     const code = decodeCode(params.code);
     const detail = await fetchCustomerDetail({

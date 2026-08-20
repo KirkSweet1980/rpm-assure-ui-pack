@@ -37,6 +37,9 @@ export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>) => ({
     view: typeof s.view === "string" ? s.view : undefined,
   }),
+  staleTime: 120_000,
+  preloadStaleTime: 120_000,
+  shouldReload: false,
   loader: async () => {
     const [portfolio, source] = await Promise.all([
       fetchPortfolio(),

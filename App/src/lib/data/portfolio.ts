@@ -8,6 +8,7 @@ import type { CustomerDetailPayload, DetailLeg, PortfolioPayload } from "./types
 import { fillCustomerPanels } from "./fill-customer-panels";
 import { withRetry } from "./retry";
 import {
+  cacheGet,
   cacheGetOrLoad,
   cacheInvalidate,
   CUSTOMER_TTL_MS,
@@ -68,6 +69,15 @@ async function loadCustomer(
     ? "all"
     : [...new Set(legs)].sort().join("+");
   const key = "customer:" + code.toUpperCase() + ":" + legKey;
+
+  // Reuse a fresh full payload for subset legs (module clicks stay instant)
+  if (legKey !== "all") {
+    const full = cacheGet<CustomerDetailPayload>(
+      "customer:" + code.toUpperCase() + ":all",
+      CUSTOMER_TTL_MS,
+    );
+    if (full) return full;
+  }
 
   // Never serve a previously cached miss for long — clear null entries
   try {
