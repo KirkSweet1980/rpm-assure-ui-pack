@@ -1,4 +1,3 @@
-import { DEFAULT_RAG } from "@/lib/settings/types";
 import { isJobFailed } from "./day-end";
 import {
   countCoveDevices,
@@ -192,35 +191,31 @@ export function customerLiveStatus(
     : openInc.length;
   const trueOpenInc = extra?.incidents ? openInc.length : slaOpen;
 
-  const redAt = Math.max(1, Number(DEFAULT_RAG.jobErrorsRedAt) || 10);
-  const jobsRag: LiveTone = !c.syspro
-    ? "Off"
-    : jobs >= redAt
-      ? "Red"
-      : jobs > 0
-        ? "Amber"
-        : "Green";
-  const dtrRag: LiveTone = !c.syspro ? "Off" : dtr > 0 ? "Amber" : "Green";
+  /** Red = SLA miss, error, or offline. Amber = watch. Green = clear. Off = no cover. */
+  const jobsRag: LiveTone = !c.syspro ? "Off" : jobs > 0 ? "Red" : "Green";
+  const dtrRag: LiveTone = !c.syspro ? "Off" : dtr > 0 ? "Red" : "Green";
   const healthRag: LiveTone = !c.syspro ? "Off" : stale ? "Amber" : "Green";
   const dayRag: LiveTone = !c.syspro ? "Off" : dayEndRag(extra);
   const hfRag: LiveTone = !c.syspro ? "Off" : hotfixRag(extra);
   const sysproSlaRag = serviceSlaRag("syspro", extra, Boolean(c.syspro));
   const sysproRag = [jobsRag, dtrRag, healthRag, dayRag, hfRag, sysproSlaRag].reduce(worse, c.syspro ? "Green" : "Off");
 
-  const devicesRag: LiveTone = !srvCover ? "Off" : srvOff > 0 ? "Amber" : "Green";
-  const alertsRag: LiveTone = !c.rmm ? "Off" : alertCrit ? "Red" : "Off";
-  const wsRag: LiveTone = !wsCover ? "Off" : wsOff > 0 ? "Amber" : "Green";
+  const devicesRag: LiveTone = !srvCover ? "Off" : srvOff > 0 ? "Red" : "Green";
+  const alertsRag: LiveTone = !c.rmm ? "Off" : alertCrit ? "Red" : alertN > 0 ? "Amber" : "Green";
+  const wsRag: LiveTone = !wsCover ? "Off" : wsOff > 0 ? "Red" : "Green";
   const patchRag: LiveTone =
     !c.rmm || srvN <= 0 || !hasPatchSnap ? "Off" : patchMiss > 0 ? "Amber" : "Green";
   const iopsRag: LiveTone = iopsN > 0 ? "Green" : "Off";
-  const eventsRag: LiveTone = evN <= 0 ? "Off" : evCrit ? "Red" : "Green";
+  const eventsRag: LiveTone = !c.rmm && evN <= 0 ? "Off" : evN <= 0 ? "Green" : evCrit ? "Red" : "Green";
   const rmmSlaRag = serviceSlaRag("rmm", extra, Boolean(c.rmm));
   const coveSlaRag = serviceSlaRag("cove", extra, Boolean(c.cove));
   const eppSlaRag = serviceSlaRag("epp", extra, Boolean(c.epp));
-  const rmmRag = [devicesRag, alertsRag, patchRag, eventsRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
+  const rmmRag = [devicesRag, alertsRag, patchRag, eventsRag, wsRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
 
-  const coveDevRag: LiveTone = !coveDevCover ? "Off" : coveFail > 0 ? "Red" : coveStale > 0 ? "Amber" : "Green";
-  const coveRag = [coveDevRag, coveSlaRag].reduce(worse, Boolean(c.cove) ? "Green" : "Off");
+  const recFail = extra?.cove?.recovery?.testFailedCount ?? 0;
+  const coveDevRag: LiveTone = !coveDevCover ? "Off" : coveFail > 0 || coveStale > 0 ? "Red" : "Green";
+  const coveRecRag: LiveTone = !c.cove ? "Off" : recFail > 0 ? "Red" : "Green";
+  const coveRag = [coveDevRag, coveRecRag, coveSlaRag].reduce(worse, Boolean(c.cove) ? "Green" : "Off");
 
   const eppEndRag: LiveTone = !eppDevCover ? "Off" : infected > 0 ? "Red" : unmanaged > 0 ? "Amber" : "Green";
   const eppIncRag: LiveTone = !eppDevCover ? "Off" : infected > 0 || eppInc > 0 ? "Red" : "Green";
@@ -269,7 +264,17 @@ export function customerLiveStatus(
     syspro: {
       rag: sysproRag,
       cover: Boolean(c.syspro),
-      href: jobs > 0 ? `${base}/syspro/jobs` : dtr > 0 ? `${base}/syspro/dtr` : stale ? `${base}/syspro/health` : `${base}/syspro`,
+      href: jobs > 0
+        ? `${base}/syspro/jobs`
+        : dtr > 0
+          ? `${base}/syspro/dtr`
+          : sysproSlaRag === "Red"
+            ? `${base}/syspro/sla`
+            : extra?.dayEnd?.status === "failed"
+              ? `${base}/syspro/day-end`
+              : stale
+                ? `${base}/syspro/health`
+                : `${base}/syspro`,
       hint: !c.syspro
         ? "SYSPRO not on cover"
         : jobs
@@ -283,31 +288,61 @@ export function customerLiveStatus(
     rmm: {
       rag: rmmRag,
       cover: Boolean(c.rmm),
-      href: crit > 0 ? `${base}/rmm/alerts` : srvOff > 0 ? `${base}/rmm/devices` : `${base}/rmm`,
+      href: alertCrit
+        ? `${base}/rmm/alerts`
+        : srvOff > 0
+          ? `${base}/rmm/devices`
+          : wsOff > 0
+            ? `${base}/rmm/workstations`
+            : evCrit
+              ? `${base}/rmm/events`
+              : rmmSlaRag === "Red"
+                ? `${base}/rmm/sla`
+                : `${base}/rmm`,
       hint: !c.rmm
         ? "RMM not on cover"
-        : crit
-          ? `${crit} critical alert(s)`
+        : alertCrit
+          ? `${crit || alertN} critical alert(s)`
           : srvOff
             ? `${srvOff} server(s) offline`
-            : "RMM live Green",
+            : wsOff
+              ? `${wsOff} workstation(s) offline`
+              : rmmSlaRag === "Red"
+                ? "RMM SLA not met"
+                : patchMiss
+                  ? `${patchMiss} missing patch(es)`
+                  : "RMM live Green",
     },
     cove: {
       rag: coveRag,
       cover: Boolean(c.cove),
-      href: `${base}/cove/devices`,
+      href: coveFail > 0 || coveStale > 0
+        ? `${base}/cove/devices`
+        : recFail > 0
+          ? `${base}/cove/recovery`
+          : coveSlaRag === "Red"
+            ? `${base}/cove/sla`
+            : `${base}/cove/devices`,
       hint: !c.cove
         ? "Backup not on cover"
         : coveFail
           ? `${coveFail} failed backup(s)`
           : coveStale
             ? `${coveStale} stale backup(s)`
-            : "Backup live Green",
+            : recFail
+              ? `${recFail} recovery test(s) failed`
+              : coveSlaRag === "Red"
+                ? "Backup SLA not met"
+                : "Backup live Green",
     },
     epp: {
       rag: eppRag,
       cover: Boolean(c.epp),
-      href: infected > 0 || eppInc > 0 ? `${base}/epp/incidents` : `${base}/epp/endpoints`,
+      href: infected > 0 || eppInc > 0
+        ? `${base}/epp/incidents`
+        : eppSlaRag === "Red"
+          ? `${base}/epp/sla`
+          : `${base}/epp/endpoints`,
       hint: !c.epp
         ? "RPM EPP not on cover"
         : infected
@@ -398,10 +433,10 @@ export function customerLiveStatus(
       hint: "Closed tickets",
     },
     "/tickets/sla": {
-      rag: extra?.amsSlaSummary && (extra.amsSlaSummary.responsePct ?? 100) < 90 ? "Red" : "Green",
+      rag: ticketSlaRag === "Off" ? "Green" : ticketSlaRag,
       cover: true,
       href: `${base}/tickets/sla`,
-      hint: "Ticket response and restore clocks",
+      hint: ticketSlaRag === "Red" ? "Ticket SLA not met" : "Ticket response and restore clocks",
     },
     "/syspro": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro`, hint: "SYSPRO overview" },
     "/syspro/dtr": {
@@ -483,7 +518,12 @@ export function customerLiveStatus(
       href: `${base}/cove/devices`,
       hint: !coveDevCover ? "No Cover for Devices" : coveFail || coveStale ? "Failed or stale backups on this page" : "Backups healthy",
     },
-    "/cove/recovery": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/recovery`, hint: "Recovery" },
+    "/cove/recovery": {
+      rag: coveRecRag,
+      cover: Boolean(c.cove),
+      href: `${base}/cove/recovery`,
+      hint: recFail > 0 ? `${recFail} recovery test(s) failed` : "Recovery",
+    },
     "/cove/retention": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/retention`, hint: "Retention" },
     "/cove/sla": { rag: coveSlaRag === "Off" ? off(Boolean(c.cove)) : coveSlaRag, cover: Boolean(c.cove), href: `${base}/cove/sla`, hint: coveSlaRag === "Red" ? "Backup SLA not met" : "Backup SLA" },
     "/epp": { rag: off(Boolean(c.epp)), cover: Boolean(c.epp), href: `${base}/epp`, hint: c.epp ? "EPP overview" : "EPP not on cover" },
