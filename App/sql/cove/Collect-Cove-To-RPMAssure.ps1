@@ -423,8 +423,7 @@ function Title-Status([string]$s) {
 function ColorBar-Text($v) {
   if ($null -eq $v) { return $null }
   $items = @()
-  if ($v -is [System.Array]) { $items = @($v) }
-  elseif ($v -is [string]) {
+  if ($v -is [string]) {
     $s = [string]$v
     if ($s.StartsWith('{') -or $s.StartsWith('[')) {
       try {
@@ -434,7 +433,9 @@ function ColorBar-Text($v) {
         else { $items = @($j) }
       } catch { return $s }
     } else { return $s }
-  } else {
+  } elseif ($v -is [System.Array]) { $items = @($v) }
+  elseif ($v -is [System.Collections.IEnumerable]) { $items = @($v) }
+  else {
     try {
       if ($v.data) { $items = @($v.data) }
       else { $items = @($v) }
@@ -540,7 +541,16 @@ try {
         elseif ($sample.PSObject) { $attrNames = @($sample.PSObject.Properties.Name) }
       } catch {}
       Write-Log ('DRaaS sample id=' + (One-Draas $sample.id) + ' attrs=' + ($attrNames -join ','))
-      Write-Log ('DRaaS sample name=' + (Draas-Attr $sample 'backup_cloud_device_name') + ' au=' + (Draas-Attr $sample 'backup_cloud_device_id') + ' bar=' + (ColorBar-Text (Draas-AttrRaw $sample 'colorbar')))
+      $cb = Draas-AttrRaw $sample 'colorbar'
+      $cbDump = ''
+      try { $cbDump = ($cb | ConvertTo-Json -Compress -Depth 6) } catch { $cbDump = [string]$cb }
+      if ($cbDump -is [System.Array]) { $cbDump = [string]::Join('', @($cbDump)) }
+      $cbDump = [string]$cbDump
+      if ($cbDump.Length -gt 360) { $cbDump = $cbDump.Substring(0, 360) }
+      $cbType = if ($null -eq $cb) { 'null' } else { $cb.GetType().FullName }
+      $cbN = @($cb).Count
+      Write-Log ('DRaaS sample name=' + (Draas-Attr $sample 'backup_cloud_device_name') + ' au=' + (Draas-Attr $sample 'backup_cloud_device_id') + ' bar=' + (ColorBar-Text $cb) + ' barType=' + $cbType + ' barN=' + $cbN)
+      Write-Log ('colorbar dump=' + $cbDump)
     }
     if ($items.Count -lt 200) { break }
     $offset += 200
@@ -1280,12 +1290,19 @@ try {
         shot = [string](Draas-Attr $it 'last_boot_test_screenshot_presented')
       })
     }
-    $json = ($bronze | ConvertTo-Json -Compress -Depth 4)
-    if ($json -is [System.Array]) { $json = [string]::Join('', @($json)) }
-    if ([string]$json.Length -gt 500000) { $json = ([string]$json).Substring(0, 500000) }
-    $esc = ([string]$json).Replace("'", "''")
+    $rawJson = $bronze | ConvertTo-Json -Compress -Depth 6
+    $jsonText = ''
+    if ($rawJson -is [System.Array]) {
+      $sb = New-Object System.Text.StringBuilder
+      foreach ($p in $rawJson) { [void]$sb.Append([string]$p) }
+      $jsonText = $sb.ToString()
+    } else {
+      $jsonText = [string]$rawJson
+    }
+    if ($jsonText.Length -gt 400000) { $jsonText = $jsonText.Substring(0, 400000) }
+    $esc = $jsonText.Replace("'", "''")
     Invoke-SqlFile -SqlText ("SET NOCOUNT ON; IF OBJECT_ID(N'dbo.Cove_Raw', N'U') IS NOT NULL INSERT INTO dbo.Cove_Raw (Kind, Payload) VALUES (N'draas-dashboard', N'$esc');") -Label 'cove_raw'
-    Write-Log ('bronze draas rows=' + $bronze.Count)
+    Write-Log ('bronze draas rows=' + $bronze.Count + ' jsonChars=' + $jsonText.Length)
   }
 } catch {
   Write-Log ('bronze warn ' + $_.Exception.Message)
