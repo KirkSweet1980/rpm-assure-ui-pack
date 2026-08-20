@@ -5819,3 +5819,112 @@ html:has(.rpma-emp.is-triple) .rpma-emp.is-triple {
 @media (max-width: 960px) {
   .rpma-emp.is-triple .rpma-rail { max-height: none !important; }
 }
+
+/* Top menu sits IN the navy bar — no white pill around Eco-System / Reporting */
+.dk-shell.is-topnav,
+.dk-shell.is-topnav.is-menu-open {
+  --pc-header-height: 64px !important;
+}
+.dk-header-one, .dk-header-tall {
+  background: #1b2838 !important;
+  padding: 0 !important;
+}
+.dk-header-row {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  min-height: 64px !important;
+  padding: 0 16px !important;
+  background: #1b2838 !important;
+  gap: 18px !important;
+}
+.dk-header-navrow {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  width: auto !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.dk-header-navrow .dk-link,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link {
+  color: #d5dee8 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  min-height: 36px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+.dk-header-navrow .dk-link:hover,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link:hover {
+  background: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+}
+.dk-header-navrow .dk-link.is-active,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active {
+  background: rgba(255,255,255,0.14) !important;
+  color: #ffffff !important;
+}
+
+/* Large content pane under the header, with space from menus */
+.dk-shell.is-topnav .dk-main {
+  padding: 12px 16px 16px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.dk-shell.is-topnav .dk-content.rpma-topnav-main {
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  gap: 12px !important;
+}
+.dk-shell.is-topnav .dk-canvas.rpma-topnav-canvas {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  background: #ffffff !important;
+  border: 1px solid #e8eaed !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+}
+
+/* Tenant: that large pane IS the 3 rails — no extra white wrap */
+.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-main {
+  padding: 12px 16px 16px !important;
+}
+.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-content.rpma-topnav-main,
+.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-canvas.rpma-topnav-canvas {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+.rpma-emp.is-triple {
+  padding: 0 !important;
+  gap: 12px !important;
+  height: 100% !important;
+}
+.rpma-emp.is-triple .rpma-emp-bodyrow { gap: 12px !important; }
+
+@media (max-width: 1023px) {
+  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 168px !important; }
+  .dk-header-row {
+    grid-template-columns: auto 1fr auto !important;
+    flex-wrap: wrap !important;
+  }
+  .dk-header-navrow.is-collapsed { display: none !important; }
+  .dk-header-navrow {
+    grid-column: 1 / -1;
+    flex-wrap: wrap !important;
+  }
+}

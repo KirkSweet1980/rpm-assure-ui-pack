@@ -227,23 +227,23 @@ export function AppShell({
                 </span>
               </Link>
             </div>
+            <div
+              id="rpma-top-menu"
+              className={cn("dk-header-navrow", !menuOpen && "is-collapsed")}
+            >
+              <DkSidebarNav
+                pathname={pathname}
+                customers={switcherCustomers}
+                currentCode={currentCustomerCode}
+                layout="top"
+              />
+            </div>
             <div className="dk-header-right">
               <HelpButton pathname={pathname} />
               <ThemeToggle />
               <DensityToggle />
               <UserButton />
             </div>
-          </div>
-          <div
-            id="rpma-top-menu"
-            className={cn("dk-header-navrow", !menuOpen && "is-collapsed")}
-          >
-            <DkSidebarNav
-              pathname={pathname}
-              customers={switcherCustomers}
-              currentCode={currentCustomerCode}
-              layout="top"
-            />
           </div>
         </header>
         <div className="dk-main">
