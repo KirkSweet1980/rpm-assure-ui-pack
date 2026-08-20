@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { HelpTip, HoverTip, MetricLabel, PaneHead } from "@/components/ui/help-tip";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CustomizeWidgetsButton, CustomizeWidgetsPanel } from "@/components/exco/customize-widgets";
+import { OrionDonut, OrionHBar, OrionWidget } from "@/components/exco/orion-widget";
 import {
   DEFAULT_EXCO_WIDGET_LAYOUT,
   readExcoWidgetLayout,
@@ -1086,122 +1087,239 @@ function ExcoInsightPage() {
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-brief">
-          <div className="rpma-brief-head">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <h1>
-                Customer Eco System is{" "}
-                <span className={rag.overall === "Green" ? "text-rag-green" : rag.overall === "Amber" ? "text-rag-amber" : "text-rag-red"}>
-                  {rag.overall}
-                </span>
-              </h1>
+        <div className="rpma-orion">
+          <div className="rpma-orion-title">
+            <h1>
+              Customer Eco-System Summary
+              <span className={cn(
+                "rpma-orion-status",
+                rag.overall === "Green" && "is-green",
+                rag.overall === "Amber" && "is-amber",
+                rag.overall === "Red" && "is-red",
+              )}>{rag.overall}</span>
+            </h1>
+            <p>
+              {rag.red} red · {rag.amber} amber · {rag.green} green · {liveLabel} · SLA {slaAvg}%
+            </p>
+            <div className="rpma-orion-title-right">
               <CustomizeWidgetsButton open={customizeOpen} onClick={() => setCustomizeOpen((v) => !v)} />
             </div>
-            <p>
-              {rag.red} red · {rag.amber} amber · {rag.green} green · {attention.length} attention · {liveLabel} · SLA {slaAvg}%
-            </p>
-            <ul className="rpma-brief-fresh">
-              {collectFreshness.map((x) => (
-                <li key={x.k}>
-                  <b>{x.k}</b>
-                  <span className={cn(
-                    x.tone === "green" && "text-rag-green",
-                    x.tone === "amber" && "text-rag-amber",
-                    x.tone === "red" && "text-rag-red",
-                    x.tone === "muted" && "text-subtle",
-                  )}>{x.label}</span>
-                </li>
-              ))}
-            </ul>
           </div>
 
           {customizeOpen ? (
             <CustomizeWidgetsPanel layout={widgetLayout} onChange={setWidgetLayout} onClose={() => setCustomizeOpen(false)} />
           ) : null}
 
-          <div className="rpma-brief-kpis">
-            {([
-              { k: "rag-red" as DrillKind, l: "Red", v: rag.red, t: rag.red ? "red" : "green" },
-              { k: "rag-amber" as DrillKind, l: "Amber", v: rag.amber, t: rag.amber ? "amber" : "green" },
-              { k: "attention" as DrillKind, l: "Attention", v: attention.length, t: attention.length ? "amber" : "green" },
-              { k: "sla" as DrillKind, l: "SLA avg", v: `${slaAvg}%`, t: slaAvg >= 80 ? "green" : slaAvg >= 55 ? "amber" : "red" },
-            ] as const).map((x) => (
-              <button
-                key={x.k}
-                type="button"
-                className={cn("rpma-brief-kpi", `is-${x.t}`, drill === x.k && "is-on")}
-                onClick={() => openTile(x.t, x.k)}
-              >
-                <span>{x.l}</span>
-                <b>{x.v}</b>
-              </button>
-            ))}
-          </div>
+          <div className="rpma-orion-grid">
+            <OrionWidget title="Estate health" helpHref="/help/rag" {...wgt("brief")}>
+              <p className="rpma-orion-sub">GROUPED BY RAG</p>
+              <OrionDonut
+                slices={[
+                  { label: "Green", value: rag.green, color: "#8bc53f" },
+                  { label: "Amber", value: rag.amber, color: "#f0ad4e" },
+                  { label: "Red", value: rag.red, color: "#e74c3c" },
+                ]}
+              />
+            </OrionWidget>
 
-          <div className="rpma-brief-svcs">
-            {([
-              { name: "SYSPRO Landscape", href: "/?view=finsight", pct: slaByService.syspro, n: coverStats.syspro, target: 90, note: "jobs miss" },
-              { name: "RMM Management", href: "/?view=all", pct: slaByService.rmm, n: coverStats.rmm, target: 99, note: `${serversOnline} online` },
-              { name: "RPM Cloud Backup", href: "/?view=attention", pct: slaByService.cove, n: coverStats.cove, target: 99, note: "SLA miss" },
-              { name: "RPM End Point Protection", href: "/?view=all", pct: slaByService.epp, n: coverStats.epp, target: 98, note: "on cover" },
-            ]).map((s) => {
-              const pct = s.pct;
-              const tone = pct == null ? "muted" : pct >= s.target ? "green" : pct >= s.target - 5 ? "amber" : "red";
-              const bar = tone === "green" ? "#8fce4a" : tone === "amber" ? "#ffa21d" : tone === "red" ? "#ea4d4d" : "#536170";
-              return (
-                <SpaLink key={s.name} href={s.href} className="rpma-brief-svc">
-                  <em>{s.name}</em>
-                  <strong className={cn(tone === "green" && "text-rag-green", tone === "amber" && "text-rag-amber", tone === "red" && "text-rag-red")}>
-                    {pct == null ? "—" : `${pct}%`}
-                  </strong>
-                  <div className="rpma-brief-bar"><i style={{ width: `${pct ?? 0}%`, background: bar }} /></div>
-                  <p>{s.n} of {coverStats.n} on cover{pct != null && pct < s.target ? ` · ${s.note}` : ""}</p>
-                </SpaLink>
-              );
-            })}
-          </div>
+            <OrionWidget title="Services on cover" helpHref="/help/cover" {...wgt("cover")}>
+              <p className="rpma-orion-sub">CUSTOMERS PER SERVICE</p>
+              <OrionDonut
+                size={148}
+                slices={[
+                  { label: "SYSPRO", value: coverStats.syspro, color: "#6f42c1" },
+                  { label: "RMM", value: coverStats.rmm, color: "#3498db" },
+                  { label: "Backup", value: coverStats.cove, color: "#1abc9c" },
+                  { label: "EPP", value: coverStats.epp, color: "#9b59b6" },
+                  { label: "M365", value: coverStats.csp, color: "#95a5a6" },
+                ]}
+              />
+            </OrionWidget>
 
-          <div className="rpma-brief-pills">
-            {[...scoreboard]
-              .sort((a, b) => {
-                const rank = (r: string) => (r === "Red" ? 0 : r === "Amber" ? 1 : 2);
-                return rank(a.healthRag) - rank(b.healthRag) || a.displayName.localeCompare(b.displayName);
-              })
-              .map((b) => (
-                <SpaLink
-                  key={b.customerCode}
-                  href={customerIssueTo(b.customerCode, b.healthRag)}
-                  className="rpma-brief-pill"
-                  data-rag={b.healthRag}
-                >
-                  <i />
-                  {b.displayName} · {b.healthRag}
-                </SpaLink>
-              ))}
+            <OrionWidget title="Customers needing a decision" helpHref="/help/overview" {...wgt("decisions")}>
+              <p className="rpma-orion-sub">RED / AMBER FIRST</p>
+              <table className="rpma-orion-tbl">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th>SLA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...scoreboard]
+                    .sort((a, b) => {
+                      const r = (x: string) => (x === "Red" ? 0 : x === "Amber" ? 1 : 2);
+                      return r(a.healthRag) - r(b.healthRag);
+                    })
+                    .filter((b) => b.healthRag !== "Green")
+                    .slice(0, 8)
+                    .map((b) => (
+                      <tr key={b.customerCode}>
+                        <td>
+                          <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)}>{b.displayName}</SpaLink>
+                        </td>
+                        <td>
+                          <span className={cn("rpma-orion-dot", b.healthRag === "Red" ? "is-red" : "is-amber")} />
+                          {b.healthRag}
+                        </td>
+                        <td className="num">{b.slaOverallPct != null ? `${b.slaOverallPct}%` : "—"}</td>
+                      </tr>
+                    ))}
+                  {scoreboard.filter((b) => b.healthRag !== "Green").length === 0 ? (
+                    <tr>
+                      <td colSpan={3}>All customers Green.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </OrionWidget>
+
+            <OrionWidget title="Cover mix" helpHref="/help/cover">
+              <p className="rpma-orion-sub">ON COVER vs NO COVER (estate)</p>
+              <OrionDonut
+                slices={[
+                  {
+                    label: "On cover",
+                    value: coverStats.syspro + coverStats.rmm + coverStats.cove + coverStats.epp,
+                    color: "#8bc53f",
+                  },
+                  {
+                    label: "Gaps",
+                    value: Math.max(
+                      0,
+                      coverStats.n * 4 - (coverStats.syspro + coverStats.rmm + coverStats.cove + coverStats.epp),
+                    ),
+                    color: "#f0ad4e",
+                  },
+                ]}
+              />
+            </OrionWidget>
+
+            <OrionWidget title="Active alerts" helpHref="/help/rag" className="is-wide" {...wgt("incidents")}>
+              <p className="rpma-orion-sub">LIVE ISSUES · {incidents.length} ON PAGE</p>
+              <table className="rpma-orion-tbl">
+                <thead>
+                  <tr>
+                    <th>Alert</th>
+                    <th>Customer</th>
+                    <th>Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incidents.slice(0, 8).map((i, n) => (
+                    <tr key={`${i.customerCode}-${n}`}>
+                      <td>
+                        <span className={cn("rpma-orion-dot", i.severity === "Red" ? "is-red" : "is-amber")} />
+                        {i.severity === "Red" ? "Critical" : "Warning"}
+                      </td>
+                      <td>
+                        <SpaLink href={i.to}>{i.displayName}</SpaLink>
+                      </td>
+                      <td>{i.text}</td>
+                    </tr>
+                  ))}
+                  {incidents.length === 0 ? (
+                    <tr>
+                      <td colSpan={3}>No open alerts on covered services.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </OrionWidget>
+
+            <OrionWidget title="SLA by service" helpHref="/help/sla" className="is-wide" {...wgt("sla")}>
+              <p className="rpma-orion-sub">TARGET vs MEASURED · ESTATE AVERAGE</p>
+              {([
+                { name: "SYSPRO Landscape", pct: slaByService.syspro, n: coverStats.syspro, target: 90 },
+                { name: "RMM Management", pct: slaByService.rmm, n: coverStats.rmm, target: 99, extra: `${serversOnline} online / ${serversOffline} off` },
+                { name: "RPM Cloud Backup", pct: slaByService.cove, n: coverStats.cove, target: 99 },
+                { name: "RPM End Point Protection", pct: slaByService.epp, n: coverStats.epp, target: 98 },
+              ] as const).map((s) => {
+                const pct = s.pct;
+                const tone =
+                  pct == null ? "muted" : pct >= s.target ? "green" : pct >= s.target - 5 ? "amber" : "red";
+                return (
+                  <OrionHBar
+                    key={s.name}
+                    label={s.name}
+                    pct={pct}
+                    tone={tone}
+                    sub={`${s.n} of ${coverStats.n} on cover`}
+                  />
+                );
+              })}
+            </OrionWidget>
+
+            <OrionWidget title="Customer watch list" helpHref="/help/navigation" {...wgt("impact")}>
+              <p className="rpma-orion-sub">ALL TENANTS</p>
+              <table className="rpma-orion-tbl">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>RAG</th>
+                    <th>SLA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...scoreboard]
+                    .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                    .map((b) => (
+                      <tr key={b.customerCode}>
+                        <td>
+                          <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)}>{b.displayName}</SpaLink>
+                        </td>
+                        <td>
+                          <span
+                            className={cn(
+                              "rpma-orion-dot",
+                              b.healthRag === "Green" && "is-green",
+                              b.healthRag === "Amber" && "is-amber",
+                              b.healthRag === "Red" && "is-red",
+                            )}
+                          />
+                          {b.healthRag}
+                        </td>
+                        <td className="num">{b.slaOverallPct != null ? `${b.slaOverallPct}%` : "—"}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </OrionWidget>
           </div>
 
           {drill ? (
-            <div className="rpma-brief-drill">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <strong>{drillTitle}</strong>
-                <button type="button" className="text-[12px] font-bold" style={{ color: "#1bb8a6" }} onClick={() => setDrill(null)}>Clear</button>
-              </div>
+            <OrionWidget title={drillTitle} helpHref="/help/overview">
               {drillRows.length === 0 ? (
-                <p className="text-[12px] text-muted">No customers in this view.</p>
+                <p className="rpma-orion-sub">No customers in this view.</p>
               ) : (
-                <ul className="space-y-1">
-                  {drillRows.slice(0, 10).map((b) => (
-                    <li key={b.customerCode}>
-                      <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)} className="flex items-center gap-2 rounded px-1 py-1">
-                        <RagBadge rag={b.healthRag} />
-                        <span className="min-w-0 flex-1 truncate font-semibold">{b.displayName}</span>
-                        <span className="font-mono text-[11px] text-muted">{b.slaOverallPct != null ? `${b.slaOverallPct}%` : "—"}</span>
-                      </SpaLink>
-                    </li>
-                  ))}
-                </ul>
+                <table className="rpma-orion-tbl">
+                  <thead>
+                    <tr>
+                      <th>Customer</th>
+                      <th>Status</th>
+                      <th>SLA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drillRows.map((b) => (
+                      <tr key={b.customerCode}>
+                        <td>
+                          <SpaLink href={customerIssueTo(b.customerCode, b.healthRag)}>{b.displayName}</SpaLink>
+                        </td>
+                        <td>
+                          <RagBadge rag={b.healthRag} />
+                        </td>
+                        <td className="num">{b.slaOverallPct != null ? `${b.slaOverallPct}%` : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
-            </div>
+              <button type="button" className="rpma-orion-clear" onClick={() => setDrill(null)}>
+                Clear filter
+              </button>
+            </OrionWidget>
           ) : null}
         </div>
       </AppShell>
