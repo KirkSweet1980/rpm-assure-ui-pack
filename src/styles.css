@@ -5629,3 +5629,93 @@ html.dark .rpma-orion-tbl td, html[data-theme="dark"] .rpma-orion-tbl td { color
   .rpma-rail { flex: 1 1 220px; width: auto; max-width: none; max-height: 40vh; }
   .rpma-emp.is-triple .rpma-emp-work { flex: 1 1 100%; min-height: 50vh; }
 }
+
+/* Top nav: navy brand bar, gap, white menu strip, gap to tenant rails */
+.dk-shell.is-topnav {
+  --pc-header-height: 128px;
+  --rpma-hud-h: 0px;
+}
+.dk-shell.is-topnav.is-menu-open { --pc-header-height: 128px; }
+.dk-header-one, .dk-header-tall {
+  background: #1b2838 !important;
+  gap: 0;
+  padding: 0 0 12px;
+}
+.dk-header-row {
+  min-height: 56px;
+  padding: 6px 16px;
+  background: #1b2838 !important;
+}
+.dk-header-navrow {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 12px 12px 0;
+  width: auto;
+  min-height: 42px;
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #e8eaed !important;
+  border-radius: 10px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+.dk-header-navrow .dk-link,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link {
+  color: #374151 !important;
+  background: transparent !important;
+  border-right: 1px solid #eef0f3 !important;
+  border-bottom: 0 !important;
+  min-height: 42px;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+.dk-header-navrow .dk-link:hover,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+.dk-header-navrow .dk-link.is-active,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active {
+  background: #eef2ff !important;
+  color: #1d4ed8 !important;
+}
+.dk-shell.is-topnav .dk-content.rpma-topnav-main {
+  padding: 12px 12px 12px !important;
+}
+.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-content.rpma-topnav-main,
+.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-canvas.rpma-topnav-canvas {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Tenant panes: 12px gutters between rails and the nav above */
+.rpma-emp.is-triple {
+  padding: 12px !important;
+  gap: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.rpma-emp.is-triple .rpma-emp-title {
+  margin: 0 !important;
+  border-radius: 10px;
+  background: #1b2838 !important;
+  border: 0 !important;
+}
+.rpma-emp.is-triple .rpma-emp-bodyrow {
+  gap: 12px !important;
+  padding: 0 !important;
+}
+.rpma-emp.is-triple .rpma-rail {
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+.rpma-emp.is-triple .rpma-rail-svc { border-color: #e8eaed; }
+.rpma-emp.is-triple .rpma-rail-mod { border-color: #15202c; }
+.rpma-emp.is-triple .rpma-emp-work {
+  border-radius: 12px;
+  padding: 12px !important;
+}
+.rpma-emp.is-triple .rpma-work-window { border-radius: 10px !important; }
+
+@media (max-width: 1023px) {
+  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 188px; }
+}
