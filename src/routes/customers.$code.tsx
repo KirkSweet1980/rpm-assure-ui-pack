@@ -222,6 +222,7 @@ function CustomerLayout() {
     (g) => g.code.toUpperCase() === customer.customerCode.toUpperCase(),
   );
   const allowedServices = grant?.services?.length ? grant.services : null;
+  const missing = Boolean((data as { _missing?: boolean })?._missing);
   const pageCover = coverFromDetail(data);
   const live = customerLiveStatus(
     customer.customerCode,
