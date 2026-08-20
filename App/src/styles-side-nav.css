@@ -334,14 +334,16 @@ html[data-theme="dark"] .rpma-emp-tool.is-nocover {
   font-weight: 800 !important;
 }
 
-/* Top app nav — same pill language */
+/* Top app nav — blend into navy header (light and dark) */
 .dk-header-navrow {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  padding: 6px 10px !important;
-  background: #fff !important;
-  border-bottom: 1px solid #e8edf2 !important;
+  gap: 4px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 .dk-header-navrow .dk-link,
 .dk-header-navrow .rpma-top-tab-wrap > .dk-link {
@@ -351,37 +353,39 @@ html[data-theme="dark"] .rpma-emp-tool.is-nocover {
   min-height: 36px !important;
   padding: 6px 12px !important;
   border: 0 !important;
-  border-radius: 12px !important;
+  border-radius: 8px !important;
   background: transparent !important;
-  color: #334155 !important;
+  color: #d5dee8 !important;
   font-size: 13px !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   box-shadow: none !important;
 }
 .dk-header-navrow .dk-link:hover,
 .dk-header-navrow .rpma-top-tab-wrap > .dk-link:hover {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
+  background: rgba(255,255,255,0.10) !important;
+  color: #ffffff !important;
 }
 .dk-header-navrow .dk-link.is-active,
 .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
 .dk-header-navrow .rpma-top-link-active {
-  background: #e8f0fe !important;
-  color: #1e3a8a !important;
+  background: rgba(255,255,255,0.16) !important;
+  color: #ffffff !important;
 }
 html.dark .dk-header-navrow,
-html[data-theme="dark"] .dk-header-navrow {
-  background: #15202c !important;
-  border-bottom-color: #243040 !important;
+html[data-theme="dark"] .dk-header-navrow,
+html[data-theme="light"] .dk-header-navrow,
+html.snow .dk-header-navrow {
+  background: transparent !important;
+  border: 0 !important;
 }
 html.dark .dk-header-navrow .dk-link,
 html[data-theme="dark"] .dk-header-navrow .dk-link {
-  color: #e2e8f0 !important;
+  color: #d5dee8 !important;
 }
 html.dark .dk-header-navrow .dk-link.is-active,
 html[data-theme="dark"] .dk-header-navrow .dk-link.is-active {
-  background: #1e3a5f !important;
-  color: #dbeafe !important;
+  background: rgba(255,255,255,0.16) !important;
+  color: #ffffff !important;
 }
 
 /* ---- Viewport lock: page never scrolls; each menu item is one window ---- */
@@ -752,3 +756,45 @@ html.dark .rpma-emp.is-side .rpma-eco-head h2,
 html[data-theme="dark"] .rpma-emp.is-side .rpma-eco-head h2 { color: #e8f0f8 !important; }
 html.dark .rpma-emp.is-side .rpma-eco-head p,
 html[data-theme="dark"] .rpma-emp.is-side .rpma-eco-head p { color: #9aa8b5 !important; }
+
+/* Triple tenant: 3 columns, full height — Overview is the RIGHT pane */
+.rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
+.rpma-emp.is-triple .rpma-emp-bodyrow {
+  display: grid !important;
+  grid-template-columns: 220px 220px minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  gap: 12px !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  align-items: stretch !important;
+}
+.rpma-emp.is-triple .rpma-rail,
+.rpma-emp.is-triple .rpma-emp-work {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+  overflow: auto !important;
+  align-self: stretch !important;
+}
+.rpma-emp.is-triple .rpma-emp-work {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+.rpma-emp.is-triple .rpma-work-window,
+.rpma-emp.is-triple .rpma-win.is-fill {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+@media (max-width: 960px) {
+  .rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
+  .rpma-emp.is-triple .rpma-emp-bodyrow {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto minmax(40vh, 1fr) !important;
+  }
+}
