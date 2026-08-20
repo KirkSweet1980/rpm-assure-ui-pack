@@ -9,6 +9,7 @@ import {
 } from "react";
 import { applyMenuStyle, readMenuStyle } from "@/lib/nav/menu-style";
 import { applyFontPack, readFontPack } from "@/lib/font-pack";
+import { applyPalette, readPalette } from "@/lib/theme-tokens";
 
 /** User preference: light, dark, or follow OS */
 export type ThemePreference = "light" | "dark" | "auto";
@@ -87,6 +88,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyDom(mode);
     applyMenuStyle(readMenuStyle());
     applyFontPack(readFontPack());
+    applyPalette(readPalette(), mode);
     setReady(true);
   }, []);
 
@@ -98,6 +100,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const mode = resolve("auto");
         setThemeResolved(mode);
         applyDom(mode);
+        applyPalette(readPalette(), mode);
       }
     };
     mq.addEventListener("change", onChange);
@@ -109,6 +112,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const mode = resolve(preference);
     setThemeResolved(mode);
     applyDom(mode);
+    applyPalette(readPalette(), mode);
     try {
       localStorage.setItem(STORAGE_KEY, preference);
     } catch {

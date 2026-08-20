@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Palette } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useTheme, type ThemeMode } from "@/lib/theme";
 import { useDensity, type Density } from "@/lib/density";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { ConfigPageHead } from "@/components/settings/config-page";
 import { ThemeChromePreview } from "@/components/theme/theme-chrome-preview";
 import {
   PALETTES,
+  PASTEL_IDS,
   THEME_TOKENS,
   TOKEN_GROUPS,
   UI_TEMPLATES,
@@ -36,6 +38,7 @@ function ThemeTokensPage() {
   const [draft, setDraft] = useState<Draft>(saved);
   const [tick, setTick] = useState(0);
   const [font, setFont] = useState<FontPackId>("source");
+  const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const next: Draft = { palette: readPalette(), theme, density };
@@ -158,6 +161,47 @@ function ThemeTokensPage() {
                 </div>
                 <p className="mb-2 text-[11px] text-muted">{tpl.blurb}</p>
                 <ThemeChromePreview palette={tpl.id} />
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="px-4 py-3">
+          <h2 className="text-[16px] font-extrabold text-fg">Pastel collections</h2>
+          <p className="text-[12px] text-muted">
+            Light and dark both work. Header toggle keeps the same collection.
+          </p>
+        </div>
+        <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 xl:grid-cols-5">
+          {PASTEL_IDS.map((id) => {
+            const p = PALETTES[id];
+            const on = draft.palette === id;
+            const face = draft.theme === "dark" ? p.dark : p.light;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setDraft((d) => ({ ...d, palette: id }))}
+                className={cn(
+                  "rounded-md border p-3 text-left",
+                  on ? "border-[var(--color-nav)] bg-[var(--color-surface-2)]" : "border-border bg-surface",
+                )}
+              >
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-extrabold text-fg">{p.name}</span>
+                  {on ? <Check className="h-4 w-4 text-fg" /> : null}
+                </div>
+                <p className="mb-2 text-[11px] text-muted">{p.blurb}</p>
+                <div className="mb-2 flex h-3 overflow-hidden rounded-sm">
+                  {["--color-nav", "--rail-mod-bg", "--color-bg", "--color-accent", "--ui-tab-active-bg", "--color-chart-3"].map(
+                    (k) => (
+                      <span key={k} className="flex-1" style={{ background: face[k] ?? "#ccc" }} />
+                    ),
+                  )}
+                </div>
+                <ThemeChromePreview palette={id} />
               </button>
             );
           })}
