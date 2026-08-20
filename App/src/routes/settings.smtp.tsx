@@ -59,7 +59,8 @@ function SmtpSettingsPage() {
       <ConfigPageHead title="Email / SMTP" icon={Mail} />
       <section className="rpma-glass space-y-3 p-4">
         <p className="text-[12px] text-muted">
-          Outbound mail for report packs and test messages. Saved values stay on this server.
+          Outbound mail for report packs and, when you arm helpdesk, ticket alerts on Amber/Red.
+          Saved values stay on this server. Ticket send is stored now; it does not open Freshdesk until helpdesk is armed.
         </p>
         <label className="flex items-center gap-2 text-[12px] font-semibold text-fg">
           <input
@@ -86,6 +87,11 @@ function SmtpSettingsPage() {
           <Field label="From email" value={smtp.fromEmail} onChange={(v) => setSmtp((s) => ({ ...s, fromEmail: v }))} />
           <Field label="From name" value={smtp.fromName} onChange={(v) => setSmtp((s) => ({ ...s, fromName: v }))} />
           <Field
+            label="Reply-To"
+            value={smtp.replyTo}
+            onChange={(v) => setSmtp((s) => ({ ...s, replyTo: v }))}
+          />
+          <Field
             label="Report To"
             value={smtp.reportTo}
             onChange={(v) => setSmtp((s) => ({ ...s, reportTo: v }))}
@@ -97,6 +103,33 @@ function SmtpSettingsPage() {
               onChange={(e) => setSmtp((s) => ({ ...s, secure: e.target.checked }))}
             />
             TLS / secure
+          </label>
+        </div>
+        <div className="space-y-2 rounded-md border border-border bg-surface-2 p-3">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted">Ticketing prep</p>
+          <label className="flex items-center gap-2 text-[12px] font-semibold text-fg">
+            <input
+              type="checkbox"
+              checked={Boolean(smtp.ticketAlertsEnabled)}
+              onChange={(e) => setSmtp((s) => ({ ...s, ticketAlertsEnabled: e.target.checked }))}
+            />
+            Enable mail when RAG turns Amber or Red (helpdesk not armed — save now, send later)
+          </label>
+          <label className="flex items-center gap-2 text-[12px] font-semibold text-fg">
+            <input
+              type="checkbox"
+              checked={Boolean(smtp.ticketOnAmber)}
+              onChange={(e) => setSmtp((s) => ({ ...s, ticketOnAmber: e.target.checked }))}
+            />
+            On Amber
+          </label>
+          <label className="flex items-center gap-2 text-[12px] font-semibold text-fg">
+            <input
+              type="checkbox"
+              checked={smtp.ticketOnRed !== false}
+              onChange={(e) => setSmtp((s) => ({ ...s, ticketOnRed: e.target.checked }))}
+            />
+            On Red
           </label>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -2,8 +2,8 @@
  * Feature flags for surfaces temporarily deferred.
  * Flip to true when re-enabling.
  */
-export const USER_ACCOUNTS_ENABLED = false;
-export const USER_PROFILE_ENABLED = false;
+export const USER_ACCOUNTS_ENABLED = true;
+export const USER_PROFILE_ENABLED = true;
 export const TWO_FACTOR_ENABLED = true;
 /** Top-nav Configuration /settings menu */
 export const SETTINGS_MENU_ENABLED = true;

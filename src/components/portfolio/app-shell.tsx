@@ -4,6 +4,7 @@ import { DensityToggle } from "@/components/portfolio/density-toggle";
 import { ThemeToggle } from "@/components/portfolio/theme-toggle";
 import { DkSidebarNav } from "@/components/nav/dk-sidebar-nav";
 import { UserButton } from "@/lib/auth/gates";
+import { HelpButton } from "@/components/help/help-button";
 import { fetchPortfolio } from "@/lib/data/portfolio";
 import { VisionAssistant } from "@/components/vision/vision-assistant";
 import { PageRevWait } from "@/components/nav/page-rev-wait";
@@ -227,6 +228,7 @@ export function AppShell({
               </Link>
             </div>
             <div className="dk-header-right">
+              <HelpButton pathname={pathname} />
               <ThemeToggle />
               <DensityToggle />
               <UserButton />

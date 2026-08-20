@@ -8,6 +8,7 @@ import { ServerKindIcon } from "@/components/customer/server-kind-icon";
 import type { CustomerDetailPayload } from "@/lib/data/types";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CoverTag, StatusRobot } from "@/components/ui/status-robot";
+import { TenantAccessCard } from "@/components/customer/tenant-access";
 import { RagBadge } from "@/components/portfolio/rag-badge";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import { cn, formatSastDateTime } from "@/lib/utils";
@@ -640,6 +641,7 @@ export function EstateGrid({
             <h2>{customer.displayName}</h2>
             <p>{DECK_TITLE[focus]} · last collect {formatSastDateTime(lastCollect)}</p>
           </div>
+          {focus === "eco" ? <TenantAccessCard customerCode={customer.customerCode} /> : null}
         </div>
         {dormant && focus === "eco" ? (
           <div className="rpma-dormant-banner" role="status">

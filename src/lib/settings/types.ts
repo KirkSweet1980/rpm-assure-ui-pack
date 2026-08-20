@@ -28,6 +28,10 @@ export type SmtpConfig = {
   replyTo: string;
   /** Semicolon/comma-separated weekly report recipients */
   reportTo: string;
+  /** Prep: mail when a covered lamp turns Amber/Red (helpdesk not armed yet). */
+  ticketAlertsEnabled: boolean;
+  ticketOnAmber: boolean;
+  ticketOnRed: boolean;
 };
 
 export type ReportScheduleSlot = "daily" | "weekly" | "monthly";
@@ -341,6 +345,9 @@ export const DEFAULT_SMTP: SmtpConfig = {
   fromName: "RPM Assure",
   replyTo: "",
   reportTo: "",
+  ticketAlertsEnabled: false,
+  ticketOnAmber: false,
+  ticketOnRed: true,
 };
 
 export const DEFAULT_SSL: SslConfig = {

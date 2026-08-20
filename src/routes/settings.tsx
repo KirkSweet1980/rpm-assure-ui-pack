@@ -1,5 +1,5 @@
 import { Link, Outlet, createFileRoute, Navigate, useRouterState } from "@tanstack/react-router";
-import { Bell, Database, FileText, KeyRound, LayoutDashboard, Mail, Palette, Plug, Server, Shield, Sparkles, Tags, Users } from "lucide-react";
+import { Bell, CircleHelp, Database, FileText, KeyRound, LayoutDashboard, Mail, Palette, Plug, Server, Shield, Sparkles, Tags, Users } from "lucide-react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
 import { EmpWindow, type EmpGroup } from "@/components/chrome/emp-window";
@@ -32,7 +32,7 @@ const CONFIG_SERVICES: CorpService[] = [
     icon: Mail,
     color: "#2563eb",
     modules: [
-      { label: "SMTP", path: "/settings/smtp", icon: Mail, color: "#2563eb" },
+      { label: "SMTP / Email", path: "/settings/smtp", icon: Mail, color: "#2563eb" },
       { label: "SQL Server", path: "/settings/sql", icon: Database, color: "#0891b2" },
       { label: "SQL Query", path: "/settings/query", icon: FileText, color: "#4f46e5" },
       { label: "SSL / HTTPS", path: "/settings/ssl", icon: KeyRound, color: "#7c3aed" },
@@ -47,23 +47,25 @@ const CONFIG_SERVICES: CorpService[] = [
     color: "#dc2626",
     modules: [
       { label: "Users", path: "/settings/users", icon: Users, color: "#dc2626" },
+      { label: "My profile", path: "/settings/profile", icon: Users, color: "#be123c" },
       { label: "Audit Log", path: "/settings/audit", icon: FileText, color: "#334155" },
     ],
   },
   {
     id: "customization",
-    title: "Customization",
+    title: "UI Customize",
     overview: "/settings/theme",
     icon: Palette,
     color: "#7c3aed",
     modules: [
-      { label: "Theme Tokens", path: "/settings/theme", icon: Palette, color: "#7c3aed" },
+      { label: "Templates & palettes", path: "/settings/theme", icon: Palette, color: "#7c3aed" },
       { label: "Menu Style", path: "/settings/chrome", icon: LayoutDashboard, color: "#0d9488" },
       { label: "Nav mockups", path: "/settings/nav-lab", icon: LayoutDashboard, color: "#14b8a6" },
       { label: "UI Labels", path: "/settings/labels", icon: Tags, color: "#d97706" },
       { label: "Dashboard Layout", path: "/settings/dashboard", icon: LayoutDashboard, color: "#2563eb" },
       { label: "Alert Rules", path: "/settings/alerts", icon: Bell, color: "#dc2626" },
       { label: "Report Packs", path: "/settings/reports", icon: FileText, color: "#0891b2" },
+      { label: "Application help", path: "/help", icon: CircleHelp, color: "#0f766e" },
     ],
   },
 ];

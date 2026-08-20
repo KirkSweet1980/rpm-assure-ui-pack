@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Palette } from "lucide-react";
 import { useTheme } from "@/lib/theme";
+import { useDensity } from "@/lib/density";
 import { ConfigPageHead } from "@/components/settings/config-page";
 import { ThemeChromePreview } from "@/components/theme/theme-chrome-preview";
 import {
   PALETTES,
   THEME_TOKENS,
   TOKEN_GROUPS,
+  UI_TEMPLATES,
   persistPalette,
   readComputedToken,
   readPalette,
@@ -20,7 +22,8 @@ export const Route = createFileRoute("/settings/theme")({
 });
 
 function ThemeTokensPage() {
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const { setDensity } = useDensity();
   const [palette, setPalette] = useState<PaletteId>("slate");
   const [tick, setTick] = useState(0);
 
@@ -44,11 +47,45 @@ function ThemeTokensPage() {
 
   return (
     <div className="space-y-6">
-      <ConfigPageHead title="Theme Tokens" icon={Palette} />
+      <ConfigPageHead title="UI templates & colour palettes" icon={Palette} />
 
       <section className="rpma-panel overflow-hidden p-0">
         <div className="px-4 py-3">
-          <h2 className="text-[16px] font-extrabold text-fg">Palette</h2>
+          <h2 className="text-[16px] font-extrabold text-fg">Templates</h2>
+          <p className="text-[12px] text-muted">Applies palette, light/dark, and density together. Header toggle still overrides light/dark.</p>
+        </div>
+        <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 xl:grid-cols-4">
+          {UI_TEMPLATES.map((tpl) => {
+            const on = palette === tpl.id;
+            return (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => {
+                  setPalette(tpl.id);
+                  if (tpl.theme === "light" || tpl.theme === "dark") setTheme(tpl.theme);
+                  setDensity(tpl.density);
+                }}
+                className={cn(
+                  "rounded-md border p-3 text-left",
+                  on ? "border-[var(--color-nav)] bg-[var(--color-surface-2)]" : "border-border bg-surface",
+                )}
+              >
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-extrabold text-fg">{tpl.name}</span>
+                  {on ? <Check className="h-4 w-4 text-fg" /> : null}
+                </div>
+                <p className="mb-2 text-[11px] text-muted">{tpl.blurb}</p>
+                <ThemeChromePreview palette={tpl.id} />
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="px-4 py-3">
+          <h2 className="text-[16px] font-extrabold text-fg">Colour palettes</h2>
         </div>
         <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 xl:grid-cols-3">
           {(Object.keys(PALETTES) as PaletteId[]).map((id) => {
