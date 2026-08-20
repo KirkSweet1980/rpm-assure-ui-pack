@@ -881,3 +881,59 @@ html[data-theme="light"] .dk-header-navrow .dk-link.is-active {
   box-shadow: none !important;
   border: 0 !important;
 }
+
+/* Right header tools match left: white text, pastel green hover, no selected fill */
+.dk-header-right,
+.dk-header-right .dk-help-btn,
+.dk-header-right .dk-help-btn span,
+.dk-header-right .rpma-theme-switch,
+.dk-header-right .rpma-theme-switch-label,
+.dk-header-right .rpma-userchip,
+.dk-header-right .rpma-userchip-name,
+.dk-header-right .rpma-userchip-out,
+.dk-header-right .dk-iconbtn,
+.dk-header-right .rpma-nav-seg-btn,
+html:not(.dark) .dk-header-right,
+html:not(.dark) .dk-header-right .dk-help-btn,
+html:not(.dark) .dk-header-right .rpma-theme-switch-label,
+html:not(.dark) .dk-header-right .rpma-userchip-name,
+html:not(.dark) .dk-header-right .rpma-userchip-out,
+html:not(.dark) .dk-header-right .dk-iconbtn {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+.dk-header-right .dk-help-btn,
+html:not(.dark) .dk-header-right .dk-help-btn,
+html:not(.dark):not([data-theme="dark"]) .dk-help-btn {
+  background: transparent !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+.dk-header-right .dk-help-btn:hover,
+.dk-header-right .rpma-userchip-out:hover,
+.dk-header-right .rpma-nav-seg-btn:hover,
+.dk-header-right .dk-iconbtn:hover,
+.dk-header-right .rpma-theme-switch:hover .rpma-theme-switch-label {
+  background: #c8ecd4 !important;
+  color: #0f3d24 !important;
+}
+.dk-header-right .dk-help-btn.is-active {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+.dk-header-right .rpma-userchip-out {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  font-weight: 600 !important;
+}
+.dk-header-right .rpma-nav-seg {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.25) !important;
+}
+.dk-header-right .rpma-nav-seg-btn-active {
+  background: transparent !important;
+  color: #ffffff !important;
+}
