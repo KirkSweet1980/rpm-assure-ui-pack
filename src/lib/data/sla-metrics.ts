@@ -414,6 +414,5 @@ export function vsIndustryTone(
 ): "green" | "amber" | "red" | "default" {
   if (pct == null || Number.isNaN(pct)) return "default";
   if (pct >= targetPct) return "green";
-  if (pct >= targetPct - 5) return "amber";
   return "red";
 }

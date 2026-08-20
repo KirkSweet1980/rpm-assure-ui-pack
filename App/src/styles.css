@@ -1890,13 +1890,18 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
   55%, 100% { box-shadow: none; }
 }
 
-.rpma-bot.is-green { animation: rpma-lamp-glow-green 2.2s ease-in-out infinite; }
-.rpma-bot.is-amber { animation: rpma-lamp-flash-amber 0.85s ease-in-out infinite; }
+.rpma-bot.is-green {
+  animation: none;
+  filter: drop-shadow(0 0 5px #4ade80) drop-shadow(0 0 10px rgba(34, 197, 94, 0.45)) brightness(1.08);
+}
+.rpma-bot.is-amber {
+  animation: none;
+  filter: drop-shadow(0 0 5px #facc15) drop-shadow(0 0 10px rgba(234, 179, 8, 0.45)) brightness(1.08);
+}
 .rpma-bot.is-red { animation: rpma-lamp-flash-red 0.48s ease-in-out infinite; }
 .rpma-bot.is-off { animation: none; }
 .rpma-bot:hover { transform: scale(1.22); z-index: 8; }
 .rpma-bot.is-red:hover { animation: rpma-lamp-flash-red 0.48s ease-in-out infinite; }
-.rpma-bot.is-amber:hover { animation: rpma-lamp-flash-amber 0.85s ease-in-out infinite; }
 .rpma-bot .rpma-help-bubble { min-width: 11rem; }
 
 .rpma-emp-gtab[data-rag="Red"],
@@ -1904,23 +1909,13 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
 .rpma-cmd-banner.is-alert.is-red {
   animation: rpma-row-flash-red 0.48s ease-in-out infinite;
 }
-.rpma-emp-gtab[data-rag="Amber"],
-.rpma-emp-tool[data-rag="Amber"],
-.rpma-cmd-banner.is-alert.is-amber {
-  animation: rpma-row-flash-amber 0.85s ease-in-out infinite;
-}
 .rpma-cmd-cell.is-red.is-alert,
 .rpma-cmd-cell.is-red {
   animation: rpma-cell-flash-red 0.48s ease-in-out infinite;
 }
-.rpma-cmd-cell.is-amber.is-alert,
-.rpma-cmd-cell.is-amber {
-  animation: rpma-cell-flash-amber 0.85s ease-in-out infinite;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .rpma-bot.is-green { animation: none !important; }
-  .rpma-bot.is-amber { animation: rpma-lamp-flash-amber 1.4s ease-in-out infinite; }
+  .rpma-bot.is-green, .rpma-bot.is-amber { animation: none !important; }
   .rpma-bot.is-red { animation: rpma-lamp-flash-red 1.1s ease-in-out infinite; }
 }
 
@@ -4114,8 +4109,14 @@ html.rpma-crisp .dk-header-navrow .dk-link.is-active,
 html.rpma-crisp .rpma-emp-tool.is-on {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
-html.rpma-crisp .rpma-bot.is-green { animation: rpma-lamp-glow-green 2.2s ease-in-out infinite; }
-html.rpma-crisp .rpma-bot.is-amber { animation: rpma-lamp-flash-amber 0.85s ease-in-out infinite; }
+html.rpma-crisp .rpma-bot.is-green {
+  animation: none;
+  filter: drop-shadow(0 0 5px #4ade80) drop-shadow(0 0 10px rgba(34, 197, 94, 0.45)) brightness(1.08);
+}
+html.rpma-crisp .rpma-bot.is-amber {
+  animation: none;
+  filter: drop-shadow(0 0 5px #facc15) drop-shadow(0 0 10px rgba(234, 179, 8, 0.45)) brightness(1.08);
+}
 html.rpma-crisp .rpma-bot.is-red { animation: rpma-lamp-flash-red 0.48s ease-in-out infinite; }
 html.rpma-crisp .rpma-epp-lamp.is-on,
 html.rpma-crisp .rpma-epp-lamp.is-off,

@@ -7,6 +7,8 @@ import {
   countRmmWorkstations,
 } from "./device-cover";
 import { isDormantCover } from "./cover";
+import { buildServiceSla } from "./service-sla";
+import type { IndustryPillarKey } from "./sla-metrics";
 import type { CustomerCover, CustomerDetailPayload, HealthRag, PortfolioRow } from "./types";
 
 export type LiveTone = HealthRag | "Off";
@@ -110,8 +112,19 @@ function hotfixRag(extra?: Partial<CustomerDetailPayload> | null): LiveTone {
 
 function slaTone(pct: number | null | undefined, target: number): LiveTone {
   if (pct == null || !Number.isFinite(pct)) return "Green";
-  if (pct < target - 5) return "Red";
-  if (pct < target) return "Amber";
+  if (pct < target) return "Red";
+  return "Green";
+}
+
+function serviceSlaRag(
+  pillar: IndustryPillarKey,
+  extra: Partial<CustomerDetailPayload> | null | undefined,
+  covered: boolean,
+): LiveTone {
+  if (!covered) return "Off";
+  if (!extra) return "Green";
+  const pack = buildServiceSla(pillar, extra as CustomerDetailPayload);
+  if (pack.lines.some((l) => l.measured && l.tone === "red")) return "Red";
   return "Green";
 }
 
@@ -189,7 +202,8 @@ export function customerLiveStatus(
   const healthRag: LiveTone = !c.syspro ? "Off" : stale ? "Amber" : "Green";
   const dayRag: LiveTone = !c.syspro ? "Off" : dayEndRag(extra);
   const hfRag: LiveTone = !c.syspro ? "Off" : hotfixRag(extra);
-  const sysproRag = [jobsRag, dtrRag, healthRag, dayRag, hfRag].reduce(worse, c.syspro ? "Green" : "Off");
+  const sysproSlaRag = serviceSlaRag("syspro", extra, Boolean(c.syspro));
+  const sysproRag = [jobsRag, dtrRag, healthRag, dayRag, hfRag, sysproSlaRag].reduce(worse, c.syspro ? "Green" : "Off");
 
   const devicesRag: LiveTone = !srvCover ? "Off" : srvOff > 0 ? "Amber" : "Green";
   const alertsRag: LiveTone = !c.rmm ? "Off" : alertCrit ? "Red" : "Off";
@@ -198,14 +212,17 @@ export function customerLiveStatus(
     !c.rmm || srvN <= 0 || !hasPatchSnap ? "Off" : patchMiss > 0 ? "Amber" : "Green";
   const iopsRag: LiveTone = iopsN > 0 ? "Green" : "Off";
   const eventsRag: LiveTone = evN <= 0 ? "Off" : evCrit ? "Red" : "Green";
-  const rmmRag = [devicesRag, alertsRag, patchRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
+  const rmmSlaRag = serviceSlaRag("rmm", extra, Boolean(c.rmm));
+  const coveSlaRag = serviceSlaRag("cove", extra, Boolean(c.cove));
+  const eppSlaRag = serviceSlaRag("epp", extra, Boolean(c.epp));
+  const rmmRag = [devicesRag, alertsRag, patchRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
 
   const coveDevRag: LiveTone = !coveDevCover ? "Off" : coveFail > 0 ? "Red" : coveStale > 0 ? "Amber" : "Green";
-  const coveRag = coveDevRag;
+  const coveRag = [coveDevRag, coveSlaRag].reduce(worse, Boolean(c.cove) ? "Green" : "Off");
 
   const eppEndRag: LiveTone = !eppDevCover ? "Off" : infected > 0 ? "Red" : unmanaged > 0 ? "Amber" : "Green";
   const eppIncRag: LiveTone = !eppDevCover ? "Off" : infected > 0 || eppInc > 0 ? "Red" : "Green";
-  const eppRag = [eppEndRag, eppIncRag].reduce(worse, eppDevCover ? "Green" : "Off");
+  const eppRag = [eppEndRag, eppIncRag, eppSlaRag].reduce(worse, eppDevCover ? "Green" : "Off");
 
   const mfaRag: LiveTone = !c.csp ? "Off" : mfa != null && mfa < 80 ? "Red" : mfa != null && mfa < 90 ? "Amber" : "Green";
   const gaRag: LiveTone = !c.csp ? "Off" : ga != null && ga > 5 ? "Red" : ga != null && ga > 2 ? "Amber" : "Green";
@@ -379,7 +396,7 @@ export function customerLiveStatus(
       hint: "Closed tickets",
     },
     "/tickets/sla": {
-      rag: extra?.amsSlaSummary && (extra.amsSlaSummary.responsePct ?? 100) < 90 ? "Amber" : "Green",
+      rag: extra?.amsSlaSummary && (extra.amsSlaSummary.responsePct ?? 100) < 90 ? "Red" : "Green",
       cover: true,
       href: `${base}/tickets/sla`,
       hint: "Ticket response and restore clocks",
@@ -414,7 +431,7 @@ export function customerLiveStatus(
     "/syspro/operators": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/operators`, hint: "Operators" },
     "/syspro/security": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/security`, hint: "Security" },
     "/syspro/sql": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro/sql`, hint: "SQL" },
-    "/syspro/sla": { rag: sysproRag === "Off" ? off(Boolean(c.syspro)) : sysproRag, cover: Boolean(c.syspro), href: `${base}/syspro/sla`, hint: "SYSPRO SLA" },
+    "/syspro/sla": { rag: sysproSlaRag === "Off" ? off(Boolean(c.syspro)) : sysproSlaRag, cover: Boolean(c.syspro), href: `${base}/syspro/sla`, hint: sysproSlaRag === "Red" ? "SYSPRO SLA not met" : "SYSPRO SLA" },
     "/rmm": { rag: off(Boolean(c.rmm)), cover: Boolean(c.rmm), href: `${base}/rmm`, hint: c.rmm ? (srvN > 0 ? "RMM overview" : "RMM on cover") : "RMM not on cover" },
     "/rmm/devices": {
       rag: devicesRag,
@@ -444,7 +461,7 @@ export function customerLiveStatus(
       href: `${base}/rmm/alerts`,
       hint: alertCrit ? `${crit || alertN} critical` : "No alerts on file",
     },
-    "/rmm/sla": { rag: off(Boolean(c.rmm)), cover: Boolean(c.rmm), href: `${base}/rmm/sla`, hint: "RMM SLA" },
+    "/rmm/sla": { rag: rmmSlaRag === "Off" ? off(Boolean(c.rmm)) : rmmSlaRag, cover: Boolean(c.rmm), href: `${base}/rmm/sla`, hint: rmmSlaRag === "Red" ? "RMM SLA not met" : "RMM SLA" },
     "/rmm/iops": {
       rag: iopsRag,
       cover: Boolean(c.rmm) || iopsN > 0,
@@ -466,7 +483,7 @@ export function customerLiveStatus(
     },
     "/cove/recovery": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/recovery`, hint: "Recovery" },
     "/cove/retention": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/retention`, hint: "Retention" },
-    "/cove/sla": { rag: off(Boolean(c.cove)), cover: Boolean(c.cove), href: `${base}/cove/sla`, hint: "Backup SLA" },
+    "/cove/sla": { rag: coveSlaRag === "Off" ? off(Boolean(c.cove)) : coveSlaRag, cover: Boolean(c.cove), href: `${base}/cove/sla`, hint: coveSlaRag === "Red" ? "Backup SLA not met" : "Backup SLA" },
     "/epp": { rag: off(Boolean(c.epp)), cover: Boolean(c.epp), href: `${base}/epp`, hint: c.epp ? "EPP overview" : "EPP not on cover" },
     "/epp/endpoints": {
       rag: eppEndRag,
@@ -482,7 +499,7 @@ export function customerLiveStatus(
       hint: infected || eppInc ? "Open security incidents" : "No EPP incidents",
     },
     "/epp/quarantine": { rag: off(Boolean(c.epp)), cover: Boolean(c.epp), href: `${base}/epp/quarantine`, hint: "Quarantine" },
-    "/epp/sla": { rag: off(Boolean(c.epp)), cover: Boolean(c.epp), href: `${base}/epp/sla`, hint: "EPP SLA" },
+    "/epp/sla": { rag: eppSlaRag === "Off" ? off(Boolean(c.epp)) : eppSlaRag, cover: Boolean(c.epp), href: `${base}/epp/sla`, hint: eppSlaRag === "Red" ? "EPP SLA not met" : "EPP SLA" },
     "/csp": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp`, hint: "Microsoft 365 overview" },
     "/csp/secure-score": {
       rag: scoreRag,

@@ -18,7 +18,7 @@ const SRC = {
   off: ragGreen,
 } as const;
 
-/** Glossy RAG disc from the Exco status set. Active lamp illuminates; Red flashes. */
+/** Glossy RAG disc. Green/Amber stay lit and still. Red flashes. */
 export function StatusRobot({
   rag,
   title,

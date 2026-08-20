@@ -75,8 +75,8 @@
 }
 .rpma-emp.is-side .rpma-emp-gtab[data-rag="Amber"],
 .rpma-emp.is-side .rpma-emp-tool[data-rag="Amber"] {
-  background: rgba(234, 179, 8, 0.16) !important;
-  animation: rpma-row-flash-amber 0.85s ease-in-out infinite !important;
+  background: rgba(234, 179, 8, 0.12) !important;
+  animation: none !important;
 }
 .rpma-emp.is-side .rpma-emp-gtab-name,
 .rpma-emp.is-side .rpma-emp-tool-name {
