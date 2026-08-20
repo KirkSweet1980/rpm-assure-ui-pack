@@ -15,6 +15,7 @@ import {
 import type { CustomerDetailPayload } from "./types";
 import { slaKpiFor } from "./apply-sla-kpis";
 import { ticketGatedSla } from "./alert-ticket-sla";
+import { HELPDESK_TICKET_SLA_ARMED } from "./ui-contract";
 export { withSlaKpis, type SlaKpiOverrides } from "./apply-sla-kpis";
 
 export type ServiceSlaLine = {
@@ -44,8 +45,23 @@ export type ServiceSlaPack = {
 };
 
 function ticketLine(pillar: IndustryPillarKey, data: CustomerDetailPayload, defId: string): ServiceSlaLine {
-  const g = ticketGatedSla(data, pillar);
   const def = INDUSTRY_SLA_LINES[pillar].find((d) => d.id === defId);
+  if (!HELPDESK_TICKET_SLA_ARMED) {
+    return {
+      id: defId,
+      metric: def?.metric ?? defId,
+      targetLabel: def?.targetLabel ?? ">= 90% ticket clocks",
+      targetPct: def?.targetPct ?? 90,
+      actualPct: null,
+      actualLabel: "Helpdesk not armed — Assure does not yet log a ticket when RAG turns Amber/Red. Clock idle.",
+      tone: "default",
+      measured: false,
+      contractual: true,
+      how: def?.how ?? "",
+      badge: "Helpdesk not armed",
+    };
+  }
+  const g = ticketGatedSla(data, pillar);
   const onContract = pillar !== "csp";
   return {
     id: defId,

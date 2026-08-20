@@ -7,6 +7,7 @@ import {
 } from "./device-cover";
 import { isDormantCover } from "./cover";
 import { buildServiceSla } from "./service-sla";
+import { HELPDESK_TICKET_SLA_ARMED } from "./ui-contract";
 import type { IndustryPillarKey } from "./sla-metrics";
 import type { CustomerCover, CustomerDetailPayload, HealthRag, PortfolioRow } from "./types";
 
@@ -243,10 +244,20 @@ export function customerLiveStatus(
     ticketResp != null && ticketReso != null
       ? Math.min(Number(ticketResp), Number(ticketReso))
       : ticketReso ?? ticketResp;
-  const ticketSlaRag = dormant ? "Off" : slaTone(ticketPct, 90);
-  const amsSlaRag = dormant ? "Off" : slaTone(ticketPct, 90);
-  const amsRag = dormant ? "Off" : [incRag, riskRag, issueRag, amsSlaRag].reduce(worse, "Green");
-  const ticketRag = dormant ? "Off" : [incRag, ticketSlaRag].reduce(worse, "Green");
+  const ticketSlaRag: LiveTone =
+    dormant || !HELPDESK_TICKET_SLA_ARMED ? "Off" : slaTone(ticketPct, 90);
+  const amsSlaRag: LiveTone =
+    dormant || !HELPDESK_TICKET_SLA_ARMED ? "Off" : slaTone(ticketPct, 90);
+  const amsRag = dormant
+    ? "Off"
+    : HELPDESK_TICKET_SLA_ARMED
+      ? [incRag, riskRag, issueRag, amsSlaRag].reduce(worse, "Green")
+      : [incRag, riskRag, issueRag].reduce(worse, "Green");
+  const ticketRag = dormant
+    ? "Off"
+    : HELPDESK_TICKET_SLA_ARMED
+      ? [incRag, ticketSlaRag].reduce(worse, "Green")
+      : "Off";
   // Microsoft 365 is posture only — never rolls into tenant RAG, assurance, or SLA.
   const ecoRag = dormant
     ? "Off"
@@ -417,25 +428,29 @@ export function customerLiveStatus(
       hint: "Customer SLA clocks only — not incidents",
     },
     "/tickets": {
-      rag: trueOpenInc > 0 ? "Amber" : "Green",
+      rag: HELPDESK_TICKET_SLA_ARMED ? (trueOpenInc > 0 ? "Amber" : "Green") : "Off",
       cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets`,
-      hint: extra?.incidents?.length ? `${extra.incidents.length} ticket(s)` : "No tickets for this customer",
+      hint: HELPDESK_TICKET_SLA_ARMED
+        ? extra?.incidents?.length
+          ? `${extra.incidents.length} ticket(s)`
+          : "No tickets for this customer"
+        : "Helpdesk not armed — ticket RAG idle until Assure logs Amber/Red alerts",
     },
     "/tickets/open": {
-      rag: trueOpenInc > 0 ? "Amber" : "Green",
+      rag: HELPDESK_TICKET_SLA_ARMED ? (trueOpenInc > 0 ? "Amber" : "Green") : "Off",
       cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/open`,
       hint: trueOpenInc ? `${trueOpenInc} open ticket(s)` : "No open tickets",
     },
     "/tickets/resolved": {
-      rag: "Green",
+      rag: HELPDESK_TICKET_SLA_ARMED ? "Green" : "Off",
       cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/resolved`,
       hint: "Resolved tickets",
     },
     "/tickets/closed": {
-      rag: "Green",
+      rag: HELPDESK_TICKET_SLA_ARMED ? "Green" : "Off",
       cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/closed`,
       hint: "Closed tickets",
@@ -444,7 +459,11 @@ export function customerLiveStatus(
       rag: ticketSlaRag,
       cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/sla`,
-      hint: ticketSlaRag === "Red" ? "Ticket SLA not met" : "Ticket response and restore clocks",
+      hint: HELPDESK_TICKET_SLA_ARMED
+        ? ticketSlaRag === "Red"
+          ? "Ticket SLA not met"
+          : "Ticket response and restore clocks"
+        : "Helpdesk not armed — ticketed availability SLA idle",
     },
     "/syspro": { rag: off(Boolean(c.syspro)), cover: Boolean(c.syspro), href: `${base}/syspro`, hint: "SYSPRO overview" },
     "/syspro/dtr": {

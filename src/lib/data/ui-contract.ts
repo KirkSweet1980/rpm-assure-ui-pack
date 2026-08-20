@@ -5,10 +5,13 @@
  * 1. Payload.cover from live-portfolio is the only cover (AmsConfig false = hard off).
  * 2. No Cover → RAG Off (grey, no flash). Never invent Green.
  * 3. Microsoft 365 on cover is always Green until it is on a signed SLA.
- * 4. SLA is unmeasured until a ticket exists for that alert. Do not score 100%.
  * 5. Agent Status = heartbeat. Agent Sync = last job. Do not mix them.
+ * 6. Helpdesk auto-ticket-on-RAG is not live. Ticketed SLA clocks stay Off until armed.
  */
 import type { CustomerCover } from "./cover";
+
+/** Flip to true when Assure logs a Freshdesk ticket on Amber/Red. Until then, no ticket SLA RAG. */
+export const HELPDESK_TICKET_SLA_ARMED = false;
 
 export type PaintTone = "Green" | "Amber" | "Red" | "Off";
 
