@@ -37,13 +37,15 @@ try {
 }
 
 function Find-ExistingSqlPassword {
-  if ($env:RPM_ASSURE_SQL_PASSWORD) { return [string]$env:RPM_ASSURE_SQL_PASSWORD }
   if (Test-Path $SecFile) {
     try {
       $p = [string]((Get-Content $SecFile -Raw | ConvertFrom-Json).password)
       if ($p) { return $p }
     } catch {}
   }
+  if ($env:RPM_ASSURE_SQL_PASSWORD) { return [string]$env:RPM_ASSURE_SQL_PASSWORD }
+  $mach = [Environment]::GetEnvironmentVariable('RPM_ASSURE_SQL_PASSWORD', 'Machine')
+  if ($mach) { return [string]$mach }
   $roots = @(
     (Join-Path $Root 'Sql'),
     (Join-Path $Root 'config')
@@ -143,26 +145,46 @@ $leaked = @(
 if ($leaked) { W ('WARN leftover password strings in tree (rotate SQL login after this seed). Count sample=' + @($leaked).Count) }
 else { W 'No RpmCollect# strings found in live Sql/App (or search skipped)' }
 
-# Prefer loopback for app SQL (Settings file). Do not print password.
+# Prefer loopback + rotated password for app SQL (Settings + .env.local). Do not print password.
 try {
   $sf = Join-Path $Root 'App\data\rpma-settings.json'
   if (Test-Path $sf) {
     $j = Get-Content $sf -Raw | ConvertFrom-Json
     $changed = $false
-    foreach ($c in @($j.sqlConnections)) {
-      if ([string]$c.server -eq '102.222.21.220') {
-        $c.server = '127.0.0.1'
+    $list = @($j.sqlConnections)
+    for ($i = 0; $i -lt $list.Count; $i++) {
+      if ([string]$list[$i].server -eq '102.222.21.220') {
+        $list[$i].server = '127.0.0.1'
         $changed = $true
       }
+      if ($pwd) {
+        $list[$i].password = $pwd
+        $changed = $true
+      }
+      if ($null -ne $list[$i].encrypt) { $list[$i].encrypt = $false; $changed = $true }
     }
+    $j.sqlConnections = $list
     if ($changed) {
-      $j | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $sf -Encoding UTF8
-      W 'Settings SQL server 102.222.21.220 -> 127.0.0.1 (loopback)'
+      $j | ConvertTo-Json -Depth 16 | Set-Content -LiteralPath $sf -Encoding UTF8
+      W 'Settings SQL password synced from secrets; host loopback; encrypt=false'
     } else {
-      W 'Settings SQL server already local or missing'
+      W 'Settings SQL already local or missing connections'
     }
   } else {
-    W 'Settings file not found (skip loopback rewrite)'
+    W 'Settings file not found (skip rewrite)'
+  }
+  $envLocal = Join-Path $Root 'App\.env.local'
+  if ((Test-Path $envLocal) -and $pwd) {
+    $t = Get-Content $envLocal -Raw
+    if ($t -match '(?m)^RPM_ASSURE_SQL_PASSWORD=') {
+      $t = [regex]::Replace($t, '(?m)^RPM_ASSURE_SQL_PASSWORD=.*$', ('RPM_ASSURE_SQL_PASSWORD=' + $pwd))
+    } else {
+      $t = $t.TrimEnd() + "`r`nRPM_ASSURE_SQL_PASSWORD=$pwd`r`n"
+    }
+    $t = $t -replace '102\.222\.21\.220', '127.0.0.1'
+    $t = [regex]::Replace($t, '(?m)^RPM_ASSURE_SQL_ENCRYPT=.*$', 'RPM_ASSURE_SQL_ENCRYPT=false')
+    [IO.File]::WriteAllText($envLocal, $t)
+    W '.env.local SQL password synced from secrets'
   }
 } catch {
   W ('Settings rewrite warn ' + $_.Exception.Message)

@@ -182,6 +182,24 @@ function localizeSqlHost(host: string): string {
   return host;
 }
 
+function passwordFromSecretsFile(): string {
+  const hits = [
+    "C:\\RPM-Assure\\secrets\\sql-collect.json",
+    path.join(process.cwd(), "..", "secrets", "sql-collect.json"),
+  ];
+  for (const p of hits) {
+    try {
+      if (!fs.existsSync(p)) continue;
+      const j = JSON.parse(fs.readFileSync(p, "utf8")) as { password?: string };
+      const pw = String(j.password || "").trim();
+      if (pw) return pw;
+    } catch {
+      /* ignore */
+    }
+  }
+  return "";
+}
+
 export function getSqlConfig() {
   const file = (() => {
     try {
@@ -202,9 +220,8 @@ export function getSqlConfig() {
   const user = useFile
     ? file!.user.trim()
     : env("RPM_ASSURE_SQL_USER") || file?.user?.trim();
-  const password = useFile
-    ? file!.password
-    : env("RPM_ASSURE_SQL_PASSWORD") || file?.password;
+  const password = passwordFromSecretsFile()
+    || (useFile ? file!.password : env("RPM_ASSURE_SQL_PASSWORD") || file?.password);
 
   const passwordClean = cleanSqlPassword(password);
   if (!serverRaw || !user || !passwordClean) {
@@ -229,10 +246,10 @@ export function getSqlConfig() {
       : (file?.trustServerCertificate ?? true);
 
   const encrypt = useFile
-    ? (file!.encrypt ?? true)
+    ? (file!.encrypt ?? false)
     : env("RPM_ASSURE_SQL_ENCRYPT") !== undefined
       ? env("RPM_ASSURE_SQL_ENCRYPT") !== "false"
-      : (file?.encrypt ?? true);
+      : (file?.encrypt ?? false);
 
   const database = useFile
     ? file!.database?.trim() || "RPMAssure_App"
