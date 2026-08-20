@@ -49,11 +49,27 @@ Restart-Service RPMAssure-App
 
 Onboard wizards no longer default `@ssuR3me!`. Operator must type the password.
 
-## 5. Still parked
+## 5. Firewall SQL 14333 (agents on HTTPS)
+
+Dry-run first:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Restrict-Sql14333.ps1
+```
+
+If no customer IPs are on 14333:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Restrict-Sql14333.ps1 -Apply
+Restart-Service RPMAssure-App
+```
+
+Allows **127.0.0.1 / ::1** only. Disables Allow-from-Any. Public profile blocked. Does **not** add a global Block (that would also kill loopback on Windows).
+
+## 6. Still parked
 
 | Item | Why it waits |
 |------|----------------|
-| Firewall SQL 14333 (`0.0.0.0`) | SYSPRO edge may still use it. App now prefers 127.0.0.1 |
 | Rotate `rpmassure` login | Separate from `Rpm_collect`; used on some customer boxes |
 | Single-box HA | App + SQL + Caddy on one host |
 | Git history | Old passwords were committed; rotation + strip is the fix |
