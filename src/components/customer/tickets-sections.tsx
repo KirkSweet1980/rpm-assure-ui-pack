@@ -157,9 +157,9 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
       <div className="grid gap-3 px-1 lg:grid-cols-2">
         <div className="rpma-glass p-3">
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Ticket Mix</p>
-          <div className="h-44">
+          <div className="rpma-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                 <Pie
                   data={[
                     { name: "Open Tickets", value: s.open, fill: "#ffa21d" },
@@ -168,8 +168,8 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
                   ].filter((d) => d.value > 0)}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={42}
-                  outerRadius={64}
+                  innerRadius="58%"
+                  outerRadius="80%"
                   paddingAngle={2}
                   isAnimationActive={false}
                 >
@@ -184,7 +184,7 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
         </div>
         <div className="rpma-glass p-3">
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">AMS SLA</p>
-          <div className="h-44">
+          <div className="rpma-chart">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={[

@@ -481,10 +481,10 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
       <div className="grid gap-3 lg:grid-cols-3">
         <div className="rpma-glass p-3">
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Service cover</p>
-          <div className="h-44">
+          <div className="rpma-chart">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={coverPie} dataKey="value" nameKey="name" innerRadius={48} outerRadius={70} paddingAngle={2} isAnimationActive={false}>
+                <Pie data={coverPie} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="80%" paddingAngle={2} isAnimationActive={false}>
                   {coverPie.map((e) => (
                     <Cell key={e.name} fill={e.fill} stroke="transparent" />
                   ))}
@@ -508,7 +508,7 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
 
         <div className="rpma-glass p-3">
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">What needs attention</p>
-          <div className="h-52">
+          <div className="rpma-chart">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={signalBars} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
@@ -529,15 +529,15 @@ export function ExecBriefSection({ data }: { data: CustomerDetailPayload }) {
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">
             {cover.rmm ? "RMM agents" : cover.cove ? "Cloud backup" : "Operators"}
           </p>
-          <div className="h-52">
+          <div className="rpma-chart">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={cover.rmm ? rmmPie : cover.cove ? covePie : userPie}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={48}
-                  outerRadius={70}
+                  innerRadius="58%"
+                  outerRadius="80%"
                   paddingAngle={2}
                   isAnimationActive={false}
                 >
@@ -2584,7 +2584,7 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rpma-glass p-3">
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">SLA By Service</p>
-          <div className="h-52">
+          <div className="rpma-chart">
             {slaBars.length ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={slaBars} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
@@ -2606,7 +2606,7 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
         </div>
         <div className="rpma-glass p-3">
           <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">Incidents & Risks</p>
-          <div className="h-52">
+          <div className="rpma-chart">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -2618,8 +2618,8 @@ export function AmsHubSection({ data }: { data: CustomerDetailPayload }) {
                   ].filter((d) => d.value > 0)}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={48}
-                  outerRadius={70}
+                  innerRadius="58%"
+                  outerRadius="80%"
                   paddingAngle={2}
                   isAnimationActive={false}
                 >

@@ -17,7 +17,7 @@ function Donut({ title, blurb, slices }: { title: string; blurb: string; slices:
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" innerRadius={42} outerRadius={64} paddingAngle={2} isAnimationActive={false}>
+            <Pie data={data} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="80%" paddingAngle={2} isAnimationActive={false}>
               {data.map((e) => (
                 <Cell key={e.name} fill={e.fill} stroke="transparent" />
               ))}

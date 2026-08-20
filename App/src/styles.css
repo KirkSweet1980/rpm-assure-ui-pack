@@ -2623,11 +2623,31 @@ html.dark .rpma-emp-rag {
 .rpma-emp-body .rpma-kpi-tile {
   padding: 5px 7px !important;
 }
-.rpma-emp-body .h-52,
-.rpma-emp-body .h-56,
+/* Chart wells keep a real height. Crushing to 5.5rem made donuts overlap card borders. */
+.rpma-chart {
+  height: 11rem;
+  min-height: 10rem;
+  overflow: hidden;
+  position: relative;
+}
+.rpma-emp-body .rpma-chart,
+.rpma-emp-body .h-40,
+.rpma-emp-body .h-44,
 .rpma-emp-body .h-48,
-.rpma-emp-body .h-44 {
-  height: 5.5rem !important;
+.rpma-emp-body .h-52,
+.rpma-emp-body .h-56 {
+  height: 11rem !important;
+  min-height: 10rem !important;
+  overflow: hidden !important;
+}
+.rpma-emp-body .recharts-wrapper,
+.rpma-emp-body .recharts-surface {
+  overflow: hidden !important;
+}
+.rpma-emp .rpma-glass:has(.recharts-responsive-container),
+.rpma-emp .rpma-pane:has(.recharts-responsive-container),
+.rpma-emp .rpma-card:has(.recharts-responsive-container) {
+  overflow: hidden;
 }
 .rpma-emp-body .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.4rem; }
 .rpma-emp-body .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.3rem; }
