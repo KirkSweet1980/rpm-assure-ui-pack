@@ -100,10 +100,17 @@ $miSync = $menu.Items.Add('Last sync: ...')
 $miSync.Enabled = $false
 [void]$menu.Items.Add('-')
 $miDo = $menu.Items.Add('Sync now')
+$miRestart = $menu.Items.Add('Restart agent')
 $miSet = $menu.Items.Add('Settings (Administrator)')
 [void]$menu.Items.Add('-')
 $miExit = $menu.Items.Add('Exit tray')
 $notify.ContextMenuStrip = $menu
+$notify.add_MouseUp({
+  param($src, $e)
+  if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left) {
+    $menu.Show([System.Windows.Forms.Cursor]::Position)
+  }
+})
 
 $miDo.add_Click({
   $script:SyncBefore = $null
@@ -170,6 +177,9 @@ $miDo.add_Click({
   [void]$form.ShowDialog()
   $pt.Stop()
   $form.Dispose()
+})
+$miRestart.add_Click({
+  Start-Process powershell.exe -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command Restart-Service RPMAssure-Edge -Force'
 })
 $miSet.add_Click({
   Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File', (Join-Path $AgentRoot 'Set-AgentSettings.ps1')) -Verb RunAs
