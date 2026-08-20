@@ -110,7 +110,7 @@ function hotfixRag(extra?: Partial<CustomerDetailPayload> | null): LiveTone {
 }
 
 function slaTone(pct: number | null | undefined, target: number): LiveTone {
-  if (pct == null || !Number.isFinite(pct)) return "Green";
+  if (pct == null || !Number.isFinite(pct)) return "Off";
   if (pct < target) return "Red";
   return "Green";
 }
@@ -205,12 +205,12 @@ export function customerLiveStatus(
   const wsRag: LiveTone = !wsCover ? "Off" : wsOff > 0 ? "Red" : "Green";
   const patchRag: LiveTone =
     !c.rmm || srvN <= 0 || !hasPatchSnap ? "Off" : patchMiss > 0 ? "Amber" : "Green";
-  const iopsRag: LiveTone = iopsN > 0 ? "Green" : "Off";
-  const eventsRag: LiveTone = !c.rmm && evN <= 0 ? "Off" : evN <= 0 ? "Green" : evCrit ? "Red" : "Green";
+  const iopsRag: LiveTone = !c.rmm ? "Off" : iopsN > 0 ? "Green" : "Off";
+  const eventsRag: LiveTone = !c.rmm ? "Off" : evN <= 0 ? "Green" : evCrit ? "Red" : "Green";
   const rmmSlaRag = serviceSlaRag("rmm", extra, Boolean(c.rmm));
   const coveSlaRag = serviceSlaRag("cove", extra, Boolean(c.cove));
   const eppSlaRag = serviceSlaRag("epp", extra, Boolean(c.epp));
-  const rmmRag = [devicesRag, alertsRag, patchRag, eventsRag, wsRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
+  const rmmRag = [devicesRag, alertsRag, patchRag, eventsRag, wsRag, iopsRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
 
   const recFail = extra?.cove?.recovery?.testFailedCount ?? 0;
   const coveDevRag: LiveTone = !coveDevCover ? "Off" : coveFail > 0 || coveStale > 0 ? "Red" : "Green";
@@ -441,7 +441,7 @@ export function customerLiveStatus(
       hint: "Closed tickets",
     },
     "/tickets/sla": {
-      rag: ticketSlaRag === "Off" ? "Green" : ticketSlaRag,
+      rag: ticketSlaRag,
       cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/sla`,
       hint: ticketSlaRag === "Red" ? "Ticket SLA not met" : "Ticket response and restore clocks",

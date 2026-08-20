@@ -31,13 +31,14 @@ function agentStatus(row: InfraAgentRow): { label: string; tone: "green" | "ambe
   if (!row.cover.syspro) return { label: "No agent", tone: "muted" };
   const s = row.healthStatus.toUpperCase();
   const last = (row.lastStatus ?? "").toUpperCase();
+  if (s === "NOT_INSTALLED" || s === "NEVER") return { label: "Not installed", tone: "muted" };
+  if (s === "STALE") return { label: "Disconnected", tone: "red" };
   if (s === "ONLINE" || last === "ONLINE" || last === "OK" || last === "JOB_FAIL") {
     return { label: "Online", tone: "green" };
   }
   if (s === "UPDATE" || s === "UPDATING" || s === "QUEUED" || s === "SYNCING" || last === "UPDATE" || last === "UPDATING") {
     return { label: "Busy", tone: "amber" };
   }
-  if (s === "NOT_INSTALLED" || s === "NEVER") return { label: "Not installed", tone: "muted" };
   return { label: "Disconnected", tone: "red" };
 }
 

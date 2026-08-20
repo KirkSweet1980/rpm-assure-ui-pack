@@ -1381,8 +1381,8 @@ SELECT
   c.SqlInstanceName,
   CAST(NULL AS nvarchar(200)) AS PulsewayOrgName,
   CAST(NULL AS bit) AS PillarSyspro,
-  CAST(0 AS bit) AS PillarPulseway,
-  CAST(0 AS bit) AS PillarCove,
+  CAST(NULL AS bit) AS PillarPulseway,
+  CAST(NULL AS bit) AS PillarCove,
   ISNULL(o.OperatorCount, 0) AS OperatorCount,
   ISNULL(o.ActiveUserCount, 0) AS ActiveUserCount,
   o.LastImportAt,
@@ -7084,9 +7084,6 @@ ORDER BY UserPrincipalName, DisplayName`);
     cover = { ...cover, syspro: true };
   } else {
     cover = forceSysproCoverIfEvidence(cover, sysproLoadedEvidence, sysproAgentLive);
-    if (instanceName && String(instanceName).trim()) {
-      cover = { ...cover, syspro: true };
-    }
   }
 
   // Keep instance name for ops when mapped, but cover flag respects hard off

@@ -136,10 +136,10 @@ export function ticketGatedSla(
       clockStarted: false,
       tickets,
       pack,
-      actualPct: 100,
+      actualPct: null,
       actualLabel: "No ticketed alert — SLA clock idle.",
-      measured: true,
-      tone: "green",
+      measured: false,
+      tone: "default",
     };
   }
 

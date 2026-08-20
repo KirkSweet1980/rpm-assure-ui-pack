@@ -178,7 +178,7 @@ function pillarCovered(
   id: string,
   live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
 ) {
-  if (id === "estate" || id === "tickets") return true;
+  if (id === "estate") return true;
   return live?.pillars[id]?.cover === true;
 }
 
