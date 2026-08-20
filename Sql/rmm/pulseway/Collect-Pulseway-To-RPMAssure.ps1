@@ -1402,6 +1402,7 @@ if ($orgs.Count -gt 0) {
 if (-not (Get-Variable -Name diskSb -ErrorAction SilentlyContinue)) { $diskSb = New-Object System.Text.StringBuilder }
 $diskSb = New-Object System.Text.StringBuilder
 $patchSb = New-Object System.Text.StringBuilder
+$script:PatchSeen = @{}
 $script:LoggedDiskSample = $false
 $script:UptimeLogN = 0
 $devN = 0
@@ -1624,10 +1625,16 @@ foreach ($d in $devices) {
     }
   }
   foreach ($it in $items) {
-    if (-not $it.Title) { continue }
+    $ttl = [string]$it.Title
+    if ([string]::IsNullOrWhiteSpace($ttl)) { continue }
+    $ttl = $ttl.Trim()
+    if ($ttl.Length -gt 400) { $ttl = $ttl.Substring(0, 400) }
+    $pkey = ([string]$did) + '|' + $ttl.ToLowerInvariant()
+    if ($script:PatchSeen.ContainsKey($pkey)) { continue }
+    $script:PatchSeen[$pkey] = $true
     [void]$patchSb.AppendLine((
-      "INSERT INTO dbo.Pulseway_DevicePatches (SnapshotDate, DeviceId, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode, DeviceName, ImportedAt) VALUES (@Snap, {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, @Imp);" -f `
-        (SqlEsc ([string]$did)), (SqlEsc $it.Title), (SqlEsc $it.Kb), (SqlEsc $it.Status), (SqlDt $it.InstalledOn), (SqlEsc $it.Classification), (SqlEsc $code), (SqlEsc $name)
+      "IF NOT EXISTS (SELECT 1 FROM dbo.Pulseway_DevicePatches WHERE SnapshotDate = @Snap AND DeviceId = {0} AND Title = {1}) INSERT INTO dbo.Pulseway_DevicePatches (SnapshotDate, DeviceId, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode, DeviceName, ImportedAt) VALUES (@Snap, {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, @Imp);" -f `
+        (SqlEsc ([string]$did)), (SqlEsc $ttl), (SqlEsc $it.Kb), (SqlEsc $it.Status), (SqlDt $it.InstalledOn), (SqlEsc $it.Classification), (SqlEsc $code), (SqlEsc $name)
     ))
   }
 
