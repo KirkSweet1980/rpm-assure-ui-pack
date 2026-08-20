@@ -270,10 +270,10 @@ export function EmpChrome({
                   title={`${it.label} · ${rag === "Off" ? "No Cover" : rag}`}
                 >
                   <span className="rpma-emp-ico" style={{ color: it.color }}>
-                    <Icon className="size-5" />
+                    <Icon className="size-4" />
                   </span>
                   <span className="rpma-emp-tool-name">{it.label}</span>
-                  <StatusRobot rag={rag} title={it.label} size={18} />
+                  <StatusRobot rag={rag} title={it.label} size={14} />
                 </SpaLink>
               );
             })}
