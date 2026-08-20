@@ -89,6 +89,10 @@ $task = Join-Path $Pack 'deploy\Install-Publish-Agent-Pack-Task.ps1'
 if (Test-Path $task) {
   try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $task } catch { Write-Host ("WARN publish task " + $_.Exception.Message) }
 }
+$syncTask = Join-Path $Pack 'deploy\Install-Sync-UiPack-Task.ps1'
+if (Test-Path $syncTask) {
+  try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $syncTask -Root $Root -Pack $Pack } catch { Write-Host ("WARN sync-uipack task " + $_.Exception.Message) }
+}
 
 $fdInstall = Join-Path $Root 'Sql\freshdesk\Install-Freshdesk-15min.ps1'
 if (-not (Test-Path $fdInstall)) { $fdInstall = Join-Path $Pack 'sql\freshdesk\Install-Freshdesk-15min.ps1' }
