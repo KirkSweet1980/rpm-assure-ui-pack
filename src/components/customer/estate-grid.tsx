@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Star, XCircle } from "lucide-react";
 import { tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
-import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
+import { classifyRmmDevice, isStrongRmmServer } from "@/lib/data/rmm-device-class";
 import { coverFromDetail, isDormantCover } from "@/lib/data/cover";
 import { ticketStats } from "@/lib/data/ticket-feed";
 import { ServerKindIcon } from "@/components/customer/server-kind-icon";
@@ -282,6 +282,10 @@ export function EstateGrid({
       const estate =
         cls === "server" ? "Server" : cls === "workstation" ? "Workstation" : d.deviceType || "Device";
       if (focus === "syspro" && estate !== "Server") return;
+      // Eco System is the server estate. Skip Pulseway PCs that are only tagged
+      // Server because of a PROD name, with no server OS, backup, or EPP.
+      if (focus === "eco" && cls !== "server") return;
+      if (focus === "eco" && !isStrongRmmServer(d) && !cv && !ep) return;
       if (focus === "rmm" || focus === "syspro" || focus === "eco") {
         push({
           id: d.deviceId || host,
@@ -313,7 +317,10 @@ export function EstateGrid({
         const k = keyOf(host);
         if (seen.has(k)) return;
         const ep = eppBy.get(k);
-        const estate = /server|sql|srv/i.test(host) ? "Server" : "Device";
+        const cls = classifyRmmDevice({ name: host, deviceType: c.physicality });
+        if (cls === "workstation") return;
+        const estate = cls === "server" || /server|sql|srv|web/i.test(host) ? "Server" : "Device";
+        if (estate !== "Server") return;
         push({
           id: String(c.accountId ?? host),
           site: c.partnerName || org,
@@ -334,7 +341,9 @@ export function EstateGrid({
         const host = e.deviceName || e.fqdn || `epp-${i + 1}`;
         const k = keyOf(host);
         if (seen.has(k)) return;
-        const estate = e.machineType === 6 ? "Server" : "Workstation";
+        const isServer = e.machineType === 6 || classifyRmmDevice({ name: host, osName: e.operatingSystem }) === "server";
+        if (!isServer) return;
+        const estate = "Server";
         push({
           id: e.endpointId || host,
           site: org,

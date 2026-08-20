@@ -24,7 +24,8 @@ function looksLikeServerName(name?: string | null): boolean {
   ) {
     return true;
   }
-  // Role boxes: SQL / SYSPRO / file / app / DC / Hyper-V (with or without hyphens)
+  // Role boxes: SQL / SYSPRO / file / app / DC / Hyper-V (with or without hyphens).
+  // Do not treat bare PROD / PRD / UAT / DEV as a server — that tagged PCs (PCNS-PROD).
   if (
     /ssql|syspro|fsdb|fsapp|fsprd|prodev|sqlsrv|hvhost|hyperv|vcenter|esxi|file.?serv/.test(compact)
   ) {
@@ -32,11 +33,11 @@ function looksLikeServerName(name?: string | null): boolean {
   }
   if (/ahicfs|ahifs|rssdc|sql01|app01|adc01/.test(compact)) return true;
   if (
-    /(^|[-_])(sql|app|web|dc|fs|prd|prod|srv|rds|ts|adc)(\d+)?($|[-_])/.test(n)
+    /(^|[-_])(sql|app|web|dc|fs|srv|rds|ts|adc)(\d+)?($|[-_])/.test(n)
   ) {
     return true;
   }
-  if (/\b(sql|syspro|file|app|web|dc|prod|srv|prd|hyper-v|esxi)\b/.test(n)) {
+  if (/\b(sql|syspro|file|app|web|dc|srv|hyper-v|esxi)\b/.test(n)) {
     return true;
   }
   return false;
@@ -115,7 +116,16 @@ export function isRmmServer(d: {
   osName?: string | null;
   name?: string | null;
 }): boolean {
-  return classifyRmmDevice(d) !== "workstation";
+  return classifyRmmDevice(d) === "server";
+}
+
+/** Server because of OS or role name — not only Pulseway's type tag. */
+export function isStrongRmmServer(d: {
+  deviceType?: string | null;
+  osName?: string | null;
+  name?: string | null;
+}): boolean {
+  return looksLikeServerName(d.name) || looksLikeServerOs(d.osName);
 }
 
 export function isRmmWorkstation(d: {
