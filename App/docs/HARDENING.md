@@ -37,13 +37,25 @@ Updates `secrets\sql-collect.json` + machine env. Central collectors keep workin
 
 **Edge SYSPRO** that still logs in over TCP `102.222.21.220,14333` with the old password will fail until those machines use HTTPS ingest (`POST /api/agent/sql`) or their local Config.ps1 is updated. **Do not firewall 14333 until that is done.**
 
-## 4. Still parked
+## 4. App SQL via loopback (this slice)
+
+Code rewrites `102.222.21.220` → `127.0.0.1` so node-mssql does not hairpin the public NIC.
+Re-run Harden (rewrites Settings file) then restart:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\ui-pack\deploy\Harden-Production.ps1
+Restart-Service RPMAssure-App
+```
+
+Onboard wizards no longer default `@ssuR3me!`. Operator must type the password.
+
+## 5. Still parked
 
 | Item | Why it waits |
 |------|----------------|
-| Firewall SQL 14333 (`0.0.0.0`) | SYSPRO edge may still use it |
-| `rpmassure` / other SQL logins | Separate from `Rpm_collect`; confirm app Settings user first |
+| Firewall SQL 14333 (`0.0.0.0`) | SYSPRO edge may still use it. App now prefers 127.0.0.1 |
+| Rotate `rpmassure` login | Separate from `Rpm_collect`; used on some customer boxes |
 | Single-box HA | App + SQL + Caddy on one host |
-| Git history | Old password was committed; rotation is the fix |
+| Git history | Old passwords were committed; rotation + strip is the fix |
 
 **Rule:** agents fetch **only** `https://assure.rpmresources.co.za/downloads` (never GitHub).

@@ -143,7 +143,32 @@ $leaked = @(
 if ($leaked) { W ('WARN leftover password strings in tree (rotate SQL login after this seed). Count sample=' + @($leaked).Count) }
 else { W 'No RpmCollect# strings found in live Sql/App (or search skipped)' }
 
+# Prefer loopback for app SQL (Settings file). Do not print password.
+try {
+  $sf = Join-Path $Root 'App\data\rpma-settings.json'
+  if (Test-Path $sf) {
+    $j = Get-Content $sf -Raw | ConvertFrom-Json
+    $changed = $false
+    foreach ($c in @($j.sqlConnections)) {
+      if ([string]$c.server -eq '102.222.21.220') {
+        $c.server = '127.0.0.1'
+        $changed = $true
+      }
+    }
+    if ($changed) {
+      $j | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $sf -Encoding UTF8
+      W 'Settings SQL server 102.222.21.220 -> 127.0.0.1 (loopback)'
+    } else {
+      W 'Settings SQL server already local or missing'
+    }
+  } else {
+    W 'Settings file not found (skip loopback rewrite)'
+  }
+} catch {
+  W ('Settings rewrite warn ' + $_.Exception.Message)
+}
+
 W '=== Harden-Production done ==='
 W 'Next: Restart-Service RPMAssure-App'
-W 'Remaining: rotate Rpm_collect password; firewall 14333; TLS review — see docs/HARDENING.md'
+W 'Remaining: firewall 14333 after SYSPRO HTTPS ingest; rpmassure login rotate — see docs/HARDENING.md'
 Write-Host "report=$Report"

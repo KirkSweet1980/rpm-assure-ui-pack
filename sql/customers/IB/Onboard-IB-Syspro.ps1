@@ -8,7 +8,7 @@ param(
   [string]$BootstrapUser = 'SysproLoginForPos',
   [string]$BootstrapPassword = 'P@ssw0rdF0rP0$',
   [string]$CollectUser = 'rpmassure',
-  [string]$CollectPassword = '@ssuR3me!',
+  [string]$CollectPassword = '',
   [string]$SqlInstance = '.',
   [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
