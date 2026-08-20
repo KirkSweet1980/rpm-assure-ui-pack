@@ -83,20 +83,14 @@ if (-not $Apply) {
 }
 
 $allow4 = 'RPMAssure-SQL-14333-Loopback'
-$allow6 = 'RPMAssure-SQL-14333-Loopback6'
-foreach ($n in @($allow4, $allow6)) {
-  Get-NetFirewallRule -Name $n -EA SilentlyContinue | Remove-NetFirewallRule -EA SilentlyContinue
-}
+Get-NetFirewallRule -Name $allow4 -EA SilentlyContinue | Remove-NetFirewallRule -EA SilentlyContinue
 New-NetFirewallRule -Name $allow4 -DisplayName 'RPM Assure SQL 14333 loopback IPv4' `
   -Direction Inbound -Protocol TCP -LocalPort 14333 -RemoteAddress 127.0.0.1 `
   -Action Allow -Profile Any -Enabled True | Out-Null
-New-NetFirewallRule -Name $allow6 -DisplayName 'RPM Assure SQL 14333 loopback IPv6' `
-  -Direction Inbound -Protocol TCP -LocalPort 14333 -RemoteAddress ::1 `
-  -Action Allow -Profile Any -Enabled True | Out-Null
-W 'Added loopback allow rules'
+W 'Added loopback IPv4 allow (127.0.0.1). IPv6 ::1 skipped (Windows rejects it).'
 
 foreach ($r in $rules) {
-  if ($r.Name -in @($allow4, $allow6)) { continue }
+  if ($r.Name -in @($allow4)) { continue }
   $addr = @(($r | Get-NetFirewallAddressFilter -EA SilentlyContinue).RemoteAddress)
   $port = @(($r | Get-NetFirewallPortFilter -EA SilentlyContinue).LocalPort)
   $is14333 = ($port -contains '14333') -or ($port -contains 'Any')
