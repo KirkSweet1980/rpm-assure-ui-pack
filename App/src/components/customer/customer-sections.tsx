@@ -1,6 +1,7 @@
 import {
   Activity,
   AlertTriangle,
+  CheckCircle2,
   ChevronRight,
   ClipboardList,
   Database,
@@ -15,6 +16,7 @@ import {
   Server,
   Shield,
   Users,
+  XCircle,
 } from "lucide-react";
 import { Children, Fragment, isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ListPanel, ListRow } from "@/components/nav/list-row";
@@ -4691,7 +4693,82 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
   );
 }
 
+function formatRecoveryDuration(
+  label: string | null | undefined,
+  sec: number | null | undefined,
+): string {
+  const s = (label || "").trim();
+  if (s) return s;
+  if (sec == null || !Number.isFinite(sec) || sec < 0) return "—";
+  const n = Math.round(sec);
+  const h = Math.floor(n / 3600);
+  const m = Math.floor((n % 3600) / 60);
+  const r = n % 60;
+  if (h > 0) return `${h}h ${m}m ${r}s`;
+  if (m > 0) return `${m}m ${r}s`;
+  return `${r}s`;
+}
+
+function last14Slots(colorBar: string | null | undefined): string[] {
+  const raw = (colorBar || "")
+    .split(/[,;]/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      const pipe = p.lastIndexOf("|");
+      return pipe >= 0 ? p.slice(pipe + 1).trim() : p;
+    });
+  const slots = raw.slice(-14);
+  while (slots.length < 14) slots.unshift("");
+  return slots;
+}
+
+function last14Color(status: string): string {
+  const s = status.toLowerCase().replace(/[\s_-]/g, "");
+  if (!s || s === "notstarted" || s === "none" || s === "empty") return "#d1d5db";
+  if (s === "completed" || s === "success" || s === "ok" || s === "passed") return "#16a34a";
+  if (s.includes("error") || s === "warning" || s === "warn") return "#f59e0b";
+  if (s.includes("fail")) return "#dc2626";
+  if (s.includes("progress") || s === "running") return "#2563eb";
+  if (s.includes("interrupt") || s === "aborted") return "#ea580c";
+  return "#9ca3af";
+}
+
+function Last14Bar({ colorBar }: { colorBar?: string | null }) {
+  const slots = last14Slots(colorBar);
+  const tip = slots
+    .map((st, i) => `${i + 1}: ${st || "no test"}`)
+    .join(" · ");
+  return (
+    <div className="flex items-center gap-[2px]" title={tip || "No recovery history"}>
+      {slots.map((st, i) => (
+        <span
+          key={i}
+          className="inline-block h-[14px] w-[7px] rounded-[1px]"
+          style={{ backgroundColor: last14Color(st) }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function recoveryOk(d: {
+  bootStatus?: string | null;
+  recoveryStatus?: string | null;
+  recoveryTestStatus?: string | null;
+}): boolean {
+  const boot = (d.bootStatus || "").toLowerCase();
+  const rec = (d.recoveryStatus || d.recoveryTestStatus || "").toLowerCase();
+  if (boot.includes("fail") || rec.includes("fail")) return false;
+  return (
+    boot.includes("success") ||
+    rec.includes("complete") ||
+    rec.includes("success")
+  );
+}
+
 export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
+  const [shot, setShot] = useState<{ id: string; name: string } | null>(null);
   if (!effectiveCover(data).cove) {
     return (
       <NoCoverPanel
@@ -4701,27 +4778,33 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
     );
   }
   const rec = data.cove?.recovery ?? data.cove?.summary?.recovery ?? null;
-  const recentDays = data.cove?.recentDays ?? [];
   const history = data.cove?.recoveryHistory ?? [];
   const isRecoveryRow = (d: {
     recoveryPlanType?: number | null;
     recoveryTestStatus?: string | null;
     lastRecoveryTestAt?: string | null;
+    recoveryStatus?: string | null;
+    bootStatus?: string | null;
+    recoveryColorBar?: string | null;
+    lastCompletedSessionAt?: string | null;
   }) => {
     const plan = d.recoveryPlanType ?? 0;
-    const st = (d.recoveryTestStatus || "").toLowerCase();
-    if (st === "notinplan" && plan === 0 && !d.lastRecoveryTestAt) return false;
+    const st = (d.recoveryTestStatus || d.recoveryStatus || "").toLowerCase();
+    if (st === "notinplan" && plan === 0 && !d.lastRecoveryTestAt && !d.lastCompletedSessionAt) {
+      return false;
+    }
     return (
       plan > 0 ||
       Boolean(d.lastRecoveryTestAt) ||
-      ["success", "failed", "inprogress", "notstarted", "unknown"].includes(st)
+      Boolean(d.lastCompletedSessionAt) ||
+      Boolean(d.recoveryColorBar) ||
+      Boolean(d.bootStatus) ||
+      ["success", "failed", "inprogress", "notstarted", "unknown", "completed"].includes(st)
     );
   };
   const devicesLatest = (data.cove?.devices ?? []).filter(isRecoveryRow);
   const historyRows = history.filter(isRecoveryRow);
-  const latestOf = (
-    rows: typeof devicesLatest,
-  ): typeof devicesLatest => {
+  const latestOf = (rows: typeof devicesLatest): typeof devicesLatest => {
     const seen = new Set<string>();
     const out: typeof devicesLatest = [];
     for (const d of rows) {
@@ -4732,114 +4815,194 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
     }
     return out;
   };
-  // One row per device (latest snapshot). 7 collect days ≠ 7 recovery tests.
   const devices = latestOf(historyRows.length > 0 ? historyRows : devicesLatest);
+  const bootOk = devices.filter((d) => (d.bootStatus || "").toLowerCase().includes("success")).length;
+  const bootFail = devices.filter((d) => (d.bootStatus || "").toLowerCase().includes("fail")).length;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <ChartCaption
-        title="Backup Recovery Testing"
-        why="Devices on a Recovery Testing or Standby Image plan (I80). Last test time only appears when the statistics API publishes RVO/RVL — the Cove console Continuity report can show tests that are not on this feed."
+        title="Recovery Testing"
+        why="Cove Continuity dashboard — last 14 recoveries, session times, boot status, and the boot-console screenshot when Cove published one."
       />
       {rec ? (
-        <>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Recovery Testing plan" value={rec.recoveryTestingCount} />
-            <StatCard label="Standby Image plan" value={rec.standbyImageCount} />
-            <StatCard
-              label="Successful Recoveries"
-              value={rec.testSuccessCount}
-              tone={rec.testSuccessCount > 0 ? "green" : "default"}
-            />
-            <StatCard
-              label="Failed Recoveries"
-              value={rec.testFailedCount}
-              tone={rec.testFailedCount > 0 ? "red" : "default"}
-            />
-          </div>
-          {rec.lastRecoveryTestAt ? (
-            <p className="text-[12px] text-muted">
-              Most recent VDR restore session:{" "}
-              <span className="font-medium text-fg">
-                {formatSastDateTime(rec.lastRecoveryTestAt)}
-              </span>
-            </p>
-          ) : (
-            <p className="text-[12px] text-muted">
-              On plan. Last test time is not on the statistics API (RVO/RVL empty). Tests you see in the
-              Cove console Recovery Testing report are Continuity sessions — re-run collect after the
-              next pack if we add a Continuity method.
-            </p>
-          )}
-        </>
-      ) : (
-        <p className="text-sm text-muted">
-          No recovery summary yet. Apply SQL 436 and re-run Cloud Backup collect so I80 + RV* are stored.
-        </p>
-      )}
-      <CoveRecentDaysPanel
-        days={recentDays}
-        title="Backup Recovery Testing — last 7 days"
-        why="Daily count of devices on a Recovery Testing / Standby Image plan (collect snapshots). This is plan membership, not a test-run log."
-      />
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Recovery Testing Plan" value={rec.recoveryTestingCount} />
+          <StatCard label="Standby Image Plan" value={rec.standbyImageCount} />
+          <StatCard
+            label="Boot Success"
+            value={bootOk || rec.testSuccessCount}
+            tone={(bootOk || rec.testSuccessCount) > 0 ? "green" : "default"}
+          />
+          <StatCard
+            label="Failed Recoveries"
+            value={bootFail || rec.testFailedCount}
+            tone={(bootFail || rec.testFailedCount) > 0 ? "red" : "default"}
+          />
+        </div>
+      ) : null}
 
       {devices.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted">
-          No devices with a Recovery Testing or Standby Image plan in the last 7 days (or latest snapshot).
-          Enable Recovery Testing in Cove Continuity, apply SQL 436, re-run Collect-Cove-To-RPMAssure.ps1,
-          then hard-refresh. Check log for "Recovery sample I80=".
+          No Recovery Testing devices on the latest collect. Enable Recovery Testing in Cove Continuity,
+          apply the pack, then re-run Cloud Backup collect so the DRaaS dashboard overlay can fill this grid.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full min-w-[860px] text-left text-sm">
-            <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wide text-muted">
+          <table className="w-full min-w-[1180px] text-left text-[12.5px]">
+            <thead className="border-b border-border bg-muted/40 text-[11px] font-semibold text-muted">
               <tr>
-                <th className="px-3 py-2">As of</th>
-                <th className="px-3 py-2">Device</th>
-                <th className="px-3 py-2">Plan</th>
-                <th className="px-3 py-2">Test status</th>
-                <th className="px-3 py-2">Last test</th>
-                <th className="px-3 py-2">Physicality</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Device name</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Recovery plan</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Last 14 recoveries</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Recovery status</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Errors</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Last completed session</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Backup session time</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Duration</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Boot status</th>
+                <th className="whitespace-nowrap px-2 py-1.5">Screenshot</th>
               </tr>
             </thead>
             <tbody>
-              {devices.map((d, i) => (
-                <tr key={`rt-${d.snapshotDate ?? ""}-${d.accountId}-${i}`} className="border-b border-border/70">
-                  <td className="px-3 py-2 text-xs tabular-nums text-muted">
-                    {d.snapshotDate ? formatSastDate(d.snapshotDate) : "—"}
-                  </td>
-                  <td className="px-3 py-2 font-medium">
-                    {d.deviceName ?? d.machineName ?? d.accountId ?? "—"}
-                  </td>
-                  <td className="px-3 py-2 text-muted">
-                    {d.recoveryPlanLabel || "—"}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={
-                        d.recoveryTestStatus === "Success"
-                          ? "font-semibold text-rag-green"
-                          : d.recoveryTestStatus === "Failed"
-                            ? "font-semibold text-rag-red"
-                            : d.recoveryTestStatus === "InProgress"
-                              ? "font-semibold text-rag-amber"
-                              : "text-muted"
-                      }
+              {devices.map((d, i) => {
+                const ok = recoveryOk(d);
+                const fail =
+                  (d.bootStatus || d.recoveryStatus || d.recoveryTestStatus || "")
+                    .toLowerCase()
+                    .includes("fail");
+                const recLabel =
+                  d.recoveryStatus ||
+                  formatRecoveryTestStatus(d.recoveryTestStatus, d.lastCompletedSessionAt || d.lastRecoveryTestAt);
+                const errN = d.recoveryErrors;
+                const hasShot = Boolean(d.screenshotPresented || d.screenshotPath);
+                const name = d.deviceName ?? d.machineName ?? String(d.accountId ?? "—");
+                const recTone =
+                  fail
+                    ? "font-semibold text-rag-red"
+                    : recLabel.toLowerCase().includes("complete") || recLabel.toLowerCase().includes("success")
+                      ? "font-semibold text-fg"
+                      : recLabel.toLowerCase().includes("progress")
+                        ? "font-semibold text-rag-amber"
+                        : "text-muted";
+                const boot = d.bootStatus || "—";
+                const bootFail = boot.toLowerCase().includes("fail");
+                const bootOkRow = boot.toLowerCase().includes("success");
+                return (
+                  <tr
+                    key={`rt-${d.snapshotDate ?? ""}-${d.accountId}-${i}`}
+                    className="border-b border-border/70"
+                  >
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <span className="inline-flex items-center gap-1.5 font-medium text-fg">
+                        {fail ? (
+                          <XCircle className="h-3.5 w-3.5 shrink-0 text-rag-red" />
+                        ) : ok ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-rag-green" />
+                        ) : (
+                          <span className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-border" />
+                        )}
+                        {name}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5 text-muted">
+                      {d.recoveryPlanLabel || "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <Last14Bar colorBar={d.recoveryColorBar} />
+                    </td>
+                    <td className={cn("whitespace-nowrap px-2 py-1.5", recTone)}>{recLabel}</td>
+                    <td
+                      className={cn(
+                        "whitespace-nowrap px-2 py-1.5 tabular-nums",
+                        errN != null && errN > 0 ? "font-semibold text-rag-red" : "text-muted",
+                      )}
                     >
-                      {formatRecoveryTestStatus(d.recoveryTestStatus, d.lastRecoveryTestAt)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-muted">
-                    {d.lastRecoveryTestAt
-                      ? formatSastDateTime(d.lastRecoveryTestAt)
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-2 text-muted">{d.physicality || "—"}</td>
-                </tr>
-              ))}
+                      {errN == null ? "—" : errN}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5 tabular-nums text-muted">
+                      {formatSastDateTime(d.lastCompletedSessionAt || d.lastRecoveryTestAt)}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5 tabular-nums text-muted">
+                      {formatSastDateTime(d.backupSessionAt)}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5 tabular-nums text-muted">
+                      {formatRecoveryDuration(d.recoveryDurationLabel, d.recoveryDurationSec)}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1",
+                          bootFail
+                            ? "font-semibold text-rag-red"
+                            : bootOkRow
+                              ? "font-semibold text-rag-green"
+                              : "text-muted",
+                        )}
+                      >
+                        {bootFail ? (
+                          <XCircle className="h-3.5 w-3.5" />
+                        ) : bootOkRow ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : null}
+                        {boot}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      {hasShot && d.accountId ? (
+                        <button
+                          type="button"
+                          className="font-medium text-accent underline-offset-2 hover:underline"
+                          onClick={() => setShot({ id: String(d.accountId), name })}
+                        >
+                          View
+                        </button>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
+
+      {shot ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Recovery screenshot ${shot.name}`}
+          onClick={() => setShot(null)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-3 py-2">
+              <p className="truncate text-[13px] font-semibold text-fg">
+                Boot screenshot · {shot.name}
+              </p>
+              <button
+                type="button"
+                className="rounded-md px-2 py-1 text-[12px] text-muted hover:bg-muted/50 hover:text-fg"
+                onClick={() => setShot(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="bg-black p-2">
+              <img
+                src={`/api/cove/screenshot/${encodeURIComponent(shot.id)}`}
+                alt={`Boot console for ${shot.name}`}
+                className="mx-auto max-h-[78vh] w-auto max-w-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

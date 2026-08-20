@@ -39,6 +39,7 @@ import type {
   HotfixGapSummary,
   RmmPayload,
   CovePayload,
+  CoveDeviceRow,
   EppPayload,
   CspPayload,
   CspLicenseRow,
@@ -231,6 +232,58 @@ function toDateOnly(d: Date | string | null | undefined): string | null {
   return x.toISOString().slice(0, 10);
 }
 
+function mapCoveDeviceRow(r: any): CoveDeviceRow {
+  return {
+    accountId: r.AccountId != null ? String(r.AccountId) : null,
+    deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
+    machineName: r.MachineName != null ? String(r.MachineName) : null,
+    partnerName:
+      r.PartnerName != null
+        ? String(r.PartnerName)
+        : r.Product != null
+          ? String(r.Product)
+          : null,
+    partnerId: r.PartnerId != null ? Number(r.PartnerId) : null,
+    lastBackupStatus: r.LastBackupStatus != null ? String(r.LastBackupStatus) : null,
+    lastSuccessTime: toIso(r.LastSuccessTime),
+    usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : null,
+    snapshotDate: toDateOnly(r.SnapshotDate),
+    importedAt: toIso(r.ImportedAt),
+    recoveryPlanType: r.RecoveryPlanType != null ? Number(r.RecoveryPlanType) : null,
+    recoveryPlanLabel: r.RecoveryPlanLabel != null ? String(r.RecoveryPlanLabel) : null,
+    recoveryVerification:
+      r.RecoveryVerification != null ? String(r.RecoveryVerification) : null,
+    recoveryTestStatus: r.RecoveryTestStatus != null ? String(r.RecoveryTestStatus) : null,
+    physicality: r.Physicality != null ? String(r.Physicality) : null,
+    lastRecoveryTestAt: toIso(r.LastRecoveryTestAt ?? r.LastCompletedSessionAt ?? null),
+    retentionPolicy: r.RetentionPolicy != null ? String(r.RetentionPolicy) : null,
+    profileName: r.ProfileName != null ? String(r.ProfileName) : null,
+    retentionFiles: r.RetentionFiles != null ? String(r.RetentionFiles) : null,
+    retentionSystemState:
+      r.RetentionSystemState != null ? String(r.RetentionSystemState) : null,
+    retentionHyperV: r.RetentionHyperV != null ? String(r.RetentionHyperV) : null,
+    retentionSql: r.RetentionSql != null ? String(r.RetentionSql) : null,
+    retentionVmware: r.RetentionVmware != null ? String(r.RetentionVmware) : null,
+    retentionNetwork: r.RetentionNetwork != null ? String(r.RetentionNetwork) : null,
+    selectedBytes: r.SelectedBytes != null ? Number(r.SelectedBytes) : null,
+    backupDurationSec:
+      r.LastBackupDurationSec != null ? Number(r.LastBackupDurationSec) : null,
+    recoveryColorBar: r.RecoveryColorBar != null ? String(r.RecoveryColorBar) : null,
+    recoveryStatus: r.RecoveryStatus != null ? String(r.RecoveryStatus) : null,
+    recoveryErrors: r.RecoveryErrors != null ? Number(r.RecoveryErrors) : null,
+    lastCompletedSessionAt: toIso(r.LastCompletedSessionAt ?? r.LastRecoveryTestAt ?? null),
+    backupSessionAt: toIso(r.BackupSessionAt ?? null),
+    recoveryDurationSec:
+      r.RecoveryDurationSec != null ? Number(r.RecoveryDurationSec) : null,
+    recoveryDurationLabel:
+      r.RecoveryDurationLabel != null ? String(r.RecoveryDurationLabel) : null,
+    bootStatus: r.BootStatus != null ? String(r.BootStatus) : null,
+    recoverySessionId: r.RecoverySessionId != null ? String(r.RecoverySessionId) : null,
+    screenshotPresented:
+      r.ScreenshotPresented == null ? null : Boolean(r.ScreenshotPresented),
+    screenshotPath: r.ScreenshotPath != null ? String(r.ScreenshotPath) : null,
+  };
+}
 
 function mapCustomer(r: CustRow): PortfolioRow {
   const operatorCount = Number(r.OperatorCount) || 0;
@@ -5938,7 +5991,18 @@ SELECT TOP 500
   d.RetentionVmware,
   d.RetentionNetwork,
   d.SelectedBytes,
-  d.LastBackupDurationSec
+  d.LastBackupDurationSec,
+  d.RecoveryColorBar,
+  d.RecoveryStatus,
+  d.RecoveryErrors,
+  d.LastCompletedSessionAt,
+  d.BackupSessionAt,
+  d.RecoveryDurationSec,
+  d.RecoveryDurationLabel,
+  d.BootStatus,
+  d.RecoverySessionId,
+  d.ScreenshotPresented,
+  d.ScreenshotPath
 FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
 WHERE (
     d.CustomerCode = @code
@@ -6122,52 +6186,7 @@ WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WI
       }
     }
 
-    cove.devices = coveRows.map((r: any) => ({
-      accountId: r.AccountId != null ? String(r.AccountId) : null,
-      deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
-      machineName: r.MachineName != null ? String(r.MachineName) : null,
-      partnerName:
-        r.PartnerName != null
-          ? String(r.PartnerName)
-          : r.Product != null
-            ? String(r.Product)
-            : null,
-      partnerId: r.PartnerId != null ? Number(r.PartnerId) : null,
-      lastBackupStatus:
-        r.LastBackupStatus != null ? String(r.LastBackupStatus) : null,
-      lastSuccessTime: toIso(r.LastSuccessTime),
-      usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : null,
-      snapshotDate: toDateOnly(r.SnapshotDate),
-      importedAt: toIso(r.ImportedAt),
-      recoveryPlanType:
-        r.RecoveryPlanType != null ? Number(r.RecoveryPlanType) : null,
-      recoveryPlanLabel:
-        r.RecoveryPlanLabel != null ? String(r.RecoveryPlanLabel) : null,
-      recoveryVerification:
-        r.RecoveryVerification != null ? String(r.RecoveryVerification) : null,
-      recoveryTestStatus:
-        r.RecoveryTestStatus != null ? String(r.RecoveryTestStatus) : null,
-      physicality: r.Physicality != null ? String(r.Physicality) : null,
-      lastRecoveryTestAt: toIso(r.LastRecoveryTestAt ?? null),
-      retentionPolicy:
-        r.RetentionPolicy != null ? String(r.RetentionPolicy) : null,
-      profileName: r.ProfileName != null ? String(r.ProfileName) : null,
-      retentionFiles:
-        r.RetentionFiles != null ? String(r.RetentionFiles) : null,
-      retentionSystemState:
-        r.RetentionSystemState != null ? String(r.RetentionSystemState) : null,
-      retentionHyperV:
-        r.RetentionHyperV != null ? String(r.RetentionHyperV) : null,
-      retentionSql: r.RetentionSql != null ? String(r.RetentionSql) : null,
-      retentionVmware:
-        r.RetentionVmware != null ? String(r.RetentionVmware) : null,
-      retentionNetwork:
-        r.RetentionNetwork != null ? String(r.RetentionNetwork) : null,
-      selectedBytes:
-        r.SelectedBytes != null ? Number(r.SelectedBytes) : null,
-      backupDurationSec:
-        r.LastBackupDurationSec != null ? Number(r.LastBackupDurationSec) : null,
-    }));
+    cove.devices = coveRows.map(mapCoveDeviceRow);
     cove.devices = cove.devices.filter((d) =>
       tenantAssetBelongs(code, {
         host: d.machineName || d.deviceName,
@@ -6296,12 +6315,13 @@ ORDER BY AsOfDate DESC`);
         if (pt === 1) rt++;
         else if (pt === 2) si++;
         else none++;
-        const st = (d.recoveryTestStatus || "").toLowerCase();
-        if (st === "success") okT++;
-        else if (st === "failed") failT++;
+        const st = (d.recoveryTestStatus || d.recoveryStatus || "").toLowerCase();
+        if (st === "success" || st === "completed" || st.includes("complete")) okT++;
+        else if (st === "failed" || st.includes("fail")) failT++;
         else if (pt === 1 || pt === 2) unkT++;
-        if (d.lastRecoveryTestAt && (!lastTest || d.lastRecoveryTestAt > lastTest)) {
-          lastTest = d.lastRecoveryTestAt;
+        const when = d.lastCompletedSessionAt || d.lastRecoveryTestAt;
+        if (when && (!lastTest || when > lastTest)) {
+          lastTest = when;
         }
       }
       recovery = {
@@ -6425,6 +6445,53 @@ SELECT TOP 800
   d.AccountId, d.DeviceName, d.MachineName, d.Product AS PartnerName, d.PartnerId,
   d.LastBackupStatus, d.LastSuccessTime, d.UsedBytes, d.SnapshotDate, d.ImportedAt, d.CustomerCode,
   d.RecoveryPlanType, d.RecoveryPlanLabel, d.RecoveryVerification, d.RecoveryTestStatus, d.Physicality,
+  d.LastRecoveryTestAt,
+  d.RecoveryColorBar, d.RecoveryStatus, d.RecoveryErrors, d.LastCompletedSessionAt, d.BackupSessionAt,
+  d.RecoveryDurationSec, d.RecoveryDurationLabel, d.BootStatus, d.RecoverySessionId,
+  d.ScreenshotPresented, d.ScreenshotPath
+FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
+WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
+  AND (
+    d.CustomerCode = @code
+    OR EXISTS (
+      SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
+      WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
+        AND (
+          (
+            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
+            OR (
+              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
+              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+            )
+          )
+          OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
+        )
+    )
+  )
+  AND (
+    ISNULL(d.RecoveryPlanType, 0) > 0
+    OR d.LastRecoveryTestAt IS NOT NULL
+    OR d.LastCompletedSessionAt IS NOT NULL
+    OR d.RecoveryTestStatus IN (N'Success', N'Failed', N'InProgress', N'NotStarted', N'Unknown', N'Completed')
+    OR d.RecoveryStatus IS NOT NULL
+  )
+  AND ISNULL(d.RecoveryTestStatus, N'') <> N'NotInPlan' 
+ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
+      cove.recoveryHistory = (rh.recordset ?? []).map(mapCoveDeviceRow);
+    } catch (e) {
+      console.warn(
+        "[rpm-assure] Cove recovery history:",
+        e instanceof Error ? e.message : e,
+      );
+      try {
+        const rh2 = await pool
+          .request()
+          .input("code", sql.NVarChar(50), code)
+          .query(`
+SELECT TOP 800
+  d.AccountId, d.DeviceName, d.MachineName, d.Product AS PartnerName, d.PartnerId,
+  d.LastBackupStatus, d.LastSuccessTime, d.UsedBytes, d.SnapshotDate, d.ImportedAt, d.CustomerCode,
+  d.RecoveryPlanType, d.RecoveryPlanLabel, d.RecoveryVerification, d.RecoveryTestStatus, d.Physicality,
   d.LastRecoveryTestAt
 FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
 WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
@@ -6452,35 +6519,10 @@ WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
   )
   AND ISNULL(d.RecoveryTestStatus, N'') <> N'NotInPlan' 
 ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
-      cove.recoveryHistory = (rh.recordset ?? []).map((r: any) => ({
-        accountId: r.AccountId != null ? String(r.AccountId) : null,
-        deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
-        machineName: r.MachineName != null ? String(r.MachineName) : null,
-        partnerName: r.PartnerName != null ? String(r.PartnerName) : null,
-        partnerId: r.PartnerId != null ? Number(r.PartnerId) : null,
-        lastBackupStatus:
-          r.LastBackupStatus != null ? String(r.LastBackupStatus) : null,
-        lastSuccessTime: toIso(r.LastSuccessTime),
-        usedBytes: r.UsedBytes != null ? Number(r.UsedBytes) : null,
-        snapshotDate: toDateOnly(r.SnapshotDate),
-        importedAt: toIso(r.ImportedAt),
-        recoveryPlanType:
-          r.RecoveryPlanType != null ? Number(r.RecoveryPlanType) : null,
-        recoveryPlanLabel:
-          r.RecoveryPlanLabel != null ? String(r.RecoveryPlanLabel) : null,
-        recoveryVerification:
-          r.RecoveryVerification != null ? String(r.RecoveryVerification) : null,
-        recoveryTestStatus:
-          r.RecoveryTestStatus != null ? String(r.RecoveryTestStatus) : null,
-        physicality: r.Physicality != null ? String(r.Physicality) : null,
-        lastRecoveryTestAt: toIso(r.LastRecoveryTestAt ?? null),
-      }));
-    } catch (e) {
-      console.warn(
-        "[rpm-assure] Cove recovery history:",
-        e instanceof Error ? e.message : e,
-      );
-      cove.recoveryHistory = [];
+        cove.recoveryHistory = (rh2.recordset ?? []).map(mapCoveDeviceRow);
+      } catch {
+        cove.recoveryHistory = [];
+      }
     }
 
     // Stale / fail alerts for hub banner

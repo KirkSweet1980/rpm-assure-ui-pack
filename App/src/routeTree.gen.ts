@@ -68,6 +68,7 @@ import { Route as CustomersCodeEppRouteImport } from './routes/customers.$code.e
 import { Route as CustomersCodeRmmRouteImport } from './routes/customers.$code.rmm'
 import { Route as CustomersCodeSysproRouteImport } from './routes/customers.$code.syspro'
 import { Route as CustomersCodeTicketsRouteImport } from './routes/customers.$code.tickets'
+import { Route as ApiCoveScreenshotAccountIdRouteImport } from './routes/api/cove/screenshot.$accountId'
 import { Route as CustomersCodeAmsIndexRouteImport } from './routes/customers.$code.ams.index'
 import { Route as CustomersCodeAmsChangeRouteImport } from './routes/customers.$code.ams.change'
 import { Route as CustomersCodeAmsIncidentsRouteImport } from './routes/customers.$code.ams.incidents'
@@ -415,6 +416,12 @@ const CustomersCodeTicketsRoute = CustomersCodeTicketsRouteImport.update({
   path: '/tickets',
   getParentRoute: () => CustomersCodeRoute,
 } as any)
+const ApiCoveScreenshotAccountIdRoute =
+  ApiCoveScreenshotAccountIdRouteImport.update({
+    id: '/api/cove/screenshot/$accountId',
+    path: '/api/cove/screenshot/$accountId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const CustomersCodeAmsIndexRoute = CustomersCodeAmsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -756,6 +763,7 @@ export interface FileRoutesByFullPath {
   '/customers/$code/syspro': typeof CustomersCodeSysproRouteWithChildren
   '/customers/$code/tickets': typeof CustomersCodeTicketsRouteWithChildren
   '/customers/$code/': typeof CustomersCodeIndexRoute
+  '/api/cove/screenshot/$accountId': typeof ApiCoveScreenshotAccountIdRoute
   '/customers/$code/ams/change': typeof CustomersCodeAmsChangeRoute
   '/customers/$code/ams/incidents': typeof CustomersCodeAmsIncidentsRoute
   '/customers/$code/ams/risks': typeof CustomersCodeAmsRisksRoute
@@ -859,6 +867,7 @@ export interface FileRoutesByTo {
   '/api/pulseway/webhook': typeof ApiPulsewayWebhookRoute
   '/api/wp/estate': typeof ApiWpEstateRoute
   '/customers/$code': typeof CustomersCodeIndexRoute
+  '/api/cove/screenshot/$accountId': typeof ApiCoveScreenshotAccountIdRoute
   '/customers/$code/ams/change': typeof CustomersCodeAmsChangeRoute
   '/customers/$code/ams/incidents': typeof CustomersCodeAmsIncidentsRoute
   '/customers/$code/ams/risks': typeof CustomersCodeAmsRisksRoute
@@ -972,6 +981,7 @@ export interface FileRoutesById {
   '/customers/$code/syspro': typeof CustomersCodeSysproRouteWithChildren
   '/customers/$code/tickets': typeof CustomersCodeTicketsRouteWithChildren
   '/customers/$code/': typeof CustomersCodeIndexRoute
+  '/api/cove/screenshot/$accountId': typeof ApiCoveScreenshotAccountIdRoute
   '/customers/$code/ams/change': typeof CustomersCodeAmsChangeRoute
   '/customers/$code/ams/incidents': typeof CustomersCodeAmsIncidentsRoute
   '/customers/$code/ams/risks': typeof CustomersCodeAmsRisksRoute
@@ -1086,6 +1096,7 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro'
     | '/customers/$code/tickets'
     | '/customers/$code/'
+    | '/api/cove/screenshot/$accountId'
     | '/customers/$code/ams/change'
     | '/customers/$code/ams/incidents'
     | '/customers/$code/ams/risks'
@@ -1189,6 +1200,7 @@ export interface FileRouteTypes {
     | '/api/pulseway/webhook'
     | '/api/wp/estate'
     | '/customers/$code'
+    | '/api/cove/screenshot/$accountId'
     | '/customers/$code/ams/change'
     | '/customers/$code/ams/incidents'
     | '/customers/$code/ams/risks'
@@ -1301,6 +1313,7 @@ export interface FileRouteTypes {
     | '/customers/$code/syspro'
     | '/customers/$code/tickets'
     | '/customers/$code/'
+    | '/api/cove/screenshot/$accountId'
     | '/customers/$code/ams/change'
     | '/customers/$code/ams/incidents'
     | '/customers/$code/ams/risks'
@@ -1383,6 +1396,7 @@ export interface RootRouteChildren {
   ApiCronWeeklyReportRoute: typeof ApiCronWeeklyReportRoute
   ApiPulsewayWebhookRoute: typeof ApiPulsewayWebhookRoute
   ApiWpEstateRoute: typeof ApiWpEstateRoute
+  ApiCoveScreenshotAccountIdRoute: typeof ApiCoveScreenshotAccountIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1799,6 +1813,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/customers/$code/tickets'
       preLoaderRoute: typeof CustomersCodeTicketsRouteImport
       parentRoute: typeof CustomersCodeRoute
+    }
+    '/api/cove/screenshot/$accountId': {
+      id: '/api/cove/screenshot/$accountId'
+      path: '/api/cove/screenshot/$accountId'
+      fullPath: '/api/cove/screenshot/$accountId'
+      preLoaderRoute: typeof ApiCoveScreenshotAccountIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/customers/$code/ams/': {
       id: '/customers/$code/ams/'
@@ -2436,6 +2457,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronWeeklyReportRoute: ApiCronWeeklyReportRoute,
   ApiPulsewayWebhookRoute: ApiPulsewayWebhookRoute,
   ApiWpEstateRoute: ApiWpEstateRoute,
+  ApiCoveScreenshotAccountIdRoute: ApiCoveScreenshotAccountIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

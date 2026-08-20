@@ -681,6 +681,19 @@ export type CoveDeviceRow = {
   physicality?: string | null;
   /** Last VDR restore / recovery test completion (RVO/RVL) */
   lastRecoveryTestAt?: string | null;
+  /** Cove Continuity last-14 colorbar (comma-separated statuses) */
+  recoveryColorBar?: string | null;
+  /** Last recovery session status from DRaaS dashboard (Completed / Failed / …) */
+  recoveryStatus?: string | null;
+  recoveryErrors?: number | null;
+  lastCompletedSessionAt?: string | null;
+  backupSessionAt?: string | null;
+  recoveryDurationSec?: number | null;
+  recoveryDurationLabel?: string | null;
+  bootStatus?: string | null;
+  recoverySessionId?: string | null;
+  screenshotPresented?: boolean | null;
+  screenshotPath?: string | null;
 };
 
 export type CovePartnerMapRow = {

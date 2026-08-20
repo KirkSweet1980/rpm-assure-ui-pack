@@ -257,7 +257,7 @@ END
 
 ;WITH src AS (
   SELECT * FROM (VALUES
-    (N''AHI Carriers'', N''AHIC'', 2602886),
+    (N''AHI Carriers'', N''AHIC'', 2760329),
     (N''UVSS'', N''UVSS'', 2814015),
     (N''Able Tracers'', N''ABLE'', NULL),
     (N''Hydra Sales'', N''HYDRA'', NULL),
@@ -333,6 +333,140 @@ if ($rootPartnerId -le 0 -and $FallbackPartnerId -gt 0) {
 if ($rootPartnerId -le 0) { throw 'Could not resolve PartnerId (need > 0)' }
 Write-Log ("Login OK PartnerId=" + $rootPartnerId + " visaLen=" + $visa.Length)
 
+function One-Draas($v) {
+  if ($null -eq $v) { return $null }
+  if ($v -is [System.Array]) {
+    if ($v.Length -eq 0) { return $null }
+    return $v[0]
+  }
+  return $v
+}
+function Draas-Attr($item, [string]$name) {
+  if ($null -eq $item) { return $null }
+  $a = $null
+  try { $a = $item.attributes } catch {}
+  foreach ($src in @($a, $item)) {
+    if ($null -eq $src) { continue }
+    $p = $src.PSObject.Properties[$name]
+    if ($p -and $null -ne $p.Value -and "$($p.Value)" -ne '') { return (One-Draas $p.Value) }
+  }
+  return $null
+}
+function Parse-DurationSec($raw) {
+  if ($null -eq $raw -or "$raw" -eq '') { return $null }
+  $n = 0L
+  if ([long]::TryParse(("$raw"), [ref]$n)) {
+    if ($n -gt 86400 -and $n -lt 86400000) { return [int][Math]::Round($n / 1000.0) }
+    if ($n -ge 0 -and $n -le 86400) { return [int]$n }
+  }
+  $s = ("$raw").ToLowerInvariant()
+  $sec = 0
+  $hm = [regex]::Match($s, '(\d+)\s*h')
+  $mm = [regex]::Match($s, '(\d+)\s*m')
+  $ss = [regex]::Match($s, '(\d+)\s*s')
+  if ($hm.Success) { $sec += 3600 * [int]$hm.Groups[1].Value }
+  if ($mm.Success) { $sec += 60 * [int]$mm.Groups[1].Value }
+  if ($ss.Success) { $sec += [int]$ss.Groups[1].Value }
+  if ($sec -gt 0) { return $sec }
+  return $null
+}
+function Title-Status([string]$s) {
+  if ([string]::IsNullOrWhiteSpace($s)) { return $null }
+  $t = $s.Replace('_', ' ').Replace('-', ' ').Trim()
+  if ($t -match '^(?i)success') { return 'Success' }
+  if ($t -match '^(?i)fail') { return 'Failed' }
+  if ($t -match '^(?i)complete') { return 'Completed' }
+  if ($t -match '^(?i)progress|running') { return 'In Progress' }
+  if ($t.Length -eq 0) { return $null }
+  return ($t.Substring(0,1).ToUpper() + $t.Substring(1).ToLower())
+}
+function ColorBar-Text($v) {
+  if ($null -eq $v) { return $null }
+  $items = @()
+  if ($v -is [System.Array]) { $items = @($v) }
+  elseif ($v -is [string]) {
+    $s = [string]$v
+    if ($s.StartsWith('{') -or $s.StartsWith('[')) {
+      try {
+        $j = $s | ConvertFrom-Json
+        if ($j -is [System.Array]) { $items = @($j) } else { $items = @($j) }
+      } catch { return $s }
+    } else { return $s }
+  } else { $items = @($v) }
+  $parts = New-Object System.Collections.Generic.List[string]
+  foreach ($it in $items) {
+    if ($null -eq $it) { continue }
+    $st = $null
+    if ($it -is [string] -or $it -is [ValueType]) { $st = [string]$it }
+    else {
+      try {
+        $p = $it.PSObject.Properties['status']
+        if ($p -and "$($p.Value)") { $st = [string]$p.Value }
+      } catch {}
+    }
+    if ([string]::IsNullOrWhiteSpace($st)) { continue }
+    if ($st.StartsWith('@{')) { continue }
+    [void]$parts.Add($st.Trim())
+  }
+  if ($parts.Count -eq 0) { return $null }
+  $joined = ($parts -join ',')
+  if ($joined.Length -gt 390) { $joined = $joined.Substring(0, 390) }
+  return $joined
+}
+function Format-DurationLabel($sec) {
+  if ($null -eq $sec) { return $null }
+  $n = 0
+  if (-not [int]::TryParse("$sec", [ref]$n) -or $n -lt 0) { return $null }
+  $h = [int][Math]::Floor($n / 3600)
+  $m = [int][Math]::Floor(($n % 3600) / 60)
+  $s = $n % 60
+  if ($h -gt 0) { return ('{0}h {1}m {2}s' -f $h, $m, $s) }
+  if ($m -gt 0) { return ('{0}m {1}s' -f $m, $s) }
+  return ('{0}s' -f $s)
+}
+
+$script:DraasByAu = @{}
+$shotDir = 'C:\RPM-Assure\data\cove-recovery'
+try { New-Item -ItemType Directory -Force -Path $shotDir | Out-Null } catch {
+  $shotDir = 'C:\RPM-Assure\downloads\cove-recovery'
+  New-Item -ItemType Directory -Force -Path $shotDir | Out-Null
+}
+try {
+  $fields = @(
+    'backup_cloud_device_id','backup_cloud_device_name','backup_cloud_device_alias','backup_cloud_device_machine_name',
+    'backup_cloud_partner_name','colorbar','current_recovery_status','plan_name','device_recovery_frequency',
+    'last_backup_session_timestamp','last_boot_test_screenshot_presented','last_boot_test_status',
+    'last_boot_test_session_id','last_boot_test_backup_session_timestamp','last_recovery_duration_user','last_recovery_errors_count',
+    'last_recovery_session_id','last_recovery_status','last_recovery_timestamp','type'
+  )
+  $offset = 0
+  $draasN = 0
+  while ($offset -lt 2000) {
+    $q = 'offset={0}&limit=200&fields={1}&sort=last_recovery_timestamp&filter[type.in]=RECOVERY_TESTING,SELF_HOSTED,AZURE_SELF_HOSTED,ESXI_SELF_HOSTED' -f $offset, [uri]::EscapeDataString(($fields -join ','))
+    $uri = 'https://api.backup.management/draas/actual-statistics/v1/dashboard/?' + $q
+    $resp = Invoke-WebRequest -Uri $uri -Method GET -Headers @{ Authorization = ('Bearer ' + $visa) } -UseBasicParsing -TimeoutSec 120
+    $body = ConvertTo-Text $resp.Content
+    $obj = $null
+    try { $obj = $body | ConvertFrom-Json } catch {}
+    $items = @()
+    if ($obj -and $obj.data) { $items = @($obj.data) }
+    elseif ($obj -is [System.Array]) { $items = @($obj) }
+    if ($items.Count -eq 0) { break }
+    foreach ($it in $items) {
+      $au = [string](Draas-Attr $it 'backup_cloud_device_id')
+      if (-not $au) { continue }
+      $script:DraasByAu[$au] = $it
+      $draasN++
+    }
+    Write-Log ('DRaaS dashboard page offset=' + $offset + ' got=' + $items.Count + ' total=' + $draasN)
+    if ($items.Count -lt 200) { break }
+    $offset += 200
+  }
+  Write-Log ('DRaaS recovery devices=' + $script:DraasByAu.Count)
+} catch {
+  Write-Log ('WARN DRaaS dashboard ' + $_.Exception.Message)
+}
+
 $allRows = New-Object System.Collections.Generic.List[object]
 $start = 0
 $pageSize = 500
@@ -346,7 +480,7 @@ do {
         PartnerId         = [int]$rootPartnerId
         RecordsCount      = [int]$pageSize
         StartRecordNumber = [int]$start
-        Columns           = @('AU','AR','AN','MN','CD','TS','TL','US','TB','PN','OP','OV','FR','SR','HR','ZR','WR','NR','XR','PR','I80','I81','I82','F19','F00','F18','RV0','RVJ','RVQ','RVO','RVL','RVK','RV7','RVA','T07')
+        Columns           = @('AU','AR','AN','MN','CD','TS','TL','US','TB','PN','OP','OV','FR','SR','HR','ZR','WR','NR','XR','PR','I80','I81','I82','I83','I84','I85','I86','I88','F19','F00','F06','F08','F12','F15','F17','F18','RV0','RVJ','RVQ','RVO','RVL','RVK','RV7','RVA','RVB','T07','RT0','RT1','RT2','RT3','RT4','RT5')
         Filter            = ''
       }
     }
@@ -374,94 +508,10 @@ do {
 Write-Log ("Devices from API=" + $allRows.Count)
 if ($allRows.Count -eq 0) { throw 'No devices returned from Cove' }
 
-# Recovery session times are NOT in EnumerateAccountStatistics (RVO/RVL empty).
-# Probe GetAccountInfo + EnumerateSessions for devices on Recovery Testing / Standby Image.
+# Continuity Recovery Testing last-14 counters live on RT0-RT5 (not RVO/RVL).
+# Session timestamp is still not published. Guessed Continuity methods all return -32601.
 $script:RecoveryByAu = @{}
-function Invoke-CoveMethod([string]$Method, [hashtable]$Params) {
-  $body = [ordered]@{
-    jsonrpc = '2.0'
-    visa    = $visa
-    method  = $Method
-    params  = $Params
-    id      = ('m' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-  }
-  $raw = ConvertTo-Text (Invoke-CoveRaw -Body $body)
-  if ($raw -match '"error"') { return $null }
-  try { return ($raw | ConvertFrom-Json) } catch { return $null }
-}
-function Pick-SessionTime($obj) {
-  if ($null -eq $obj) { return $null }
-  foreach ($k in @('EndTime','CompletedAt','FinishTime','Timestamp','StartTime','Time','Created','UTCTime')) {
-    $p = $obj.PSObject.Properties[$k]
-    if ($p -and $null -ne $p.Value -and "$($p.Value)" -ne '' -and "$($p.Value)" -ne '0') { return $p.Value }
-  }
-  return $null
-}
-function Looks-Recovery($obj) {
-  if ($null -eq $obj) { return $false }
-  $blob = (($obj | ConvertTo-Json -Depth 4 -Compress) + '')
-  return ($blob -match '(?i)recover|vdr|continuity|standby|boot.?test|screenshot')
-}
-$planDevices = New-Object System.Collections.Generic.List[object]
-foreach ($row in $allRows) {
-  $i80x = Get-Setting $row 'I80'
-  if ("$i80x" -eq '1' -or "$i80x" -eq '2') { [void]$planDevices.Add($row) }
-}
-Write-Log ("Recovery-plan devices (I80 1/2)=" + $planDevices.Count)
-$probeN = 0
-foreach ($row in $planDevices) {
-  if ($probeN -ge 40) { break }
-  $auId = Get-Setting $row 'AU'
-  if (-not $auId) { $auId = $row.AccountId }
-  if (-not $auId) { continue }
-  $probeN++
-  $got = $null
-  foreach ($try in @(
-      @{ M = 'EnumerateSessions'; P = @{ accountId = [long]$auId; recordsCount = 50 } },
-      @{ M = 'EnumerateSessions'; P = @{ AccountId = [long]$auId; RecordsCount = 50 } },
-      @{ M = 'EnumerateRestoreSessions'; P = @{ accountId = [long]$auId; recordsCount = 25 } },
-      @{ M = 'EnumerateRestoreSessions'; P = @{ AccountId = [long]$auId } },
-      @{ M = 'GetAccountInfo'; P = @{ accountId = [long]$auId } },
-      @{ M = 'GetAccountInfo'; P = @{ AccountId = [long]$auId } },
-      @{ M = 'GetRecoveryTestingInfo'; P = @{ accountId = [long]$auId } },
-      @{ M = 'EnumerateRecoverySessions'; P = @{ accountId = [long]$auId } }
-    )) {
-    $js = Invoke-CoveMethod $try.M $try.P
-    if (-not $js) { continue }
-    $payload = $js.result
-    if ($payload -and $payload.result) { $payload = $payload.result }
-    if ($probeN -eq 1) {
-      $keys = @()
-      try { $keys = @($payload.PSObject.Properties.Name) } catch {}
-      Write-Log ("Recovery probe " + $try.M + " AU=" + $auId + " keys=" + ($keys -join ','))
-      try {
-        [System.IO.File]::WriteAllText((Join-Path $logDir ('recovery_probe_' + $try.M + '.json')), ($js | ConvertTo-Json -Depth 8), [System.Text.UTF8Encoding]::new($false))
-      } catch {}
-    }
-    $cands = @()
-    if ($payload -is [System.Array]) { $cands = @($payload) }
-    elseif ($payload.Sessions) { $cands = @($payload.Sessions) }
-    elseif ($payload.sessions) { $cands = @($payload.sessions) }
-    elseif ($payload) { $cands = @($payload) }
-    foreach ($s in $cands) {
-      if (-not (Looks-Recovery $s)) { continue }
-      $when = Pick-SessionTime $s
-      if (-not $when) { continue }
-      $st = ''
-      foreach ($sk in @('Status','State','Result','SessionStatus')) {
-        $sp = $s.PSObject.Properties[$sk]
-        if ($sp) { $st = [string]$sp.Value; break }
-      }
-      $got = [pscustomobject]@{ When = $when; Status = $st; Via = $try.M }
-    }
-    if ($got) { break }
-  }
-  if ($got) {
-    $script:RecoveryByAu["$auId"] = $got
-    Write-Log ("Recovery session AU=" + $auId + " via=" + $got.Via + " when=" + $got.When + " status=" + $got.Status)
-  }
-}
-Write-Log ("Recovery sessions resolved=" + $script:RecoveryByAu.Count + " of " + $probeN)
+Write-Log 'Recovery: using RT0-RT5 last-14 counters from EnumerateAccountStatistics'
 
 $snap = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
 $values = New-Object System.Collections.Generic.List[string]
@@ -617,9 +667,23 @@ foreach ($row in $allRows) {
   $i82 = Get-Setting $row 'I82'
   $f00 = Get-Setting $row 'F00'
   $f18 = Get-Setting $row 'F18'
+  $rt0 = 0; $rt1 = 0; $rt2 = 0; $rt3 = 0; $rt4 = 0; $rt5 = 0
+  [void][int]::TryParse((Get-Setting $row 'RT0'), [ref]$rt0)
+  [void][int]::TryParse((Get-Setting $row 'RT1'), [ref]$rt1)
+  [void][int]::TryParse((Get-Setting $row 'RT2'), [ref]$rt2)
+  [void][int]::TryParse((Get-Setting $row 'RT3'), [ref]$rt3)
+  [void][int]::TryParse((Get-Setting $row 'RT4'), [ref]$rt4)
+  [void][int]::TryParse((Get-Setting $row 'RT5'), [ref]$rt5)
+  $rtNote = ('last14 ok=' + $rt0 + ' fail=' + $rt1 + ' warn=' + $rt2 + ' rt3=' + $rt3 + ' rt4=' + $rt4 + ' rt5=' + $rt5)
+  if (-not $verify) { $verify = $rtNote }
+  elseif ($verify -notmatch 'last14') {
+    $joined = $verify + ' | ' + $rtNote
+    if ($joined.Length -gt 400) { $joined = $joined.Substring(0, 400) }
+    $verify = $joined
+  }
   $lastTestSql = 'NULL'
-  foreach ($ep in @($rvo, $rvl, $i82, $f00, $f18)) {
-    if ($ep -and "$ep" -ne '' -and "$ep" -ne '0') {
+  foreach ($ep in @($rvo, $rvl, $f18)) {
+    if ($ep -and "$ep" -ne '' -and "$ep" -ne '0' -and "$ep" -ne 'Yes' -and "$ep" -ne 'No') {
       $lastTestSql = Epoch-ToSql ([string]$ep)
       if ($lastTestSql -ne 'NULL') { break }
     }
@@ -640,18 +704,132 @@ foreach ($row in $allRows) {
     if ($hit.Status -and -not $rvStatus) { $rvStatus = $hit.Status }
   }
 
+  $draas = $null
+  if ($script:DraasByAu -and $script:DraasByAu.ContainsKey($auKey)) { $draas = $script:DraasByAu[$auKey] }
+  $colorBar = $null; $recStatus = $null; $bootStatus = $null
+  $recErrN = $rvErr; $backupSessSql = 'NULL'; $durLabel = $null; $recDurSec = $null
+  $recSessId = $null; $shotPresented = $null; $shotPath = $null
+  if ($draas) {
+    $planName = [string](Draas-Attr $draas 'plan_name')
+    if ($planName) { $planLabel = $planName; if ($planType -eq 0) { $planType = 1 } }
+    $colorBar = ColorBar-Text (Draas-Attr $draas 'colorbar')
+    $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
+    if (-not $recStatus) { $recStatus = Title-Status ([string](Draas-Attr $draas 'current_recovery_status')) }
+    $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_boot_test_status'))
+    $errRaw = Draas-Attr $draas 'last_recovery_errors_count'
+    if ($null -ne $errRaw) { [void][int]::TryParse(("$errRaw"), [ref]$recErrN) }
+    $durRaw = Draas-Attr $draas 'last_recovery_duration_user'
+    if ($durRaw) {
+      $recDurSec = Parse-DurationSec $durRaw
+      if ($null -ne $recDurSec) { $durLabel = Format-DurationLabel $recDurSec }
+      else { $durLabel = [string]$durRaw }
+    }
+    $recSessId = [string](Draas-Attr $draas 'last_recovery_session_id')
+    if (-not $recSessId) { $recSessId = [string](Draas-Attr $draas 'last_boot_test_session_id') }
+    $pres = Draas-Attr $draas 'last_boot_test_screenshot_presented'
+    if ($pres -eq $true -or "$pres" -eq '1' -or "$pres" -eq 'True') { $shotPresented = 1 }
+    elseif ($pres -eq $false -or "$pres" -eq '0') { $shotPresented = 0 }
+    $rtWhen = Draas-Attr $draas 'last_recovery_timestamp'
+    if ($lastTestSql -eq 'NULL' -and $rtWhen) { $lastTestSql = Epoch-ToSql ([string]$rtWhen) }
+    $bkWhen = Draas-Attr $draas 'last_backup_session_timestamp'
+    if (-not $bkWhen) { $bkWhen = Draas-Attr $draas 'last_boot_test_backup_session_timestamp' }
+    if ($bkWhen) { $backupSessSql = Epoch-ToSql ([string]$bkWhen) }
+  }
+  if (-not $colorBar) { $colorBar = ColorBar-Text (Get-Setting $row 'RVB') }
+  if (-not $colorBar) { $colorBar = ColorBar-Text (Get-Setting $row 'F08') }
+  if (-not $colorBar -and ($rt0 + $rt1 + $rt2) -gt 0) {
+    $synth = New-Object System.Collections.Generic.List[string]
+    $pad = 14 - [Math]::Min(14, ($rt0 + $rt1 + $rt2))
+    for ($i = 0; $i -lt $pad; $i++) { [void]$synth.Add('NotStarted') }
+    for ($i = 0; $i -lt [Math]::Min(14, $rt0); $i++) { [void]$synth.Add('Completed') }
+    for ($i = 0; $i -lt [Math]::Min(14 - $synth.Count, $rt2); $i++) { [void]$synth.Add('CompletedWithErrors') }
+    for ($i = 0; $i -lt [Math]::Min(14 - $synth.Count, $rt1); $i++) { [void]$synth.Add('Failed') }
+    $colorBar = ($synth -join ',')
+  }
+  if (-not $recStatus -and $rvj) { $recStatus = Title-Status ([string]$rvj) }
+  $f06 = Get-Setting $row 'F06'
+  if ($recErrN -eq 0 -and $f06) { [void][int]::TryParse("$f06", [ref]$recErrN) }
+  $f12 = Get-Setting $row 'F12'
+  if ($null -eq $recDurSec -and $f12) { $recDurSec = Parse-DurationSec $f12 }
+  if ($null -eq $durLabel -and $null -ne $recDurSec) { $durLabel = Format-DurationLabel $recDurSec }
+  $f15 = Get-Setting $row 'F15'
+  if ($backupSessSql -eq 'NULL' -and $f15) { $backupSessSql = Epoch-ToSql ([string]$f15) }
+  $rva = Get-Setting $row 'RVA'
+  if ($null -eq $recDurSec -and $rva) { $recDurSec = Parse-DurationSec $rva }
+  if ($null -eq $durLabel -and $null -ne $recDurSec) { $durLabel = Format-DurationLabel $recDurSec }
+
+  $bootSess = $null
+  if ($draas) { $bootSess = [string](Draas-Attr $draas 'last_boot_test_session_id') }
+  if (-not $bootSess) { $bootSess = $recSessId }
+  if ($draas -and $bootSess) {
+    $destPng = Join-Path $shotDir ($auKey + '.png')
+    if (Test-Path $destPng) {
+      if ((Get-Item $destPng).Length -gt 800) { $shotPresented = 1; $shotPath = 'cove-recovery/' + $auKey + '.png' }
+    } elseif ($script:ShotTries -lt 80) {
+      if ($null -eq $script:ShotTries) { $script:ShotTries = 0 }
+      $script:ShotTries++
+      try {
+        $fUri = 'https://api.backup.management/draas/actual-statistics/v1/sessions/' + [uri]::EscapeDataString($bootSess) + '/files/?filter[file_type.in]=screenshot'
+        $fRaw = Invoke-WebRequest -Uri $fUri -Method GET -Headers @{ Authorization = ('Bearer ' + $visa) } -UseBasicParsing -TimeoutSec 45
+        $fObj = (ConvertTo-Text $fRaw.Content) | ConvertFrom-Json
+        $fid = $null
+        if ($fObj.data) {
+          $first = @($fObj.data)[0]
+          if ($first.id) { $fid = [string]$first.id }
+        }
+        if ($fid) {
+          $tUri = 'https://api.backup.management/draas/actual-statistics/v1/sessions/' + [uri]::EscapeDataString($bootSess) + '/files/' + [uri]::EscapeDataString($fid) + '/get-temporary-url/'
+          $tRaw = Invoke-WebRequest -Uri $tUri -Method POST -Headers @{ Authorization = ('Bearer ' + $visa); 'Content-Type' = 'application/json' } -Body '{}' -UseBasicParsing -TimeoutSec 45
+          $tObj = (ConvertTo-Text $tRaw.Content) | ConvertFrom-Json
+          $url = $null
+          if ($tObj.data -and $tObj.data.attributes) { $url = [string]$tObj.data.attributes.url }
+          if ($url) {
+            Invoke-WebRequest -Uri $url -OutFile $destPng -UseBasicParsing -TimeoutSec 90
+            if ((Test-Path $destPng) -and (Get-Item $destPng).Length -gt 800) {
+              $shotPresented = 1
+              $shotPath = 'cove-recovery/' + $auKey + '.png'
+            }
+          }
+        }
+      } catch { Write-Log ('WARN screenshot ' + $auKey + ' ' + $_.Exception.Message) }
+    }
+  }
 
   $testStatus = 'NotInPlan'
   if ($planType -eq 1 -or $planType -eq 2) {
     $testStatus = Map-RestoreStatus $rvStatus $rvErr $verify
-    if ($testStatus -eq 'Unknown' -and $lastTestSql -eq 'NULL' -and -not $verify) {
-      $testStatus = 'NotStarted'  # plan on, no completed restore session yet
+    if ($rt1 -gt 0) { $testStatus = 'Failed' }
+    elseif ($rt0 -gt 0) { $testStatus = 'Success' }
+    elseif ($testStatus -eq 'Unknown' -and $lastTestSql -eq 'NULL' -and $rt0 -eq 0) {
+      $testStatus = 'NotStarted'
     }
-  } elseif ($null -ne $rvStatus -or $lastTestSql -ne 'NULL') {
-    # Has VDR restore history even without I80 plan flag
+  } elseif ($null -ne $rvStatus -or $lastTestSql -ne 'NULL' -or $rt0 -gt 0) {
     $testStatus = Map-RestoreStatus $rvStatus $rvErr $verify
+    if ($rt0 -gt 0 -and $rt1 -eq 0) { $testStatus = 'Success' }
     if ($planType -eq 0) { $planLabel = 'VDR restore (no plan flag)'; $planType = 1 }
   }
+  if ($bootStatus -eq 'Success' -or $recStatus -eq 'Completed' -or $recStatus -eq 'Success') {
+    if ($testStatus -in @('NotInPlan','Unknown','NotStarted')) { $testStatus = 'Success' }
+  }
+  if ($bootStatus -eq 'Failed' -or $recStatus -eq 'Failed') { $testStatus = 'Failed' }
+  if (-not $recStatus -and $testStatus -and $testStatus -ne 'NotInPlan') { $recStatus = $testStatus }
+  if ($null -eq $script:RtPatch) { $script:RtPatch = New-Object System.Collections.Generic.List[object] }
+  [void]$script:RtPatch.Add([pscustomobject]@{
+    AccountId = $auKey
+    ColorBar = $colorBar
+    RecStatus = $recStatus
+    Errors = $recErrN
+    LastCompleted = $lastTestSql
+    BackupSession = $backupSessSql
+    DurSec = $recDurSec
+    DurLabel = $durLabel
+    Boot = $bootStatus
+    SessId = $recSessId
+    Shot = $shotPresented
+    ShotPath = $shotPath
+    PlanLabel = $planLabel
+    TestStatus = $testStatus
+  })
 
   $values.Add((
     "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24})" -f `
@@ -689,7 +867,7 @@ Write-Log ("Rows to insert=" + $values.Count)
 foreach ($row in $allRows) {
   $i80s = Get-Setting $row 'I80'
   if ("$i80s" -eq '1' -or "$i80s" -eq '2') {
-    Write-Log ("Recovery sample AN=" + (Get-Setting $row 'AN') + " I80=" + $i80s + " I81=" + (Get-Setting $row 'I81') + " RV0=" + (Get-Setting $row 'RV0') + " RVJ=" + (Get-Setting $row 'RVJ') + " RVQ=" + (Get-Setting $row 'RVQ') + " RVO=" + (Get-Setting $row 'RVO') + " RVL=" + (Get-Setting $row 'RVL') + " RVK=" + (Get-Setting $row 'RVK') + " F19=" + (Get-Setting $row 'F19'))
+    Write-Log ("Recovery sample AN=" + (Get-Setting $row 'AN') + " I80=" + $i80s + " I81=" + (Get-Setting $row 'I81') + " RT0=" + (Get-Setting $row 'RT0') + " RT1=" + (Get-Setting $row 'RT1') + " RT2=" + (Get-Setting $row 'RT2') + " I84=" + (Get-Setting $row 'I84') + " RVO=" + (Get-Setting $row 'RVO'))
     break
   }
 }
@@ -787,6 +965,41 @@ ORDER BY Cnt DESC;
 $loadSql = $ddl + "`r`n" + ($insertParts -join "`r`n") + "`r`n" + $tail
 
 Invoke-SqlFile -SqlText $loadSql -Label 'cove_load'
+
+$ensureRt = Join-Path $here '464_Ensure_Cove_RecoveryDashboard.sql'
+if (Test-Path -LiteralPath $ensureRt) {
+  try { Invoke-SqlFile -SqlText ([IO.File]::ReadAllText($ensureRt)) -Label 'ensure_464' } catch { Write-Log ('464 warn ' + $_.Exception.Message) }
+}
+if ($script:RtPatch -and $script:RtPatch.Count -gt 0) {
+  $up = New-Object System.Text.StringBuilder
+  [void]$up.AppendLine('SET NOCOUNT ON;')
+  $nUp = 0
+  foreach ($p in $script:RtPatch) {
+    if (-not $p.ColorBar -and -not $p.RecStatus -and -not $p.Boot -and $p.LastCompleted -eq 'NULL' -and -not $p.ShotPath) { continue }
+    $nUp++
+    $set = @()
+    if ($p.ColorBar) { $set += ('RecoveryColorBar = ' + (Sql-Str $p.ColorBar)) }
+    if ($p.RecStatus) { $set += ('RecoveryStatus = ' + (Sql-Str $p.RecStatus)) }
+    if ($null -ne $p.Errors) { $set += ('RecoveryErrors = ' + [int]$p.Errors) }
+    if ($p.LastCompleted -and $p.LastCompleted -ne 'NULL') { $set += ('LastCompletedSessionAt = ' + $p.LastCompleted); $set += ('LastRecoveryTestAt = COALESCE(LastRecoveryTestAt, ' + $p.LastCompleted + ')') }
+    if ($p.BackupSession -and $p.BackupSession -ne 'NULL') { $set += ('BackupSessionAt = ' + $p.BackupSession) }
+    if ($null -ne $p.DurSec) { $set += ('RecoveryDurationSec = ' + [int]$p.DurSec) }
+    if ($p.DurLabel) { $set += ('RecoveryDurationLabel = ' + (Sql-Str $p.DurLabel)) }
+    if ($p.Boot) { $set += ('BootStatus = ' + (Sql-Str $p.Boot)) }
+    if ($p.SessId) { $set += ('RecoverySessionId = ' + (Sql-Str $p.SessId)) }
+    if ($null -ne $p.Shot) { $set += ('ScreenshotPresented = ' + [int]$p.Shot) }
+    if ($p.ShotPath) { $set += ('ScreenshotPath = ' + (Sql-Str $p.ShotPath)) }
+    if ($p.PlanLabel) { $set += ('RecoveryPlanLabel = ' + (Sql-Str $p.PlanLabel)) }
+    if ($p.TestStatus) { $set += ('RecoveryTestStatus = ' + (Sql-Str $p.TestStatus)) }
+    if ($set.Count -eq 0) { continue }
+    [void]$up.AppendLine(('UPDATE dbo.Cove_DeviceStatistics SET ' + ($set -join ', ') + ' WHERE SnapshotDate = ''' + $snap + ''' AND AccountId = ' + $p.AccountId + ';'))
+  }
+  Write-Log ('DRaaS overlay updates=' + $nUp)
+  if ($nUp -gt 0) {
+    try { Invoke-SqlFile -SqlText $up.ToString() -Label 'cove_rt_overlay' } catch { Write-Log ('rt overlay warn ' + $_.Exception.Message) }
+  }
+}
+
 # Auto-map unmapped partners + re-stamp CustomerCode
 $autoMap = Join-Path $here 'Auto-Map-Cove-Partners.ps1'
 $autoSql = Join-Path $here '434_AutoMap_Cove_Partners.sql'
