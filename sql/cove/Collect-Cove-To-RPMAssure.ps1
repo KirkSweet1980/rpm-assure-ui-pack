@@ -1173,10 +1173,7 @@ $loadSql = $ddl + "`r`n" + ($insertParts -join "`r`n") + "`r`n" + $tail
 
 Invoke-SqlFile -SqlText $loadSql -Label 'cove_load'
 
-$ensureRt = Join-Path $here '464_Ensure_Cove_RecoveryDashboard.sql'
-if (Test-Path -LiteralPath $ensureRt) {
-  try { Invoke-SqlFile -SqlText ([IO.File]::ReadAllText($ensureRt)) -Label 'ensure_464' } catch { Write-Log ('464 warn ' + $_.Exception.Message) }
-}
+# Schema (530/464/466) is applied by Apply-UiPack as Windows admin. Collect only stamps.
 if ($script:RtPatch -and $script:RtPatch.Count -gt 0) {
   $up = New-Object System.Text.StringBuilder
   [void]$up.AppendLine('SET NOCOUNT ON;')
@@ -1242,20 +1239,6 @@ if (Test-Path -LiteralPath $restamp) {
     Invoke-SqlFile -SqlText ([IO.File]::ReadAllText($restamp)) -Label 'restamp465'
   } catch {
     Write-Log ('465 restamp warning: ' + $_.Exception.Message)
-  }
-}
-
-foreach ($rel in @(
-    '..\central\530_Dim_ExternalIdentity.sql',
-    '466_Cove_Gold_Views.sql',
-    '467_Cove_Raw.sql'
-  )) {
-  $p = Join-Path $here $rel
-  if (-not (Test-Path -LiteralPath $p)) { continue }
-  try {
-    Invoke-SqlFile -SqlText ([IO.File]::ReadAllText($p)) -Label ([IO.Path]::GetFileNameWithoutExtension($p))
-  } catch {
-    Write-Log ('WARN ' + $rel + ' ' + $_.Exception.Message)
   }
 }
 

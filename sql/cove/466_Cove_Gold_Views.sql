@@ -67,10 +67,7 @@ IF OBJECT_ID(N'dbo.usp_StampCoveFromIdentity', N'P') IS NOT NULL
   EXEC dbo.usp_StampCoveFromIdentity;
 GO
 
-IF OBJECT_ID(N'dbo.vw_Cove_Devices_Latest', N'V') IS NOT NULL
-  DROP VIEW dbo.vw_Cove_Devices_Latest;
-GO
-CREATE VIEW dbo.vw_Cove_Devices_Latest
+CREATE OR ALTER VIEW dbo.vw_Cove_Devices_Latest
 AS
 SELECT
   d.CustomerCode,
@@ -123,10 +120,7 @@ WHERE d.CustomerCode IS NOT NULL
   AND LTRIM(RTRIM(d.CustomerCode)) <> N'';
 GO
 
-IF OBJECT_ID(N'dbo.vw_Cove_Recovery_Latest', N'V') IS NOT NULL
-  DROP VIEW dbo.vw_Cove_Recovery_Latest;
-GO
-CREATE VIEW dbo.vw_Cove_Recovery_Latest
+CREATE OR ALTER VIEW dbo.vw_Cove_Recovery_Latest
 AS
 SELECT *
 FROM dbo.vw_Cove_Devices_Latest
@@ -140,10 +134,7 @@ WHERE ISNULL(RecoveryPlanType, 0) > 0
 GO
 
 /* Keep the old KPI name pointing at gold so Exco / cover still work. */
-IF OBJECT_ID(N'dbo.vw_Kpi_Cove_DeviceLatest', N'V') IS NOT NULL
-  DROP VIEW dbo.vw_Kpi_Cove_DeviceLatest;
-GO
-CREATE VIEW dbo.vw_Kpi_Cove_DeviceLatest
+CREATE OR ALTER VIEW dbo.vw_Kpi_Cove_DeviceLatest
 AS
 SELECT * FROM dbo.vw_Cove_Devices_Latest;
 GO

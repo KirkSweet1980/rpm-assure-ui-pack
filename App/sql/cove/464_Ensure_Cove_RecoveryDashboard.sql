@@ -7,8 +7,6 @@ IF OBJECT_ID(N'dbo.Cove_DeviceStatistics', N'U') IS NOT NULL
 BEGIN
   IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'RecoveryColorBar') IS NULL
     ALTER TABLE dbo.Cove_DeviceStatistics ADD RecoveryColorBar nvarchar(400) NULL;
-  ELSE
-    ALTER TABLE dbo.Cove_DeviceStatistics ALTER COLUMN RecoveryColorBar nvarchar(400) NULL;
 
   IF COL_LENGTH(N'dbo.Cove_DeviceStatistics', N'RecoveryStatus') IS NULL
     ALTER TABLE dbo.Cove_DeviceStatistics ADD RecoveryStatus nvarchar(40) NULL;

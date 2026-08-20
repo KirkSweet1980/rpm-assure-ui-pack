@@ -31,10 +31,7 @@ BEGIN
 END
 GO
 
-IF OBJECT_ID(N'dbo.usp_RefreshExternalIdentityFromMaps', N'P') IS NOT NULL
-  DROP PROCEDURE dbo.usp_RefreshExternalIdentityFromMaps;
-GO
-CREATE PROCEDURE dbo.usp_RefreshExternalIdentityFromMaps
+CREATE OR ALTER PROCEDURE dbo.usp_RefreshExternalIdentityFromMaps
 AS
 BEGIN
   SET NOCOUNT ON;
@@ -184,10 +181,7 @@ GO
 EXEC dbo.usp_RefreshExternalIdentityFromMaps;
 GO
 
-IF OBJECT_ID(N'dbo.usp_StampCoveFromIdentity', N'P') IS NOT NULL
-  DROP PROCEDURE dbo.usp_StampCoveFromIdentity;
-GO
-CREATE PROCEDURE dbo.usp_StampCoveFromIdentity
+CREATE OR ALTER PROCEDURE dbo.usp_StampCoveFromIdentity
 AS
 BEGIN
   SET NOCOUNT ON;
