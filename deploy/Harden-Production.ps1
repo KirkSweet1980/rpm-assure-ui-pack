@@ -6,6 +6,8 @@ $SecDir = Join-Path $Root 'secrets'
 $SecFile = Join-Path $SecDir 'sql-collect.json'
 $Report = Join-Path $SecDir 'hardening-status.txt'
 $nssm = @(
+  (Join-Path $Root 'Tools\nssm.exe'),
+  'C:\Program Files\nssm\win64\nssm.exe',
   'C:\Program Files\nssm\nssm.exe',
   'C:\nssm\nssm.exe',
   (Get-Command nssm -EA SilentlyContinue | Select-Object -ExpandProperty Source)
