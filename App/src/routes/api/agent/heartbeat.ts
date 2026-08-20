@@ -79,12 +79,12 @@ WHEN MATCHED THEN UPDATE SET
   InstallPath = COALESCE(@p, t.InstallPath),
   LastStatus = CASE
     WHEN NULLIF(@v, N'') IS NOT NULL AND @v <> @ship THEN N'UPDATE'
-    WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED') THEN t.LastStatus
+    WHEN t.LastStatus IN (N'QUEUED', N'SYNCING') THEN t.LastStatus
     ELSE N'ONLINE'
   END,
   LastMessage = CASE
     WHEN NULLIF(@v, N'') IS NOT NULL AND @v <> @ship THEN N'update requested ' + @ship
-    WHEN t.LastStatus IN (N'UPDATE', N'UPDATING', N'QUEUED') THEN t.LastMessage
+    WHEN t.LastStatus IN (N'QUEUED', N'SYNCING') THEN t.LastMessage
     ELSE N'https heartbeat ok'
   END
 WHEN NOT MATCHED THEN INSERT (

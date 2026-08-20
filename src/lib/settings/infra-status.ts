@@ -84,7 +84,10 @@ OUTER APPLY (
   SELECT TOP 1 rr.CustomerCode, rr.HostName, rr.AgentVersion, rr.LastHeartbeatUtc, rr.LastStatus
   FROM dbo.Agent_Registry rr WITH (NOLOCK)
   WHERE rr.CustomerCode = c.CustomerCode
-  ORDER BY rr.LastHeartbeatUtc DESC
+    AND ISNULL(rr.LastStatus, N'') <> N'UNINSTALLED'
+  ORDER BY
+    CASE WHEN rr.LastHeartbeatUtc IS NULL THEN 1 ELSE 0 END,
+    rr.LastHeartbeatUtc DESC
 ) r
 WHERE ISNULL(c.Active, 1) = 1
 ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
