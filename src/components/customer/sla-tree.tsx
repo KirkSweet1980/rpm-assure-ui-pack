@@ -21,14 +21,13 @@ import { coverFromDetail, isDormantCover, type CustomerCover } from "@/lib/data/
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
 import {
   INDUSTRY_MEASURES,
-  RPM_CONTRACT_CLOCKS,
   RPM_CONTRACT_RULES,
   RPM_SECURITY_ADMIN,
   RPM_SLA_DATE,
   RPM_SLA_REVISION,
   RPM_SLA_TITLE,
 } from "@/lib/data/sla-metrics";
-import type { CustomerDetailPayload } from "@/lib/data/types";
+import { ticketClocksForUi } from "@/lib/data/ticket-sla";
 import { cn } from "@/lib/utils";
 
 function effectiveCover(data: CustomerDetailPayload): CustomerCover {
@@ -140,7 +139,7 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
                 </tr>
               </thead>
               <tbody>
-                {RPM_CONTRACT_CLOCKS.map((row) => (
+                {ticketClocksForUi(data.slaPolicies).map((row) => (
                   <tr key={row.priority} className="border-t border-border">
                     <td className="px-2 py-1.5">
                       <span className="font-semibold">{row.priority}</span>
@@ -155,6 +154,9 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
               </tbody>
             </table>
             <p className="mt-2 text-[11px] text-subtle">
+              {(data.slaPolicies ?? []).some((p) => p.respondMins)
+                ? "Acknowledge and restore clocks imported from Freshdesk SLA policies. "
+                : "Signed contract clocks — Freshdesk SLA import pending. "}
               {RPM_CONTRACT_RULES.businessHours} {RPM_CONTRACT_RULES.measuredAs}
             </p>
           </CardContent>

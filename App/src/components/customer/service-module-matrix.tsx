@@ -19,7 +19,7 @@ const PILLAR_SUB: Record<string, string> = {
 
 function kpisFor(pillar: PillarId, data: CustomerDetailPayload) {
   const c = data.customer;
-  const tix = ticketStats(data.incidents ?? []);
+  const tix = ticketStats(data.incidents ?? [], data.slaPolicies);
   if (pillar === "syspro") {
     return [
       { label: "Operators", value: c.operatorCount || data.operators?.length || 0 },

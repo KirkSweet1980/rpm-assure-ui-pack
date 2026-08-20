@@ -407,7 +407,7 @@ export function slaInputFromDetail(
       with30.reduce((s, d) => s + (d.offlineHours30d ?? 0) * 60, 0) / with30.length;
     serverUptime30d = Math.max(0, Math.min(100, ((minutes - avgOff) / minutes) * 100));
   }
-  const tix = scoreTicketSet(data.incidents);
+  const tix = scoreTicketSet(data.incidents, data.slaPolicies);
   const eppDevices = data.epp?.devices ?? [];
   const eppN = firstPos(
     data.epp?.summary?.deviceCount,

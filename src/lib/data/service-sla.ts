@@ -404,7 +404,7 @@ export function buildTicketsServiceSla(data: CustomerDetailPayload): ServiceSlaP
   const rows = data.incidents ?? [];
   const ops = coverFromDetail(data);
   const cover = !isDormantCover(ops) && (rows.length > 0 || Boolean(ops.tickets));
-  const pack = scoreTicketSet(rows);
+  const pack = scoreTicketSet(rows, data.slaPolicies);
   const openPct = cover ? clamp(Math.max(40, 100 - pack.open * 5)) : null;
   const lines: ServiceSlaLine[] = [
     line(

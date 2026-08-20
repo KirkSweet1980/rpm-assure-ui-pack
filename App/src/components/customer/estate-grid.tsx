@@ -356,7 +356,7 @@ export function EstateGrid({
 
   const cover = coverFromDetail(data);
   const dormant = isDormantCover(cover);
-  const tix = ticketStats(data.incidents);
+  const tix = ticketStats(data.incidents, data.slaPolicies);
   const code = customer.customerCode;
   const base = `/customers/${code}`;
   const lastCollect = [

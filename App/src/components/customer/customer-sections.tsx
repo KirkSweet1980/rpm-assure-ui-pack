@@ -288,7 +288,7 @@ export function TicketStrip({
   pillar: TicketPillar;
 }) {
   const rows = ticketsForPillar(data.incidents, pillar);
-  const s = ticketStats(rows);
+  const s = ticketStats(rows, data.slaPolicies);
   const href = `/customers/${data.customer.customerCode}/tickets`;
   return (
     <div className="rpma-eco-head">

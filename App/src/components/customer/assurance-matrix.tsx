@@ -48,7 +48,7 @@ export function AssuranceMatrix({ data }: { data: CustomerDetailPayload }) {
   const { customer } = data;
   const cover = coverFromDetail(data);
   const live = customerLiveStatus(customer.customerCode, customer, cover, data);
-  const tix = ticketStats(data.incidents);
+  const tix = ticketStats(data.incidents, data.slaPolicies);
   const base = `/customers/${encodeURIComponent(customer.customerCode)}`;
   const [sel, setSel] = useState<RowId>("syspro");
 

@@ -4288,7 +4288,7 @@ ORDER BY
     }
 
     try {
-      const scored = scoreTicketSet(incidents);
+      const scored = scoreTicketSet(incidents, slaPolicies);
       if (scored.total > 0) {
         amsSlaSummary = {
           incidentCount30d: scored.last30d || scored.total,

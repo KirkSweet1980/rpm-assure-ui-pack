@@ -10,8 +10,8 @@ import {
   ticketsInBucket,
   type TicketBucket,
 } from "@/lib/data/ticket-feed";
-import { scoreTicket, scoreTicketSet } from "@/lib/data/ticket-sla";
-import { RPM_CONTRACT_CLOCKS, RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
+import { scoreTicket, scoreTicketSet, ticketClocksForUi } from "@/lib/data/ticket-sla";
+import { RPM_CONTRACT_RULES } from "@/lib/data/sla-metrics";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartTooltip, CHART_TOOLTIP_CURSOR } from "@/components/portfolio/chart-tooltip";
 import { CHART } from "@/lib/brand-colors";
@@ -108,7 +108,7 @@ function EmptyTickets({
 
 export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   const rows = data.incidents ?? [];
-  const s = ticketStats(rows);
+  const s = ticketStats(rows, data.slaPolicies);
   const sla = s.sla;
   if (s.total === 0) {
     return (
@@ -252,7 +252,7 @@ export function TicketsListSection({
   }));
   const picked =
     rows.find((r, i) => String(r.incidentId ?? r.externalRef ?? i) === sel) ?? rows[0] ?? null;
-  const all = ticketStats(data.incidents ?? []);
+  const all = ticketStats(data.incidents ?? [], data.slaPolicies);
   const code = data.customer.customerCode;
   const base = `/customers/${code}/tickets`;
   return (
@@ -285,7 +285,7 @@ export function TicketsListSection({
         <DataWindow title={title} fill>
           <div className="rpma-tix-cards">
             {rows.map((r, i) => {
-              const scored = scoreTicket(r);
+              const scored = scoreTicket(r, new Date(), data.slaPolicies);
               const fd = /^FD-(\d+)$/i.exec(r.externalRef || "");
               return (
               <article key={String(r.incidentId ?? r.externalRef ?? i)} className={`rpma-tix-card is-${bucket}`}>
@@ -334,7 +334,9 @@ export function ticketBucketFromPath(path: string): TicketBucket {
 }
 
 export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
-  const pack = scoreTicketSet(data.incidents);
+  const pack = scoreTicketSet(data.incidents, data.slaPolicies);
+  const clocks = ticketClocksForUi(data.slaPolicies);
+  const fromFd = (data.slaPolicies ?? []).some((p) => p.respondMins != null);
   if (pack.total === 0) {
     return (
       <EmptyTickets
@@ -393,7 +395,7 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
             </tr>
           </thead>
           <tbody>
-            {RPM_CONTRACT_CLOCKS.map((row) => {
+            {clocks.map((row) => {
               const a = pack.byPriority.find((p) => p.priority === row.priority);
               return (
                 <tr key={row.priority} className="border-t border-border">
@@ -415,6 +417,9 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
           </tbody>
         </table>
         <p className="px-3 py-2 text-[11px] text-subtle">
+          {fromFd
+            ? "Clocks imported from Freshdesk SLA policies. "
+            : "Signed contract clocks until Freshdesk SLA is collected. "}
           {RPM_CONTRACT_RULES.businessHours} {RPM_CONTRACT_RULES.measuredAs}
         </p>
       </DataWindow>

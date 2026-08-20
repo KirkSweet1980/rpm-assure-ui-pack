@@ -104,7 +104,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const openIssues = issues.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const openIncidents = incidents.filter((i) => (i.status || "").toLowerCase() !== "closed");
   const major = openIncidents.filter((i) => i.isMajor);
-  const tix = ticketStats(incidents);
+  const tix = ticketStats(incidents, data.slaPolicies);
 
   const lastCollect = [
     customer.lastImportAt,

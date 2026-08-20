@@ -3,7 +3,8 @@
  * Scores every ticket that has enough timestamps. Open clocks stay null (not a miss).
  */
 import type { FactIncidentRow } from "./types";
-import { RPM_CONTRACT_CLOCKS, type RpmPriority } from "./sla-metrics";
+import { RPM_CONTRACT_CLOCKS, RPM_BH_PER_DAY, type RpmContractClock, type RpmPriority } from "./sla-metrics";
+import type { SlaPolicyRow } from "./types";
 
 function bucketOf(i: FactIncidentRow): "open" | "resolved" | "closed" {
   const s = String(i.status ?? "").toLowerCase();
@@ -86,13 +87,61 @@ export function mapTicketPriority(row: FactIncidentRow): RpmPriority {
   return "P3";
 }
 
-function clockFor(p: RpmPriority) {
-  return RPM_CONTRACT_CLOCKS.find((c) => c.priority === p) ?? RPM_CONTRACT_CLOCKS[2];
+function policyNameFor(p: RpmPriority): string[] {
+  if (p === "P1") return ["critical", "urgent", "p1"];
+  if (p === "P2") return ["high", "p2"];
+  if (p === "P4") return ["low", "p4"];
+  return ["medium", "normal", "p3"];
 }
 
-export function scoreTicket(row: FactIncidentRow, now = new Date()): TicketSlaClock {
+function matchPolicy(p: RpmPriority, policies: SlaPolicyRow[] | null | undefined): SlaPolicyRow | null {
+  if (!policies?.length) return null;
+  const names = policyNameFor(p);
+  return policies.find((row) => names.some((n) => String(row.priority ?? "").toLowerCase().includes(n))) ?? null;
+}
+
+function fmtClock(mins: number | null | undefined): string {
+  if (mins == null || mins <= 0) return "By agreement";
+  if (mins < 60) return `${mins} minutes`;
+  const hours = mins / 60;
+  if (Number.isInteger(hours) && hours < RPM_BH_PER_DAY) {
+    return `${hours} Business Hour${hours === 1 ? "" : "s"}`;
+  }
+  const days = mins / (RPM_BH_PER_DAY * 60);
+  if (Number.isInteger(days)) return `${days} Business Day${days === 1 ? "" : "s"}`;
+  return `${mins} minutes`;
+}
+
+/** Freshdesk Dim_SlaPolicy clocks when imported; else signed contract. */
+export function ticketClocksForUi(policies?: SlaPolicyRow[] | null): RpmContractClock[] {
+  return RPM_CONTRACT_CLOCKS.map((c) => {
+    const row = matchPolicy(c.priority, policies);
+    if (!row?.respondMins) return c;
+    const restore = row.resolveMins && row.resolveMins > 0 ? row.resolveMins : null;
+    return {
+      ...c,
+      acknowledge: fmtClock(row.respondMins),
+      restore: fmtClock(restore),
+      acknowledgeMins: row.respondMins,
+      restoreMins: restore,
+    };
+  });
+}
+
+function clockFor(p: RpmPriority, policies?: SlaPolicyRow[] | null): RpmContractClock {
+  const row = matchPolicy(p, policies);
+  const fallback = RPM_CONTRACT_CLOCKS.find((c) => c.priority === p) ?? RPM_CONTRACT_CLOCKS[2];
+  if (!row?.respondMins) return fallback;
+  return {
+    ...fallback,
+    acknowledgeMins: row.respondMins,
+    restoreMins: row.resolveMins && row.resolveMins > 0 ? row.resolveMins : null,
+  };
+}
+
+export function scoreTicket(row: FactIncidentRow, now = new Date(), policies?: SlaPolicyRow[] | null): TicketSlaClock {
   const priority = mapTicketPriority(row);
-  const clock = clockFor(priority);
+  const clock = clockFor(priority, policies);
   const bucket = bucketOf(row);
   const done = bucket !== "open";
   const opened = row.openedAt;
@@ -137,7 +186,10 @@ function pct(met: number, scored: number): number | null {
   return Math.round((met / scored) * 1000) / 10;
 }
 
-export function scoreTicketSet(rows: FactIncidentRow[] | null | undefined): TicketSlaPack {
+export function scoreTicketSet(
+  rows: FactIncidentRow[] | null | undefined,
+  policies?: SlaPolicyRow[] | null,
+): TicketSlaPack {
   const list = rows ?? [];
   const now = new Date();
   const cut = now.getTime() - 30 * 24 * 3600_000;
@@ -146,7 +198,7 @@ export function scoreTicketSet(rows: FactIncidentRow[] | null | undefined): Tick
     return t >= cut;
   });
   const scoredOn = last30.length ? last30 : list;
-  const clocks = scoredOn.map((r) => scoreTicket(r, now));
+  const clocks = scoredOn.map((r) => scoreTicket(r, now, policies));
   const responseScored = clocks.filter((c) => c.response != null).length;
   const resolveScored = clocks.filter((c) => c.resolve != null).length;
   const responseMet = clocks.filter((c) => c.response === true).length;

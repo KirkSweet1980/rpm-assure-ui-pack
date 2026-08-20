@@ -1,4 +1,4 @@
-import type { FactIncidentRow } from "./types";
+import type { FactIncidentRow, SlaPolicyRow } from "./types";
 import { scoreTicketSet } from "./ticket-sla";
 
 export type TicketPillar = "syspro" | "rmm" | "cove" | "epp" | "csp" | "ams" | "eco" | "tickets";
@@ -33,12 +33,15 @@ export function ticketsForPillar(
   return hit.length ? hit : rows;
 }
 
-export function ticketStats(incidents: FactIncidentRow[] | null | undefined) {
+export function ticketStats(
+  incidents: FactIncidentRow[] | null | undefined,
+  policies?: SlaPolicyRow[] | null,
+) {
   const rows = incidents ?? [];
   const open = rows.filter((i) => ticketBucket(i) === "open");
   const resolved = rows.filter((i) => ticketBucket(i) === "resolved");
   const closed = rows.filter((i) => ticketBucket(i) === "closed");
-  const sla = scoreTicketSet(rows);
+  const sla = scoreTicketSet(rows, policies);
   return {
     total: rows.length,
     open: open.length,
