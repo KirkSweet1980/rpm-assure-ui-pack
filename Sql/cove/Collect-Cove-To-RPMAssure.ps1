@@ -1245,6 +1245,58 @@ if (Test-Path -LiteralPath $restamp) {
   }
 }
 
+foreach ($rel in @(
+    '..\central\530_Dim_ExternalIdentity.sql',
+    '466_Cove_Gold_Views.sql',
+    '467_Cove_Raw.sql'
+  )) {
+  $p = Join-Path $here $rel
+  if (-not (Test-Path -LiteralPath $p)) { continue }
+  try {
+    Invoke-SqlFile -SqlText ([IO.File]::ReadAllText($p)) -Label ([IO.Path]::GetFileNameWithoutExtension($p))
+  } catch {
+    Write-Log ('WARN ' + $rel + ' ' + $_.Exception.Message)
+  }
+}
+
+try {
+  Invoke-SqlFile -SqlText 'EXEC dbo.usp_RefreshExternalIdentityFromMaps; EXEC dbo.usp_StampCoveFromIdentity;' -Label 'identity_stamp'
+  Write-Log 'Identity stamp OK'
+} catch {
+  Write-Log ('identity stamp warn ' + $_.Exception.Message)
+}
+
+try {
+  if ($script:DraasByAu -and $script:DraasByAu.Count -gt 0) {
+    $bronze = New-Object System.Collections.Generic.List[object]
+    foreach ($kv in @($script:DraasByAu.GetEnumerator())) {
+      $it = $kv.Value
+      [void]$bronze.Add([ordered]@{
+        id = [string]$kv.Key
+        name = [string](Draas-Attr $it 'backup_cloud_device_name')
+        partner = [string](Draas-Attr $it 'backup_cloud_partner_name')
+        plan = [string](Draas-Attr $it 'plan_name')
+        freq = [string](Draas-Attr $it 'device_recovery_frequency')
+        bar = ColorBar-Text (Draas-Attr $it 'colorbar')
+        status = [string](Draas-Attr $it 'last_recovery_status')
+        boot = [string](Draas-Attr $it 'last_boot_test_status')
+        duration = [string](Draas-Attr $it 'last_recovery_duration_user')
+        errors = [string](Draas-Attr $it 'last_recovery_errors_count')
+        last = [string](Draas-Attr $it 'last_recovery_timestamp')
+        shot = [string](Draas-Attr $it 'last_boot_test_screenshot_presented')
+      })
+    }
+    $json = ($bronze | ConvertTo-Json -Compress -Depth 4)
+    if ($json -is [System.Array]) { $json = [string]::Join('', @($json)) }
+    if ([string]$json.Length -gt 500000) { $json = ([string]$json).Substring(0, 500000) }
+    $esc = ([string]$json).Replace("'", "''")
+    Invoke-SqlFile -SqlText ("SET NOCOUNT ON; IF OBJECT_ID(N'dbo.Cove_Raw', N'U') IS NOT NULL INSERT INTO dbo.Cove_Raw (Kind, Payload) VALUES (N'draas-dashboard', N'$esc');") -Label 'cove_raw'
+    Write-Log ('bronze draas rows=' + $bronze.Count)
+  }
+} catch {
+  Write-Log ('bronze warn ' + $_.Exception.Message)
+}
+
 Write-Log '=== Cove collect done ==='
 Write-Log ("log=" + $log)
 try {

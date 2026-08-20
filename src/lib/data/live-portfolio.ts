@@ -6001,9 +6001,7 @@ ORDER BY DeviceCount DESC`);
       cove.unmapped = [];
     }
 
-    // COVE-RETENTION-MAP-20260812 — retention + recovery columns on devices
-    // Devices: CustomerCode stamped OR Product/PartnerId matches partner map
-    // (collect stores partner name in Product; CustomerCode can lag if map missed)
+    // Gold contract: vw_Cove_Devices_Latest (CustomerCode already stamped).
     let coveRows: any[] = [];
     try {
       const q1 = await pool
@@ -6011,195 +6009,28 @@ ORDER BY DeviceCount DESC`);
         .input("code", sql.NVarChar(50), code)
         .query(`
 SELECT TOP 500
-  d.AccountId,
-  d.DeviceName,
-  d.MachineName,
-  d.Product AS PartnerName,
-  d.PartnerId,
-  d.LastBackupStatus,
-  d.LastSuccessTime,
-  d.UsedBytes,
-  d.SnapshotDate,
-  d.ImportedAt,
-  d.CustomerCode,
-  d.RecoveryPlanType,
-  d.RecoveryPlanLabel,
-  d.RecoveryVerification,
-  d.RecoveryTestStatus,
-  d.Physicality,
-  d.LastRecoveryTestAt,
-  d.RetentionPolicy,
-  d.ProfileName,
-  d.RetentionFiles,
-  d.RetentionSystemState,
-  d.RetentionHyperV,
-  d.RetentionSql,
-  d.RetentionVmware,
-  d.RetentionNetwork,
-  d.SelectedBytes,
-  d.LastBackupDurationSec,
-  d.RecoveryColorBar,
-  d.RecoveryStatus,
-  d.RecoveryErrors,
-  d.LastCompletedSessionAt,
-  d.BackupSessionAt,
-  d.RecoveryDurationSec,
-  d.RecoveryDurationLabel,
-  d.BootStatus,
-  d.RecoverySessionId,
-  d.ScreenshotPresented,
-  d.ScreenshotPath
-FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE ${coveOwnedSql("d")}
-  AND d.SnapshotDate = (
-    SELECT MAX(d2.SnapshotDate)
-    FROM dbo.Cove_DeviceStatistics AS d2 WITH (NOLOCK)
-    WHERE ${coveOwnedSql("d2")}
-  )
-ORDER BY d.DeviceName`);
+  AccountId, DeviceName, MachineName, PartnerName, PartnerId,
+  LastBackupStatus, LastSuccessTime, UsedBytes, SnapshotDate, ImportedAt, CustomerCode,
+  RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus,
+  Physicality, LastRecoveryTestAt,
+  RetentionPolicy, ProfileName, RetentionFiles, RetentionSystemState, RetentionHyperV,
+  RetentionSql, RetentionVmware, RetentionNetwork, SelectedBytes, LastBackupDurationSec,
+  RecoveryColorBar, RecoveryStatus, RecoveryErrors, LastCompletedSessionAt, BackupSessionAt,
+  RecoveryDurationSec, RecoveryDurationLabel, BootStatus, RecoverySessionId,
+  ScreenshotPresented, ScreenshotPath
+FROM dbo.vw_Cove_Devices_Latest WITH (NOLOCK)
+WHERE CustomerCode = @code
+ORDER BY DeviceName`);
       coveRows = q1.recordset ?? [];
     } catch (e1) {
       console.warn(
-        "[rpm-assure] Cove devices (full):",
+        "[rpm-assure] vw_Cove_Devices_Latest:",
         e1 instanceof Error ? e1.message : e1,
       );
-      // Fallback: recovery cols without retention (if 438 not applied)
-      try {
-        const q1b = await pool
-          .request()
-          .input("code", sql.NVarChar(50), code)
-          .query(`
-SELECT TOP 500
-  d.AccountId, d.DeviceName, d.MachineName, d.Product AS PartnerName, d.PartnerId,
-  d.LastBackupStatus, d.LastSuccessTime, d.UsedBytes, d.SnapshotDate, d.ImportedAt, d.CustomerCode,
-  d.RecoveryPlanType, d.RecoveryPlanLabel, d.RecoveryVerification, d.RecoveryTestStatus,
-  d.Physicality, d.LastRecoveryTestAt
-FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE (
-    d.CustomerCode = @code
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
-        AND (
-          (
-            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
-            OR (
-              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
-              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
-            )
-          )
-          OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
-        )
-    )
-  )
-  AND d.SnapshotDate = (
-    SELECT MAX(d2.SnapshotDate)
-    FROM dbo.Cove_DeviceStatistics AS d2 WITH (NOLOCK)
-    WHERE (
-      d2.CustomerCode = @code
-      OR EXISTS (
-        SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m2 WITH (NOLOCK)
-        WHERE m2.CustomerCode = @code AND ISNULL(m2.Active, 1) = 1
-          AND (
-            (
-              UPPER(LTRIM(RTRIM(m2.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d2.Product, N''))))
-              OR (
-                LEN(LTRIM(RTRIM(m2.PartnerName))) >= 6
-                AND UPPER(ISNULL(d2.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.PartnerName))) + N'%'
-              )
-            )
-            OR (m2.PartnerId IS NOT NULL AND d2.PartnerId IS NOT NULL AND m2.PartnerId = d2.PartnerId)
-          )
-      )
-    )
-  )
-ORDER BY d.DeviceName`);
-        coveRows = q1b.recordset ?? [];
-      } catch (e2) {
-        console.warn(
-          "[rpm-assure] Cove devices fallback (recovery only):",
-          e2 instanceof Error ? e2.message : e2,
-        );
-        try {
-          const q1c = await pool
-            .request()
-            .input("code", sql.NVarChar(50), code)
-            .query(`
-SELECT TOP 500
-  d.AccountId, d.DeviceName, d.MachineName, d.Product AS PartnerName, d.PartnerId,
-  d.LastBackupStatus, d.LastSuccessTime, d.UsedBytes, d.SnapshotDate, d.ImportedAt, d.CustomerCode
-FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE (
-    d.CustomerCode = @code
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
-        AND (
-          (
-            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
-            OR (
-              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
-              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
-            )
-          )
-          OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
-        )
-    )
-  )
-  AND d.SnapshotDate = (
-    SELECT MAX(d2.SnapshotDate)
-    FROM dbo.Cove_DeviceStatistics AS d2 WITH (NOLOCK)
-    WHERE d2.CustomerCode = @code OR d2.CustomerCode IS NOT NULL
-  )
-ORDER BY d.DeviceName`);
-          coveRows = q1c.recordset ?? [];
-        } catch (e3) {
-          console.warn(
-            "[rpm-assure] Cove devices bare fallback:",
-            e3 instanceof Error ? e3.message : e3,
-          );
-          coveRows = [];
-        }
-      }
-    }
-
-    // Last-resort: global latest snap filtered by partner map in app
-    if (!coveRows.length && cove.mapping.length) {
-      try {
-        const q2 = await pool.request().query(`
-SELECT TOP 800
-  AccountId, DeviceName, MachineName, Product AS PartnerName, Product, PartnerId,
-  LastBackupStatus, LastSuccessTime, UsedBytes, SnapshotDate, ImportedAt, CustomerCode,
-  RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus, Physicality,
-  LastRecoveryTestAt,
-  RetentionPolicy, ProfileName, RetentionFiles, RetentionSystemState, RetentionHyperV,
-  RetentionSql, RetentionVmware, RetentionNetwork, SelectedBytes
-FROM dbo.Cove_DeviceStatistics WITH (NOLOCK)
-WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Cove_DeviceStatistics WITH (NOLOCK))`);
-        const all = q2.recordset ?? [];
-        const names = new Set(
-          cove.mapping.map((m) => m.partnerName.toLowerCase().trim()).filter(Boolean),
-        );
-        const ids = new Set(
-          cove.mapping.map((m) => m.partnerId).filter((x) => x != null) as number[],
-        );
-        coveRows = all.filter((r: any) => {
-          const pn = String(r.PartnerName ?? r.Product ?? "");
-          const host = String(r.MachineName ?? r.DeviceName ?? "");
-          return tenantAssetBelongs(code, { host, org: pn });
-        });
-      } catch {
-        /* optional */
-      }
+      coveRows = [];
     }
 
     cove.devices = coveRows.map(mapCoveDeviceRow);
-    cove.devices = cove.devices.filter((d) =>
-      tenantAssetBelongs(code, {
-        host: d.machineName || d.deviceName,
-        org: d.partnerName,
-      }),
-    );
 
     // Summary: real view columns (LastImportAt, not ImportedAt; no HealthRag)
     try {
@@ -6449,71 +6280,23 @@ ORDER BY d.SnapshotDate DESC`);
         .input("code", sql.NVarChar(50), code)
         .query(`
 SELECT TOP 800
-  d.AccountId, d.DeviceName, d.MachineName, d.Product AS PartnerName, d.PartnerId,
-  d.LastBackupStatus, d.LastSuccessTime, d.UsedBytes, d.SnapshotDate, d.ImportedAt, d.CustomerCode,
-  d.RecoveryPlanType, d.RecoveryPlanLabel, d.RecoveryVerification, d.RecoveryTestStatus, d.Physicality,
-  d.LastRecoveryTestAt,
-  d.RecoveryColorBar, d.RecoveryStatus, d.RecoveryErrors, d.LastCompletedSessionAt, d.BackupSessionAt,
-  d.RecoveryDurationSec, d.RecoveryDurationLabel, d.BootStatus, d.RecoverySessionId,
-  d.ScreenshotPresented, d.ScreenshotPath
-FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE d.SnapshotDate >= DATEADD(day, -14, CAST(SYSUTCDATETIME() AS date))
-  AND ${coveOwnedSql("d")}
-  AND (
-    ISNULL(d.RecoveryPlanType, 0) > 0
-    OR d.LastRecoveryTestAt IS NOT NULL
-    OR d.LastCompletedSessionAt IS NOT NULL
-    OR d.RecoveryColorBar IS NOT NULL
-    OR d.BootStatus IS NOT NULL
-    OR d.RecoveryStatus IS NOT NULL
-    OR d.RecoveryTestStatus IN (N'Success', N'Failed', N'InProgress', N'NotStarted', N'Unknown', N'Completed')
-  )
-ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
-      cove.recoveryHistory = (rh.recordset ?? [])
-        .map(mapCoveDeviceRow)
-        .filter((d) =>
-          tenantAssetBelongs(code, {
-            host: d.machineName || d.deviceName,
-            org: d.partnerName,
-          }),
-        );
+  AccountId, DeviceName, MachineName, PartnerName, PartnerId,
+  LastBackupStatus, LastSuccessTime, UsedBytes, SnapshotDate, ImportedAt, CustomerCode,
+  RecoveryPlanType, RecoveryPlanLabel, RecoveryVerification, RecoveryTestStatus, Physicality,
+  LastRecoveryTestAt,
+  RecoveryColorBar, RecoveryStatus, RecoveryErrors, LastCompletedSessionAt, BackupSessionAt,
+  RecoveryDurationSec, RecoveryDurationLabel, BootStatus, RecoverySessionId,
+  ScreenshotPresented, ScreenshotPath
+FROM dbo.vw_Cove_Recovery_Latest WITH (NOLOCK)
+WHERE CustomerCode = @code
+ORDER BY DeviceName, AccountId`);
+      cove.recoveryHistory = (rh.recordset ?? []).map(mapCoveDeviceRow);
     } catch (e) {
       console.warn(
-        "[rpm-assure] Cove recovery history:",
+        "[rpm-assure] vw_Cove_Recovery_Latest:",
         e instanceof Error ? e.message : e,
       );
-      try {
-        const rh2 = await pool
-          .request()
-          .input("code", sql.NVarChar(50), code)
-          .query(`
-SELECT TOP 800
-  d.AccountId, d.DeviceName, d.MachineName, d.Product AS PartnerName, d.PartnerId,
-  d.LastBackupStatus, d.LastSuccessTime, d.UsedBytes, d.SnapshotDate, d.ImportedAt, d.CustomerCode,
-  d.RecoveryPlanType, d.RecoveryPlanLabel, d.RecoveryVerification, d.RecoveryTestStatus, d.Physicality,
-  d.LastRecoveryTestAt,
-  d.RecoveryColorBar, d.RecoveryStatus, d.RecoveryErrors, d.LastCompletedSessionAt, d.BackupSessionAt,
-  d.RecoveryDurationSec, d.RecoveryDurationLabel, d.BootStatus, d.RecoverySessionId,
-  d.ScreenshotPresented, d.ScreenshotPath
-FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE d.SnapshotDate >= DATEADD(day, -14, CAST(SYSUTCDATETIME() AS date))
-  AND (
-    d.CustomerCode = @code
-    OR d.DeviceName LIKE N'AHI%' AND @code = N'AHIC'
-    OR ${coveOwnedSql("d")}
-  )
-  AND (
-    ISNULL(d.RecoveryPlanType, 0) > 0
-    OR d.LastRecoveryTestAt IS NOT NULL
-    OR d.RecoveryTestStatus IN (N'Success', N'Failed', N'InProgress', N'NotStarted', N'Unknown')
-    OR d.RecoveryColorBar IS NOT NULL
-    OR d.BootStatus IS NOT NULL
-  )
-ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
-        cove.recoveryHistory = (rh2.recordset ?? []).map(mapCoveDeviceRow);
-      } catch {
-        cove.recoveryHistory = [];
-      }
+      cove.recoveryHistory = [];
     }
 
     // Stale / fail alerts for hub banner

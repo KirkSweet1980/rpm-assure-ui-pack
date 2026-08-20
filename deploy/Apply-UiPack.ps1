@@ -31,6 +31,20 @@ if (Test-Path $sqlFrom) {
     /XD logs installer | Out-Null
 }
 
+$sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
+if (-not (Test-Path $sqlcmd)) { $sqlcmd = 'sqlcmd' }
+foreach ($rel in @(
+    'Sql\central\530_Dim_ExternalIdentity.sql',
+    'Sql\cove\466_Cove_Gold_Views.sql',
+    'Sql\cove\467_Cove_Raw.sql'
+  )) {
+  $sf = Join-Path $Root $rel
+  if (-not (Test-Path $sf)) { continue }
+  Write-Host ("--- SQL " + $rel + " ---")
+  & $sqlcmd -S '.\RPMREPORTS' -d RPMAssure_App -E -C -b -i $sf
+  if ($LASTEXITCODE -ne 0) { Write-Host ("WARN " + $rel + " exit=" + $LASTEXITCODE) }
+}
+
 $pubFrom = Join-Path $Pack 'deploy\Publish-Agent-Pack.ps1'
 $pub = Join-Path $Root 'deploy\Publish-Agent-Pack.ps1'
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
