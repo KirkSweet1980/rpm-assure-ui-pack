@@ -21,7 +21,6 @@ foreach ($vf in @(
     if ($ver) { break }
   }
 }
-[IO.File]::WriteAllText((Join-Path $dl 'VERSION'), $ver)
 
 function Copy-ShareRead([string]$From, [string]$To) {
   $in = $null; $out = $null
@@ -47,8 +46,12 @@ foreach ($pair in @(
     @('sql\agent\Update-From-Https.ps1', 'Update-From-Https.ps1'),
     @('Sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
     @('sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
-    @('Sql\agent\Uninstall-Assure-Agent.ps1', 'Uninstall-Assure-Agent.ps1'),
-    @('sql\agent\Uninstall-Assure-Agent.ps1', 'Uninstall-Assure-Agent.ps1')
+    @('Sql\agent\Start-Agent-Tray.ps1', 'Start-Agent-Tray.ps1'),
+    @('sql\agent\Start-Agent-Tray.ps1', 'Start-Agent-Tray.ps1'),
+    @('Sql\agent\Install-Agent-Tray.ps1', 'Install-Agent-Tray.ps1'),
+    @('sql\agent\Install-Agent-Tray.ps1', 'Install-Agent-Tray.ps1'),
+    @('Sql\agent\Install-Agent-Service.ps1', 'Install-Agent-Service.ps1'),
+    @('sql\agent\Install-Agent-Service.ps1', 'Install-Agent-Service.ps1'),
   )) {
   $src = Join-Path $Pack $pair[0]
   if (Test-Path $src) { [void](Copy-ShareRead $src (Join-Path $dl $pair[1])) }
@@ -115,9 +118,12 @@ $check.Dispose()
 function Test-ZipHas([string]$leaf) {
   return [bool]($names | Where-Object { $_ -like ('*/' + $leaf) -or $_ -eq $leaf })
 }
-if (-not (Test-ZipHas 'collect-host-patches.ps1')) { throw 'zip missing Collect-Host-Patches.ps1 — not publishing a broken pack' }
-if (-not (Test-ZipHas 'rpmassure-agent.ps1')) { throw 'zip missing RpmAssure-Agent.ps1 — not publishing a broken pack' }
-if (-not (Test-ZipHas 'update-from-https.ps1')) { throw 'zip missing Update-From-Https.ps1 — not publishing a broken pack' }
+if (-not (Test-ZipHas 'collect-host-patches.ps1')) { throw 'zip missing Collect-Host-Patches.ps1 - not publishing a broken pack' }
+if (-not (Test-ZipHas 'rpmassure-agent.ps1')) { throw 'zip missing RpmAssure-Agent.ps1 - not publishing a broken pack' }
+if (-not (Test-ZipHas 'update-from-https.ps1')) { throw 'zip missing Update-From-Https.ps1 - not publishing a broken pack' }
+if (-not (Test-ZipHas 'start-agent-tray.ps1')) { throw 'zip missing Start-Agent-Tray.ps1 - not publishing a broken pack' }
+
+[IO.File]::WriteAllText((Join-Path $dl 'VERSION'), $ver)
 
 foreach ($extra in @(
     (Join-Path $Pack 'public\downloads\Pulseway-Collect-DiskIops.ps1'),
