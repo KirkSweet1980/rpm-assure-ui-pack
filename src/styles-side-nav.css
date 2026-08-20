@@ -94,7 +94,14 @@
   white-space: nowrap;
   line-height: 1;
 }
-.rpma-emp-gtab.is-nocover .rpma-emp-gtab-name { color: #64748b; }
+.rpma-emp-gtab.is-nocover,
+.rpma-emp-tool.is-nocover {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.rpma-emp-gtab.is-nocover .rpma-emp-gtab-name,
+.rpma-emp-tool.is-nocover > span:last-of-type { color: #64748b; }
 .rpma-emp.is-side .rpma-emp-gtab:hover,
 .rpma-emp.is-side .rpma-emp-tool:hover {
   background: #f1f5f9 !important;
@@ -161,6 +168,19 @@ html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-tool.is-on {
 }
 html.dark .rpma-emp.is-side .rpma-emp-work,
 html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-work { background: #0f1722 !important; }
+html.dark .rpma-emp-nocover,
+html[data-theme="dark"] .rpma-emp-nocover {
+  color: #cbd5e1;
+  background: #1e293b;
+  border-color: #334155;
+}
+html.dark .rpma-emp-gtab.is-nocover,
+html.dark .rpma-emp-tool.is-nocover,
+html[data-theme="dark"] .rpma-emp-gtab.is-nocover,
+html[data-theme="dark"] .rpma-emp-tool.is-nocover {
+  display: grid !important;
+  visibility: visible !important;
+}
 
 /* Config / reporting rails — no ellipsis */
 .rpma-svc-row-name,

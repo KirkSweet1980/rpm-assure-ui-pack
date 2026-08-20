@@ -282,10 +282,9 @@ export function EstateGrid({
       const estate =
         cls === "server" ? "Server" : cls === "workstation" ? "Workstation" : d.deviceType || "Device";
       if (focus === "syspro" && estate !== "Server") return;
-      // Eco System is the server estate. Skip Pulseway PCs that are only tagged
-      // Server because of a PROD name, with no server OS, backup, or EPP.
-      if (focus === "eco" && cls !== "server") return;
-      if (focus === "eco" && !isStrongRmmServer(d) && !cv && !ep) return;
+      // Eco System is the real server estate. A PC with Cove/EPP (PCNS-PROD)
+      // must not appear as a third BHF server.
+      if (focus === "eco" && !isStrongRmmServer(d)) return;
       if (focus === "rmm" || focus === "syspro" || focus === "eco") {
         push({
           id: d.deviceId || host,
@@ -318,7 +317,7 @@ export function EstateGrid({
         if (seen.has(k)) return;
         const ep = eppBy.get(k);
         const cls = classifyRmmDevice({ name: host, deviceType: c.physicality });
-        if (cls === "workstation") return;
+        if (!isStrongRmmServer({ name: host, deviceType: c.physicality })) return;
         const estate = cls === "server" || /server|sql|srv|web/i.test(host) ? "Server" : "Device";
         if (estate !== "Server") return;
         push({
@@ -341,8 +340,7 @@ export function EstateGrid({
         const host = e.deviceName || e.fqdn || `epp-${i + 1}`;
         const k = keyOf(host);
         if (seen.has(k)) return;
-        const isServer = e.machineType === 6 || classifyRmmDevice({ name: host, osName: e.operatingSystem }) === "server";
-        if (!isServer) return;
+        if (!isStrongRmmServer({ name: host, osName: e.operatingSystem })) return;
         const estate = "Server";
         push({
           id: e.endpointId || host,

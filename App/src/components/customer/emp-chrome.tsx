@@ -132,6 +132,9 @@ function pillarCovered(
   return live?.pillars[id]?.cover === true;
 }
 
+/** Every tenant sees the same RPM Services list. Cover only changes the chip — never hide a service. */
+const ALWAYS_SHOW_SERVICES = RIBBON;
+
 export function EmpChrome({
   customerCode,
   customerName,
@@ -178,7 +181,7 @@ export function EmpChrome({
         <nav className="rpma-side" aria-label="Tenant navigation">
           <p className="rpma-side-h">RPM Services</p>
           <div className="rpma-emp-titles">
-            {RIBBON.map((g) => {
+            {ALWAYS_SHOW_SERVICES.map((g) => {
               const on =
                 g.match === ""
                   ? rest === "" || rest.startsWith("/ams")
@@ -208,18 +211,20 @@ export function EmpChrome({
               const href = `${base}${it.rel}`;
               const active = (it.rel === "" && rest === "") || rest === it.rel;
               const rag = ragOf(it.rel, live);
+              const covered = pillarCovered(group.id, live);
               return (
                 <SpaLink
                   key={it.rel || "home"}
                   href={href}
-                  className={cn("rpma-emp-tool", active && "is-on")}
-                  data-rag={rag}
-                  title={`${it.label} · ${rag}`}
+                  className={cn("rpma-emp-tool", active && "is-on", !covered && "is-nocover")}
+                  data-rag={covered ? rag : "Off"}
+                  title={`${it.label} · ${covered ? rag : "No Cover"}`}
                 >
                   <span className="rpma-emp-ico" style={{ color: it.color }}>
                     <Icon className="size-5" />
                   </span>
                   <span>{it.label}</span>
+                  {!covered ? <em className="rpma-emp-nocover">No Cover</em> : null}
                 </SpaLink>
               );
             })}

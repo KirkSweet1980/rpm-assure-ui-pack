@@ -1,6 +1,7 @@
 /**
  * Classify Pulseway devices as server vs workstation for UI modules and SLA.
  * Pulseway often tags file/SQL boxes as "Workstation" — OS and role names win.
+ * Client OS (Windows 10/11) wins over a bad Pulseway "Server" type tag.
  */
 
 export type RmmDeviceClass = "server" | "workstation" | "other";
@@ -54,6 +55,20 @@ function looksLikeServerOs(os?: string | null): boolean {
   );
 }
 
+function looksLikeClientOs(os?: string | null): boolean {
+  const o = (os || "").toLowerCase();
+  if (!o) return false;
+  return (
+    o.includes("windows 11") ||
+    o.includes("windows 10") ||
+    o.includes("windows 8") ||
+    o.includes("windows 7") ||
+    o.includes("macos") ||
+    o.includes("mac os") ||
+    /\b(laptop|notebook|surface)\b/.test(o)
+  );
+}
+
 export function classifyRmmDevice(d: {
   deviceType?: string | null;
   osName?: string | null;
@@ -66,6 +81,11 @@ export function classifyRmmDevice(d: {
 
   if (looksLikeServerName(d.name) || looksLikeServerOs(d.osName)) {
     return "server";
+  }
+
+  // Client OS beats a wrong Pulseway "Server" tag (PCNS-PROD and similar PCs).
+  if (looksLikeClientOs(d.osName)) {
+    return "workstation";
   }
 
   if (type === "server" || type.includes("server") || type.includes("domain controller")) {
@@ -82,7 +102,7 @@ export function classifyRmmDevice(d: {
     return "workstation";
   }
 
-  if (/\b(hyper-v|esxi|vcenter|sql|dc\d*|prod|srv)\b/.test(blob)) {
+  if (/\b(hyper-v|esxi|vcenter|sql|dc\d*|srv)\b/.test(blob)) {
     return "server";
   }
 
@@ -125,6 +145,7 @@ export function isStrongRmmServer(d: {
   osName?: string | null;
   name?: string | null;
 }): boolean {
+  if (looksLikeClientOs(d.osName)) return false;
   return looksLikeServerName(d.name) || looksLikeServerOs(d.osName);
 }
 
