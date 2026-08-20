@@ -252,6 +252,12 @@ export function customerLiveStatus(
 
   const off = (on: boolean): LiveTone => (on ? "Green" : "Off");
 
+  function clampNoCover(map: Record<string, LiveFlag>) {
+    for (const k of Object.keys(map)) {
+      if (!map[k].cover) map[k] = { ...map[k], rag: "Off" };
+    }
+  }
+
   const pillars: Record<string, LiveFlag> = {
     eco: {
       rag: dormant ? "Off" : ecoRag === "Off" ? "Green" : ecoRag,
@@ -392,49 +398,49 @@ export function customerLiveStatus(
     "/ams": pillars.ams,
     "/ams/incidents": {
       rag: incRag,
-      cover: true,
+      cover: !dormant,
       href: `${base}/ams/incidents`,
       hint: trueOpenInc ? `${trueOpenInc} open incident(s)` : "No open incidents",
     },
     "/ams/risks": {
       rag: riskRag,
-      cover: true,
+      cover: !dormant,
       href: `${base}/ams/risks`,
       hint: openRisk.length ? `${openRisk.length} open risk(s)` : "No open risks",
     },
     "/ams/sla": {
       rag: amsSlaRag,
-      cover: true,
+      cover: !dormant,
       href: `${base}/ams/sla`,
       hint: "Customer SLA clocks only — not incidents",
     },
     "/tickets": {
       rag: trueOpenInc > 0 ? "Amber" : "Green",
-      cover: true,
+      cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets`,
       hint: extra?.incidents?.length ? `${extra.incidents.length} ticket(s)` : "No tickets for this customer",
     },
     "/tickets/open": {
       rag: trueOpenInc > 0 ? "Amber" : "Green",
-      cover: true,
+      cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/open`,
       hint: trueOpenInc ? `${trueOpenInc} open ticket(s)` : "No open tickets",
     },
     "/tickets/resolved": {
       rag: "Green",
-      cover: true,
+      cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/resolved`,
       hint: "Resolved tickets",
     },
     "/tickets/closed": {
       rag: "Green",
-      cover: true,
+      cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/closed`,
       hint: "Closed tickets",
     },
     "/tickets/sla": {
       rag: ticketSlaRag === "Off" ? "Green" : ticketSlaRag,
-      cover: true,
+      cover: !dormant && Boolean(c.tickets),
       href: `${base}/tickets/sla`,
       hint: ticketSlaRag === "Red" ? "Ticket SLA not met" : "Ticket response and restore clocks",
     },
@@ -501,13 +507,13 @@ export function customerLiveStatus(
     "/rmm/sla": { rag: rmmSlaRag === "Off" ? off(Boolean(c.rmm)) : rmmSlaRag, cover: Boolean(c.rmm), href: `${base}/rmm/sla`, hint: rmmSlaRag === "Red" ? "RMM SLA not met" : "RMM SLA" },
     "/rmm/iops": {
       rag: iopsRag,
-      cover: Boolean(c.rmm) || iopsN > 0,
+      cover: Boolean(c.rmm),
       href: `${base}/rmm/iops`,
       hint: iopsN > 0 ? `${iopsN} IOPS volume(s)` : "No IOPS on file",
     },
     "/rmm/events": {
       rag: eventsRag,
-      cover: Boolean(c.rmm) || evN > 0,
+      cover: Boolean(c.rmm),
       href: `${base}/rmm/events`,
       hint: evN > 0 ? `${evN} event(s)` : "No events on file",
     },
@@ -566,6 +572,8 @@ export function customerLiveStatus(
     "/csp/sla": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/sla`, hint: "Microsoft 365 SLA" },
   };
 
+  clampNoCover(pillars);
+  clampNoCover(modules);
   return { pillars, modules };
 }
 

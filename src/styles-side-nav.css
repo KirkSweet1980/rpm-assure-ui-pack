@@ -126,8 +126,8 @@
   animation: none !important;
 }
 .rpma-emp.is-side .rpma-emp-tool[data-rag="Off"] {
-  background: rgba(148, 163, 184, 0.08) !important;
-  box-shadow: inset 3px 0 0 #94a3b8 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   animation: none !important;
 }
 .rpma-emp.is-side .rpma-work-window[data-rag="Red"] {

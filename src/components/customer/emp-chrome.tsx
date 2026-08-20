@@ -112,7 +112,7 @@ function ragOf(
   if (rel.startsWith("/tickets") || rel.startsWith("/ams")) {
     const p = live?.pillars.tickets ?? live?.pillars.ams;
     if (p?.cover) return p.rag === "Off" ? "Green" : p.rag;
-    return "Green";
+    return "Off";
   }
   return live?.pillars.eco?.rag && live.pillars.eco.rag !== "Off" ? live.pillars.eco.rag : "Green";
 }
@@ -273,7 +273,11 @@ export function EmpChrome({
                     <Icon className="size-4" />
                   </span>
                   <span className="rpma-emp-tool-name">{it.label}</span>
-                  <StatusRobot rag={rag} title={it.label} size={14} />
+                  {rag === "Off" ? (
+                    <em className="rpma-emp-nocover">No Cover</em>
+                  ) : (
+                    <StatusRobot rag={rag} title={it.label} size={14} />
+                  )}
                 </SpaLink>
               );
             })}
