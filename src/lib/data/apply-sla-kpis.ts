@@ -30,7 +30,7 @@ export function kpisOnCover(
     rmm: Boolean(cover.rmm),
     cove: Boolean(cover.cove),
     epp: Boolean(cover.epp),
-    csp: Boolean(cover.csp),
+    csp: false, // Microsoft 365 is not on SLA — custom KPIs do not score it
     tickets: Boolean(cover.syspro || cover.rmm || cover.cove || cover.epp),
   };
   for (const k of Object.keys(on) as IndustryPillarKey[]) {

@@ -363,36 +363,41 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const mfa = p?.mfaRegisteredPct != null ? clamp(p.mfaRegisteredPct) : null;
   const seats = s?.totalSeats ? clamp(((s.assignedSeats ?? 0) / s.totalSeats) * 100) : null;
   const slaCover = cover && Boolean(p || s);
+  // Microsoft 365 is not on any SLA. Keep the numbers visible, never score Red/Amber.
+  const notOnSla = { excluded: true, badge: "Not on SLA" };
   const lines: ServiceSlaLine[] = [
     line(
       "csp-score",
       "csp",
       scorePct,
-      scorePct != null ? `${scorePct}% Secure Score` : "No Secure Score on collect",
-      slaCover && scorePct != null,
+      scorePct != null ? `${scorePct}% Secure Score (not on SLA)` : "No Secure Score on collect",
+      false,
+      notOnSla,
     ),
     line(
       "csp-mfa",
       "csp",
       mfa,
       mfa != null
-        ? `${p?.mfaRegisteredCount ?? "—"}/${p?.mfaCapableCount ?? "—"} registered`
+        ? `${p?.mfaRegisteredCount ?? "—"}/${p?.mfaCapableCount ?? "—"} registered (not on SLA)`
         : "No MFA counts on collect",
-      slaCover && mfa != null,
+      false,
+      notOnSla,
     ),
     line(
       "csp-seats",
       "csp",
       seats,
-      s?.totalSeats ? `${s.assignedSeats}/${s.totalSeats} seats assigned` : "No seat counts",
-      slaCover && seats != null,
+      s?.totalSeats ? `${s.assignedSeats}/${s.totalSeats} seats assigned (not on SLA)` : "No seat counts",
+      false,
+      notOnSla,
     ),
   ];
   return stamp({
     pillar: "csp",
     title: INDUSTRY_MEASURES.csp.label,
     covered: slaCover,
-    overallPct: slaCover ? overallOf(lines) : null,
+    overallPct: null,
     headline: INDUSTRY_MEASURES.csp.targetLabel,
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.csp,

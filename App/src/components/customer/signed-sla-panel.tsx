@@ -12,7 +12,7 @@ import { INDUSTRY_MEASURES, type IndustryPillarKey } from "@/lib/data/sla-metric
 import type { CustomerCover } from "@/lib/data/cover";
 import { cn } from "@/lib/utils";
 
-const PILLARS: IndustryPillarKey[] = ["syspro", "rmm", "cove", "epp", "tickets", "csp"];
+const PILLARS: IndustryPillarKey[] = ["syspro", "rmm", "cove", "epp", "tickets"];
 
 function docKey(code: string) {
   return `rpma-sla-file-${code.toUpperCase()}`;

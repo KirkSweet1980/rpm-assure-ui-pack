@@ -18,7 +18,7 @@ const TITLES: Record<IndustryPillarKey, string> = {
   cove: "RPM Cloud Backup · Service SLA",
   epp: "RPM EndPoint Protection · Service SLA",
   syspro: "SYSPRO · Service SLA",
-  csp: "Microsoft 365 · Tenant posture",
+  csp: "Microsoft 365 · Not on SLA",
   tickets: "RPM Service Desk · Service SLA",
 };
 

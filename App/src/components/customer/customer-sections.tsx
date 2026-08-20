@@ -325,6 +325,9 @@ function slaHeadKpis(data: CustomerDetailPayload, pillar: IndustryPillarKey): Ec
               ? buildCspServiceSla(data)
               : buildTicketsServiceSla(data);
   if (!pack.covered) return [];
+  if (pillar === "csp") {
+    return [{ label: "SLA", value: "Not on SLA", tone: "green" }];
+  }
   return [
     {
       label: "SLA",
@@ -5225,22 +5228,13 @@ export function CspTenantHealthSection({ data }: { data: CustomerDetailPayload }
   const assigned = s?.assignedSeats ?? 0;
   const util = m365UtilPct(assigned, total);
   const health = t?.healthScore;
-  const healthTone =
-    health == null ? undefined : health >= 90 ? "green" : health >= 70 ? "amber" : "red";
+  const healthTone = health == null ? undefined : ("green" as const);
   const scorePct = p?.secureScorePct;
-  const scoreTone =
-    scorePct == null
-      ? undefined
-      : scorePct >= 70
-        ? "green"
-        : scorePct >= 50
-          ? "amber"
-          : "red";
+  const scoreTone = scorePct == null ? undefined : ("green" as const);
   const mfaPct = p?.mfaRegisteredPct;
-  const mfaTone =
-    mfaPct == null ? undefined : mfaPct >= 90 ? "green" : mfaPct >= 70 ? "amber" : "red";
+  const mfaTone = mfaPct == null ? undefined : ("green" as const);
   const ga = p?.globalAdminCount;
-  const gaTone = ga == null ? undefined : ga <= 2 ? "green" : ga <= 5 ? "amber" : "red";
+  const gaTone = ga == null ? undefined : ("green" as const);
 
   return (
     <div className="space-y-4">
@@ -5380,7 +5374,7 @@ export function CspTenantHealthSection({ data }: { data: CustomerDetailPayload }
         <StatCard
           label="Open service issues"
           value={String(t?.openIncidents ?? 0)}
-          tone={(t?.openIncidents ?? 0) > 0 ? "amber" : "green"}
+          tone="green"
           tip="Microsoft service health incidents (when polled)"
         />
         <StatCard
@@ -5406,11 +5400,7 @@ export function CspTenantHealthSection({ data }: { data: CustomerDetailPayload }
                 }`
               : "—"
           }
-          tone={
-            (p?.failedSignInCount7d ?? 0) > 20 || (p?.guestUserCount ?? 0) > 10
-              ? "amber"
-              : "green"
-          }
+          tone="green"
           tip="Guest users in directory · failed sign-ins sampled last 7 days (not a full dump)"
         />
       </div>
@@ -5575,13 +5565,13 @@ export function CspLicensesSection({ data }: { data: CustomerDetailPayload }) {
         <StatCard
           label="Unused seats"
           value={String(unused)}
-          tone={unused > 0 && util != null && util < 70 ? "amber" : "green"}
+          tone="green"
           tip="Purchased minus assigned"
         />
         <StatCard
           label="Utilisation"
           value={util != null ? `${util}%` : "—"}
-          tone={util == null ? undefined : util >= 95 ? "amber" : util >= 40 ? "green" : "amber"}
+          tone={util == null ? undefined : "green"}
           tip={m365UtilLabel(util)}
         />
       </div>
@@ -5678,7 +5668,7 @@ export function CspUsersSection({ data }: { data: CustomerDetailPayload }) {
         <StatCard
           label="Disabled"
           value={String(disabled)}
-          tone={disabled > 0 ? "amber" : "green"}
+          tone="green"
         />
       </div>
       <Card>
@@ -5756,14 +5746,7 @@ export function CspSecureScoreSection({ data }: { data: CustomerDetailPayload })
   const p = data.csp?.posture;
   const s = data.csp?.summary;
   const scorePct = p?.secureScorePct;
-  const scoreTone =
-    scorePct == null
-      ? undefined
-      : scorePct >= 70
-        ? "green"
-        : scorePct >= 50
-          ? "amber"
-          : "red";
+  const scoreTone = scorePct == null ? undefined : ("green" as const);
 
   return (
     <div className="space-y-4">
@@ -5835,7 +5818,7 @@ export function CspGlobalAdminsSection({ data }: { data: CustomerDetailPayload }
   const p = data.csp?.posture;
   const admins = data.csp?.globalAdmins ?? [];
   const ga = p?.globalAdminCount ?? (admins.length > 0 ? admins.length : null);
-  const gaTone = ga == null ? undefined : ga <= 2 ? "green" : ga <= 5 ? "amber" : "red";
+  const gaTone = ga == null ? undefined : ("green" as const);
   const nameList =
     p?.globalAdminNames
       ?.split(";")
@@ -5937,8 +5920,7 @@ export function CspMfaSection({ data }: { data: CustomerDetailPayload }) {
   }
   const p = data.csp?.posture;
   const mfaPct = p?.mfaRegisteredPct;
-  const mfaTone =
-    mfaPct == null ? undefined : mfaPct >= 90 ? "green" : mfaPct >= 70 ? "amber" : "red";
+  const mfaTone = mfaPct == null ? undefined : ("green" as const);
 
   return (
     <div className="space-y-4">

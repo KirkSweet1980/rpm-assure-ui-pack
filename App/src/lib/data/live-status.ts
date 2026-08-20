@@ -221,9 +221,11 @@ export function customerLiveStatus(
   const eppIncRag: LiveTone = !eppDevCover ? "Off" : infected > 0 || eppInc > 0 ? "Red" : "Green";
   const eppRag = [eppEndRag, eppIncRag, eppSlaRag].reduce(worse, eppDevCover ? "Green" : "Off");
 
-  const mfaRag: LiveTone = !c.csp ? "Off" : mfa != null && mfa < 80 ? "Red" : mfa != null && mfa < 90 ? "Amber" : "Green";
-  const gaRag: LiveTone = !c.csp ? "Off" : ga != null && ga > 5 ? "Red" : ga != null && ga > 2 ? "Amber" : "Green";
-  const scoreRag: LiveTone = !c.csp ? "Off" : score != null && score < 50 ? "Amber" : "Green";
+  // Microsoft 365 is not on any SLA. Always Green when on cover — never Red/Amber
+  // until it is contracted. Posture numbers stay on the pages as visibility only.
+  const mfaRag: LiveTone = !c.csp ? "Off" : "Green";
+  const gaRag: LiveTone = !c.csp ? "Off" : "Green";
+  const scoreRag: LiveTone = !c.csp ? "Off" : "Green";
 
   const dormant = isDormantCover(c);
   const incRag: LiveTone = dormant ? "Off" : trueOpenInc > 0 ? (majorOpen > 0 ? "Red" : "Amber") : "Green";
@@ -363,7 +365,7 @@ export function customerLiveStatus(
       href: `${base}/csp`,
       hint: !c.csp
         ? "Microsoft 365 not on cover"
-        : "Microsoft 365 posture (not scored in assurance / SLA)",
+        : "Microsoft 365 — not on SLA (always Green until contracted)",
     },
     tickets: {
       rag: ticketRag,
@@ -548,28 +550,28 @@ export function customerLiveStatus(
     },
     "/epp/quarantine": { rag: off(Boolean(c.epp)), cover: Boolean(c.epp), href: `${base}/epp/quarantine`, hint: "Quarantine" },
     "/epp/sla": { rag: eppSlaRag === "Off" ? off(Boolean(c.epp)) : eppSlaRag, cover: Boolean(c.epp), href: `${base}/epp/sla`, hint: eppSlaRag === "Red" ? "EPP SLA not met" : "EPP SLA" },
-    "/csp": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp`, hint: "Microsoft 365 overview" },
+    "/csp": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp`, hint: "Microsoft 365 overview — not on SLA" },
     "/csp/secure-score": {
       rag: scoreRag,
       cover: Boolean(c.csp),
       href: `${base}/csp/secure-score`,
-      hint: score != null ? `Secure Score ${score}%` : "Secure Score",
+      hint: score != null ? `Secure Score ${score}% (visibility only — not on SLA)` : "Secure Score (not on SLA)",
     },
     "/csp/global-admins": {
       rag: gaRag,
       cover: Boolean(c.csp),
       href: `${base}/csp/global-admins`,
-      hint: ga != null ? `${ga} global admin(s)` : "Global Admins",
+      hint: ga != null ? `${ga} global admin(s) (visibility only — not on SLA)` : "Global Admins (not on SLA)",
     },
     "/csp/mfa": {
       rag: mfaRag,
       cover: Boolean(c.csp),
       href: `${base}/csp/mfa`,
-      hint: mfa != null ? `MFA ${mfa}%` : "MFA",
+      hint: mfa != null ? `MFA ${mfa}% (visibility only — not on SLA)` : "MFA (not on SLA)",
     },
-    "/csp/users": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/users`, hint: "Users" },
-    "/csp/licenses": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/licenses`, hint: "Licences" },
-    "/csp/sla": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/sla`, hint: "Microsoft 365 SLA" },
+    "/csp/users": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/users`, hint: "Users (not on SLA)" },
+    "/csp/licenses": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/licenses`, hint: "Licences (not on SLA)" },
+    "/csp/sla": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/sla`, hint: "Microsoft 365 is not on SLA" },
   };
 
   clampNoCover(pillars);

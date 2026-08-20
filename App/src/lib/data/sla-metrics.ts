@@ -7,6 +7,8 @@
  * Layer B — Operational posture for RMM / RPM Cloud Backup / EPP.
  *   Industry measures from RMM SLA Metrics Recommendations (14 Aug 2026).
  *   These are NOT in the RPM SYSPRO+AMS contract (clauses 5.1, 11.2).
+ *
+ * Microsoft 365 is not in Layer A or Layer B. Always Green until contracted.
  */
 
 export const RPM_SLA_REVISION = "5.0";
@@ -166,12 +168,12 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
   csp: {
     pillar: "csp",
     label: "Microsoft 365",
-    metric: "Tenant posture",
-    targetPct: 80,
-    targetLabel: "Secure Score and MFA registration",
+    metric: "Not on SLA",
+    targetPct: 0,
+    targetLabel: "Not contracted — posture only, always Green",
     howWeMeasure:
-      "Secure Score % and MFA registered ÷ capable. Posture only — not the signed SYSPRO + AMS contract.",
-    source: "Microsoft 365 tenant collect",
+      "Microsoft 365 is visibility only until it is added to a signed SLA. Secure Score, MFA and Global Admins are shown, never scored.",
+    source: "Not in RPM SYSPRO+AMS or industry posture SLA",
   },
   tickets: {
     pillar: "tickets",
@@ -316,29 +318,29 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
     {
       id: "csp-score",
       metric: "Secure Score",
-      targetPct: 70,
-      targetLabel: "≥ 70% of Microsoft max",
+      targetPct: null,
+      targetLabel: "Not on SLA",
       contractual: false,
-      measurable: true,
-      how: "Current Secure Score ÷ max from the Microsoft 365 collect.",
+      measurable: false,
+      how: "Shown from Graph collect. Not scored until Microsoft 365 is added to a signed SLA.",
     },
     {
       id: "csp-mfa",
       metric: "MFA registration",
-      targetPct: 95,
-      targetLabel: "≥ 95% of MFA-capable users registered",
+      targetPct: null,
+      targetLabel: "Not on SLA",
       contractual: false,
-      measurable: true,
-      how: "MFA registered ÷ MFA capable on the latest tenant snapshot.",
+      measurable: false,
+      how: "Shown from Graph collect. Not scored until Microsoft 365 is added to a signed SLA.",
     },
     {
       id: "csp-seats",
       metric: "Licence assignment",
-      targetPct: 80,
-      targetLabel: "Assigned seats in use",
+      targetPct: null,
+      targetLabel: "Not on SLA",
       contractual: false,
-      measurable: true,
-      how: "Assigned seats ÷ purchased seats. Visibility only — unused seats are not a breach.",
+      measurable: false,
+      how: "Shown from Graph collect. Unused seats are not a breach — Microsoft 365 is not on SLA.",
     },
   ],
   tickets: [
@@ -398,8 +400,9 @@ export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
     "Hotfixes and SQL instance health are visibility, not this score.",
   ],
   csp: [
-    "Microsoft 365 is posture, not the signed SYSPRO + AMS contract.",
-    "Secure Score and MFA depend on Graph collect for that tenant.",
+    "Microsoft 365 is not in any SLA — no Red/Amber, always Green when on cover.",
+    "Secure Score, MFA and Global Admins are posture / visibility only.",
+    "Scoring starts only when Microsoft 365 is added to a signed SLA.",
   ],
   tickets: [
     "Open clocks are not scored as a miss until the clock expires.",
