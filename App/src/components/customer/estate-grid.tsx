@@ -449,7 +449,7 @@ export function EstateGrid({
     { label: "Job Logging", href: `${base}/syspro/jobs`, on: cover.syspro, rag: live.modules["/syspro/jobs"]?.rag ?? live.pillars.syspro?.rag },
     { label: "Day End", href: `${base}/syspro/day-end`, on: cover.syspro, rag: live.modules["/syspro/day-end"]?.rag ?? live.pillars.syspro?.rag },
     { label: "Servers", href: `${base}/rmm/devices`, on: cover.rmm, rag: live.modules["/rmm/devices"]?.rag ?? live.pillars.rmm?.rag },
-    { label: "Workstations", href: `${base}/rmm/workstations`, on: cover.rmm, rag: live.modules["/rmm/workstations"]?.rag ?? "Off" },
+    { label: "Workstations", href: `${base}/rmm/workstations`, on: Boolean(live.modules["/rmm/workstations"]?.cover), rag: live.modules["/rmm/workstations"]?.rag ?? "Off" },
     { label: "Patch Compliance", href: `${base}/rmm/patch`, on: cover.rmm, rag: live.modules["/rmm/patch"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Disk Performance", href: `${base}/rmm/iops`, on: cover.rmm, rag: live.modules["/rmm/iops"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Server Alerts", href: `${base}/rmm/alerts`, on: cover.rmm, rag: live.modules["/rmm/alerts"]?.rag ?? live.pillars.rmm?.rag },

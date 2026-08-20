@@ -1784,10 +1784,12 @@ html[data-density="comfortable"] .rpma-xls th {
   border-radius: 50%;
 }
 .rpma-bot.is-off {
-  opacity: 0.42;
+  opacity: 0.5;
+  animation: none !important;
+  filter: none !important;
 }
 .rpma-bot.is-off .rpma-bot-img {
-  filter: grayscale(1) brightness(0.75);
+  filter: grayscale(1) brightness(0.55) contrast(0.8) !important;
 }
 
 .rpma-cover-tag {
@@ -1891,15 +1893,15 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
 }
 
 .rpma-bot.is-green {
-  animation: none;
+  animation: none !important;
   filter: drop-shadow(0 0 5px #4ade80) drop-shadow(0 0 10px rgba(34, 197, 94, 0.45)) brightness(1.08);
 }
 .rpma-bot.is-amber {
-  animation: none;
+  animation: none !important;
   filter: drop-shadow(0 0 5px #facc15) drop-shadow(0 0 10px rgba(234, 179, 8, 0.45)) brightness(1.08);
 }
 .rpma-bot.is-red { animation: rpma-lamp-flash-red 0.48s ease-in-out infinite; }
-.rpma-bot.is-off { animation: none; }
+.rpma-bot.is-off { animation: none !important; }
 .rpma-bot:hover { transform: scale(1.22); z-index: 8; }
 .rpma-bot.is-red:hover { animation: rpma-lamp-flash-red 0.48s ease-in-out infinite; }
 .rpma-bot .rpma-help-bubble { min-width: 11rem; }
@@ -1909,8 +1911,7 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
 .rpma-cmd-banner.is-alert.is-red {
   animation: rpma-row-flash-red 0.48s ease-in-out infinite;
 }
-.rpma-cmd-cell.is-red.is-alert,
-.rpma-cmd-cell.is-red {
+.rpma-cmd-cell.is-red.is-alert {
   animation: rpma-cell-flash-red 0.48s ease-in-out infinite;
 }
 

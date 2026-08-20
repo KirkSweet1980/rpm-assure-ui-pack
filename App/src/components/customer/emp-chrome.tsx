@@ -99,8 +99,11 @@ function ragOf(
   live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
 ): LiveTone {
   const m = live?.modules[rel];
-  if (m?.rag && m.rag !== "Off") return m.rag;
-  if (m?.cover) return "Green";
+  if (m) {
+    if (!m.cover) return "Off";
+    if (m.rag && m.rag !== "Off") return m.rag;
+    return "Green";
+  }
   if (rel.startsWith("/syspro")) return live?.pillars.syspro?.cover ? (live.pillars.syspro.rag === "Off" ? "Green" : live.pillars.syspro.rag) : "Off";
   if (rel.startsWith("/rmm")) return live?.pillars.rmm?.cover ? (live.pillars.rmm.rag === "Off" ? "Green" : live.pillars.rmm.rag) : "Off";
   if (rel.startsWith("/cove")) return live?.pillars.cove?.cover ? (live.pillars.cove.rag === "Off" ? "Green" : live.pillars.cove.rag) : "Off";
@@ -258,24 +261,19 @@ export function EmpChrome({
               const href = `${base}${it.rel}`;
               const active = (it.rel === "" && rest === "") || rest === it.rel;
               const rag = ragOf(it.rel, live);
-              const covered = pillarCovered(group.id, live);
               return (
                 <SpaLink
                   key={it.rel || "home"}
                   href={href}
-                  className={cn("rpma-emp-tool", active && "is-on", !covered && "is-nocover")}
-                  data-rag={covered ? rag : "Off"}
-                  title={`${it.label} · ${covered ? rag : "No Cover"}`}
+                  className={cn("rpma-emp-tool", active && "is-on", rag === "Off" && "is-nocover")}
+                  data-rag={rag}
+                  title={`${it.label} · ${rag === "Off" ? "No Cover" : rag}`}
                 >
                   <span className="rpma-emp-ico" style={{ color: it.color }}>
                     <Icon className="size-5" />
                   </span>
                   <span className="rpma-emp-tool-name">{it.label}</span>
-                  {covered ? (
-                    <StatusRobot rag={rag} title={it.label} size={18} />
-                  ) : (
-                    <em className="rpma-emp-nocover">No Cover</em>
-                  )}
+                  <StatusRobot rag={rag} title={it.label} size={18} />
                 </SpaLink>
               );
             })}
