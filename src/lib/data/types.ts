@@ -540,6 +540,8 @@ export type RmmDeviceRow = {
   elevatedNotifications: number;
   lastSeenOnline: string | null;
   organizationName: string | null;
+  /** Pulseway / collect stamp — used for tenant isolation */
+  customerCode?: string | null;
   ipAddress?: string | null;
   cpuPct?: number | null;
   memoryPct?: number | null;
@@ -923,6 +925,7 @@ export type EppDeviceRow = {
   snapshotDate: string | null;
   lastSeenAt?: string | null;
   lastSuccessfulScanAt?: string | null;
+  lastSuccessfulScanName?: string | null;
   malwareDetected?: boolean | null;
   infected?: boolean | null;
   productOutdated?: boolean | null;

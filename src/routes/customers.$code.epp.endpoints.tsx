@@ -37,7 +37,8 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
     };
     const scanLabel = (d: (typeof devices)[0] | undefined) => {
       if (!d?.lastSuccessfulScanAt) return "No Last Scan on last collect";
-      return formatSastDateTime(d.lastSuccessfulScanAt);
+      const when = formatSastDateTime(d.lastSuccessfulScanAt);
+      return d.lastSuccessfulScanName ? `${when} · ${d.lastSuccessfulScanName}` : when;
     };
     return (
       <div className="rpma-win-row" style={{ minHeight: 0 }}>

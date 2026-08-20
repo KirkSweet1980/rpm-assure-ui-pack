@@ -1,4 +1,4 @@
-﻿# Collect Bitdefender GravityZone endpoints → RPMAssure_App (EPP pillar)
+# Collect Bitdefender GravityZone endpoints → RPMAssure_App (EPP pillar)
 # Auth: Basic base64(ApiKey + ":")
 # Map: Dim_Bitdefender_NameMap patterns against Name+Fqdn; optional default RPMINT for staff
 
@@ -147,11 +147,48 @@ function Sql-Int($v) {
 function Sql-Dt($v) {
   if ($null -eq $v -or "$v" -eq '') { return 'NULL' }
   try {
-    $dto = [datetime]::Parse("$v", [Globalization.CultureInfo]::InvariantCulture)
+    if ($v -is [datetime]) {
+      $dto = [datetime]$v
+      if ($dto.Kind -eq [DateTimeKind]::Local) { $dto = $dto.ToUniversalTime() }
+      elseif ($dto.Kind -eq [DateTimeKind]::Unspecified) {
+        $dto = [datetime]::SpecifyKind($dto, [DateTimeKind]::Utc)
+      }
+      return ("'{0:yyyy-MM-ddTHH:mm:ss}'" -f $dto)
+    }
+    $s = ([string]$v).Trim()
+    if ($s -match '^\d{10,13}(\.\d+)?$') {
+      $n = [int64][double]$s
+      if ($n -gt 20000000000) { $n = [int64]($n / 1000) }
+      $dto = [datetime]::SpecifyKind(([datetime]'1970-01-01'), [DateTimeKind]::Utc).AddSeconds($n)
+      return ("'{0:yyyy-MM-ddTHH:mm:ss}'" -f $dto)
+    }
+    $dto = [datetime]::Parse($s, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal)
     return ("'{0:yyyy-MM-ddTHH:mm:ss}'" -f $dto.ToUniversalTime())
   } catch {
-    return 'NULL'
+    try {
+      $dto = [datetime]::Parse("$v", [Globalization.CultureInfo]::CurrentCulture, [Globalization.DateTimeStyles]::AssumeLocal)
+      return ("'{0:yyyy-MM-ddTHH:mm:ss}'" -f $dto.ToUniversalTime())
+    } catch { return 'NULL' }
   }
+}
+
+function Get-EppScanInfo($obj) {
+  $out = @{ Date = $null; Name = $null }
+  if ($null -eq $obj) { return $out }
+  $scan = $null
+  try { $scan = $obj.lastSuccessfulScan } catch { $scan = $null }
+  if ($null -eq $scan) {
+    try { $scan = $obj.LastSuccessfulScan } catch { $scan = $null }
+  }
+  if ($null -eq $scan) { return $out }
+  if ($scan -is [datetime] -or ($scan -is [string] -and "$scan")) {
+    $out.Date = $scan
+    return $out
+  }
+  try { if ($scan.date) { $out.Date = $scan.date } } catch {}
+  try { if (-not $out.Date -and $scan.timestamp) { $out.Date = $scan.timestamp } } catch {}
+  try { if ($scan.name) { $out.Name = [string]$scan.name } } catch {}
+  return $out
 }
 
 Write-Log '=== Bitdefender EPP collect start ==='
@@ -449,7 +486,7 @@ foreach ($co in $companyTargets) {
   $page = 1; $pages = 1
   do {
     try {
-      $params = @{ page = $page; perPage = 50; options = @{ includeScanLogs = $true } }
+      $params = @{ page = $page; perPage = 100; options = @{ includeScanLogs = $true; returnProductOutdated = $true } }
       if ($co.Id) { $params['parentId'] = $co.Id }
       $raw = Invoke-GzRpc -Service 'network' -Method 'getEndpointsList' -Params $params
       if ($page -eq 1 -and -not $co.Id) {
@@ -468,13 +505,16 @@ foreach ($co in $companyTargets) {
         $eid = [string]$it.id
         if (-not $eid) { continue }
         if (-not $epBag.ContainsKey($eid)) {
-          $scan = $null
-          try { if ($it.lastSuccessfulScan.date) { $scan = [string]$it.lastSuccessfulScan.date } } catch {}
+          $info = Get-EppScanInfo $it
+          $outdated = $null
+          try { if ($null -ne $it.productOutdated) { $outdated = [bool]$it.productOutdated } } catch {}
           $epBag[$eid] = @{
-            Ep          = $it
-            CompanyId   = $co.Id
-            CompanyName = $co.Name
-            LastScan    = $scan
+            Ep             = $it
+            CompanyId      = $co.Id
+            CompanyName    = $co.Name
+            LastScan       = $info.Date
+            ScanName       = $info.Name
+            ProductOutdated = $outdated
           }
         } elseif ($co.Id -and -not $epBag[$eid].CompanyId) {
           $epBag[$eid].CompanyId = $co.Id
@@ -489,7 +529,7 @@ foreach ($co in $companyTargets) {
   } while ($page -le $pages -and $page -le 80)
 }
 
-Write-Log ("Unique endpoints from API=" + $epBag.Count)
+Write-Log ("Unique endpoints from API=" + $epBag.Count + " withScan=" + @($epBag.Values | Where-Object { $_.LastScan }).Count)
 if ($epBag.Count -eq 0) { throw 'No endpoints from RPM EPP' }
 
 # Collapse clean-name + name-MAC duplicates (same FQDN/IP) before SQL insert
@@ -545,29 +585,33 @@ foreach ($eid in @($epBag.Keys)) {
 Write-Log ("After host de-dupe=" + $deduped.Count + " (removed " + ($epBag.Count - $deduped.Count) + " MAC twin rows)")
 $epBag = $deduped
 
-# Enrich managed endpoints: last scan, malware, outdated (cap keeps collect under 15 min)
+# Enrich managed endpoints: last scan, malware, outdated.
+# Use GravityZone endpoint id (not the fqdn: de-dupe key).
 # Parse JSON-RPC result (do NOT regex-match "error" - scan logs nest that word).
-$detailCap = 200
+$detailCap = 400
 $detailN = 0
 $detailOk = 0
 $detailErrLogged = 0
 $detailSkip = 0
-foreach ($eid in @($epBag.Keys)) {
-  $bag = $epBag[$eid]
+foreach ($key in @($epBag.Keys)) {
+  $bag = $epBag[$key]
   $ep = $bag.Ep
+  $gzId = [string]$ep.id
+  if (-not $gzId) { $gzId = [string]$key }
   if ($ep.isManaged -ne $true) { $detailSkip++; continue }
+  # List already has lastSuccessfulScan for most hosts — still pull details for malware/outdated.
   if ($detailN -ge $detailCap) { break }
   $detailN++
   try {
     $rawD = Invoke-GzRpc -Service 'network' -Method 'getManagedEndpointDetails' -Params @{
-      endpointId = [string]$eid
+      endpointId = $gzId
       options    = @{ includeScanLogs = $true }
     }
     $det = $null
     try { $det = $rawD | ConvertFrom-Json } catch { $det = $null }
     if ($det -and $det.error) {
       $raw2 = Invoke-GzRpc -Service 'network' -Method 'getManagedEndpointDetails' -Params @{
-        endpointId = [string]$eid
+        endpointId = $gzId
       }
       try { $det = $raw2 | ConvertFrom-Json } catch { $det = $null }
     }
@@ -576,18 +620,18 @@ foreach ($eid in @($epBag.Keys)) {
         $em = ''
         try { $em = [string]$det.error.message + ' ' + [string]$det.error.data.details } catch { $em = $rawD }
         if ($em.Length -gt 220) { $em = $em.Substring(0, 220) }
-        Write-Log ("detail err id=$eid $em")
+        Write-Log ("detail err id=$gzId $em")
         $detailErrLogged++
       }
       continue
     }
     $res = $det.result
     if (-not $res) { continue }
+    $info = Get-EppScanInfo $res
+    if ($info.Date) { $bag.LastScan = $info.Date }
+    if ($info.Name) { $bag.ScanName = $info.Name }
     try {
-      if ($res.lastSuccessfulScan.date) { $bag.LastScan = [string]$res.lastSuccessfulScan.date }
-    } catch {}
-    try {
-      if ($res.lastSeen) { $bag.LastSeen = [string]$res.lastSeen }
+      if ($res.lastSeen) { $bag.LastSeen = $res.lastSeen }
     } catch {}
     try {
       if ($null -ne $res.malwareStatus.detection) { $bag.MalwareDetected = [bool]$res.malwareStatus.detection }
@@ -606,7 +650,7 @@ foreach ($eid in @($epBag.Keys)) {
     $detailOk++
     Start-Sleep -Milliseconds 60
   } catch {
-    Write-Log ("detail skip id=$eid err=$($_.Exception.Message)")
+    Write-Log ("detail skip id=$gzId err=$($_.Exception.Message)")
   }
 }
 Write-Log ("Endpoint detail enrich tried=$detailN ok=$detailOk skipUnmanaged=$detailSkip withScan=" + @($epBag.Values | Where-Object { $_.LastScan }).Count)
@@ -634,6 +678,8 @@ IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSeenAt') IS NULL
   ALTER TABLE dbo.Bitdefender_Endpoints ADD LastSeenAt datetime2(3) NULL;
 IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSuccessfulScanAt') IS NULL
   ALTER TABLE dbo.Bitdefender_Endpoints ADD LastSuccessfulScanAt datetime2(3) NULL;
+IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSuccessfulScanName') IS NULL
+  ALTER TABLE dbo.Bitdefender_Endpoints ADD LastSuccessfulScanName nvarchar(200) NULL;
 IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'MalwareDetected') IS NULL
   ALTER TABLE dbo.Bitdefender_Endpoints ADD MalwareDetected bit NULL;
 IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'Infected') IS NULL
@@ -654,16 +700,25 @@ try {
   if ($dcr -match '1') { $hasDetailCols = $true }
 } catch {}
 Write-Log ("Detail columns on table=" + $hasDetailCols)
+$hasScanName = $false
+try {
+  $snf = Join-Path $logDir 'scan_name_col.sql'
+  [IO.File]::WriteAllText($snf, "SET NOCOUNT ON; SELECT CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSuccessfulScanName') IS NOT NULL THEN 1 ELSE 0 END;", [Text.UTF8Encoding]::new($false))
+  $snr = (& $sqlcmd -S $SqlServer -d $SqlDatabase -U $SqlUser -P $SqlPassword -C -h -1 -W -i $snf 2>&1 | Out-String)
+  if ($snr -match '1') { $hasScanName = $true }
+} catch {}
+Write-Log ("Scan name column on table=" + $hasScanName)
 
 $snap = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
 $values = New-Object System.Collections.Generic.List[string]
 $codeCounts = @{}
 $unmapped = 0
 
-foreach ($eid in $epBag.Keys) {
-  $bag = $epBag[$eid]
+foreach ($key in $epBag.Keys) {
+  $bag = $epBag[$key]
   $ep = $bag.Ep
-  $id = $eid
+  $id = [string]$ep.id
+  if (-not $id) { $id = [string]$key }
   $name = [string]$ep.name
   $fqdn = [string]$ep.fqdn
   $coName = [string]$bag.CompanyName
@@ -695,9 +750,20 @@ foreach ($eid in $epBag.Keys) {
   }
 
   $codeSql = if ($code) { Sql-Str $code } else { 'NULL' }
+  $scanAtSql = Sql-Dt $bag.LastScan
+  $scanNameSql = Sql-Str $bag.ScanName
+  $seenSql = Sql-Dt $bag.LastSeen
+  $malSql = Sql-Bit $bag.MalwareDetected
+  $infSql = Sql-Bit $bag.Infected
+  $prodSql = Sql-Bit $bag.ProductOutdated
+  $sigSql = Sql-Bit $bag.SignatureOutdated
+  $detailVals = if ($hasDetailCols) {
+    if ($hasScanName) { ",$scanAtSql,$scanNameSql,$seenSql,$malSql,$infSql,$prodSql,$sigSql" }
+    else { ",$scanAtSql,$seenSql,$malSql,$infSql,$prodSql,$sigSql" }
+  } else { '' }
   if ($hasCoCols) {
     $values.Add((
-      "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14})" -f `
+      "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}{15})" -f `
         ("'{0}'" -f $snap),
         (Sql-Str $id),
         $codeSql,
@@ -712,11 +778,12 @@ foreach ($eid in $epBag.Keys) {
         (Sql-Str $polName),
         (Sql-Str $macs),
         (Sql-Str $coId),
-        (Sql-Str $coName)
+        (Sql-Str $coName),
+        $detailVals
     ))
   } else {
     $values.Add((
-      "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12})" -f `
+      "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}{13})" -f `
         ("'{0}'" -f $snap),
         (Sql-Str $id),
         $codeSql,
@@ -729,7 +796,8 @@ foreach ($eid in $epBag.Keys) {
         (Sql-Str $os),
         (Sql-Str $polId),
         (Sql-Str $polName),
-        (Sql-Str $macs)
+        (Sql-Str $macs),
+        $detailVals
     ))
   }
 }
@@ -941,6 +1009,11 @@ $($polRows -join ",`r`n");
 }
 
 # Load endpoints (replace today's snapshot)
+$detailInsertCols = ''
+if ($hasDetailCols) {
+  $detailInsertCols = ', LastSuccessfulScanAt, LastSeenAt, MalwareDetected, Infected, ProductOutdated, SignatureOutdated'
+  if ($hasScanName) { $detailInsertCols = ', LastSuccessfulScanAt, LastSuccessfulScanName, LastSeenAt, MalwareDetected, Infected, ProductOutdated, SignatureOutdated' }
+}
 if ($hasCoCols) {
   $load = @"
 SET NOCOUNT ON;
@@ -948,7 +1021,7 @@ SET XACT_ABORT ON;
 DELETE FROM dbo.Bitdefender_Endpoints WHERE SnapshotDate = '$snap';
 INSERT INTO dbo.Bitdefender_Endpoints (
   SnapshotDate, EndpointId, CustomerCode, DeviceName, Fqdn, IpAddress, GroupId,
-  IsManaged, MachineType, OperatingSystem, PolicyId, PolicyName, MacAddresses, CompanyId, CompanyName
+  IsManaged, MachineType, OperatingSystem, PolicyId, PolicyName, MacAddresses, CompanyId, CompanyName$detailInsertCols
 ) VALUES
 $($values -join ",`r`n");
 
@@ -975,7 +1048,7 @@ SET XACT_ABORT ON;
 DELETE FROM dbo.Bitdefender_Endpoints WHERE SnapshotDate = '$snap';
 INSERT INTO dbo.Bitdefender_Endpoints (
   SnapshotDate, EndpointId, CustomerCode, DeviceName, Fqdn, IpAddress, GroupId,
-  IsManaged, MachineType, OperatingSystem, PolicyId, PolicyName, MacAddresses
+  IsManaged, MachineType, OperatingSystem, PolicyId, PolicyName, MacAddresses$detailInsertCols
 ) VALUES
 $($values -join ",`r`n");
 
@@ -996,21 +1069,29 @@ Invoke-SqlText -SqlText $load -Label 'bd_endpoints_load'
 if ($hasDetailCols) {
   $upd = New-Object System.Collections.Generic.List[string]
   [void]$upd.Add('SET NOCOUNT ON;')
-  foreach ($eid in $epBag.Keys) {
-    $bag = $epBag[$eid]
+  $scanN = 0
+  foreach ($key in $epBag.Keys) {
+    $bag = $epBag[$key]
+    $ep = $bag.Ep
+    $gzId = [string]$ep.id
+    if (-not $gzId) { $gzId = [string]$key }
     if (-not $bag.LastSeen -and $null -eq $bag.MalwareDetected -and $null -eq $bag.ProductOutdated -and -not $bag.LastScan) { continue }
+    if ($bag.LastScan) { $scanN++ }
+    $setScanName = if ($hasScanName) { ", LastSuccessfulScanName={0}" -f (Sql-Str $bag.ScanName) } else { '' }
     [void]$upd.Add((
-      "UPDATE dbo.Bitdefender_Endpoints SET LastSeenAt={0}, LastSuccessfulScanAt={1}, MalwareDetected={2}, Infected={3}, ProductOutdated={4}, SignatureOutdated={5} WHERE SnapshotDate='{6}' AND EndpointId={7};" -f `
+      "UPDATE dbo.Bitdefender_Endpoints SET LastSeenAt={0}, LastSuccessfulScanAt={1}, MalwareDetected={2}, Infected={3}, ProductOutdated={4}, SignatureOutdated={5}{6} WHERE SnapshotDate='{7}' AND EndpointId={8};" -f `
         (Sql-Dt $bag.LastSeen),
         (Sql-Dt $bag.LastScan),
         (Sql-Bit $bag.MalwareDetected),
         (Sql-Bit $bag.Infected),
         (Sql-Bit $bag.ProductOutdated),
         (Sql-Bit $bag.SignatureOutdated),
+        $setScanName,
         $snap,
-        (Sql-Str $eid)
+        (Sql-Str $gzId)
     ))
   }
+  Write-Log ("Detail updates queued=" + [Math]::Max(0, $upd.Count - 1) + " withScan=" + $scanN)
   if ($upd.Count -gt 1) {
     try { Invoke-SqlText -SqlText ($upd -join "`r`n") -Label 'bd_endpoint_details' } catch {
       Write-Log ("WARN detail update: " + $_.Exception.Message)
@@ -1020,13 +1101,15 @@ if ($hasDetailCols) {
 
 # Build id → customer map for incidents/quarantine stamping
 $epCodeById = @{}
-foreach ($eid in $epBag.Keys) {
-  $bag = $epBag[$eid]
+foreach ($key in $epBag.Keys) {
+  $bag = $epBag[$key]
   $ep = $bag.Ep
+  $gzId = [string]$ep.id
+  if (-not $gzId) { $gzId = [string]$key }
   $coName = [string]$bag.CompanyName
   if ($coName -eq '(api-key-company)') { $coName = '' }
   $code = Resolve-EndpointCode ([string]$ep.name) ([string]$ep.fqdn) $coName
-  if ($code) { $epCodeById[$eid] = $code }
+  if ($code) { $epCodeById[$gzId] = $code }
 }
 
 # --- Incidents (soft) ---

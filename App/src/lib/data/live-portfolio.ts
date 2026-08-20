@@ -6569,8 +6569,19 @@ ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
       hasPolicyName = false;
       hasDetailCols = false;
     }
+    let hasScanName = false;
+    if (hasDetailCols) {
+      try {
+        const sn = await pool.request().query(
+          `SELECT CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSuccessfulScanName') IS NOT NULL THEN 1 ELSE 0 END AS ok`,
+        );
+        hasScanName = Number(sn.recordset?.[0]?.ok) === 1;
+      } catch {
+        hasScanName = false;
+      }
+    }
     const detailCols = hasDetailCols
-      ? ", LastSeenAt, LastSuccessfulScanAt, MalwareDetected, Infected, ProductOutdated, SignatureOutdated"
+      ? `, LastSeenAt, LastSuccessfulScanAt, MalwareDetected, Infected, ProductOutdated, SignatureOutdated${hasScanName ? ", LastSuccessfulScanName" : ""}`
       : "";
     const epSql = hasPolicyName
       ? `
@@ -6675,6 +6686,7 @@ ORDER BY DeviceName`;
       snapshotDate: toDateOnly(r.SnapshotDate),
       lastSeenAt: toIso(r.LastSeenAt ?? null),
       lastSuccessfulScanAt: toIso(r.LastSuccessfulScanAt ?? null),
+      lastSuccessfulScanName: r.LastSuccessfulScanName != null ? String(r.LastSuccessfulScanName) : null,
       malwareDetected: r.MalwareDetected == null ? null : Boolean(r.MalwareDetected),
       infected: r.Infected == null ? null : Boolean(r.Infected),
       productOutdated: r.ProductOutdated == null ? null : Boolean(r.ProductOutdated),
