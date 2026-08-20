@@ -17,7 +17,7 @@ import {
   readPalette,
   type PaletteId,
 } from "@/lib/theme-tokens";
-import { cn } from "@/lib/utils";
+import { FONT_PACKS, persistFontPack, readFontPack, type FontPackId } from "@/lib/font-pack";
 
 export const Route = createFileRoute("/settings/theme")({
   component: ThemeTokensPage,
@@ -35,12 +35,13 @@ function ThemeTokensPage() {
   const [saved, setSaved] = useState<Draft>({ palette: "slate", theme: "dark", density: "compact" });
   const [draft, setDraft] = useState<Draft>(saved);
   const [tick, setTick] = useState(0);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [font, setFont] = useState<FontPackId>("source");
 
   useEffect(() => {
     const next: Draft = { palette: readPalette(), theme, density };
     setSaved(next);
     setDraft(next);
+    setFont(readFontPack());
     // mount only — live header toggle should not reset an unsaved draft
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -99,6 +100,32 @@ function ThemeTokensPage() {
           {dirty ? <span className="text-[12px] font-semibold text-fg">Unsaved preview</span> : null}
         </div>
       </div>
+
+      <section className="rpma-panel overflow-hidden p-0">
+        <div className="px-4 py-3">
+          <h2 className="text-[16px] font-extrabold text-fg">Typeface</h2>
+          <p className="text-[12px] text-muted">Site default is Source Sans Pro. Applies immediately.</p>
+        </div>
+        <div className="grid gap-2 px-4 pb-4 sm:grid-cols-2 xl:grid-cols-5">
+          {FONT_PACKS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => {
+                setFont(p.id);
+                persistFontPack(p.id);
+              }}
+              className={cn(
+                "rounded-md border p-3 text-left",
+                font === p.id ? "border-[var(--color-nav)] bg-[var(--color-surface-2)]" : "border-border bg-surface",
+              )}
+            >
+              <span className="text-[13px] font-extrabold text-fg">{p.name}</span>
+              <p className="mt-1 text-[11px] text-muted">{p.blurb}</p>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section className="rpma-panel overflow-hidden p-0">
         <div className="px-4 py-3">

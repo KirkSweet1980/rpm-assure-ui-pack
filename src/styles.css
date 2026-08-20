@@ -5,8 +5,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Tahoma, Arial, sans-serif;
-  --font-display: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-sans: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
+  --font-display: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
   --font-mono: Consolas, "Courier New", monospace;
   --color-bg: #f4f7fa;
   --color-surface: #ffffff;
@@ -5518,3 +5518,114 @@ html.dark .rpma-orion-h, html[data-theme="dark"] .rpma-orion-h { border-color: v
 html.dark .rpma-orion-h h2, html[data-theme="dark"] .rpma-orion-h h2 { color: var(--color-muted); }
 html.dark .rpma-orion-tbl th, html[data-theme="dark"] .rpma-orion-tbl th { background: var(--color-surface-2); color: var(--color-muted); }
 html.dark .rpma-orion-tbl td, html[data-theme="dark"] .rpma-orion-tbl td { color: var(--color-fg); border-color: var(--color-border); }
+
+/* Tenant triple rail: white Services | navy Modules | blue main */
+.rpma-emp.is-triple .rpma-emp-bodyrow {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  min-height: 0 !important;
+}
+.rpma-rail {
+  flex: 0 0 232px;
+  width: 232px;
+  min-width: 200px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 14px 10px 18px;
+}
+.rpma-rail-kicker {
+  margin: 0 10px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rpma-rail-sec {
+  margin: 12px 10px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rpma-rail-list { display: flex; flex-direction: column; gap: 2px; }
+.rpma-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.rpma-rail-ico { width: 18px; height: 18px; flex: 0 0 18px; display: grid; place-items: center; }
+.rpma-rail-ico svg { width: 16px; height: 16px; }
+.rpma-rail-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* White — RPM Services */
+.rpma-rail-svc {
+  background: #ffffff !important;
+  border-right: 1px solid #e8eaed;
+  color: #1f2937;
+}
+.rpma-rail-svc .rpma-rail-kicker,
+.rpma-rail-svc .rpma-rail-sec { color: #9aa0a6; }
+.rpma-rail-svc .rpma-rail-item { color: #374151; }
+.rpma-rail-svc .rpma-rail-item:hover { background: #f3f4f6; }
+.rpma-rail-svc .rpma-rail-item.is-on {
+  background: #eef2ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+/* Navy — RPM Service Modules */
+.rpma-rail-mod {
+  background: #1b2838 !important;
+  color: #e8eef4;
+  border-right: 1px solid #15202c;
+}
+.rpma-rail-mod .rpma-rail-kicker { color: #ffffff; font-size: 12px; letter-spacing: 0.02em; text-transform: none; }
+.rpma-rail-mod .rpma-rail-sec { color: #8b9aab; }
+.rpma-rail-mod .rpma-rail-item { color: #d5dee8; }
+.rpma-rail-mod .rpma-rail-item:hover { background: rgba(255,255,255,0.06); }
+.rpma-rail-mod .rpma-rail-item.is-on {
+  background: rgba(37, 99, 235, 0.35);
+  color: #ffffff;
+}
+.rpma-rail-mod .rpma-emp-nocover { color: #9aa8b8; }
+
+/* Blue — main information window */
+.rpma-emp.is-triple .rpma-emp-work {
+  flex: 1 1 auto !important;
+  background: #2563eb !important;
+  padding: 12px !important;
+}
+.rpma-emp.is-triple .rpma-work-window {
+  background: #ffffff !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(15, 40, 90, 0.18);
+}
+.rpma-emp.is-triple .rpma-win-head {
+  background: #1d4ed8 !important;
+  border-bottom: 1px solid #1e40af !important;
+  color: #fff !important;
+}
+.rpma-emp.is-triple .rpma-win-head h2,
+.rpma-emp.is-triple .rpma-win-head p { color: #fff !important; }
+.rpma-emp.is-triple .rpma-work-scroll,
+.rpma-emp.is-triple .rpma-emp-body.rpma-work-scroll {
+  background: #f4f7fb !important;
+}
+
+.dk-help-btn { position: relative; z-index: 40; pointer-events: auto; cursor: pointer; }
+
+@media (max-width: 960px) {
+  .rpma-emp.is-triple .rpma-emp-bodyrow { flex-wrap: wrap; }
+  .rpma-rail { flex: 1 1 220px; width: auto; max-width: none; max-height: 40vh; }
+  .rpma-emp.is-triple .rpma-emp-work { flex: 1 1 100%; min-height: 50vh; }
+}

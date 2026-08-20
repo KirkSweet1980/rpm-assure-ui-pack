@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import type { HTMLAttributes, ReactNode } from "react";
-import { SpaLink } from "@/components/nav/spa-link";
 import { cn } from "@/lib/utils";
 
 export function OrionWidget({
@@ -22,9 +22,9 @@ export function OrionWidget({
         <h2>{title}</h2>
         <div className="rpma-orion-h-actions">
           {action}
-          <SpaLink href={helpHref} className="rpma-orion-help">
+          <Link to="/help/$topic" params={{ topic: helpHref.replace(/^\/help\/?/, "") || "overview" }} className="rpma-orion-help">
             HELP
-          </SpaLink>
+          </Link>
         </div>
       </header>
       <div className="rpma-orion-b">{children}</div>

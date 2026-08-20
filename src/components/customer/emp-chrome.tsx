@@ -213,7 +213,7 @@ export function EmpChrome({
   };
 
   return (
-    <div className="rpma-emp is-side">
+    <div className="rpma-emp is-side is-triple">
       <div className="rpma-emp-title">
         <span className="rpma-emp-dots" aria-hidden>
           <i />
@@ -224,9 +224,9 @@ export function EmpChrome({
         <em>Enterprise Management Platform</em>
       </div>
       <div className="rpma-emp-bodyrow">
-        <nav className="rpma-side" aria-label="Tenant navigation">
-          <p className="rpma-side-h">RPM Services</p>
-          <div className="rpma-emp-titles">
+        <nav className="rpma-rail rpma-rail-svc" aria-label="RPM Services">
+          <p className="rpma-rail-kicker">RPM Services</p>
+          <div className="rpma-rail-list">
             {ALWAYS_SHOW_SERVICES.map((g) => {
               const on =
                 g.match === ""
@@ -239,19 +239,22 @@ export function EmpChrome({
                 <SpaLink
                   key={g.id}
                   href={href}
-                  className={cn("rpma-emp-gtab", on && "is-on", !covered && "is-nocover")}
+                  className={cn("rpma-rail-item", on && "is-on", !covered && "is-nocover")}
                   data-rag={tone}
                   title={`${g.title} · ${covered ? tone : "No Cover"}`}
                 >
-                  <g.icon className="rpma-emp-gtab-ico" style={{ color: g.color }} aria-hidden />
-                  <span className="rpma-emp-gtab-name">{g.title}</span>
+                  <g.icon className="rpma-rail-ico" style={{ color: on ? "#2563eb" : g.color }} aria-hidden />
+                  <span className="rpma-rail-name">{g.title}</span>
                   {covered ? <RagLamps tone={tone} /> : <em className="rpma-emp-nocover">No Cover</em>}
                 </SpaLink>
               );
             })}
           </div>
-          <p className="rpma-side-h">RPM Service Modules</p>
-          <div className="rpma-emp-tools">
+        </nav>
+        <nav className="rpma-rail rpma-rail-mod" aria-label="RPM Service Modules">
+          <p className="rpma-rail-kicker">{group.title}</p>
+          <p className="rpma-rail-sec">RPM Service Modules</p>
+          <div className="rpma-rail-list">
             {group.items.map((it) => {
               const Icon = it.icon;
               const href = `${base}${it.rel}`;
@@ -261,14 +264,14 @@ export function EmpChrome({
                 <SpaLink
                   key={it.rel || "home"}
                   href={href}
-                  className={cn("rpma-emp-tool", active && "is-on", rag === "Off" && "is-nocover")}
+                  className={cn("rpma-rail-item", active && "is-on", rag === "Off" && "is-nocover")}
                   data-rag={rag}
                   title={`${it.label} · ${rag === "Off" ? "No Cover" : rag}`}
                 >
-                  <span className="rpma-emp-ico" style={{ color: it.color }}>
+                  <span className="rpma-rail-ico">
                     <Icon className="size-4" />
                   </span>
-                  <span className="rpma-emp-tool-name">{it.label}</span>
+                  <span className="rpma-rail-name">{it.label}</span>
                   {rag === "Off" ? (
                     <em className="rpma-emp-nocover">No Cover</em>
                   ) : (

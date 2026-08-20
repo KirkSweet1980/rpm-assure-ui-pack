@@ -36,7 +36,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     summary: "Top bar: Eco-System, customer switcher, Reporting, Configuration, Help.",
     body: [
       "Customer Eco-System is the portfolio. Open a customer to work that tenant.",
-      "Inside a customer, the ribbon is: Eco-System, SYSPRO Landscape, RMM, Cloud Backup, End Point Protection, Microsoft 365, Service Desk.",
+      "Inside a customer: white rail = RPM Services, navy rail = RPM Service Modules, blue canvas = the selected page. Tables stay on a white card so they stay readable.",
       "Configuration (cog) is platform settings — themes, email, users, SQL, agents. Help (top right) is this guide.",
     ],
   },
