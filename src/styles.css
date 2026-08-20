@@ -1906,6 +1906,9 @@ button.rpma-hovertip, .rpma-kpi-tile.rpma-hovertip, .rpma-metric-cell.rpma-hover
 .rpma-emp-tool[data-rag="Red"],
 .rpma-cmd-banner.is-alert.is-red {
   animation: none !important;
+}
+.rpma-emp-tool[data-rag="Red"],
+.rpma-cmd-banner.is-alert.is-red {
   background: rgba(239, 68, 68, 0.16);
   box-shadow: inset 4px 0 0 #ef4444;
 }

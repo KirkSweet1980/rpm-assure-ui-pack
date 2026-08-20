@@ -280,7 +280,7 @@ export function EmpChrome({
           </div>
         </nav>
         <div className="rpma-emp-work">
-          <section className="rpma-win is-fill rpma-work-window">
+          <section className="rpma-win is-fill rpma-work-window" data-rag={ctx.health}>
             <header className="rpma-win-head">
               <h2>{item.label}</h2>
               <p>{group.title}</p>
