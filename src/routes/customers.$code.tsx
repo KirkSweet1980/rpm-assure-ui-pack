@@ -198,7 +198,7 @@ function CustomerLayout() {
   }
 
   const codes = profile?.allowedCustomerCodes;
-  if (codes && codes.length > 0) {
+  if (codes != null) {
     const ok = codes.some(
       (c) => c.toUpperCase() === customer.customerCode.toUpperCase(),
     );
@@ -218,7 +218,10 @@ function CustomerLayout() {
     }
   }
 
-  const missing = Boolean((data as { _missing?: boolean })?._missing);
+  const grant = profile?.tenantAccess?.find(
+    (g) => g.code.toUpperCase() === customer.customerCode.toUpperCase(),
+  );
+  const allowedServices = grant?.services?.length ? grant.services : null;
   const pageCover = coverFromDetail(data);
   const live = customerLiveStatus(
     customer.customerCode,
@@ -246,6 +249,7 @@ function CustomerLayout() {
             customerName={customer.displayName}
             live={live}
             lastImportAt={customer.lastImportAt}
+            allowedServices={allowedServices}
           >
             {missing ? (
               <div className="mb-3 rounded-lg border border-rag-amber/40 bg-rag-amber-bg/40 px-3 py-2.5 text-[13px] text-fg">

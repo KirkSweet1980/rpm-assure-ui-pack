@@ -71,7 +71,7 @@ export function AppShell({
       );
       let rows = p.customers ?? p.rows ?? [];
       const allowed = profile?.allowedCustomerCodes;
-      if (allowed && allowed.length > 0) {
+      if (allowed != null) {
         const set = new Set(allowed.map((c) => c.toUpperCase()));
         rows = rows.filter((r) => set.has(r.customerCode.toUpperCase()));
       }

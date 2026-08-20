@@ -7,6 +7,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { auth, authConfigured } from "@/lib/auth/server";
 import { adminEmailsFromEnv, isStaffRole, type StaffRole } from "@/lib/auth/roles";
+import {
+  isTenantRole,
+  parseServices,
+  serializeServices,
+  tenantRoleFromStaff,
+  type TenantGrant,
+  type TenantRole,
+} from "@/lib/auth/tenant-access";
 import { getPool, sql as sqlTypes } from "@/lib/data/sql-pool";
 import { appendAdminAudit } from "@/lib/settings/admin-audit";
 import { getDataMode, hasSqlConfig } from "@/lib/data/sql-config";
@@ -22,7 +30,8 @@ export type ManagedUser = {
   hasPassword: boolean;
   twoFactorEnabled: boolean;
   customerCodes: string[];
-  /** true = all customers (PlatformAdmin or empty assignment) */
+  tenantAccess: TenantGrant[];
+  /** true = all customers (PlatformAdmin only) */
   allCustomers: boolean;
   sources: string[];
 };
@@ -251,41 +260,63 @@ async function createOrResetAuthPassword(
   }
 }
 
+async function ensureUserCustomerSchema(pool: NonNullable<Awaited<ReturnType<typeof getPool>>>) {
+  await pool.request().query(`
+    IF COL_LENGTH(N'dbo.App_UserCustomer', N'Pillars') IS NULL
+      ALTER TABLE dbo.App_UserCustomer ADD Pillars nvarchar(200) NULL;
+  `);
+}
+
 async function setCustomerAssignmentsInternal(
   appUserId: string,
-  role: StaffRole,
-  codes: string[],
+  grants: TenantGrant[],
 ): Promise<void> {
-  if (role === "PlatformAdmin") {
-    codes = [];
-  }
   const pool = await getPool();
   if (!pool) return;
-  const assignRole =
-    role === "PlatformAdmin" || role === "Operator"
-      ? "Operator"
-      : role === "ExCo"
-        ? "ExCo"
-        : "TechnicalReadOnly";
+  await ensureUserCustomerSchema(pool);
 
   await pool
     .request()
     .input("id", sqlTypes.UniqueIdentifier, appUserId)
     .query(`DELETE FROM dbo.App_UserCustomer WHERE AppUserId = @id`);
 
-  for (const code of codes) {
-    const c = code.trim();
+  for (const g of grants) {
+    const c = g.code.trim();
     if (!c) continue;
-    await pool
-      .request()
-      .input("id", sqlTypes.UniqueIdentifier, appUserId)
-      .input("code", sqlTypes.NVarChar(50), c)
-      .input("role", sqlTypes.NVarChar(30), assignRole)
-      .query(`
-        INSERT INTO dbo.App_UserCustomer (AppUserId, CustomerCode, Role)
-        VALUES (@id, @code, @role)
-      `);
+    const role: TenantRole = isTenantRole(g.role) ? g.role : "Operator";
+    const pillars = serializeServices(g.services ?? []);
+    try {
+      await pool
+        .request()
+        .input("id", sqlTypes.UniqueIdentifier, appUserId)
+        .input("code", sqlTypes.NVarChar(50), c)
+        .input("role", sqlTypes.NVarChar(30), role)
+        .input("pillars", sqlTypes.NVarChar(200), pillars)
+        .query(`
+          INSERT INTO dbo.App_UserCustomer (AppUserId, CustomerCode, Role, Pillars)
+          VALUES (@id, @code, @role, @pillars)
+        `);
+    } catch {
+      await pool
+        .request()
+        .input("id", sqlTypes.UniqueIdentifier, appUserId)
+        .input("code", sqlTypes.NVarChar(50), c)
+        .input("role", sqlTypes.NVarChar(30), role)
+        .query(`
+          INSERT INTO dbo.App_UserCustomer (AppUserId, CustomerCode, Role)
+          VALUES (@id, @code, @role)
+        `);
+    }
   }
+}
+
+function grantsFromCodes(codes: string[] | undefined, role: StaffRole): TenantGrant[] {
+  const tr = tenantRoleFromStaff(role);
+  return (codes ?? []).filter(Boolean).map((code) => ({
+    code: code.trim(),
+    role: tr,
+    services: [],
+  }));
 }
 
 export const listManagedUsers = createServerFn({ method: "GET" }).handler(async () => {
@@ -315,6 +346,7 @@ export const listManagedUsers = createServerFn({ method: "GET" }).handler(async 
       hasPassword: a.hasPassword,
       twoFactorEnabled: a.twoFactorEnabled,
       customerCodes: [],
+      tenantAccess: [],
       allCustomers: true,
       sources: ["auth"],
     });
@@ -365,6 +397,7 @@ export const listManagedUsers = createServerFn({ method: "GET" }).handler(async 
               hasPassword: false,
               twoFactorEnabled: false,
               customerCodes: [],
+      tenantAccess: [],
               allCustomers: role === "PlatformAdmin",
               sources: ["sql"],
             });
@@ -372,25 +405,63 @@ export const listManagedUsers = createServerFn({ method: "GET" }).handler(async 
         }
 
         try {
+          await ensureUserCustomerSchema(pool);
           const assign = await pool.request().query(`
-            SELECT CONVERT(nvarchar(36), AppUserId) AS appUserId, CustomerCode
+            SELECT CONVERT(nvarchar(36), AppUserId) AS appUserId, CustomerCode, Role, Pillars
             FROM dbo.App_UserCustomer
           `);
-          const byId = new Map<string, string[]>();
+          const byId = new Map<string, TenantGrant[]>();
           for (const row of assign.recordset ?? []) {
             const id = String(row.appUserId);
             const code = String(row.CustomerCode);
+            const role: TenantRole = isTenantRole(String(row.Role))
+              ? (row.Role as TenantRole)
+              : "Operator";
+            const g: TenantGrant = {
+              code,
+              role,
+              services: parseServices(row.Pillars != null ? String(row.Pillars) : null),
+            };
             if (!byId.has(id)) byId.set(id, []);
-            byId.get(id)!.push(code);
+            byId.get(id)!.push(g);
           }
           for (const u of byEmail.values()) {
             if (u.appUserId && byId.has(u.appUserId)) {
-              u.customerCodes = byId.get(u.appUserId)!;
-              u.allCustomers = u.staffRole === "PlatformAdmin" || u.customerCodes.length === 0;
+              u.tenantAccess = byId.get(u.appUserId)!;
+              u.customerCodes = u.tenantAccess.map((g) => g.code);
+              u.allCustomers = u.staffRole === "PlatformAdmin";
+            } else {
+              u.allCustomers = u.staffRole === "PlatformAdmin";
             }
           }
         } catch {
-          /* optional DENY */
+          /* older schema without Pillars — retry Role only */
+          try {
+            const assign = await pool.request().query(`
+              SELECT CONVERT(nvarchar(36), AppUserId) AS appUserId, CustomerCode, Role
+              FROM dbo.App_UserCustomer
+            `);
+            const byId = new Map<string, TenantGrant[]>();
+            for (const row of assign.recordset ?? []) {
+              const id = String(row.appUserId);
+              const g: TenantGrant = {
+                code: String(row.CustomerCode),
+                role: isTenantRole(String(row.Role)) ? (row.Role as TenantRole) : "Operator",
+                services: [],
+              };
+              if (!byId.has(id)) byId.set(id, []);
+              byId.get(id)!.push(g);
+            }
+            for (const u of byEmail.values()) {
+              if (u.appUserId && byId.has(u.appUserId)) {
+                u.tenantAccess = byId.get(u.appUserId)!;
+                u.customerCodes = u.tenantAccess.map((g) => g.code);
+              }
+              u.allCustomers = u.staffRole === "PlatformAdmin";
+            }
+          } catch {
+            /* optional DENY */
+          }
         }
 
         try {
@@ -444,6 +515,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       password: string;
       isActive?: boolean;
       customerCodes?: string[];
+      tenantAccess?: TenantGrant[];
       emailWelcome?: boolean;
     }) => data,
   )
@@ -479,9 +551,15 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       };
     }
 
-    if (data.customerCodes && data.customerCodes.length > 0 && sqlRes.appUserId) {
+    const grants =
+      role === "PlatformAdmin"
+        ? []
+        : (data.tenantAccess && data.tenantAccess.length > 0
+            ? data.tenantAccess
+            : grantsFromCodes(data.customerCodes, role));
+    if (grants.length > 0 && sqlRes.appUserId) {
       try {
-        await setCustomerAssignmentsInternal(sqlRes.appUserId, role, data.customerCodes);
+        await setCustomerAssignmentsInternal(sqlRes.appUserId, grants);
       } catch (e) {
         return {
           ok: true as const,
@@ -549,6 +627,7 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
       isActive?: boolean;
       password?: string;
       customerCodes?: string[] | null;
+      tenantAccess?: TenantGrant[] | null;
     }) => data,
   )
   .handler(async ({ data }) => {
@@ -584,13 +663,15 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
     });
     if (!sqlRes.ok) return { ok: false as const, message: sqlRes.message };
 
-    if (data.customerCodes !== undefined && sqlRes.appUserId) {
+    if ((data.tenantAccess !== undefined || data.customerCodes !== undefined) && sqlRes.appUserId) {
       try {
-        await setCustomerAssignmentsInternal(
-          sqlRes.appUserId,
-          role,
-          data.customerCodes ?? [],
-        );
+        const grants =
+          role === "PlatformAdmin"
+            ? []
+            : data.tenantAccess && data.tenantAccess.length > 0
+              ? data.tenantAccess
+              : grantsFromCodes(data.customerCodes ?? [], role);
+        await setCustomerAssignmentsInternal(sqlRes.appUserId, grants);
       } catch (e) {
         return {
           ok: false as const,
@@ -697,7 +778,9 @@ export const adminDeleteAuthUser = createServerFn({ method: "POST" })
   });
 
 export const adminSetUserCustomers = createServerFn({ method: "POST" })
-  .validator((data: { email: string; customerCodes: string[] }) => data)
+  .validator(
+    (data: { email: string; customerCodes?: string[]; tenantAccess?: TenantGrant[] }) => data,
+  )
   .handler(async ({ data }) => {
     try {
       await requirePlatformAdmin();
@@ -713,7 +796,6 @@ export const adminSetUserCustomers = createServerFn({ method: "POST" })
       };
     }
 
-    // resolve current role from SQL
     let role: StaffRole = "Operator";
     try {
       const pool = await getPool();
@@ -733,14 +815,22 @@ export const adminSetUserCustomers = createServerFn({ method: "POST" })
       /* default Operator */
     }
 
+    if (role === "PlatformAdmin") {
+      return { ok: true as const, message: "Platform Admin is not tenant-scoped." };
+    }
+
     try {
-      await setCustomerAssignmentsInternal(appUserId, role, data.customerCodes);
+      const grants =
+        data.tenantAccess && data.tenantAccess.length > 0
+          ? data.tenantAccess
+          : grantsFromCodes(data.customerCodes ?? [], role);
+      await setCustomerAssignmentsInternal(appUserId, grants);
       return {
         ok: true as const,
         message:
-          data.customerCodes.length === 0
-            ? "Customer scope cleared (all customers)."
-            : `Scoped to ${data.customerCodes.length} customer(s).`,
+          grants.length === 0
+            ? "No tenants granted — this user cannot open any customer."
+            : `Scoped to ${grants.length} tenant(s) with per-tenant roles.`,
       };
     } catch (e) {
       return {

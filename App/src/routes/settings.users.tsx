@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { ConfigPageHead } from "@/components/settings/config-page";
 import { STAFF_ROLES, permissionsFor, type StaffRole } from "@/lib/auth/roles";
 import {
+  TENANT_ROLES,
+  TENANT_SERVICES,
+  tenantRoleFromStaff,
+  type TenantGrant,
+  type TenantRole,
+} from "@/lib/auth/tenant-access";
+import {
   adminCreateUser,
   adminDeleteAuthUser,
   adminSetUserCustomers,
@@ -25,7 +32,7 @@ type Draft = {
   staffRole: StaffRole;
   isActive: boolean;
   password: string;
-  customerCodes: string[];
+  tenantAccess: TenantGrant[];
   emailWelcome: boolean;
 };
 
@@ -35,7 +42,7 @@ const emptyDraft = (): Draft => ({
   staffRole: "Operator",
   isActive: true,
   password: "",
-  customerCodes: [],
+  tenantAccess: [],
   emailWelcome: true,
 });
 
@@ -89,7 +96,13 @@ function UsersPageActive() {
       staffRole: u.staffRole,
       isActive: u.isActive,
       password: "",
-      customerCodes: [...u.customerCodes],
+      tenantAccess: u.tenantAccess?.length
+        ? u.tenantAccess.map((g) => ({ ...g, services: [...g.services] }))
+        : u.customerCodes.map((code) => ({
+            code,
+            role: tenantRoleFromStaff(u.staffRole),
+            services: [],
+          })),
       emailWelcome: false,
     });
   }
@@ -100,11 +113,36 @@ function UsersPageActive() {
   }
 
   function toggleCode(code: string) {
+    setDraft((d) => {
+      const has = d.tenantAccess.some((g) => g.code === code);
+      if (has) return { ...d, tenantAccess: d.tenantAccess.filter((g) => g.code !== code) };
+      return {
+        ...d,
+        tenantAccess: [
+          ...d.tenantAccess,
+          { code, role: tenantRoleFromStaff(d.staffRole), services: [] },
+        ],
+      };
+    });
+  }
+
+  function setGrantRole(code: string, role: TenantRole) {
     setDraft((d) => ({
       ...d,
-      customerCodes: d.customerCodes.includes(code)
-        ? d.customerCodes.filter((c) => c !== code)
-        : [...d.customerCodes, code],
+      tenantAccess: d.tenantAccess.map((g) => (g.code === code ? { ...g, role } : g)),
+    }));
+  }
+
+  function toggleService(code: string, serviceId: string) {
+    setDraft((d) => ({
+      ...d,
+      tenantAccess: d.tenantAccess.map((g) => {
+        if (g.code !== code) return g;
+        const allOn = g.services.length === 0;
+        const cur = allOn ? TENANT_SERVICES.map((s) => s.id) : [...g.services];
+        const next = cur.includes(serviceId) ? cur.filter((s) => s !== serviceId) : [...cur, serviceId];
+        return { ...g, services: next.length >= TENANT_SERVICES.length ? [] : next };
+      }),
     }));
   }
 
@@ -132,7 +170,7 @@ function UsersPageActive() {
       setMessage("Email and a temporary password (min 8) are required.");
       return;
     }
-    if (!adminAll && draft.customerCodes.length === 0) {
+    if (!adminAll && draft.tenantAccess.length === 0) {
       setOk(false);
       setMessage("Pick at least one tenant, or set the role to Platform Admin.");
       return;
@@ -145,7 +183,8 @@ function UsersPageActive() {
         staffRole: draft.staffRole,
         password: draft.password,
         isActive: draft.isActive,
-        customerCodes: adminAll ? [] : draft.customerCodes,
+        customerCodes: adminAll ? [] : draft.tenantAccess.map((g) => g.code),
+        tenantAccess: adminAll ? [] : draft.tenantAccess,
         emailWelcome: draft.emailWelcome,
       },
     });
@@ -170,7 +209,8 @@ function UsersPageActive() {
         staffRole: draft.staffRole,
         isActive: draft.isActive,
         password: draft.password || undefined,
-        customerCodes: adminAll ? [] : draft.customerCodes,
+        customerCodes: adminAll ? [] : draft.tenantAccess.map((g) => g.code),
+        tenantAccess: adminAll ? [] : draft.tenantAccess,
       },
     });
     setMessage(r.message);
@@ -186,7 +226,7 @@ function UsersPageActive() {
     if (!selected) return;
     setBusy(true);
     const r = await adminSetUserCustomers({
-      data: { email: selected.email, customerCodes: adminAll ? [] : draft.customerCodes },
+      data: { email: selected.email, tenantAccess: adminAll ? [] : draft.tenantAccess },
     });
     setMessage(r.message);
     setOk(r.ok);
@@ -287,7 +327,16 @@ function UsersPageActive() {
                   size="sm"
                   variant="ghost"
                   className="h-6 px-2 text-[10px]"
-                  onClick={() => setDraft((d) => ({ ...d, customerCodes: customers.map((c) => c.code) }))}
+                  onClick={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      tenantAccess: customers.map((c) => ({
+                        code: c.code,
+                        role: tenantRoleFromStaff(d.staffRole),
+                        services: [],
+                      })),
+                    }))
+                  }
                 >
                   All
                 </Button>
@@ -296,7 +345,7 @@ function UsersPageActive() {
                   size="sm"
                   variant="ghost"
                   className="h-6 px-2 text-[10px]"
-                  onClick={() => setDraft((d) => ({ ...d, customerCodes: [] }))}
+                  onClick={() => setDraft((d) => ({ ...d, tenantAccess: [] }))}
                 >
                   None
                 </Button>
@@ -312,19 +361,51 @@ function UsersPageActive() {
                   </Button>
                 ) : null}
               </div>
-              {shownCustomers.map((c) => (
-                <label key={c.code} className="rpma-user-tenant">
-                  <input
-                    type="checkbox"
-                    checked={draft.customerCodes.includes(c.code)}
-                    onChange={() => toggleCode(c.code)}
-                  />
-                  <span>
-                    <strong>{c.name}</strong>
-                    <em>{c.code}</em>
-                  </span>
-                </label>
-              ))}
+              {shownCustomers.map((c) => {
+                const grant = draft.tenantAccess.find((g) => g.code === c.code);
+                const on = Boolean(grant);
+                return (
+                  <div key={c.code} className={cn("rpma-user-tenant", on && "is-on")}>
+                    <label className="rpma-user-tenant-h">
+                      <input type="checkbox" checked={on} onChange={() => toggleCode(c.code)} />
+                      <span>
+                        <strong>{c.name}</strong>
+                        <em>{c.code}</em>
+                      </span>
+                    </label>
+                    {grant ? (
+                      <div className="rpma-user-grant">
+                        <select
+                          value={grant.role}
+                          onChange={(e) => setGrantRole(c.code, e.target.value as TenantRole)}
+                        >
+                          {TENANT_ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {r === "TechnicalReadOnly" ? "Technical (read-only)" : r}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="rpma-user-svcs">
+                          {TENANT_SERVICES.map((s) => {
+                            const checked =
+                              grant.services.length === 0 || grant.services.includes(s.id);
+                            return (
+                              <label key={s.id}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleService(c.code, s.id)}
+                                />
+                                {s.label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </>
           )}
         </nav>

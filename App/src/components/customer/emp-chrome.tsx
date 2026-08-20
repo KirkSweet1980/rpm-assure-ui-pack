@@ -186,12 +186,15 @@ export function EmpChrome({
   customerName,
   live,
   lastImportAt,
+  allowedServices,
   children,
 }: {
   customerCode: string;
   customerName: string;
   live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> };
   lastImportAt?: string | null;
+  /** null = all services. Empty list is treated as all. */
+  allowedServices?: string[] | null;
   children: ReactNode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -233,19 +236,30 @@ export function EmpChrome({
                   ? rest === "" || rest.startsWith("/ams")
                   : rest === g.match || rest.startsWith(`${g.match}/`);
               const covered = pillarCovered(g.id, live);
-              const tone = covered ? worstRag(g, live) : "Off";
-              const href = alertHref(g, live, base, covered ? tone : "Off");
+              const permitted =
+                !allowedServices ||
+                allowedServices.length === 0 ||
+                g.id === "estate" ||
+                allowedServices.includes(g.id);
+              const tone = !permitted ? "Off" : covered ? worstRag(g, live) : "Off";
+              const href = alertHref(g, live, base, covered && permitted ? tone : "Off");
               return (
                 <SpaLink
                   key={g.id}
                   href={href}
-                  className={cn("rpma-rail-item", on && "is-on", !covered && "is-nocover")}
+                  className={cn("rpma-rail-item", on && "is-on", (!covered || !permitted) && "is-nocover")}
                   data-rag={tone}
-                  title={`${g.title} · ${covered ? tone : "No Cover"}`}
+                  title={`${g.title} · ${!permitted ? "No access" : covered ? tone : "No Cover"}`}
                 >
                   <g.icon className="rpma-rail-ico" style={{ color: on ? "#2563eb" : g.color }} aria-hidden />
                   <span className="rpma-rail-name">{g.title}</span>
-                  {covered ? <RagLamps tone={tone} /> : <em className="rpma-emp-nocover">No Cover</em>}
+                  {!permitted ? (
+                    <em className="rpma-emp-nocover">No access</em>
+                  ) : covered ? (
+                    <RagLamps tone={tone} />
+                  ) : (
+                    <em className="rpma-emp-nocover">No Cover</em>
+                  )}
                 </SpaLink>
               );
             })}

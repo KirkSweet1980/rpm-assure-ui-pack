@@ -511,7 +511,7 @@ function ExcoInsightPage() {
 
   const rows = useMemo(() => {
     const codes = profile?.allowedCustomerCodes;
-    if (!codes || codes.length === 0) return allRows;
+    if (codes == null) return allRows;
     const set = new Set(codes.map((c) => c.toUpperCase()));
     return allRows.filter((r) => set.has(r.customerCode.toUpperCase()));
   }, [allRows, profile?.allowedCustomerCodes]);
