@@ -56,41 +56,73 @@ export const fetchInfraAgents = createServerFn({ method: "GET" }).handler(async 
   }
   try {
     const r = await pool.request().query(`
+;WITH live_agents AS (
+  SELECT
+    UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode,
+    LTRIM(RTRIM(HostName)) AS HostName,
+    AgentVersion,
+    LastHeartbeatUtc,
+    LastStatus,
+    CASE
+      WHEN LastHeartbeatUtc IS NULL THEN N'NEVER'
+      WHEN LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
+      WHEN LastStatus IN (N'QUEUED', N'SYNCING')
+        AND LastHeartbeatUtc >= DATEADD(minute, -12, SYSUTCDATETIME()) THEN LastStatus
+      WHEN LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'ONLINE'
+      ELSE ISNULL(LastStatus, N'STALE')
+    END AS HealthStatus
+  FROM dbo.Agent_Registry WITH (NOLOCK)
+  WHERE ISNULL(LastStatus, N'') <> N'UNINSTALLED'
+    AND LTRIM(RTRIM(ISNULL(HostName, N''))) <> N''
+    AND UPPER(LTRIM(RTRIM(HostName))) <> N'RPMWINRM'
+),
+cust AS (
+  SELECT
+    UPPER(LTRIM(RTRIM(c.CustomerCode))) AS CustomerCode,
+    ISNULL(c.DisplayName, c.CustomerCode) AS DisplayName,
+    c.SqlInstanceName,
+    a.PillarSyspro,
+    a.PillarPulseway,
+    a.PillarCove,
+    a.PillarBitdefender,
+    ISNULL(a.PillarCsp, a.PillarMicrosoftCsp) AS PillarCsp
+  FROM dbo.Dim_Customer c WITH (NOLOCK)
+  LEFT JOIN dbo.Dim_Customer_AmsConfig a WITH (NOLOCK) ON a.CustomerCode = c.CustomerCode
+  WHERE ISNULL(c.Active, 1) = 1
+  UNION
+  SELECT
+    la.CustomerCode,
+    la.CustomerCode,
+    CAST(NULL AS nvarchar(200)),
+    CAST(NULL AS bit),
+    CAST(NULL AS bit),
+    CAST(NULL AS bit),
+    CAST(NULL AS bit),
+    CAST(NULL AS bit)
+  FROM live_agents la
+  WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Dim_Customer c WITH (NOLOCK)
+    WHERE UPPER(LTRIM(RTRIM(c.CustomerCode))) = la.CustomerCode
+      AND ISNULL(c.Active, 1) = 1
+  )
+)
 SELECT
-  c.CustomerCode,
-  ISNULL(c.DisplayName, c.CustomerCode) AS DisplayName,
-  c.SqlInstanceName,
-  a.PillarSyspro,
-  a.PillarPulseway,
-  a.PillarCove,
-  a.PillarBitdefender,
-  ISNULL(a.PillarCsp, a.PillarMicrosoftCsp) AS PillarCsp,
-  r.HostName,
-  r.AgentVersion,
-  r.LastHeartbeatUtc,
-  r.LastStatus,
-  CASE
-    WHEN r.CustomerCode IS NULL THEN N'NOT_INSTALLED'
-    WHEN r.LastHeartbeatUtc IS NULL THEN N'NEVER'
-    WHEN r.LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
-    WHEN r.LastStatus IN (N'QUEUED', N'SYNCING')
-      AND r.LastHeartbeatUtc >= DATEADD(minute, -12, SYSUTCDATETIME())
-      THEN r.LastStatus
-    WHEN r.LastHeartbeatUtc >= DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'ONLINE'
-  END AS HealthStatus
-FROM dbo.Dim_Customer c WITH (NOLOCK)
-LEFT JOIN dbo.Dim_Customer_AmsConfig a WITH (NOLOCK) ON a.CustomerCode = c.CustomerCode
-OUTER APPLY (
-  SELECT TOP 1 rr.CustomerCode, rr.HostName, rr.AgentVersion, rr.LastHeartbeatUtc, rr.LastStatus
-  FROM dbo.Agent_Registry rr WITH (NOLOCK)
-  WHERE rr.CustomerCode = c.CustomerCode
-    AND ISNULL(rr.LastStatus, N'') <> N'UNINSTALLED'
-  ORDER BY
-    CASE WHEN rr.LastHeartbeatUtc IS NULL THEN 1 ELSE 0 END,
-    rr.LastHeartbeatUtc DESC
-) r
-WHERE ISNULL(c.Active, 1) = 1
-ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
+  cust.CustomerCode,
+  cust.DisplayName,
+  cust.SqlInstanceName,
+  cust.PillarSyspro,
+  cust.PillarPulseway,
+  cust.PillarCove,
+  cust.PillarBitdefender,
+  cust.PillarCsp,
+  la.HostName,
+  la.AgentVersion,
+  la.LastHeartbeatUtc,
+  la.LastStatus,
+  ISNULL(la.HealthStatus, N'NOT_INSTALLED') AS HealthStatus
+FROM cust
+LEFT JOIN live_agents la ON la.CustomerCode = cust.CustomerCode
+ORDER BY cust.DisplayName, la.HostName`);
     const rmmBy = await countMap(pool, [
       `SELECT UPPER(LTRIM(RTRIM(CustomerCode))) AS CustomerCode, ISNULL(DeviceCount, 0) AS DeviceCount
        FROM dbo.vw_Kpi_Rmm_OrgSummary_Latest WITH (NOLOCK)
@@ -190,14 +222,13 @@ ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
       return {
         customerCode: String(row.CustomerCode ?? ""),
         displayName: String(row.DisplayName ?? row.CustomerCode ?? ""),
-        hostName: needsAgent && row.HostName != null ? String(row.HostName) : null,
-        agentVersion: needsAgent && row.AgentVersion != null ? String(row.AgentVersion) : null,
-        healthStatus: needsAgent ? String(row.HealthStatus ?? "NOT_INSTALLED") : "NOT_INSTALLED",
-        lastStatus: needsAgent && row.LastStatus != null ? String(row.LastStatus) : null,
-        lastHeartbeatUtc:
-          needsAgent && row.LastHeartbeatUtc
-            ? new Date(row.LastHeartbeatUtc as string).toISOString()
-            : null,
+        hostName: row.HostName != null ? String(row.HostName) : null,
+        agentVersion: row.AgentVersion != null ? String(row.AgentVersion) : null,
+        healthStatus: String(row.HealthStatus ?? "NOT_INSTALLED"),
+        lastStatus: row.LastStatus != null ? String(row.LastStatus) : null,
+        lastHeartbeatUtc: row.LastHeartbeatUtc
+          ? new Date(row.LastHeartbeatUtc as string).toISOString()
+          : null,
         cover: {
           syspro: cover.syspro,
           rmm: cover.rmm,

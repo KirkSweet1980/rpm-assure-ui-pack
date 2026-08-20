@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Cloud, Database, Mail, RefreshCw, Server, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpaLink } from "@/components/nav/spa-link";
@@ -28,7 +28,7 @@ function healthTitle(item: ConfigHealthItem) {
 }
 
 function agentStatus(row: InfraAgentRow): { label: string; tone: "green" | "amber" | "red" | "muted" } {
-  if (!row.cover.syspro) return { label: "No agent", tone: "muted" };
+  if (!row.hostName) return { label: "Not installed", tone: "muted" };
   const s = row.healthStatus.toUpperCase();
   const last = (row.lastStatus ?? "").toUpperCase();
   if (s === "NOT_INSTALLED" || s === "NEVER") return { label: "Not installed", tone: "muted" };
@@ -46,7 +46,7 @@ function syncToneOf(
   row: InfraAgentRow,
   phase?: "idle" | "queued" | "running" | "done" | "error",
 ): { label: string; tone: "green" | "amber" | "red" | "muted" } {
-  if (!row.cover.syspro) return { label: "N/A", tone: "muted" };
+  if (!row.hostName) return { label: "N/A", tone: "muted" };
   if (phase === "queued" || phase === "running") return { label: "Syncing", tone: "amber" };
   if (phase === "error") return { label: "Error", tone: "red" };
   if (phase === "done") return { label: "OK", tone: "green" };
@@ -59,6 +59,10 @@ function syncToneOf(
   }
   if (health === "NOT_INSTALLED" || health === "NEVER") return { label: "N/A", tone: "muted" };
   return { label: "Offline", tone: "red" };
+}
+
+function hostKey(row: InfraAgentRow) {
+  return `${row.customerCode}::${row.hostName ?? ""}`;
 }
 
 const COVER_CHIPS: Array<{ key: keyof InfraAgentRow["cover"]; label: string; icon: LucideIcon }> = [
@@ -162,16 +166,17 @@ function InfrastructureStatusPage() {
       setSync((prev) => {
         const next = { ...prev };
         for (const row of a.rows ?? []) {
-          if (!armed.current.has(row.customerCode)) continue;
+          const k = hostKey(row);
+          if (!armed.current.has(k)) continue;
           const last = (row.lastStatus ?? "").toUpperCase();
-          if (last === "QUEUED") next[row.customerCode] = "queued";
-          else if (last === "SYNCING") next[row.customerCode] = "running";
+          if (last === "QUEUED") next[k] = "queued";
+          else if (last === "SYNCING") next[k] = "running";
           else if (last === "OK" || last === "ONLINE") {
-            next[row.customerCode] = "done";
-            armed.current.delete(row.customerCode);
+            next[k] = "done";
+            armed.current.delete(k);
           } else if (last === "JOB_FAIL") {
-            next[row.customerCode] = "error";
-            armed.current.delete(row.customerCode);
+            next[k] = "error";
+            armed.current.delete(k);
           }
         }
         return next;
@@ -203,9 +208,10 @@ function InfrastructureStatusPage() {
       setFeedMsg(r.message);
       if (r.api?.status) setFeed(r.api.status);
       for (const row of agents) {
-        if (row.cover.syspro && row.hostName) {
-          armed.current.add(row.customerCode);
-          setSync((p) => ({ ...p, [row.customerCode]: "queued" }));
+        if (row.hostName) {
+          const k = hostKey(row);
+          armed.current.add(k);
+          setSync((p) => ({ ...p, [k]: "queued" }));
         }
       }
       void load();
@@ -218,14 +224,15 @@ function InfrastructureStatusPage() {
 
   async function syncOne(row: InfraAgentRow) {
     if (!row.hostName) return;
-    armed.current.add(row.customerCode);
-    setSync((p) => ({ ...p, [row.customerCode]: "queued" }));
+    const k = hostKey(row);
+    armed.current.add(k);
+    setSync((p) => ({ ...p, [k]: "queued" }));
     const r = await requestAgentSync({
       data: { customerCode: row.customerCode, hostName: row.hostName },
     });
     if (!r.ok) {
-      armed.current.delete(row.customerCode);
-      setSync((p) => ({ ...p, [row.customerCode]: "error" }));
+      armed.current.delete(k);
+      setSync((p) => ({ ...p, [k]: "error" }));
       setAgentMsg(r.message);
       return;
     }
@@ -234,14 +241,15 @@ function InfrastructureStatusPage() {
 
   async function updateOne(row: InfraAgentRow) {
     if (!row.hostName) return;
-    armed.current.add(row.customerCode);
-    setSync((p) => ({ ...p, [row.customerCode]: "queued" }));
+    const k = hostKey(row);
+    armed.current.add(k);
+    setSync((p) => ({ ...p, [k]: "queued" }));
     const r = await requestAgentUpdate({
       data: { customerCode: row.customerCode, hostName: row.hostName },
     });
     if (!r.ok) {
-      armed.current.delete(row.customerCode);
-      setSync((p) => ({ ...p, [row.customerCode]: "error" }));
+      armed.current.delete(k);
+      setSync((p) => ({ ...p, [k]: "error" }));
       setAgentMsg(r.message);
       return;
     }
@@ -261,6 +269,24 @@ function InfrastructureStatusPage() {
             status: i.ok ? "Live" : "Down",
             lastSyncAt: i.lastAt,
           }));
+
+  const agentGroups = useMemo(() => {
+    const m = new Map<
+      string,
+      { code: string; displayName: string; cover: InfraAgentRow["cover"]; hosts: InfraAgentRow[] }
+    >();
+    for (const row of agents) {
+      const code = row.customerCode.toUpperCase();
+      let g = m.get(code);
+      if (!g) {
+        g = { code, displayName: row.displayName, cover: row.cover, hosts: [] };
+        m.set(code, g);
+      }
+      if (row.hostName) g.hosts.push(row);
+    }
+    return [...m.values()];
+  }, [agents]);
+  const hostCount = agentGroups.reduce((n, g) => n + g.hosts.length, 0);
 
   return (
     <div className="rpma-settings-stack">
@@ -450,41 +476,15 @@ function InfrastructureStatusPage() {
       <section className="rpma-panel p-0">
         <div className="rpma-settings-panel-head">
           Assure Platform Agent Status
-          <span className="rpma-settings-count">{agents.length}</span>
+          <span className="rpma-settings-count">
+            {agentGroups.length} customer{agentGroups.length === 1 ? "" : "s"} · {hostCount} host{hostCount === 1 ? "" : "s"}
+          </span>
         </div>
-        {(() => {
-          const remaining = agents.filter(
-            (a) => a.cover.syspro && (!a.hostName || a.healthStatus.toUpperCase() === "NOT_INSTALLED"),
-          );
-          if (!remaining.length) return null;
-          return (
-            <div className="mx-4 mb-3 rounded-md border border-border bg-surface-2 px-3 py-2 text-[12px] text-fg">
-              <p className="font-bold">
-                {remaining.length} SYSPRO tenant{remaining.length === 1 ? "" : "s"} still need the Edge agent
-              </p>
-              <p className="mt-1 text-muted">
-                {remaining.map((r) => r.displayName).join(" · ")}
-              </p>
-              <p className="mt-1 font-mono text-[11px] text-muted">
-                On each remaining SQL host (admin PowerShell):
-              </p>
-              <pre className="mt-1 overflow-x-auto rounded bg-surface px-2 py-1.5 font-mono text-[11px] text-fg">
-{`$Pack='C:\\RPM-Assure\\deploy\\ui-pack'
-$Repo='https://github.com/KirkSweet1980/rpm-assure-ui-pack.git'
-$git=(Get-Command git -ErrorAction SilentlyContinue).Source
-if (-not $git) { throw 'Install Git for Windows first' }
-if (Test-Path "$Pack\\.git") { git -C $Pack fetch --all --prune; git -C $Pack reset --hard origin/main }
-if (-not (Test-Path "$Pack\\.git")) { git clone --depth 1 --branch main $Repo $Pack }
-powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-Syspro-Customer-Agent.ps1"`}
-              </pre>
-            </div>
-          );
-        })()}
         {agentMsg ? <p className="px-3 pb-2 text-[11px] text-muted">{agentMsg}</p> : null}
         <table className="rpma-xls text-left">
             <thead>
               <tr>
-                <th>Customer Name</th>
+                <th>Customer / host</th>
                 <th>Agent Version Installed</th>
                 <th>Agent Status</th>
                 <th className="text-center">Agent Sync</th>
@@ -493,113 +493,129 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
               </tr>
             </thead>
             <tbody>
-              {agents.length === 0 ? (
+              {agentGroups.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
-                    No customers listed.
-                  </td>
+                  <td colSpan={6}>No customers listed.</td>
                 </tr>
               ) : (
-                agents.map((row) => {
-                  const st = agentStatus(row);
-                  const sy = syncToneOf(row, sync[row.customerCode]);
-                  const on = COVER_CHIPS.filter((c) => row.cover[c.key]);
-                  const canSync =
-                    row.cover.syspro && Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
-                  return (
-                    <tr key={row.customerCode}>
-                      <td>
+                agentGroups.flatMap((g) => {
+                  const on = COVER_CHIPS.filter((c) => g.cover[c.key]);
+                  const coverCell = on.length === 0 ? (
+                    <span className="text-muted">No Cover</span>
+                  ) : (
+                    <span className="flex flex-wrap gap-1">
+                      {on.map((c) => {
+                        const Icon = c.icon;
+                        return (
+                          <span
+                            key={c.key}
+                            className="inline-flex items-center gap-1 rounded-md bg-rag-green/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rag-green"
+                          >
+                            <Icon className="h-3 w-3" />
+                            {c.label}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  );
+                  const head = (
+                    <tr key={`${g.code}-head`} className="rpma-agent-cust">
+                      <td colSpan={4}>
                         <SpaLink
-                          href={`/customers/${encodeURIComponent(row.customerCode)}`}
+                          href={`/customers/${encodeURIComponent(g.code)}`}
                           className="font-bold text-fg no-underline hover:underline"
                         >
-                          {row.displayName}
+                          {g.displayName}
                         </SpaLink>
-                      </td>
-                      <td className="font-mono">
-                        {!row.cover.syspro || !row.hostName
-                          ? "No agent"
-                          : row.agentVersion
-                            ? `v${row.agentVersion}`
-                            : "Not installed"}
-                      </td>
-                      <td>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 font-semibold",
-                            st.tone === "green" && "text-rag-green",
-                            st.tone === "amber" && "text-amber-400",
-                            st.tone === "red" && "text-rag-red",
-                            st.tone === "muted" && "text-muted",
-                          )}
-                        >
-                          <Lamp tone={st.tone} />
-                          {st.label}
+                        <span className="ml-2 text-[11px] font-semibold text-muted">
+                          {g.hosts.length} host{g.hosts.length === 1 ? "" : "s"}
                         </span>
                       </td>
-                      <td className="text-center">
-                        <span
-                          className={cn(
-                            "inline-flex items-center justify-center gap-1.5 font-semibold",
-                            sy.tone === "green" && "text-rag-green",
-                            sy.tone === "amber" && "text-amber-400",
-                            sy.tone === "red" && "text-rag-red",
-                            sy.tone === "muted" && "text-muted",
-                          )}
-                        >
-                          <Lamp tone={sy.tone} />
-                          {sy.label}
-                        </span>
-                      </td>
-                      <td>
-                        {on.length === 0 ? (
-                          <span className="text-muted">No Cover</span>
-                        ) : (
-                          <span className="flex flex-wrap gap-1">
-                            {on.map((c) => {
-                              const Icon = c.icon;
-                              return (
-                              <span
-                                key={c.key}
-                                className="inline-flex items-center gap-1 rounded-md bg-rag-green/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rag-green"
-                              >
-                                <Icon className="h-3 w-3" />
-                                {c.label}
-                              </span>
-                              );
-                            })}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-right">
-                        {row.hostName ? (
-                          <span className="inline-flex flex-wrap justify-end gap-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="h-7 px-2.5 text-[11px]"
-                            disabled={!canSync}
-                            onClick={() => void syncOne(row)}
-                          >
-                            Sync
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            className="h-7 px-2.5 text-[11px]"
-                            disabled={!canSync}
-                            onClick={() => void updateOne(row)}
-                          >
-                            Update Agent
-                          </Button>
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-muted">No agent</span>
-                        )}
-                      </td>
+                      <td>{coverCell}</td>
+                      <td />
                     </tr>
                   );
+                  if (g.hosts.length === 0) {
+                    return [
+                      head,
+                      <tr key={`${g.code}-empty`}>
+                        <td className="pl-6 text-muted">No Edge agent</td>
+                        <td className="font-mono">—</td>
+                        <td>
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-muted">
+                            <Lamp tone="muted" /> Not installed
+                          </span>
+                        </td>
+                        <td className="text-center text-muted">N/A</td>
+                        <td />
+                        <td className="text-right text-[11px] text-muted">No agent</td>
+                      </tr>,
+                    ];
+                  }
+                  const hostRows = g.hosts.map((row) => {
+                    const st = agentStatus(row);
+                    const sy = syncToneOf(row, sync[hostKey(row)]);
+                    const canSync = Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
+                    return (
+                      <tr key={hostKey(row)}>
+                        <td className="pl-6 font-mono">{row.hostName}</td>
+                        <td className="font-mono">{row.agentVersion ? `v${row.agentVersion}` : "—"}</td>
+                        <td>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1.5 font-semibold",
+                              st.tone === "green" && "text-rag-green",
+                              st.tone === "amber" && "text-amber-400",
+                              st.tone === "red" && "text-rag-red",
+                              st.tone === "muted" && "text-muted",
+                            )}
+                          >
+                            <Lamp tone={st.tone} />
+                            {st.label}
+                          </span>
+                        </td>
+                        <td className="text-center">
+                          <span
+                            className={cn(
+                              "inline-flex items-center justify-center gap-1.5 font-semibold",
+                              sy.tone === "green" && "text-rag-green",
+                              sy.tone === "amber" && "text-amber-400",
+                              sy.tone === "red" && "text-rag-red",
+                              sy.tone === "muted" && "text-muted",
+                            )}
+                          >
+                            <Lamp tone={sy.tone} />
+                            {sy.label}
+                          </span>
+                        </td>
+                        <td />
+                        <td className="text-right">
+                          <span className="inline-flex flex-wrap justify-end gap-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="h-7 px-2.5 text-[11px]"
+                              disabled={!canSync}
+                              onClick={() => void syncOne(row)}
+                            >
+                              Sync
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              className="h-7 px-2.5 text-[11px]"
+                              disabled={!canSync}
+                              onClick={() => void updateOne(row)}
+                            >
+                              Update Agent
+                            </Button>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  });
+                  return [head, ...hostRows];
                 })
               )}
             </tbody>

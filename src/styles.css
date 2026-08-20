@@ -5403,3 +5403,5 @@ html:not(.dark):not([data-theme="dark"]) .dk-help-btn {
 .rpma-tenant-access-a { font-size: 11px; font-weight: 700; color: var(--color-accent, #0d9488); }
 
 .rpma-theme-apply{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface);position:sticky;top:8px;z-index:4;}
+
+.rpma-agent-cust td{background:var(--color-surface-2,#f1f5f9);font-weight:700;border-top:1px solid var(--color-border);}
