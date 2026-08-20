@@ -5747,3 +5747,75 @@ html.rpma-crisp .rpma-bot.is-amber {
 .rpma-rail-mod .rpma-bot.is-amber {
   filter: drop-shadow(0 0 1px rgba(255,255,255,0.15));
 }
+
+/* Tenant panes fill the viewport: no black voids, main window not a postage stamp */
+html:has(.rpma-emp.is-triple) .dk-main,
+html:has(.rpma-emp.is-triple) .dk-content.rpma-topnav-main,
+html:has(.rpma-emp.is-triple) .rpma-topnav-canvas,
+html:has(.rpma-emp.is-triple) .rpma-amx-workspace,
+html:has(.rpma-emp.is-triple) .rpma-emp.is-triple {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+.rpma-emp.is-triple .rpma-emp-title { flex: 0 0 auto !important; }
+.rpma-emp.is-triple .rpma-emp-bodyrow {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+}
+.rpma-emp.is-triple .rpma-rail {
+  flex: 0 0 232px !important;
+  width: 232px !important;
+  align-self: stretch !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: auto !important;
+}
+.rpma-emp.is-triple .rpma-rail-list { flex: 1 1 auto; }
+.rpma-emp.is-triple .rpma-emp-work {
+  flex: 1 1 auto !important;
+  align-self: stretch !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: stretch !important;
+  align-items: stretch !important;
+  background: #2563eb !important;
+}
+.rpma-emp.is-triple .rpma-work-window,
+.rpma-emp.is-triple .rpma-win.is-fill {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+}
+.rpma-emp.is-triple .rpma-work-scroll,
+.rpma-emp.is-triple .rpma-emp-body.rpma-work-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: auto !important;
+  display: block !important;
+}
+.rpma-emp.is-triple .rpma-emp-body > .space-y-3,
+.rpma-emp.is-triple .rpma-emp-body > .rpma-win,
+.rpma-emp.is-triple .rpma-emp-body > .rpma-exco {
+  min-height: 100%;
+}
+@media (max-width: 960px) {
+  .rpma-emp.is-triple .rpma-rail { max-height: none !important; }
+}
