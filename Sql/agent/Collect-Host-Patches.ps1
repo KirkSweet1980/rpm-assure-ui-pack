@@ -1,11 +1,19 @@
-# Pulseway Automation body. PowerShell 5.1 safe. No ConvertTo-Json.
+# RPM Assure Edge — named Windows patches (KB title, status, installed date).
+# Pulseway REST v3 only publishes Critical/Important counts, not KB lists.
+# This host job POSTs Get-HotFix + Windows Update search to /api/patches.
+param(
+  [string]$ConfigPath = '',
+  [string]$AgentRoot = 'C:\RPM-Assure\Agent',
+  [string]$AssureUrl = 'https://assure.rpmresources.co.za/api/patches',
+  [string]$CustomerCode = ''
+)
 $ErrorActionPreference = 'Continue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$AssureUrl = 'https://assure.rpmresources.co.za/api/patches'
-$AssureSecret = $env:RPM_ASSURE_IOPS_SECRET
-if (-not $AssureSecret) { $AssureSecret = $env:RPM_ASSURE_AGENT_SECRET }
-if (-not $AssureSecret) { $AssureSecret = 'PUT-SAME-SECRET-AS-IOPS' }
-Write-Host ('PATCH start host=' + $env:COMPUTERNAME + ' ps=' + $PSVersionTable.PSVersion)
+
+$secret = $env:RPM_ASSURE_IOPS_SECRET
+if (-not $secret) { $secret = $env:RPM_ASSURE_AGENT_SECRET }
+$hostName = $env:COMPUTERNAME
+Write-Host ('PATCH agent host=' + $hostName + ' code=' + $CustomerCode)
 
 function J-Esc([string]$s) {
   if ($null -eq $s) { return '' }
@@ -33,7 +41,7 @@ function Add-Patch([string]$title, [string]$kb, [string]$status, [string]$cls, $
 try {
   $session = New-Object -ComObject Microsoft.Update.Session
   $searcher = $session.CreateUpdateSearcher()
-  $searcher.Online = $true
+  $searcher.Online = $false
   $res = $searcher.Search("IsInstalled=0 and IsHidden=0 and Type='Software'")
   $n = 0
   foreach ($u in @($res.Updates)) {
@@ -66,7 +74,7 @@ try {
     if (-not $title) { $title = $kb }
     if ($kb -and $title -notmatch [regex]::Escape($kb)) { $title = ($title + ' ' + $kb).Trim() }
     Add-Patch $title $kb 'installed' $desc $when
-    if ($rows.Count -ge 160) { break }
+    if ($rows.Count -ge 200) { break }
   }
   Write-Host ('hotfix total rows=' + $rows.Count)
 } catch {
@@ -89,12 +97,19 @@ foreach ($p in $rows) {
   if ($p.iso) { $whenJson = '"' + (J-Esc $p.iso) + '"' }
   [void]$parts.Add(('{"title":"' + (J-Esc $p.title) + '","kb":' + $kbJson + ',"status":"' + (J-Esc $p.status) + '","classification":' + $clsJson + ',"installedAt":' + $whenJson + '}'))
 }
-$json = '{"hostName":"' + (J-Esc $env:COMPUTERNAME) + '","source":"pulseway","patches":[' + ($parts -join ',') + ']}'
+$codeJson = ''
+if ($CustomerCode) { $codeJson = ',"customerCode":"' + (J-Esc $CustomerCode.ToUpperInvariant()) + '"' }
+$json = '{"hostName":"' + (J-Esc $hostName) + '","source":"agent"' + $codeJson + ',"patches":[' + ($parts -join ',') + ']}'
 Write-Host ('jsonBytes=' + $json.Length)
+
+if (-not $secret) {
+  Write-Host 'PATCH skip: ingest secret missing (RPM_ASSURE_IOPS_SECRET)'
+  exit 1
+}
 
 try {
   $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 60 -Uri $AssureUrl -Method POST -Headers @{
-    'X-Assure-Secret' = $AssureSecret
+    'X-Assure-Secret' = $secret
     'Content-Type' = 'application/json'
   } -Body ([Text.Encoding]::UTF8.GetBytes($json))
   Write-Host ('POST ' + $r.StatusCode + ' ' + $r.Content)

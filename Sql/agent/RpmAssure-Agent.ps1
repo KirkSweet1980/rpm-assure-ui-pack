@@ -712,6 +712,17 @@ if ($AgentJobs -and $AgentJobs.Count -gt 0) {
       }
     }
 
+    $patchRunner = Ensure-RpmaAgentScript "Collect-Host-Patches.ps1"
+    if ($patchRunner) {
+      $jobs += @{
+        Name = "host-patches-$code"
+        Customer = $code
+        IntervalMin = 60
+        Script = $patchRunner
+        Args = @("-ConfigPath", $cfg.FullName, "-AgentRoot", $AgentRoot, "-CustomerCode", $code)
+      }
+    }
+
     if (-not $rmmOn) { W ("SKIP RMM scripts for $code - no RMM cover") }
     if (-not $coveOn) { W ("SKIP Cove scripts for $code - no Cove cover") }
     if (-not $eppOn) { W ("SKIP EPP scripts for $code - no EPP cover") }

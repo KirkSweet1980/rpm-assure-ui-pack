@@ -2,7 +2,9 @@
 $ErrorActionPreference = 'Continue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $AssureUrl = 'https://assure.rpmresources.co.za/api/patches'
-$AssureSecret = 'PUT-SAME-SECRET-AS-IOPS'
+$AssureSecret = $env:RPM_ASSURE_IOPS_SECRET
+if (-not $AssureSecret) { $AssureSecret = $env:RPM_ASSURE_AGENT_SECRET }
+if (-not $AssureSecret) { $AssureSecret = 'PUT-SAME-SECRET-AS-IOPS' }
 Write-Host ('PATCH start host=' + $env:COMPUTERNAME + ' ps=' + $PSVersionTable.PSVersion)
 
 function J-Esc([string]$s) {

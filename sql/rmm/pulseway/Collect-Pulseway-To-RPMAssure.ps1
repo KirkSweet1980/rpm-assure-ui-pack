@@ -1193,23 +1193,6 @@ function Get-PatchFromUpdatesObject($d) {
     if ($null -ne $x) { $miss += [int]$x }
   }
   $items = @()
-  foreach ($pair in @(
-    @{ N = $crit; C = 'Critical' },
-    @{ N = $imp; C = 'Important' },
-    @{ N = $mod; C = 'Moderate' },
-    @{ N = $low; C = 'Optional' },
-    @{ N = $uns; C = 'Unspecified' }
-  )) {
-    if ($null -ne $pair.N -and [int]$pair.N -gt 0) {
-      $items += [pscustomobject]@{
-        Title = ('{0} {1} Windows update(s) outstanding' -f [int]$pair.N, $pair.C)
-        Kb = ''
-        Status = 'missing'
-        InstalledOn = $null
-        Classification = $pair.C
-      }
-    }
-  }
   return @{ Inst = $null; Miss = $miss; Pend = 0; Source = 'Updates.Critical/Important/Unspecified'; Items = $items }
 }
 

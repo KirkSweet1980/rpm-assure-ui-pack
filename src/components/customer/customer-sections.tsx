@@ -1223,15 +1223,17 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
             </div>
             {usingCountFallback ? (
               <p className="px-3 pt-2 text-[12px] text-muted">
-                Named KB titles were not on this snapshot. Showing per-server outstanding / installed
-                counts from the agent Updates counters. Re-run RMM collect after the next agent cycle
-                to land KB articles, titles, and installed dates.
+                Pulseway REST only publishes outstanding <em>counts</em> (AHI’s 3 is that figure). It does not
+                send KB titles, class, or installed dates. Named patches land when the Edge Agent job
+                Collect-Host-Patches.ps1 POSTs Get-HotFix / Windows Update from the server (same secret as IOPS).
               </p>
             ) : null}
             {viewRows.length === 0 ? (
               <p className="px-3 py-4 text-sm text-muted">
                 {namedAll.length === 0
-                  ? "RMM published counts but no KB titles on this snapshot. Re-run RMM collect after the next agent cycle — named patches land in RMM patch list when the Updates list is present. Click a device count again after Recheck."
+                  ? patchView.mode === "installed" || patchView.mode === "recent"
+                    ? "No installed KB list on this snapshot. Pulseway does not publish installed titles. After Collect-Host-Patches runs on the host, Installed and Last 30 days fill with KB, title, and date."
+                    : "RMM published counts but no KB titles on this snapshot. Re-run the host patch job (Collect-Host-Patches.ps1) on each AHI server — named patches land in Pulseway_DevicePatches / RMM patch list."
                   : "No patches in this filter. Try Installed or All named."}
               </p>
             ) : (
