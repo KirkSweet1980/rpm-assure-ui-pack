@@ -32,8 +32,9 @@ BEGIN
 END
 GO
 
-/* Grants for collect account */
+/* Grants for collect account — skip when already running as Rpm_collect (grant-to-self fails). */
 IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'Rpm_collect')
+   AND USER_NAME() <> N'Rpm_collect'
 BEGIN
   GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Dim_Cove_PartnerMap TO [Rpm_collect];
   GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Dim_Cove_PartnerAlias TO [Rpm_collect];
@@ -42,6 +43,8 @@ BEGIN
     GRANT SELECT ON dbo.Dim_Customer TO [Rpm_collect];
   PRINT 'Granted Rpm_collect for auto-map';
 END
+ELSE
+  PRINT 'Grant skip (already Rpm_collect or principal missing)';
 GO
 
 /* Seed common aliases (idempotent)  extend as needed */
