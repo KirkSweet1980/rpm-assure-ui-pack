@@ -96,8 +96,7 @@ BEGIN
     SELECT * FROM (VALUES
       (CONVERT(bigint, 48005599640), N'SBS Tanks', N'SBT'),
       (CONVERT(bigint, 48006116929), N'Simply Bright Solutions', N'SBS'),
-      (CONVERT(bigint, 48006116932), N'Board of Healthcare Funders', N'BHF'),
-      (CAST(NULL AS bigint), N'SBS Tanks', N'SBT')
+      (CONVERT(bigint, 48006116932), N'Board of Healthcare Funders', N'BHF')
     ) v(CompanyId, CompanyName, CustomerCode)
   )
   MERGE dbo.Dim_Freshdesk_CompanyMap AS t

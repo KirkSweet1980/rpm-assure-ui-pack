@@ -39,7 +39,8 @@ foreach ($rel in @(
     'Sql\cove\467_Cove_Raw.sql',
     'Sql\rmm\pulseway\468_Rmm_Gold_Views.sql',
     'Sql\bitdefender\469_Epp_Gold_Views.sql',
-    'Sql\freshdesk\470_Tickets_Gold.sql'
+    'Sql\freshdesk\470_Tickets_Gold.sql',
+    'Sql\freshdesk\519_Ensure_Freshdesk_Sla.sql'
   )) {
   $sf = Join-Path $Root $rel
   if (-not (Test-Path $sf)) { continue }

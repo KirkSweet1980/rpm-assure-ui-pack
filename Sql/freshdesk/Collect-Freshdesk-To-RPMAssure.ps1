@@ -388,8 +388,8 @@ try {
   elseif ($rawSla) { $policies = @($rawSla) }
   Write-Log ('sla_policies count=' + $policies.Count)
   foreach ($p in $policies) {
-    $pid = Sql-Num (One-Val $p.id)
-    if ($pid -eq 'NULL') { continue }
+    $policyId = Sql-Num (One-Val $p.id)
+    if ($policyId -eq 'NULL') { continue }
     $pname = [string](One-Val $p.name)
     $isDef = if ($p.is_default -eq $true) { 1 } else { 0 }
     $pos = $null
@@ -656,14 +656,15 @@ foreach ($sqlName in $postSql) {
 $stampSql = @"
 SET NOCOUNT ON;
 IF OBJECT_ID(N'dbo.Dim_Connection', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.Dim_Connection', N'ConnectionCode') IS NOT NULL
 BEGIN
-  IF EXISTS (SELECT 1 FROM dbo.Dim_Connection WHERE ConnectionKind = N'FRESHDESK' OR SourceSystem = N'FRESHDESK')
-    UPDATE dbo.Dim_Connection
-      SET LastSuccessUtc = SYSUTCDATETIME(), Status = N'Active', LastMessage = N'collect ok tickets=$($all.Count)'
-    WHERE ConnectionKind = N'FRESHDESK' OR SourceSystem = N'FRESHDESK';
-  ELSE IF COL_LENGTH(N'dbo.Dim_Connection', N'ConnectionKind') IS NOT NULL
-    INSERT INTO dbo.Dim_Connection (ConnectionKind, DisplayName, Status, LastSuccessUtc, LastMessage)
-    VALUES (N'FRESHDESK', N'Freshdesk Tickets', N'Active', SYSUTCDATETIME(), N'collect ok tickets=$($all.Count)');
+  IF NOT EXISTS (SELECT 1 FROM dbo.Dim_Connection WHERE ConnectionCode = N'FRESHDESK')
+    INSERT INTO dbo.Dim_Connection (ConnectionCode, DisplayName, SourceKind, Status, Notes)
+    VALUES (N'FRESHDESK', N'Freshdesk Tickets', N'Ams', N'Active', N'collect ok tickets=$($all.Count)');
+  UPDATE dbo.Dim_Connection
+    SET LastSyncAt = SYSUTCDATETIME(), Status = N'Active',
+        Notes = N'collect ok tickets=$($all.Count)', UpdatedAt = SYSUTCDATETIME()
+  WHERE ConnectionCode = N'FRESHDESK';
 END
 "@
 $stampFile = Join-Path $logDir ("fd_stamp_" + $stamp + ".sql")
