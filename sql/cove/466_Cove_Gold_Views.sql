@@ -133,6 +133,62 @@ WHERE ISNULL(RecoveryPlanType, 0) > 0
    OR RecoveryTestStatus IN (N'Success', N'Failed', N'InProgress', N'NotStarted', N'Unknown', N'Completed');
 GO
 
+CREATE OR ALTER VIEW dbo.vw_Cove_History_7d
+AS
+SELECT
+  d.CustomerCode,
+  d.SnapshotDate,
+  COUNT(*) AS DeviceCount,
+  SUM(CASE
+    WHEN UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%FAIL%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ERROR%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%OVERDUE%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ABORT%'
+      OR d.LastSuccessTime IS NULL
+      OR d.LastSuccessTime < DATEADD(hour, -72, CAST(d.SnapshotDate AS datetime2)) THEN 1
+    ELSE 0 END) AS FailedCount,
+  SUM(CASE
+    WHEN (
+      UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%STALE%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%WARN%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%MISS%'
+      OR (
+        d.LastSuccessTime IS NOT NULL
+        AND d.LastSuccessTime < DATEADD(hour, -36, CAST(d.SnapshotDate AS datetime2))
+        AND d.LastSuccessTime >= DATEADD(hour, -72, CAST(d.SnapshotDate AS datetime2))
+      )
+    )
+    AND NOT (
+      UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%FAIL%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ERROR%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%OVERDUE%'
+      OR d.LastSuccessTime IS NULL
+      OR d.LastSuccessTime < DATEADD(hour, -72, CAST(d.SnapshotDate AS datetime2))
+    ) THEN 1
+    ELSE 0 END) AS StaleCount,
+  SUM(CASE
+    WHEN UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%FAIL%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ERROR%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%OVERDUE%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ABORT%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%STALE%'
+      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%WARN%'
+      OR d.LastSuccessTime IS NULL
+      OR d.LastSuccessTime < DATEADD(hour, -36, CAST(d.SnapshotDate AS datetime2)) THEN 0
+    ELSE 1 END) AS OkCount,
+  SUM(CASE WHEN ISNULL(d.RecoveryPlanType, 0) = 1 THEN 1 ELSE 0 END) AS RecoveryTestingCount,
+  SUM(CASE WHEN ISNULL(d.RecoveryPlanType, 0) = 2 THEN 1 ELSE 0 END) AS StandbyImageCount,
+  SUM(CASE WHEN d.RecoveryTestStatus = N'Success' THEN 1 ELSE 0 END) AS TestSuccessCount,
+  SUM(CASE WHEN d.RecoveryTestStatus = N'Failed' THEN 1 ELSE 0 END) AS TestFailedCount,
+  MAX(d.LastSuccessTime) AS LastSuccessAny,
+  MAX(d.LastRecoveryTestAt) AS LastRecoveryTestAt
+FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
+WHERE d.CustomerCode IS NOT NULL
+  AND LTRIM(RTRIM(d.CustomerCode)) <> N''
+  AND d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
+GROUP BY d.CustomerCode, d.SnapshotDate;
+GO
+
 /* Keep the old KPI name pointing at gold so Exco / cover still work. */
 CREATE OR ALTER VIEW dbo.vw_Kpi_Cove_DeviceLatest
 AS
@@ -143,12 +199,14 @@ IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'Rpm_collect')
 BEGIN
   GRANT SELECT ON dbo.vw_Cove_Devices_Latest TO [Rpm_collect];
   GRANT SELECT ON dbo.vw_Cove_Recovery_Latest TO [Rpm_collect];
+  GRANT SELECT ON dbo.vw_Cove_History_7d TO [Rpm_collect];
   GRANT SELECT ON dbo.vw_Kpi_Cove_DeviceLatest TO [Rpm_collect];
 END
 IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'rpmassure')
 BEGIN
   GRANT SELECT ON dbo.vw_Cove_Devices_Latest TO [rpmassure];
   GRANT SELECT ON dbo.vw_Cove_Recovery_Latest TO [rpmassure];
+  GRANT SELECT ON dbo.vw_Cove_History_7d TO [rpmassure];
   GRANT SELECT ON dbo.vw_Kpi_Cove_DeviceLatest TO [rpmassure];
 END
 GO

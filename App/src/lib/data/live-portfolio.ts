@@ -806,13 +806,13 @@ INNER JOIN (
     >();
     try {
       const classRes = await pool.request().query(`
-;WITH latest AS (
-  SELECT CustomerCode, MAX(SnapshotDate) AS mx
-  FROM dbo.Pulseway_Devices WITH (NOLOCK)
-  WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
-  GROUP BY CustomerCode
-),
-d AS (
+SELECT
+  p.CustomerCode,
+  SUM(CASE WHEN DeviceClass = N'Server' AND OnlineFlag = 1 THEN 1 ELSE 0 END) AS ServerOnline,
+  SUM(CASE WHEN DeviceClass = N'Server' AND OnlineFlag = 0 THEN 1 ELSE 0 END) AS ServerOffline,
+  SUM(CASE WHEN DeviceClass = N'Workstation' AND OnlineFlag = 1 THEN 1 ELSE 0 END) AS WorkstationOnline,
+  SUM(CASE WHEN DeviceClass = N'Workstation' AND OnlineFlag = 0 THEN 1 ELSE 0 END) AS WorkstationOffline
+FROM (
   SELECT
     p.CustomerCode,
     CASE
@@ -820,8 +820,6 @@ d AS (
       WHEN p.IsOnline = 0 THEN 0
       WHEN p.LastSeenOnline IS NOT NULL
         AND p.LastSeenOnline >= DATEADD(MINUTE, -30, SYSUTCDATETIME()) THEN 1
-      WHEN p.LastSeenOnline IS NOT NULL
-        AND p.LastSeenOnline < DATEADD(MINUTE, -120, SYSUTCDATETIME()) THEN 0
       ELSE 0
     END AS OnlineFlag,
     CASE
@@ -834,19 +832,9 @@ d AS (
       WHEN p.OsName LIKE N'%Server%' THEN N'Server'
       ELSE N'Workstation'
     END AS DeviceClass
-
-  FROM dbo.Pulseway_Devices AS p WITH (NOLOCK)
-  INNER JOIN latest AS l
-    ON l.CustomerCode = p.CustomerCode AND l.mx = p.SnapshotDate
-)
-SELECT
-  CustomerCode,
-  SUM(CASE WHEN DeviceClass = N'Server' AND OnlineFlag = 1 THEN 1 ELSE 0 END) AS ServerOnline,
-  SUM(CASE WHEN DeviceClass = N'Server' AND OnlineFlag = 0 THEN 1 ELSE 0 END) AS ServerOffline,
-  SUM(CASE WHEN DeviceClass = N'Workstation' AND OnlineFlag = 1 THEN 1 ELSE 0 END) AS WorkstationOnline,
-  SUM(CASE WHEN DeviceClass = N'Workstation' AND OnlineFlag = 0 THEN 1 ELSE 0 END) AS WorkstationOffline
-FROM d
-GROUP BY CustomerCode`);
+  FROM dbo.vw_Rmm_Devices_Latest AS p WITH (NOLOCK)
+) p
+GROUP BY p.CustomerCode`);
       for (const r of classRes.recordset ?? []) {
         classByCode.set(String(r.CustomerCode).toUpperCase(), {
           serverOnline: Number(r.ServerOnline) || 0,
@@ -868,19 +856,12 @@ GROUP BY CustomerCode`);
     >();
     try {
       const patchRes = await pool.request().query(`
-;WITH latest AS (
-  SELECT CustomerCode, MAX(SnapshotDate) AS mx
-  FROM dbo.Pulseway_Devices WITH (NOLOCK)
-  WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
-  GROUP BY CustomerCode
-)
 SELECT
   p.CustomerCode,
   SUM(ISNULL(p.PatchMissingCount, 0)) AS PatchMissing,
   SUM(CASE WHEN p.PatchMissingCount IS NOT NULL THEN 1 ELSE 0 END) AS PatchDevices,
   SUM(CASE WHEN p.PatchMissingCount = 0 THEN 1 ELSE 0 END) AS PatchCompliant
-FROM dbo.Pulseway_Devices AS p WITH (NOLOCK)
-INNER JOIN latest AS l ON l.CustomerCode = p.CustomerCode AND l.mx = p.SnapshotDate
+FROM dbo.vw_Rmm_Devices_Latest AS p WITH (NOLOCK)
 WHERE p.DeviceType = N'Server'
    OR p.OsName LIKE N'%Windows Server%'
    OR p.OsName LIKE N'%Server 201%'
@@ -902,15 +883,8 @@ GROUP BY p.CustomerCode`);
     }
     try {
       const diskRes = await pool.request().query(`
-;WITH latest AS (
-  SELECT CustomerCode, MAX(SnapshotDate) AS mx
-  FROM dbo.Pulseway_Disks WITH (NOLOCK)
-  WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
-  GROUP BY CustomerCode
-)
 SELECT d.CustomerCode, COUNT(*) AS DiskHigh
-FROM dbo.Pulseway_Disks AS d WITH (NOLOCK)
-INNER JOIN latest AS l ON l.CustomerCode = d.CustomerCode AND l.mx = d.SnapshotDate
+FROM dbo.vw_Rmm_Disks_Latest AS d WITH (NOLOCK)
 WHERE ISNULL(d.UsedPct, 0) >= 85
 GROUP BY d.CustomerCode`);
       for (const r of diskRes.recordset ?? []) {
@@ -968,12 +942,8 @@ SELECT
   SUM(ISNULL(CriticalNotifications, 0)) AS CriticalAlerts,
   SUM(ISNULL(ElevatedNotifications, 0)) AS ElevatedAlerts,
   MAX(ImportedAt) AS ImportedAt
-FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
-  AND (
-    CustomerCode = N'SIRF'
-    OR OrganizationName = N'Sir Fruit'
-  )`);
+FROM dbo.vw_Rmm_Devices_Latest WITH (NOLOCK)
+WHERE CustomerCode = N'SIRF'`);
         const f = fb.recordset?.[0];
         const n = Number(f?.DeviceCount) || 0;
         if (n > 0) {
@@ -2508,32 +2478,15 @@ async function restampBlankVendorCodes(
 ): Promise<void> {
   try {
     await pool.request().query(`
-UPDATE d SET d.CustomerCode = m.CustomerCode
-FROM dbo.Cove_DeviceStatistics AS d
-INNER JOIN dbo.Dim_Cove_PartnerMap AS m ON ISNULL(m.Active,1)=1
-WHERE (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode)) = N'')
-  AND (
-    (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
-    OR UPPER(LTRIM(RTRIM(ISNULL(d.Product,N'')))) = UPPER(LTRIM(RTRIM(m.PartnerName)))
-    OR UPPER(LTRIM(RTRIM(ISNULL(d.PartnerName,N'')))) = UPPER(LTRIM(RTRIM(m.PartnerName)))
-  )`);
+IF OBJECT_ID(N'dbo.usp_RefreshExternalIdentityFromMaps', N'P') IS NOT NULL
+  EXEC dbo.usp_RefreshExternalIdentityFromMaps;
+IF OBJECT_ID(N'dbo.usp_StampCoveFromIdentity', N'P') IS NOT NULL
+  EXEC dbo.usp_StampCoveFromIdentity;
+IF OBJECT_ID(N'dbo.usp_StampPulsewayFromIdentity', N'P') IS NOT NULL
+  EXEC dbo.usp_StampPulsewayFromIdentity;
+`);
   } catch (e) {
-    console.warn("[rpm-assure] Cove restamp:", e instanceof Error ? e.message : e);
-  }
-  try {
-    await pool.request().query(`
-UPDATE d SET d.CustomerCode = c.CustomerCode
-FROM dbo.Cove_DeviceStatistics AS d
-INNER JOIN dbo.Dim_Customer AS c ON ISNULL(c.Active,1)=1
-WHERE (d.CustomerCode IS NULL OR LTRIM(RTRIM(d.CustomerCode)) = N'')
-  AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
-  AND (
-    UPPER(ISNULL(d.Product,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-    OR UPPER(ISNULL(d.DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-    OR UPPER(ISNULL(d.MachineName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-  )`);
-  } catch (e) {
-    console.warn("[rpm-assure] Cove name restamp:", e instanceof Error ? e.message : e);
+    console.warn("[rpm-assure] identity stamp:", e instanceof Error ? e.message : e);
   }
   try {
     await pool.request().query(`
@@ -4870,6 +4823,16 @@ INNER JOIN (
 ) own ON own.DeviceId = p.DeviceId AND own.mx = p.SnapshotDate`;
       const deviceSelects = [
         `SELECT TOP 4000
+  CustomerCode, DeviceId, Name, IsOnline, OsName, DeviceType,
+  CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
+  IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
+  UptimeDays, LastBootAt, PatchInstalledCount, PatchMissingCount, PatchPendingCount,
+  OfflineHoursCurrent, OfflineHours7d, OfflineHours30d,
+  SnapshotDate, ImportedAt
+FROM dbo.vw_Rmm_Devices_Latest WITH (NOLOCK)
+WHERE CustomerCode = @code
+ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
+        `SELECT TOP 4000
   p.CustomerCode, p.DeviceId, p.Name, p.IsOnline, p.OsName, p.DeviceType,
   p.CriticalNotifications, p.ElevatedNotifications, p.LastSeenOnline, p.OrganizationName,
   p.IpAddress, p.CpuUsagePct, p.MemoryUsagePct, p.OnlinePct,
@@ -6178,79 +6141,19 @@ ORDER BY AsOfDate DESC`);
     cove.recovery = recovery;
     if (cove.summary) cove.summary.recovery = recovery;
 
-    // 7-day history via CustomerCode OR partner map
+    // Gold contract: 7-day history already filtered by CustomerCode.
     try {
       const hist = await pool
         .request()
         .input("code", sql.NVarChar(50), code)
         .query(`
 SELECT
-  d.SnapshotDate,
-  COUNT(*) AS DeviceCount,
-  SUM(CASE
-    WHEN UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%FAIL%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ERROR%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%OVERDUE%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ABORT%'
-      OR d.LastSuccessTime IS NULL
-      OR d.LastSuccessTime < DATEADD(hour, -72, CAST(d.SnapshotDate AS datetime2)) THEN 1
-    ELSE 0 END) AS FailedCount,
-  SUM(CASE
-    WHEN (
-      UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%STALE%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%WARN%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%MISS%'
-      OR (
-        d.LastSuccessTime IS NOT NULL
-        AND d.LastSuccessTime < DATEADD(hour, -36, CAST(d.SnapshotDate AS datetime2))
-        AND d.LastSuccessTime >= DATEADD(hour, -72, CAST(d.SnapshotDate AS datetime2))
-      )
-    )
-    AND NOT (
-      UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%FAIL%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ERROR%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%OVERDUE%'
-      OR d.LastSuccessTime IS NULL
-      OR d.LastSuccessTime < DATEADD(hour, -72, CAST(d.SnapshotDate AS datetime2))
-    ) THEN 1
-    ELSE 0 END) AS StaleCount,
-  SUM(CASE
-    WHEN UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%FAIL%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ERROR%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%OVERDUE%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%ABORT%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%STALE%'
-      OR UPPER(ISNULL(d.LastBackupStatus, N'')) LIKE N'%WARN%'
-      OR d.LastSuccessTime IS NULL
-      OR d.LastSuccessTime < DATEADD(hour, -36, CAST(d.SnapshotDate AS datetime2)) THEN 0
-    ELSE 1 END) AS OkCount,
-  SUM(CASE WHEN ISNULL(d.RecoveryPlanType, 0) = 1 THEN 1 ELSE 0 END) AS RecoveryTestingCount,
-  SUM(CASE WHEN ISNULL(d.RecoveryPlanType, 0) = 2 THEN 1 ELSE 0 END) AS StandbyImageCount,
-  SUM(CASE WHEN d.RecoveryTestStatus = N'Success' THEN 1 ELSE 0 END) AS TestSuccessCount,
-  SUM(CASE WHEN d.RecoveryTestStatus = N'Failed' THEN 1 ELSE 0 END) AS TestFailedCount,
-  MAX(d.LastSuccessTime) AS LastSuccessAny,
-  MAX(d.LastRecoveryTestAt) AS LastRecoveryTestAt
-FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
-  AND (
-    d.CustomerCode = @code
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
-        AND (
-          (
-            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
-            OR (
-              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
-              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
-            )
-          )
-          OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
-        )
-    )
-  )
-GROUP BY d.SnapshotDate
-ORDER BY d.SnapshotDate DESC`);
+  SnapshotDate, DeviceCount, FailedCount, StaleCount, OkCount,
+  RecoveryTestingCount, StandbyImageCount, TestSuccessCount, TestFailedCount,
+  LastSuccessAny, LastRecoveryTestAt
+FROM dbo.vw_Cove_History_7d WITH (NOLOCK)
+WHERE CustomerCode = @code
+ORDER BY SnapshotDate DESC`);
       cove.recentDays = (hist.recordset ?? [])
         .map((r: any) => ({
           snapshotDate: toDateOnly(r.SnapshotDate) ?? String(r.SnapshotDate ?? ""),

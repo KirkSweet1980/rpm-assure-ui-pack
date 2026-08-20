@@ -1951,6 +1951,14 @@ GROUP BY OrganizationName
 ORDER BY Devices DESC;
 '@
 
+Write-Log 'Identity stamp...'
+try {
+  Invoke-SqlFile -SqlText 'EXEC dbo.usp_RefreshExternalIdentityFromMaps; EXEC dbo.usp_StampPulsewayFromIdentity;' -Label 'identity_stamp' -Soft | Out-Null
+  Write-Log 'Identity stamp OK'
+} catch {
+  Write-Log ('identity stamp warn ' + $_.Exception.Message)
+}
+
 Write-Log 'Rebuild org summary...'
 Invoke-SqlFile -SqlText $summarySql -Label 'summary' -Soft | Out-Null
 

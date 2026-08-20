@@ -229,11 +229,70 @@ BEGIN
 END
 GO
 
+CREATE OR ALTER PROCEDURE dbo.usp_StampPulsewayFromIdentity
+AS
+BEGIN
+  SET NOCOUNT ON;
+  IF OBJECT_ID(N'dbo.Pulseway_Devices', N'U') IS NULL RETURN;
+
+  UPDATE d
+  SET d.CustomerCode = x.CustomerCode
+  FROM dbo.Pulseway_Devices AS d
+  CROSS APPLY (
+    SELECT TOP 1 i.CustomerCode
+    FROM dbo.Dim_ExternalIdentity AS i
+    WHERE i.Active = 1
+      AND (
+        (i.Source = N'PULSEWAY' AND i.MatchKind IN (N'name', N'alias')
+          AND i.ExternalName IS NOT NULL
+          AND UPPER(LTRIM(RTRIM(i.ExternalName))) = UPPER(LTRIM(RTRIM(ISNULL(d.OrganizationName, N'')))))
+        OR (i.Source = N'HOST' AND i.MatchKind = N'host-prefix'
+          AND (
+            d.Name LIKE i.ExternalName
+            OR ISNULL(d.OrganizationName, N'') LIKE i.ExternalName
+          ))
+      )
+    ORDER BY CASE i.MatchKind WHEN N'id' THEN 0 WHEN N'name' THEN 1 WHEN N'alias' THEN 2 ELSE 3 END
+  ) AS x
+  WHERE d.CustomerCode IS NULL
+     OR d.CustomerCode <> x.CustomerCode;
+
+  DECLARE @dev int = @@ROWCOUNT;
+
+  IF OBJECT_ID(N'dbo.Pulseway_Disks', N'U') IS NOT NULL
+    UPDATE k
+    SET k.CustomerCode = d.CustomerCode
+    FROM dbo.Pulseway_Disks AS k
+    INNER JOIN dbo.Pulseway_Devices AS d
+      ON d.DeviceId = k.DeviceId
+     AND d.SnapshotDate = k.SnapshotDate
+    WHERE d.CustomerCode IS NOT NULL
+      AND (k.CustomerCode IS NULL OR k.CustomerCode <> d.CustomerCode);
+
+  IF OBJECT_ID(N'dbo.Pulseway_OrgSummary', N'U') IS NOT NULL
+    UPDATE s
+    SET s.CustomerCode = x.CustomerCode
+    FROM dbo.Pulseway_OrgSummary AS s
+    CROSS APPLY (
+      SELECT TOP 1 i.CustomerCode
+      FROM dbo.Dim_ExternalIdentity AS i
+      WHERE i.Active = 1 AND i.Source = N'PULSEWAY'
+        AND i.ExternalName IS NOT NULL
+        AND UPPER(LTRIM(RTRIM(i.ExternalName))) = UPPER(LTRIM(RTRIM(ISNULL(s.OrganizationName, N''))))
+      ORDER BY CASE i.MatchKind WHEN N'id' THEN 0 WHEN N'name' THEN 1 ELSE 2 END
+    ) AS x
+    WHERE s.CustomerCode IS NULL OR s.CustomerCode <> x.CustomerCode;
+
+  PRINT CONCAT(N'Pulseway devices restamped from identity: ', @dev);
+END
+GO
+
 IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'Rpm_collect')
 BEGIN
   GRANT SELECT, INSERT, UPDATE ON dbo.Dim_ExternalIdentity TO [Rpm_collect];
   GRANT EXECUTE ON dbo.usp_RefreshExternalIdentityFromMaps TO [Rpm_collect];
   GRANT EXECUTE ON dbo.usp_StampCoveFromIdentity TO [Rpm_collect];
+  GRANT EXECUTE ON dbo.usp_StampPulsewayFromIdentity TO [Rpm_collect];
 END
 GO
 
