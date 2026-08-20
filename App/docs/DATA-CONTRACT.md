@@ -54,6 +54,16 @@ Stamp RMM: `EXEC dbo.usp_StampPulsewayFromIdentity;`
 
 Stamp EPP: `EXEC dbo.usp_StampEppFromIdentity;`
 
+## Gold views (Tickets / SLA clocks)
+
+| Screen | View | Filter |
+|--------|------|--------|
+| Incidents / SLA | `vw_Tickets_Latest` | `CustomerCode = @code` |
+
+Stamp tickets: `EXEC dbo.usp_StampFreshdeskFromIdentity;` then `513_Sync_Freshdesk_To_Fact_Incident`.
+
+**Clock rule:** SLA counters start only when an amber/red live alert has a matching ticket in Assure (`ModuleCode` + subject). Clock start = ticket `OpenedAt`. No ticket = live robot only, not an SLA miss. Microsoft 365 is not on the signed SLA — robots stay Green.
+
 **Rule:** new UI column → migration + view first, then collector fills it. UI does not `LIKE` vendor names.
 
 ## Bronze

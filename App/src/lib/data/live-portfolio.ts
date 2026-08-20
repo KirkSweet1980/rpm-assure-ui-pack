@@ -1754,7 +1754,7 @@ SELECT TOP 400
   ResponseMinsElapsed, ResolveMinsElapsed,
   ResponseSlaMetCalc AS ResponseSlaMet,
   ResolveSlaMetCalc AS ResolveSlaMet
-FROM dbo.vw_Ams_IncidentLive
+FROM dbo.vw_Tickets_Latest
 WHERE CustomerCode = @code
   AND (
     Status NOT IN (N'Closed', N'Cancelled')
@@ -2486,6 +2486,8 @@ IF OBJECT_ID(N'dbo.usp_StampPulsewayFromIdentity', N'P') IS NOT NULL
   EXEC dbo.usp_StampPulsewayFromIdentity;
 IF OBJECT_ID(N'dbo.usp_StampEppFromIdentity', N'P') IS NOT NULL
   EXEC dbo.usp_StampEppFromIdentity;
+IF OBJECT_ID(N'dbo.usp_StampFreshdeskFromIdentity', N'P') IS NOT NULL
+  EXEC dbo.usp_StampFreshdeskFromIdentity;
 `);
   } catch (e) {
     console.warn("[rpm-assure] identity stamp:", e instanceof Error ? e.message : e);

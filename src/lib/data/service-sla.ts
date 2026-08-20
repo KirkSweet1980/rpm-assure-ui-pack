@@ -46,18 +46,22 @@ export type ServiceSlaPack = {
 function ticketLine(pillar: IndustryPillarKey, data: CustomerDetailPayload, defId: string): ServiceSlaLine {
   const g = ticketGatedSla(data, pillar);
   const def = INDUSTRY_SLA_LINES[pillar].find((d) => d.id === defId);
+  const onContract = pillar !== "csp";
   return {
     id: defId,
     metric: def?.metric ?? defId,
     targetLabel: def?.targetLabel ?? "≥ 90% ticket clocks",
     targetPct: def?.targetPct ?? 90,
-    actualPct: g.actualPct,
-    actualLabel: g.actualLabel,
-    tone: g.tone,
-    measured: g.measured,
-    contractual: true,
+    actualPct: onContract ? g.actualPct : null,
+    actualLabel: onContract
+      ? g.actualLabel
+      : "Microsoft 365 is not on the signed SLA — no clock.",
+    tone: onContract ? g.tone : "default",
+    measured: onContract && g.measured,
+    contractual: onContract,
     how: def?.how ?? "",
-    badge: g.badge,
+    badge: onContract ? g.badge : "Not on SLA contract",
+    excluded: !onContract,
   };
 }
 

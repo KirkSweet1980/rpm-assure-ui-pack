@@ -210,7 +210,6 @@ export function customerLiveStatus(
   const rmmSlaRag = serviceSlaRag("rmm", extra, Boolean(c.rmm));
   const coveSlaRag = serviceSlaRag("cove", extra, Boolean(c.cove));
   const eppSlaRag = serviceSlaRag("epp", extra, Boolean(c.epp));
-  const cspSlaRag = serviceSlaRag("csp", extra, Boolean(c.csp));
   const rmmRag = [devicesRag, alertsRag, patchRag, eventsRag, wsRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
 
   const recFail = extra?.cove?.recovery?.testFailedCount ?? 0;
@@ -361,14 +360,12 @@ export function customerLiveStatus(
             : "EPP live Green",
     },
     csp: {
-      rag: !c.csp ? "Off" : cspSlaRag === "Red" ? "Red" : "Green",
+      rag: !c.csp ? "Off" : "Green",
       cover: Boolean(c.csp),
-      href: cspSlaRag === "Red" ? `${base}/csp/sla` : `${base}/csp`,
+      href: `${base}/csp`,
       hint: !c.csp
         ? "Microsoft 365 not on cover"
-        : cspSlaRag === "Red"
-          ? "Microsoft 365 ticket SLA not met"
-          : "Microsoft 365 — posture Green; SLA clocks start on tickets in Assure",
+        : "Microsoft 365 — always Green until it is on a signed SLA",
     },
     tickets: {
       rag: ticketRag,
@@ -575,10 +572,10 @@ export function customerLiveStatus(
     "/csp/users": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/users`, hint: "Users (not on SLA)" },
     "/csp/licenses": { rag: off(Boolean(c.csp)), cover: Boolean(c.csp), href: `${base}/csp/licenses`, hint: "Licences (not on SLA)" },
     "/csp/sla": {
-      rag: !c.csp ? "Off" : cspSlaRag === "Red" ? "Red" : "Green",
+      rag: !c.csp ? "Off" : "Green",
       cover: Boolean(c.csp),
       href: `${base}/csp/sla`,
-      hint: cspSlaRag === "Red" ? "Microsoft 365 ticket SLA not met" : "M365 SLA clocks start on tickets in Assure",
+      hint: "Microsoft 365 is not on the signed SLA — robots stay Green",
     },
   };
 

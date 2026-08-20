@@ -353,6 +353,34 @@ WHERE e.CustomerCode IS NULL OR e.CustomerCode <> x.CustomerCode;
 END
 GO
 
+CREATE OR ALTER PROCEDURE dbo.usp_StampFreshdeskFromIdentity
+AS
+BEGIN
+  SET NOCOUNT ON;
+  IF OBJECT_ID(N'dbo.Freshdesk_Tickets', N'U') IS NULL RETURN;
+
+  UPDATE t
+  SET t.CustomerCode = x.CustomerCode
+  FROM dbo.Freshdesk_Tickets AS t
+  CROSS APPLY (
+    SELECT TOP 1 i.CustomerCode
+    FROM dbo.Dim_ExternalIdentity AS i
+    WHERE i.Active = 1
+      AND i.Source = N'FRESHDESK'
+      AND (
+        (i.MatchKind = N'name' AND i.ExternalName IS NOT NULL
+          AND UPPER(LTRIM(RTRIM(i.ExternalName))) = UPPER(LTRIM(RTRIM(ISNULL(t.CompanyName, N'')))))
+        OR (i.MatchKind = N'id' AND i.ExternalId IS NOT NULL AND t.CompanyId IS NOT NULL
+          AND i.ExternalId = CONVERT(nvarchar(80), t.CompanyId))
+      )
+    ORDER BY CASE i.MatchKind WHEN N'id' THEN 0 ELSE 1 END
+  ) AS x
+  WHERE t.CustomerCode IS NULL OR t.CustomerCode <> x.CustomerCode;
+
+  PRINT CONCAT(N'Freshdesk tickets restamped from identity: ', @@ROWCOUNT);
+END
+GO
+
 IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'Rpm_collect')
 BEGIN
   GRANT SELECT, INSERT, UPDATE ON dbo.Dim_ExternalIdentity TO [Rpm_collect];
@@ -360,6 +388,7 @@ BEGIN
   GRANT EXECUTE ON dbo.usp_StampCoveFromIdentity TO [Rpm_collect];
   GRANT EXECUTE ON dbo.usp_StampPulsewayFromIdentity TO [Rpm_collect];
   GRANT EXECUTE ON dbo.usp_StampEppFromIdentity TO [Rpm_collect];
+  GRANT EXECUTE ON dbo.usp_StampFreshdeskFromIdentity TO [Rpm_collect];
 END
 GO
 

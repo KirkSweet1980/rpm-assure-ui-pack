@@ -96,15 +96,19 @@ src AS (
     LEFT(COALESCE(t.RequesterEmail, t.CompanyName), 200) AS OwnerName,
     CASE
       WHEN t.TypeName LIKE N'%SYSPRO%' OR t.TypeName LIKE N'%Financial%' OR t.TypeName LIKE N'%Distribution%' OR t.TypeName LIKE N'%Manufactur%'
-        OR t.Subject LIKE N'%SYSPRO%' OR t.Subject LIKE N'%FinSight%' THEN N'SYSPRO'
+        OR t.Subject LIKE N'%SYSPRO%' OR t.Subject LIKE N'%FinSight%' OR t.Subject LIKE N'%job log%' THEN N'SYSPRO'
       WHEN t.TypeName LIKE N'%Cove%' OR t.TypeName LIKE N'%Backup%' OR t.TypeName LIKE N'%Datto%'
-        OR t.Subject LIKE N'%Cove%' OR t.Subject LIKE N'%backup%' OR t.Subject LIKE N'%Backup%' THEN N'COVE'
+        OR t.Subject LIKE N'%Cove%' OR t.Subject LIKE N'%backup%' OR t.Subject LIKE N'%Backup%'
+        OR t.Subject LIKE N'%recover%' OR t.Subject LIKE N'%RPO%' OR t.Subject LIKE N'%RTO%' THEN N'COVE'
       WHEN t.TypeName LIKE N'%EPP%' OR t.TypeName LIKE N'%Bitdefender%' OR t.TypeName LIKE N'%Security%'
-        OR t.Subject LIKE N'%Bitdefender%' OR t.Subject LIKE N'%malware%' OR t.Subject LIKE N'%EPP%' THEN N'EPP'
+        OR t.Subject LIKE N'%Bitdefender%' OR t.Subject LIKE N'%malware%' OR t.Subject LIKE N'%EPP%'
+        OR t.Subject LIKE N'%quarantine%' OR t.Subject LIKE N'%antivirus%' OR t.Subject LIKE N'%scan%' THEN N'EPP'
       WHEN t.TypeName LIKE N'%365%' OR t.TypeName LIKE N'%CSP%' OR t.TypeName LIKE N'%M365%' OR t.TypeName LIKE N'%Office%'
         OR t.Subject LIKE N'%365%' OR t.Subject LIKE N'%Exchange%' OR t.Subject LIKE N'%Teams%' OR t.Subject LIKE N'%SharePoint%' THEN N'CSP'
       WHEN t.TypeName LIKE N'%Infra%' OR t.TypeName LIKE N'%RMM%' OR t.TypeName LIKE N'%Pulseway%'
-        OR t.Subject LIKE N'%Pulseway%' OR t.Subject LIKE N'%server offline%' OR t.Subject LIKE N'%RMM%' THEN N'RMM'
+        OR t.Subject LIKE N'%Pulseway%' OR t.Subject LIKE N'%server offline%' OR t.Subject LIKE N'%RMM%'
+        OR t.Subject LIKE N'%offline%' OR t.Subject LIKE N'%downtime%' OR t.Subject LIKE N'%patch%'
+        OR t.Subject LIKE N'%IOPS%' OR t.Subject LIKE N'%workstation%' THEN N'RMM'
       ELSE N'AMS'
     END AS ModuleCode,
     LEFT(COALESCE(t.TypeName, t.CompanyName), 400) AS BusinessImpact

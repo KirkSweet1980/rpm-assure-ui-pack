@@ -605,6 +605,15 @@ if ($all.Count -gt 0) {
   Write-Log 'no tickets this cycle - skip load'
 }
 
+try {
+  $idFile = Join-Path $logDir ("identity_stamp_" + $stamp + ".sql")
+  [IO.File]::WriteAllText($idFile, "SET NOCOUNT ON;`nEXEC dbo.usp_RefreshExternalIdentityFromMaps;`nEXEC dbo.usp_StampFreshdeskFromIdentity;`n")
+  Invoke-FdSql $idFile
+  Write-Log 'Identity stamp OK'
+} catch {
+  Write-Log ('identity stamp warn ' + $_.Exception.Message)
+}
+
 Write-Log ('=== Freshdesk collect done tickets=' + $all.Count + ' mode=' + $Mode + ' log=' + $log + ' ===')
 
 $ensureSla = Join-Path $here '519_Ensure_Freshdesk_Sla.sql'
