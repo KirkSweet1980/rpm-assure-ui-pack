@@ -39,22 +39,20 @@ function Copy-ShareRead([string]$From, [string]$To) {
   }
 }
 
-foreach ($pair in @(
-    @('Sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
-    @('sql\agent\Deploy-Assure-Agent.ps1', 'Deploy-Assure-Agent.ps1'),
-    @('Sql\agent\Update-From-Https.ps1', 'Update-From-Https.ps1'),
-    @('sql\agent\Update-From-Https.ps1', 'Update-From-Https.ps1'),
-    @('Sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
-    @('sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
-    @('Sql\agent\Start-Agent-Tray.ps1', 'Start-Agent-Tray.ps1'),
-    @('sql\agent\Start-Agent-Tray.ps1', 'Start-Agent-Tray.ps1'),
-    @('Sql\agent\Install-Agent-Tray.ps1', 'Install-Agent-Tray.ps1'),
-    @('sql\agent\Install-Agent-Tray.ps1', 'Install-Agent-Tray.ps1'),
-    @('Sql\agent\Install-Agent-Service.ps1', 'Install-Agent-Service.ps1'),
-    @('sql\agent\Install-Agent-Service.ps1', 'Install-Agent-Service.ps1'),
-  )) {
-  $src = Join-Path $Pack $pair[0]
-  if (Test-Path $src) { [void](Copy-ShareRead $src (Join-Path $dl $pair[1])) }
+$loose = @(
+  'Deploy-Assure-Agent.ps1',
+  'Update-From-Https.ps1',
+  'Apply-Staged-Pack.ps1',
+  'Uninstall-Assure-Agent.ps1',
+  'Start-Agent-Tray.ps1',
+  'Install-Agent-Tray.ps1',
+  'Install-Agent-Service.ps1'
+)
+foreach ($leaf in $loose) {
+  foreach ($rel in @("Sql\agent\$leaf", "sql\agent\$leaf")) {
+    $src = Join-Path $Pack $rel
+    if (Test-Path $src) { [void](Copy-ShareRead $src (Join-Path $dl $leaf)); break }
+  }
 }
 
 $stage = Join-Path $env:TEMP ('rpma-pack-clean-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
