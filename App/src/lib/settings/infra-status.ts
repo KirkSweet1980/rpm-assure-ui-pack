@@ -10,6 +10,8 @@ export type InfraAgentRow = {
   healthStatus: string;
   lastStatus: string | null;
   lastHeartbeatUtc: string | null;
+  lastJobUtc: string | null;
+  lastMessage: string | null;
   cover: {
     syspro: boolean;
     rmm: boolean;
@@ -62,7 +64,9 @@ export const fetchInfraAgents = createServerFn({ method: "GET" }).handler(async 
     LTRIM(RTRIM(HostName)) AS HostName,
     AgentVersion,
     LastHeartbeatUtc,
+    LastJobUtc,
     LastStatus,
+    LastMessage,
     CASE
       WHEN LastHeartbeatUtc IS NULL THEN N'NEVER'
       WHEN LastHeartbeatUtc < DATEADD(minute, -45, SYSUTCDATETIME()) THEN N'STALE'
@@ -118,7 +122,9 @@ SELECT
   la.HostName,
   la.AgentVersion,
   la.LastHeartbeatUtc,
+  la.LastJobUtc,
   la.LastStatus,
+  la.LastMessage,
   ISNULL(la.HealthStatus, N'NOT_INSTALLED') AS HealthStatus
 FROM cust
 LEFT JOIN live_agents la ON la.CustomerCode = cust.CustomerCode
@@ -229,6 +235,8 @@ ORDER BY cust.DisplayName, la.HostName`);
         lastHeartbeatUtc: row.LastHeartbeatUtc
           ? new Date(row.LastHeartbeatUtc as string).toISOString()
           : null,
+        lastJobUtc: row.LastJobUtc ? new Date(row.LastJobUtc as string).toISOString() : null,
+        lastMessage: row.LastMessage != null ? String(row.LastMessage) : null,
         cover: {
           syspro: cover.syspro,
           rmm: cover.rmm,

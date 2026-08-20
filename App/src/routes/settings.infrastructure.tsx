@@ -14,6 +14,7 @@ import {
   type ApiFeedSyncStatus,
 } from "@/lib/settings/settings-api";
 import { fetchInfraAgents, type InfraAgentRow } from "@/lib/settings/infra-status";
+import { SHIPPED_AGENT_VERSION } from "@/lib/settings/agent-version";
 import type { LucideIcon } from "lucide-react";
 import { cn, formatSastDateTime } from "@/lib/utils";
 
@@ -134,6 +135,253 @@ function Lamp({ tone }: { tone: "green" | "amber" | "red" | "muted" }) {
         tone === "muted" && "bg-muted",
       )}
     />
+  );
+}
+
+function worstTone(hosts: InfraAgentRow[]): "green" | "amber" | "red" | "muted" {
+  if (hosts.length === 0) return "muted";
+  const rank = { red: 0, amber: 1, green: 2, muted: 3 };
+  let worst: "green" | "amber" | "red" | "muted" = "green";
+  for (const h of hosts) {
+    const t = agentStatus(h).tone;
+    if (rank[t] < rank[worst]) worst = t;
+  }
+  return worst;
+}
+
+function CoverChips({ cover }: { cover: InfraAgentRow["cover"] }) {
+  const on = COVER_CHIPS.filter((c) => cover[c.key]);
+  if (on.length === 0) return <span className="text-muted">No Cover</span>;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {on.map((c) => {
+        const Icon = c.icon;
+        return (
+          <span
+            key={c.key}
+            className="inline-flex items-center gap-1 rounded-md bg-rag-green/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rag-green"
+          >
+            <Icon className="h-3 w-3" />
+            {c.label}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function AgentStatusWindow({
+  groups,
+  hostCount,
+  agentMsg,
+  sync,
+  busy,
+  onRefresh,
+  onSync,
+  onUpdate,
+}: {
+  groups: Array<{
+    code: string;
+    displayName: string;
+    cover: InfraAgentRow["cover"];
+    hosts: InfraAgentRow[];
+  }>;
+  hostCount: number;
+  agentMsg: string | null;
+  sync: Record<string, SyncPhase>;
+  busy: boolean;
+  onRefresh: () => void;
+  onSync: (row: InfraAgentRow) => void;
+  onUpdate: (row: InfraAgentRow) => void;
+}) {
+  const [cust, setCust] = useState<string | null>(null);
+  const [host, setHost] = useState<string | null>(null);
+
+  const group = groups.find((g) => g.code === cust) ?? groups[0] ?? null;
+  const hosts = group?.hosts ?? [];
+  const row =
+    hosts.find((h) => hostKey(h) === host) ??
+    hosts[0] ??
+    null;
+
+  const st = row ? agentStatus(row) : null;
+  const sy = row ? syncToneOf(row, sync[hostKey(row)]) : null;
+  const phase = row ? sync[hostKey(row)] : undefined;
+  const canSync = Boolean(row?.hostName) && st?.tone === "green" && sy?.tone !== "amber";
+  const shippedOff = Boolean(row?.agentVersion && row.agentVersion !== SHIPPED_AGENT_VERSION);
+
+  return (
+    <section className="rpma-panel rpma-agent-fleet p-0">
+      <div className="rpma-settings-panel-head">
+        Assure Platform Agent Status
+        <span className="rpma-settings-count">
+          {groups.length} customer{groups.length === 1 ? "" : "s"} · {hostCount} agent
+          {hostCount === 1 ? "" : "s"}
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="ml-auto h-7 px-2.5 text-[11px]"
+          disabled={busy}
+          onClick={onRefresh}
+        >
+          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+          Refresh
+        </Button>
+      </div>
+      {agentMsg ? <p className="px-3 pb-2 text-[11px] text-muted">{agentMsg}</p> : null}
+
+      <div className="rpma-agent-split">
+        <nav className="rpma-agent-custs" aria-label="Customers">
+          <p className="rpma-agent-kicker">Customer</p>
+          {groups.length === 0 ? (
+            <p className="px-2 text-[12px] text-muted">No customers listed.</p>
+          ) : (
+            groups.map((g) => {
+              const tone = worstTone(g.hosts);
+              const on = group?.code === g.code;
+              return (
+                <button
+                  key={g.code}
+                  type="button"
+                  className={cn("rpma-agent-cust-btn", on && "is-on")}
+                  onClick={() => {
+                    setCust(g.code);
+                    setHost(g.hosts[0] ? hostKey(g.hosts[0]) : null);
+                  }}
+                >
+                  <span className="rpma-agent-cust-name">{g.displayName}</span>
+                  <span className="rpma-agent-cust-meta">
+                    {g.hosts.length} agent{g.hosts.length === 1 ? "" : "s"}
+                  </span>
+                  <Lamp tone={tone} />
+                </button>
+              );
+            })
+          )}
+        </nav>
+
+        <nav className="rpma-agent-hosts" aria-label="Assure Agents">
+          <p className="rpma-agent-kicker">Assure Agents</p>
+          {!group ? null : hosts.length === 0 ? (
+            <p className="px-2 text-[12px] text-muted">No Edge agent</p>
+          ) : (
+            hosts.map((h) => {
+              const t = agentStatus(h);
+              const on = row ? hostKey(h) === hostKey(row) : false;
+              return (
+                <button
+                  key={hostKey(h)}
+                  type="button"
+                  className={cn("rpma-agent-host-btn", on && "is-on")}
+                  onClick={() => setHost(hostKey(h))}
+                >
+                  <span className="rpma-agent-host-name">{h.hostName}</span>
+                  <span className="rpma-agent-host-ver">
+                    {h.agentVersion ? `v${h.agentVersion}` : "—"}
+                  </span>
+                  <Lamp tone={t.tone} />
+                </button>
+              );
+            })
+          )}
+        </nav>
+
+        <div className="rpma-agent-detail">
+          {!row || !group ? (
+            <p className="text-[13px] text-muted">Select a customer and agent.</p>
+          ) : !row.hostName ? (
+            <p className="text-[13px] text-muted">No Edge agent on {group.displayName}.</p>
+          ) : (
+            <>
+              <div className="rpma-agent-detail-head">
+                <strong>{row.hostName}</strong>
+                <SpaLink
+                  href={`/customers/${encodeURIComponent(group.code)}`}
+                  className="text-[12px] text-muted no-underline hover:underline"
+                >
+                  {group.displayName}
+                </SpaLink>
+              </div>
+              <dl className="rpma-agent-facts">
+                <div>
+                  <dt>Agent version</dt>
+                  <dd className={cn("font-mono", shippedOff && "text-amber-400")}>
+                    {row.agentVersion ? `v${row.agentVersion}` : "—"}
+                    {shippedOff ? ` · pack v${SHIPPED_AGENT_VERSION}` : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Agent status</dt>
+                  <dd className={cn("inline-flex items-center gap-1.5 font-semibold",
+                    st?.tone === "green" && "text-rag-green",
+                    st?.tone === "amber" && "text-amber-400",
+                    st?.tone === "red" && "text-rag-red",
+                    st?.tone === "muted" && "text-muted",
+                  )}>
+                    <Lamp tone={st?.tone ?? "muted"} /> {st?.label}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Agent sync</dt>
+                  <dd className={cn("inline-flex items-center gap-1.5 font-semibold",
+                    sy?.tone === "green" && "text-rag-green",
+                    sy?.tone === "amber" && "text-amber-400",
+                    sy?.tone === "red" && "text-rag-red",
+                    sy?.tone === "muted" && "text-muted",
+                  )}>
+                    <Lamp tone={sy?.tone ?? "muted"} /> {sy?.label}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Last heartbeat</dt>
+                  <dd>{formatSastDateTime(row.lastHeartbeatUtc)}</dd>
+                </div>
+                <div>
+                  <dt>Last job</dt>
+                  <dd>{formatSastDateTime(row.lastJobUtc)}</dd>
+                </div>
+                <div className="is-wide">
+                  <dt>Last message</dt>
+                  <dd>{row.lastMessage || "—"}</dd>
+                </div>
+                <div className="is-wide">
+                  <dt>Service cover</dt>
+                  <dd><CoverChips cover={group.cover} /></dd>
+                </div>
+              </dl>
+              <div className="rpma-agent-actions">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-[12px]"
+                  disabled={!canSync}
+                  onClick={() => onSync(row)}
+                >
+                  Sync
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 px-3 text-[12px]"
+                  disabled={!canSync}
+                  onClick={() => onUpdate(row)}
+                >
+                  Update Agent
+                </Button>
+                {phase === "queued" || phase === "running" ? (
+                  <span className="text-[12px] font-semibold text-amber-400">
+                    {phase === "queued" ? "Queued…" : "Running…"}
+                  </span>
+                ) : null}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -473,154 +721,16 @@ function InfrastructureStatusPage() {
           </table>
       </section>
 
-      <section className="rpma-panel p-0">
-        <div className="rpma-settings-panel-head">
-          Assure Platform Agent Status
-          <span className="rpma-settings-count">
-            {agentGroups.length} customer{agentGroups.length === 1 ? "" : "s"} · {hostCount} host{hostCount === 1 ? "" : "s"}
-          </span>
-        </div>
-        {agentMsg ? <p className="px-3 pb-2 text-[11px] text-muted">{agentMsg}</p> : null}
-        <table className="rpma-xls text-left">
-            <thead>
-              <tr>
-                <th>Customer / host</th>
-                <th>Agent Version Installed</th>
-                <th>Agent Status</th>
-                <th className="text-center">Agent Sync</th>
-                <th>Service Cover</th>
-                <th className="text-right"> </th>
-              </tr>
-            </thead>
-            <tbody>
-              {agentGroups.length === 0 ? (
-                <tr>
-                  <td colSpan={6}>No customers listed.</td>
-                </tr>
-              ) : (
-                agentGroups.flatMap((g) => {
-                  const on = COVER_CHIPS.filter((c) => g.cover[c.key]);
-                  const coverCell = on.length === 0 ? (
-                    <span className="text-muted">No Cover</span>
-                  ) : (
-                    <span className="flex flex-wrap gap-1">
-                      {on.map((c) => {
-                        const Icon = c.icon;
-                        return (
-                          <span
-                            key={c.key}
-                            className="inline-flex items-center gap-1 rounded-md bg-rag-green/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rag-green"
-                          >
-                            <Icon className="h-3 w-3" />
-                            {c.label}
-                          </span>
-                        );
-                      })}
-                    </span>
-                  );
-                  const head = (
-                    <tr key={`${g.code}-head`} className="rpma-agent-cust">
-                      <td colSpan={4}>
-                        <SpaLink
-                          href={`/customers/${encodeURIComponent(g.code)}`}
-                          className="font-bold text-fg no-underline hover:underline"
-                        >
-                          {g.displayName}
-                        </SpaLink>
-                        <span className="ml-2 text-[11px] font-semibold text-muted">
-                          {g.hosts.length} host{g.hosts.length === 1 ? "" : "s"}
-                        </span>
-                      </td>
-                      <td>{coverCell}</td>
-                      <td />
-                    </tr>
-                  );
-                  if (g.hosts.length === 0) {
-                    return [
-                      head,
-                      <tr key={`${g.code}-empty`}>
-                        <td className="pl-6 text-muted">No Edge agent</td>
-                        <td className="font-mono">—</td>
-                        <td>
-                          <span className="inline-flex items-center gap-1.5 font-semibold text-muted">
-                            <Lamp tone="muted" /> Not installed
-                          </span>
-                        </td>
-                        <td className="text-center text-muted">N/A</td>
-                        <td />
-                        <td className="text-right text-[11px] text-muted">No agent</td>
-                      </tr>,
-                    ];
-                  }
-                  const hostRows = g.hosts.map((row) => {
-                    const st = agentStatus(row);
-                    const sy = syncToneOf(row, sync[hostKey(row)]);
-                    const canSync = Boolean(row.hostName) && st.tone === "green" && sy.tone !== "amber";
-                    return (
-                      <tr key={hostKey(row)}>
-                        <td className="pl-6 font-mono">{row.hostName}</td>
-                        <td className="font-mono">{row.agentVersion ? `v${row.agentVersion}` : "—"}</td>
-                        <td>
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1.5 font-semibold",
-                              st.tone === "green" && "text-rag-green",
-                              st.tone === "amber" && "text-amber-400",
-                              st.tone === "red" && "text-rag-red",
-                              st.tone === "muted" && "text-muted",
-                            )}
-                          >
-                            <Lamp tone={st.tone} />
-                            {st.label}
-                          </span>
-                        </td>
-                        <td className="text-center">
-                          <span
-                            className={cn(
-                              "inline-flex items-center justify-center gap-1.5 font-semibold",
-                              sy.tone === "green" && "text-rag-green",
-                              sy.tone === "amber" && "text-amber-400",
-                              sy.tone === "red" && "text-rag-red",
-                              sy.tone === "muted" && "text-muted",
-                            )}
-                          >
-                            <Lamp tone={sy.tone} />
-                            {sy.label}
-                          </span>
-                        </td>
-                        <td />
-                        <td className="text-right">
-                          <span className="inline-flex flex-wrap justify-end gap-1">
-                            <Button
-                              type="button"
-                              size="sm"
-                              className="h-7 px-2.5 text-[11px]"
-                              disabled={!canSync}
-                              onClick={() => void syncOne(row)}
-                            >
-                              Sync
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              className="h-7 px-2.5 text-[11px]"
-                              disabled={!canSync}
-                              onClick={() => void updateOne(row)}
-                            >
-                              Update Agent
-                            </Button>
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  });
-                  return [head, ...hostRows];
-                })
-              )}
-            </tbody>
-          </table>
-      </section>
+      <AgentStatusWindow
+        groups={agentGroups}
+        hostCount={hostCount}
+        agentMsg={agentMsg}
+        sync={sync}
+        busy={busy}
+        onRefresh={() => void load()}
+        onSync={(row) => void syncOne(row)}
+        onUpdate={(row) => void updateOne(row)}
+      />
     </div>
   );
 }
