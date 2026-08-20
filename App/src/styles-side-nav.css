@@ -368,7 +368,7 @@ html[data-theme="dark"] .rpma-emp-tool.is-nocover {
 .dk-header-navrow .dk-link.is-active,
 .dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
 .dk-header-navrow .rpma-top-link-active {
-  background: rgba(255,255,255,0.16) !important;
+  background: transparent !important;
   color: #ffffff !important;
 }
 html.dark .dk-header-navrow,
@@ -389,7 +389,7 @@ html[data-theme="dark"] .dk-header-navrow .dk-link:hover {
 }
 html.dark .dk-header-navrow .dk-link.is-active,
 html[data-theme="dark"] .dk-header-navrow .dk-link.is-active {
-  background: rgba(255,255,255,0.16) !important;
+  background: transparent !important;
   color: #ffffff !important;
 }
 
@@ -868,4 +868,16 @@ html:not(.dark) .dk-header-navrow .dk-link:hover {
 .rpma-help-cards a { color: #111827 !important; background: #f8fafc !important; }
 @media (max-width: 800px) {
   .rpma-help.is-page { grid-template-columns: 1fr !important; min-height: 0 !important; }
+}
+.dk-header-navrow .dk-link.is-active,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
+.dk-header-navrow .rpma-top-link-active,
+html.dark .dk-header-navrow .dk-link.is-active,
+html[data-theme="dark"] .dk-header-navrow .dk-link.is-active,
+html:not(.dark) .dk-header-navrow .dk-link.is-active,
+html[data-theme="light"] .dk-header-navrow .dk-link.is-active {
+  background: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  border: 0 !important;
 }
