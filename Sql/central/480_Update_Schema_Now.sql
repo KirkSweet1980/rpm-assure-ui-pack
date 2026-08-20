@@ -396,3 +396,25 @@ BEGIN
 END
 GO
 
+/* Latest RMM device per DeviceId — Pulseway page collects used different SnapshotDate
+   so MAX(SnapshotDate) per customer dropped hosts (AHI 6 servers showed as 3). */
+IF OBJECT_ID(N'dbo.vw_Kpi_Rmm_Devices_Latest', N'V') IS NOT NULL
+  DROP VIEW dbo.vw_Kpi_Rmm_Devices_Latest;
+GO
+IF OBJECT_ID(N'dbo.Pulseway_Devices', N'U') IS NOT NULL
+BEGIN
+  EXEC(N'
+  CREATE VIEW dbo.vw_Kpi_Rmm_Devices_Latest
+  AS
+  SELECT d.*
+  FROM dbo.Pulseway_Devices AS d WITH (NOLOCK)
+  INNER JOIN (
+    SELECT DeviceId, MAX(SnapshotDate) AS mx
+    FROM dbo.Pulseway_Devices WITH (NOLOCK)
+    GROUP BY DeviceId
+  ) m ON m.DeviceId = d.DeviceId AND m.mx = d.SnapshotDate
+  ');
+  PRINT 'vw_Kpi_Rmm_Devices_Latest latest-per-DeviceId';
+END
+GO
+

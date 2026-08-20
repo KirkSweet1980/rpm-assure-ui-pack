@@ -636,7 +636,7 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
   // Server Patch Management — servers only (workstations excluded)
   const devices = [...(rmm?.devices ?? [])]
     .filter((d) =>
-      rmmDeviceBelongsToCustomer(data.customer.customerCode, d.name, null, d.organizationName),
+      rmmDeviceBelongsToCustomer(data.customer.customerCode, d.name, d.customerCode, d.organizationName),
     )
     .filter((d) => isRmmServer(d))
     .sort((a, b) => {
@@ -1411,7 +1411,7 @@ export function RmmDevicesSection({
         rmmDeviceBelongsToCustomer(
           data.customer.customerCode,
           d.name,
-          null,
+          d.customerCode,
           d.organizationName,
         ),
       ),
@@ -2055,7 +2055,7 @@ export function RmmAlertsSection({ data }: { data: CustomerDetailPayload }) {
     .filter((a) => a.source !== "agent")
     .filter((a) => rmmDeviceBelongsToCustomer(code, a.deviceName, null));
   const devices = (data.rmm?.devices ?? []).filter((d) =>
-    rmmDeviceBelongsToCustomer(code, d.name, null, d.organizationName),
+    rmmDeviceBelongsToCustomer(code, d.name, d.customerCode, d.organizationName),
   );
   if (!effectiveCover(data).rmm && alerts.length === 0) {
     return (
@@ -2308,7 +2308,7 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
     tenantAssetBelongs(code, { host: r.hostName }),
   );
   const devices = (data.rmm?.devices ?? []).filter((d) =>
-    rmmDeviceBelongsToCustomer(code, d.name, null, d.organizationName),
+    rmmDeviceBelongsToCustomer(code, d.name, d.customerCode, d.organizationName),
   );
   const rmmHosts = devices
     .filter((d) => classifyRmmDevice(d) === "server" || /server/i.test(`${d.osName || ""} ${d.deviceType || ""} ${d.name || ""}`))

@@ -1,8 +1,57 @@
 /**
  * Classify Pulseway devices as server vs workstation for UI modules and SLA.
+ * Pulseway often tags file/SQL boxes as "Workstation" — OS and role names win.
  */
 
 export type RmmDeviceClass = "server" | "workstation" | "other";
+
+function compactName(name?: string | null): string {
+  return String(name ?? "")
+    .toLowerCase()
+    .replace(/[-_\s]/g, "");
+}
+
+function looksLikeServerName(name?: string | null): boolean {
+  const n = (name || "").toLowerCase();
+  const compact = compactName(name);
+  if (!n && !compact) return false;
+  if (
+    /rpm[-_\s]?unify|unifyosserver/.test(n) ||
+    /rpm-?ai1\b/.test(n) ||
+    /rpm-?pet\b/.test(n) ||
+    /rpmwhm|rpm[-_\s]?whm/.test(n) ||
+    /\bserver\b/.test(n)
+  ) {
+    return true;
+  }
+  // Role boxes: SQL / SYSPRO / file / app / DC / Hyper-V (with or without hyphens)
+  if (
+    /ssql|syspro|fsdb|fsapp|fsprd|prodev|sqlsrv|hvhost|hyperv|vcenter|esxi|file.?serv/.test(compact)
+  ) {
+    return true;
+  }
+  if (/ahicfs|ahifs|rssdc|sql01|app01|adc01/.test(compact)) return true;
+  if (
+    /(^|[-_])(sql|app|web|dc|fs|prd|prod|srv|rds|ts|adc)(\d+)?($|[-_])/.test(n)
+  ) {
+    return true;
+  }
+  if (/\b(sql|syspro|file|app|web|dc|prod|srv|prd|hyper-v|esxi)\b/.test(n)) {
+    return true;
+  }
+  return false;
+}
+
+function looksLikeServerOs(os?: string | null): boolean {
+  const o = (os || "").toLowerCase();
+  return (
+    o.includes("windows server") ||
+    o.includes("server 201") ||
+    o.includes("server 202") ||
+    o.includes("domain controller") ||
+    /\b(hyper-v|esxi|vcenter)\b/.test(o)
+  );
+}
 
 export function classifyRmmDevice(d: {
   deviceType?: string | null;
@@ -14,21 +63,14 @@ export function classifyRmmDevice(d: {
   const name = (d.name || "").toLowerCase();
   const blob = `${type} ${os} ${name}`;
 
-  // Named boxes we run as servers even when Pulseway tags them Workstation
-  if (
-    /rpm[-_\s]?unify|unify os server/.test(name) ||
-    /rpm-?ai1\b/.test(name) ||
-    /rpm-?pet\b/.test(name) ||
-    /rpmwhm|rpm[-_\s]?whm/.test(name) ||
-    /\bserver\b/.test(name)
-  ) {
+  if (looksLikeServerName(d.name) || looksLikeServerOs(d.osName)) {
     return "server";
   }
 
-  // Explicit Pulseway types win after the name override
   if (type === "server" || type.includes("server") || type.includes("domain controller")) {
     return "server";
   }
+
   if (
     type === "workstation" ||
     type.includes("workstation") ||
@@ -39,14 +81,7 @@ export function classifyRmmDevice(d: {
     return "workstation";
   }
 
-  // OS / name heuristics
-  if (
-    blob.includes("windows server") ||
-    blob.includes("server 201") ||
-    blob.includes("server 202") ||
-    blob.includes("domain controller") ||
-    /\b(hyper-v|esxi|vcenter|sql|dc\d*|prod|srv)\b/.test(blob)
-  ) {
+  if (/\b(hyper-v|esxi|vcenter|sql|dc\d*|prod|srv)\b/.test(blob)) {
     return "server";
   }
 
@@ -68,7 +103,6 @@ export function classifyRmmDevice(d: {
     return "workstation";
   }
 
-  // Generic "Windows" type without Server usually means client
   if (type === "windows" || type === "pc" || type.includes("computer")) {
     if (!blob.includes("server")) return "workstation";
   }
@@ -81,7 +115,7 @@ export function isRmmServer(d: {
   osName?: string | null;
   name?: string | null;
 }): boolean {
-  return classifyRmmDevice(d) === "server";
+  return classifyRmmDevice(d) !== "workstation";
 }
 
 export function isRmmWorkstation(d: {
@@ -89,8 +123,7 @@ export function isRmmWorkstation(d: {
   osName?: string | null;
   name?: string | null;
 }): boolean {
-  // Unclassified devices still belong on the workstation list so nothing disappears
-  return classifyRmmDevice(d) !== "server";
+  return classifyRmmDevice(d) === "workstation";
 }
 
 export type ServerHardwareKind = "virtual" | "physical" | "unknown";
@@ -121,14 +154,12 @@ export function classifyServerHardware(d: {
   const compact = name.replace(/[-_\s]/g, "");
   const blob = `${name} ${os} ${type} ${media}`;
 
-  // Hypervisor / host boxes are physical machines
   if (
     /hvhost|hyperv|esxi|vcenter|proxmox|xenhost|bare[- ]?metal/.test(`${compact} ${blob}`)
   ) {
     return "physical";
   }
 
-  // Disk media from IOPS / Pulseway is the strongest guest signal
   if (
     /msft virtual|microsoft virtual|virtual disk|virtual hd|vmware virtual|pvscsi|vmdk|vhdx|\bvhd\b|hyper-v virtual|\bvirtual\b/.test(
       media,
@@ -156,7 +187,6 @@ export function classifyServerHardware(d: {
     return "physical";
   }
 
-  // Lab / named bare metal (RPMINT)
   if (/^(ironman|thor|hulk|vision|rpmunify|unifyosserver)$/.test(compact)) {
     return "physical";
   }
@@ -168,7 +198,6 @@ export function classifyServerHardware(d: {
     return "physical";
   }
 
-  // Role names in this estate are Hyper-V guests (SQL / SYSPRO / file / DC / app)
   if (
     /ssql|syspro|fsapp|fsdb|prodev|sqlsrv|-sql|[-_]app|[-_]web|[-_]dc|adc01|rds|ts01|prod-0/.test(
       compact,
@@ -180,7 +209,6 @@ export function classifyServerHardware(d: {
     return "virtual";
   }
 
-  // Windows Server without a hypervisor/host name is a guest in this fleet
   if (/windows server/.test(os) && !/hyper-v|esxi/.test(compact)) {
     return "virtual";
   }
