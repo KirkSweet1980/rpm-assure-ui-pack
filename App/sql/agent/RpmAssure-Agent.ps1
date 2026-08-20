@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.9.1"
+$AgentVersion = "2.9.2"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -831,7 +831,7 @@ INSERT INTO dbo.Agent_JobRun (CustomerCode, HostName, JobName, StartedUtc, Finis
 VALUES ($(Sql-Lit $Code), $(Sql-Lit $HostName), $(Sql-Lit $Name), $(Sql-Lit $Started.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss")), $(Sql-Lit $Finished.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss")), $ExitCode, $ok, $dur, $(Sql-Lit $msg), $(Sql-Lit $tail));
 UPDATE dbo.Agent_Registry
 SET LastJobUtc = SYSUTCDATETIME(),
-    LastStatus = $(Sql-Lit $(if ($ok -eq 1) { 'OK' } else { 'JOB_FAIL' })),
+    LastStatus = $(Sql-Lit $(if ($ok -eq 1) { "OK" } elseif ($Name -like "syspro-core-*") { "JOB_FAIL" } else { "ONLINE" })),
     LastMessage = $(Sql-Lit ($Name + " exit=" + $ExitCode))
 WHERE CustomerCode = $(Sql-Lit $Code) AND HostName = $(Sql-Lit $HostName);
 "@
