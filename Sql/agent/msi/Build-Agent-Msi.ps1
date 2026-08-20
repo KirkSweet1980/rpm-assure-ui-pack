@@ -40,21 +40,28 @@ $wixBin = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 $wixExe = Get-Command wix -EA SilentlyContinue | Select-Object -ExpandProperty Source
+$msi = Join-Path $OutDir 'rpm-assure-agent.msi'
+$wixLog = Join-Path $work 'wix-build.log'
 if ($wixExe) {
+  Write-Host ('wix ' + $wixExe)
   Push-Location $work
-  & $wixExe build RpmAssureAgent.wxs -arch x64 -o (Join-Path $OutDir 'rpm-assure-agent.msi')
-  Pop-Location
+  try {
+    $out = & $wixExe build RpmAssureAgent.wxs -arch x64 -o $msi 2>&1
+    $wixExit = $LASTEXITCODE
+    $out | Out-File -FilePath $wixLog -Encoding utf8
+    $out | ForEach-Object { Write-Host $_ }
+  } finally {
+    Pop-Location
+  }
+  if ($wixExit -ne 0) {
+    Get-Content $wixLog -EA SilentlyContinue | ForEach-Object { Write-Host $_ }
+    throw ('WiX build failed exit=' + $wixExit + ' log=' + $wixLog)
+  }
 } elseif ($wixBin -and (Test-Path (Join-Path $wixBin 'candle.exe'))) {
-  Push-Location $work
-  & (Join-Path $wixBin 'candle.exe') -nologo -arch x64 RpmAssureAgent.wxs -out RpmAssureAgent.wixobj
-  if ($LASTEXITCODE -ne 0) { Pop-Location; throw 'candle failed' }
-  & (Join-Path $wixBin 'light.exe') -nologo RpmAssureAgent.wixobj -out (Join-Path $OutDir 'rpm-assure-agent.msi')
-  Pop-Location
+  throw 'WiX v3 candle found but this .wxs is WiX v4. Install: dotnet tool install --global wix'
 } else {
   throw 'WiX not installed. On this box: winget install --id WiXToolset.WiX -e   OR  dotnet tool install --global wix'
 }
-if ($LASTEXITCODE -ne 0) { throw 'WiX build failed' }
-$msi = Join-Path $OutDir 'rpm-assure-agent.msi'
 if (-not (Test-Path $msi)) { throw 'MSI not produced' }
 Write-Host ('MSI ' + $msi + ' bytes=' + (Get-Item $msi).Length)
 Write-Host 'Next: Sign-Agent-Msi.ps1  then  msiexec /i ... CUSTOMERCODE=AHIC'
