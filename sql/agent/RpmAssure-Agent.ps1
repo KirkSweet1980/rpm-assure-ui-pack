@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.8.8"
+$AgentVersion = "2.8.9"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -427,25 +427,28 @@ WHERE HostName = $(Sql-Lit $HostName)
   if (Test-Path $fetchStamp) {
     try {
       $lf = [datetime]::Parse((Get-Content $fetchStamp -Raw).Trim(), [Globalization.CultureInfo]::InvariantCulture)
-      if (((Get-Date).ToUniversalTime() - $lf.ToUniversalTime()).TotalMinutes -lt 30) { $fetchDue = $false }
+      if (((Get-Date).ToUniversalTime() - $lf.ToUniversalTime()).TotalMinutes -lt 60) { $fetchDue = $false }
     } catch {}
   }
   $httpsBase = "https://assure.rpmresources.co.za"
   if (Get-Command Get-RpmaAssureUrl -ErrorAction SilentlyContinue) {
     try { $httpsBase = Get-RpmaAssureUrl } catch {}
   }
+  # Rule: compare remote VERSION and fetch zip every hour. Heartbeat requestUpdate is immediate.
   $remoteVer = $null
-  try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $wcVer = New-Object Net.WebClient
-    $wcVer.Headers['Cache-Control'] = 'no-cache'
-    $remoteVer = (($wcVer.DownloadString($httpsBase.TrimEnd('/') + '/downloads/VERSION')) -replace '\s', '')
-  } catch {
-    W ("WARN remote VERSION " + $_.Exception.Message)
-  }
-  if ($remoteVer) {
-    W ("pack VERSION local=$AgentVersion remote=$remoteVer")
-    if ($remoteVer -ne $AgentVersion) { $needUp = $true; $fetchDue = $true }
+  if ($needUp -or $fetchDue) {
+    try {
+      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+      $wcVer = New-Object Net.WebClient
+      $wcVer.Headers['Cache-Control'] = 'no-cache'
+      $remoteVer = (($wcVer.DownloadString($httpsBase.TrimEnd('/') + '/downloads/VERSION')) -replace '\s', '')
+    } catch {
+      W ("WARN remote VERSION " + $_.Exception.Message)
+    }
+    if ($remoteVer) {
+      W ("pack VERSION local=$AgentVersion remote=$remoteVer")
+      if ($remoteVer -ne $AgentVersion) { $needUp = $true }
+    }
   }
   if ($needUp -or $fetchDue) {
     W "pack fetch HTTPS (needUp=$needUp fetchDue=$fetchDue remote=$remoteVer local=$AgentVersion)"

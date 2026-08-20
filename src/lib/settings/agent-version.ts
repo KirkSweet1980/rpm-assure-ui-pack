@@ -1,1 +1,1 @@
-export const SHIPPED_AGENT_VERSION = "2.8.8";
+export const SHIPPED_AGENT_VERSION = "2.8.9";
