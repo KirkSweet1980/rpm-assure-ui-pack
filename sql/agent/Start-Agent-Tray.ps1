@@ -108,7 +108,7 @@ $miDo.add_Click({
   $script:SyncTicks = 0
   [IO.File]::WriteAllText($flagFile, (Get-Date).ToUniversalTime().ToString('o'))
   $form = New-Object System.Windows.Forms.Form
-  $form.Text = 'RPM Assure - Sync this customer'
+  $form.Text = 'Application Management System'
   $form.Size = New-Object System.Drawing.Size(420, 150)
   $form.StartPosition = 'CenterScreen'
   $form.FormBorderStyle = 'FixedDialog'
@@ -146,7 +146,7 @@ $miDo.add_Click({
       $n = 30 + ($t * 5)
       if ($n -gt 92) { $n = 92 }
       $bar.Value = $n
-      $lbl.Text = 'Collect running on this customer...'
+      $lbl.Text = 'Assure Sync Running'
     } elseif ($msg -match 'fail|error') {
       $bar.Value = 100
       $lbl.Text = 'Error: ' + $msg
