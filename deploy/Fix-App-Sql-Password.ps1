@@ -11,10 +11,10 @@ $nssm = @(
   'C:\Program Files\nssm\nssm.exe'
 ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 
-if (-not (Test-Path $SecFile)) { throw "Missing $SecFile — rotate / Harden first" }
+if (-not (Test-Path $SecFile)) { throw "Missing $SecFile - run Harden-Production.ps1 first" }
 $pwd = [string]((Get-Content $SecFile -Raw | ConvertFrom-Json).password)
-if ([string]::IsNullOrWhiteSpace($pwd)) { throw 'secrets\sql-collect.json has empty password' }
-Write-Host ("secrets pwdLength=" + $pwd.Length + " (not printed)")
+if ([string]::IsNullOrWhiteSpace($pwd)) { throw 'secrets sql-collect.json has empty password' }
+Write-Host ('secrets pwdLength=' + $pwd.Length + ' (not printed)')
 
 $sqlcmd = @(
   'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE',
@@ -22,10 +22,11 @@ $sqlcmd = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $sqlcmd) { $sqlcmd = 'sqlcmd' }
 
-$probe = & $sqlcmd -S '127.0.0.1,14333' -d RPMAssure_App -U Rpm_collect -P $pwd -C -Q "SET NOCOUNT ON; SELECT 'login-ok';" 2>&1 | Out-String
+$q = 'SET NOCOUNT ON; SELECT N''login-ok'';'
+$probe = & $sqlcmd -S '127.0.0.1,14333' -d RPMAssure_App -U Rpm_collect -P $pwd -C -Q $q 2>&1 | Out-String
 if ($probe -notmatch 'login-ok') {
-  $probe2 = & $sqlcmd -S '.\RPMREPORTS' -d RPMAssure_App -U Rpm_collect -P $pwd -C -Q "SET NOCOUNT ON; SELECT 'login-ok';" 2>&1 | Out-String
-  if ($probe2 -notmatch 'login-ok') { throw "secrets password does not log in: $probe $probe2" }
+  $probe2 = & $sqlcmd -S '.\RPMREPORTS' -d RPMAssure_App -U Rpm_collect -P $pwd -C -Q $q 2>&1 | Out-String
+  if ($probe2 -notmatch 'login-ok') { throw ('secrets password does not log in: ' + $probe + ' ' + $probe2) }
   Write-Host 'Probe .\RPMREPORTS login-ok'
 } else {
   Write-Host 'Probe 127.0.0.1,14333 login-ok'
@@ -44,7 +45,7 @@ if (Test-Path $sf) {
   }
   $utf8 = New-Object System.Text.UTF8Encoding $false
   [IO.File]::WriteAllText($sf, ($j | ConvertTo-Json -Depth 20), $utf8)
-  Write-Host ("Settings password synced connections=" + $n)
+  Write-Host ('Settings password synced connections=' + $n)
 } else {
   Write-Host 'WARN no rpma-settings.json'
 }
@@ -66,7 +67,6 @@ if (Test-Path $envLocal) {
   Write-Host '.env.local password synced'
 }
 
-# Service does not inherit new machine env until reboot — put it on NSSM extra.
 if ($nssm) {
   $cur = (& $nssm get RPMAssure-App AppEnvironmentExtra 2>$null | Out-String) -replace "`0", ''
   $keep = @($cur -split "`r?`n" | Where-Object { $_ -and $_ -notmatch '^(RPM_ASSURE_SQL_PASSWORD|RPM_ASSURE_SQL_SERVER|RPM_ASSURE_SQL_ENCRYPT)=' })
@@ -78,7 +78,7 @@ if ($nssm) {
   & $nssm set RPMAssure-App AppEnvironmentExtra $joined | Out-Null
   Write-Host 'NSSM AppEnvironmentExtra SQL password set'
 } else {
-  Write-Host 'WARN nssm not at C:\RPM-Assure\Tools\nssm.exe — service may keep stale env until reboot'
+  Write-Host 'WARN nssm not found - service may keep stale env until reboot'
 }
 
 Restart-Service RPMAssure-App -Force
