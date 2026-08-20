@@ -46,7 +46,7 @@ if ($wixExe) {
   Write-Host ('wix ' + $wixExe)
   Push-Location $work
   try {
-    $out = & $wixExe build RpmAssureAgent.wxs -arch x64 -o $msi 2>&1
+    $out = & $wixExe build RpmAssureAgent.wxs -arch x64 -bindpath $work -o $msi 2>&1
     $wixExit = $LASTEXITCODE
     $out | Out-File -FilePath $wixLog -Encoding utf8
     $out | ForEach-Object { Write-Host $_ }
@@ -54,8 +54,9 @@ if ($wixExe) {
     Pop-Location
   }
   if ($wixExit -ne 0) {
-    Get-Content $wixLog -EA SilentlyContinue | ForEach-Object { Write-Host $_ }
-    throw ('WiX build failed exit=' + $wixExit + ' log=' + $wixLog)
+    $tail = ''
+    if (Test-Path $wixLog) { $tail = (Get-Content $wixLog | Out-String) }
+    throw ('WiX build failed exit=' + $wixExit + "`n" + $tail)
   }
 } elseif ($wixBin -and (Test-Path (Join-Path $wixBin 'candle.exe'))) {
   throw 'WiX v3 candle found but this .wxs is WiX v4. Install: dotnet tool install --global wix'

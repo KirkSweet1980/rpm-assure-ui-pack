@@ -15,9 +15,10 @@
     <Property Id="CUSTOMERCODE" Secure="yes" />
     <Property Id="ASSUREURL" Value="https://assure.rpmresources.co.za" Secure="yes" />
     <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
+    <Property Id="ROOTDRIVE" Value="C:\" />
     <Launch Condition="Installed OR CUSTOMERCODE"
             Message="Pass CUSTOMERCODE (example msiexec /i rpm-assure-agent.msi CUSTOMERCODE=AHIC)" />
-    <StandardDirectory Id="WindowsVolume">
+    <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLROOT" Name="RPM-Assure">
         <Directory Id="AGENTDIR" Name="Agent">
           <Component Id="BootstrapExe" Guid="C3A11B44-8E20-4D55-9F01-A1B2C3D4E5F6" Bitness="always64">
