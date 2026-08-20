@@ -124,7 +124,9 @@ function serviceSlaRag(
   if (!covered) return "Off";
   if (!extra) return "Green";
   const pack = buildServiceSla(pillar, extra as CustomerDetailPayload);
-  if (pack.lines.some((l) => l.measured && l.tone === "red")) return "Red";
+  const measured = pack.lines.filter((l) => l.measured);
+  if (measured.some((l) => l.contractual && l.tone === "red")) return "Red";
+  if (measured.some((l) => l.tone === "red" || l.tone === "amber")) return "Amber";
   return "Green";
 }
 
@@ -215,7 +217,7 @@ export function customerLiveStatus(
   const rmmSlaRag = serviceSlaRag("rmm", extra, Boolean(c.rmm));
   const coveSlaRag = serviceSlaRag("cove", extra, Boolean(c.cove));
   const eppSlaRag = serviceSlaRag("epp", extra, Boolean(c.epp));
-  const rmmRag = [devicesRag, alertsRag, patchRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
+  const rmmRag = [devicesRag, alertsRag, patchRag, eventsRag, rmmSlaRag].reduce(worse, c.rmm && srvN > 0 ? "Green" : "Off");
 
   const coveDevRag: LiveTone = !coveDevCover ? "Off" : coveFail > 0 ? "Red" : coveStale > 0 ? "Amber" : "Green";
   const coveRag = [coveDevRag, coveSlaRag].reduce(worse, Boolean(c.cove) ? "Green" : "Off");

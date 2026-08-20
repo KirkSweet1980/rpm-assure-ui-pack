@@ -451,6 +451,7 @@ export function EstateGrid({
     { label: "Servers", href: `${base}/rmm/devices`, on: cover.rmm, rag: live.modules["/rmm/devices"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Workstations", href: `${base}/rmm/workstations`, on: Boolean(live.modules["/rmm/workstations"]?.cover), rag: live.modules["/rmm/workstations"]?.rag ?? "Off" },
     { label: "Patch Compliance", href: `${base}/rmm/patch`, on: cover.rmm, rag: live.modules["/rmm/patch"]?.rag ?? live.pillars.rmm?.rag },
+    { label: "RMM Service SLA", href: `${base}/rmm/sla`, on: cover.rmm, rag: live.modules["/rmm/sla"]?.rag ?? "Off" },
     { label: "Disk Performance", href: `${base}/rmm/iops`, on: cover.rmm, rag: live.modules["/rmm/iops"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Server Alerts", href: `${base}/rmm/alerts`, on: cover.rmm, rag: live.modules["/rmm/alerts"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Windows Events", href: `${base}/rmm/events`, on: cover.rmm, rag: live.modules["/rmm/events"]?.rag ?? live.pillars.rmm?.rag },
