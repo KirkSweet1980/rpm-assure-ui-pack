@@ -138,6 +138,28 @@ BEGIN
     WHEN NOT MATCHED THEN INSERT (Source, MatchKind, ExternalId, ExternalName, CustomerCode, Active, Notes)
       VALUES (s.Source, s.MatchKind, s.ExternalId, s.ExternalName, s.CustomerCode, 1, s.Notes);
 
+  IF OBJECT_ID(N'dbo.Dim_Bitdefender_NameMap', N'U') IS NOT NULL
+    MERGE dbo.Dim_ExternalIdentity AS t
+    USING (
+      SELECT N'EPP' AS Source, N'host-prefix' AS MatchKind,
+             CONVERT(nvarchar(80), NULL) AS ExternalId,
+             CASE
+               WHEN m.MatchType = N'Prefix'   THEN m.Pattern + CASE WHEN m.Pattern LIKE N'%[%]%' THEN N'' ELSE N'%' END
+               WHEN m.MatchType = N'Contains' THEN N'%' + m.Pattern + N'%'
+               ELSE m.Pattern
+             END AS ExternalName,
+             m.CustomerCode,
+             N'from Dim_Bitdefender_NameMap' AS Notes
+      FROM dbo.Dim_Bitdefender_NameMap AS m
+      WHERE ISNULL(m.Active, 1) = 1 AND NULLIF(LTRIM(RTRIM(m.Pattern)), N'') IS NOT NULL
+    ) AS s
+      ON t.Source = s.Source AND t.MatchKind = s.MatchKind
+     AND ISNULL(t.ExternalName, N'') = ISNULL(s.ExternalName, N'')
+     AND ISNULL(t.ExternalId, N'') = ISNULL(s.ExternalId, N'')
+    WHEN MATCHED THEN UPDATE SET t.CustomerCode = s.CustomerCode, t.Active = 1, t.Notes = s.Notes, t.UpdatedAtUtc = SYSUTCDATETIME()
+    WHEN NOT MATCHED THEN INSERT (Source, MatchKind, ExternalId, ExternalName, CustomerCode, Active, Notes)
+      VALUES (s.Source, s.MatchKind, s.ExternalId, s.ExternalName, s.CustomerCode, 1, s.Notes);
+
   ;WITH hosts AS (
     SELECT * FROM (VALUES
       (N'HOST', N'host-prefix', N'AHI%',   N'AHIC',  N'hostname prefix'),
@@ -287,12 +309,57 @@ BEGIN
 END
 GO
 
+CREATE OR ALTER PROCEDURE dbo.usp_StampEppFromIdentity
+AS
+BEGIN
+  SET NOCOUNT ON;
+  IF OBJECT_ID(N'dbo.Bitdefender_Endpoints', N'U') IS NULL RETURN;
+
+  IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'CompanyName') IS NOT NULL
+    EXEC(N'
+UPDATE e
+SET e.CustomerCode = x.CustomerCode
+FROM dbo.Bitdefender_Endpoints AS e
+CROSS APPLY (
+  SELECT TOP 1 i.CustomerCode
+  FROM dbo.Dim_ExternalIdentity AS i
+  WHERE i.Active = 1
+    AND i.Source = N''EPP'' AND i.MatchKind = N''name''
+    AND i.ExternalName IS NOT NULL
+    AND UPPER(LTRIM(RTRIM(i.ExternalName))) = UPPER(LTRIM(RTRIM(ISNULL(e.CompanyName, N''''))))
+) AS x
+WHERE e.CustomerCode IS NULL OR e.CustomerCode <> x.CustomerCode;
+');
+
+  UPDATE e
+  SET e.CustomerCode = x.CustomerCode
+  FROM dbo.Bitdefender_Endpoints AS e
+  CROSS APPLY (
+    SELECT TOP 1 i.CustomerCode
+    FROM dbo.Dim_ExternalIdentity AS i
+    WHERE i.Active = 1
+      AND i.MatchKind = N'host-prefix'
+      AND i.Source IN (N'EPP', N'HOST')
+      AND i.ExternalName IS NOT NULL
+      AND (
+        e.DeviceName LIKE i.ExternalName
+        OR ISNULL(e.Fqdn, N'') LIKE i.ExternalName
+      )
+    ORDER BY CASE i.Source WHEN N'EPP' THEN 0 ELSE 1 END
+  ) AS x
+  WHERE e.CustomerCode IS NULL OR e.CustomerCode <> x.CustomerCode;
+
+  PRINT CONCAT(N'EPP endpoints restamped from identity: ', @@ROWCOUNT);
+END
+GO
+
 IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'Rpm_collect')
 BEGIN
   GRANT SELECT, INSERT, UPDATE ON dbo.Dim_ExternalIdentity TO [Rpm_collect];
   GRANT EXECUTE ON dbo.usp_RefreshExternalIdentityFromMaps TO [Rpm_collect];
   GRANT EXECUTE ON dbo.usp_StampCoveFromIdentity TO [Rpm_collect];
   GRANT EXECUTE ON dbo.usp_StampPulsewayFromIdentity TO [Rpm_collect];
+  GRANT EXECUTE ON dbo.usp_StampEppFromIdentity TO [Rpm_collect];
 END
 GO
 

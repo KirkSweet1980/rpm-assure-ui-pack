@@ -1428,6 +1428,12 @@ Write-Log ("log=" + $log)
 Write-Log ("Incidents ok=$incOk count=$incCount msg=$incMsg")
 Write-Log ("Quarantine ok=$qOk count=$qCount msg=$qMsg")
 try {
+  Invoke-SqlText -SqlText 'EXEC dbo.usp_RefreshExternalIdentityFromMaps; EXEC dbo.usp_StampEppFromIdentity;' -Label 'identity_stamp'
+  Write-Log 'Identity stamp OK'
+} catch {
+  Write-Log ('identity stamp warn ' + $_.Exception.Message)
+}
+try {
   Invoke-SqlText -SqlText @"
 SET NOCOUNT ON;
 IF OBJECT_ID(N'dbo.Dim_Connection', N'U') IS NULL RETURN;

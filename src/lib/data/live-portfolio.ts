@@ -2484,41 +2484,11 @@ IF OBJECT_ID(N'dbo.usp_StampCoveFromIdentity', N'P') IS NOT NULL
   EXEC dbo.usp_StampCoveFromIdentity;
 IF OBJECT_ID(N'dbo.usp_StampPulsewayFromIdentity', N'P') IS NOT NULL
   EXEC dbo.usp_StampPulsewayFromIdentity;
+IF OBJECT_ID(N'dbo.usp_StampEppFromIdentity', N'P') IS NOT NULL
+  EXEC dbo.usp_StampEppFromIdentity;
 `);
   } catch (e) {
     console.warn("[rpm-assure] identity stamp:", e instanceof Error ? e.message : e);
-  }
-  try {
-    await pool.request().query(`
-IF COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'CompanyName') IS NOT NULL
-UPDATE e SET e.CustomerCode = m.CustomerCode
-FROM dbo.Bitdefender_Endpoints AS e
-INNER JOIN dbo.Dim_Bitdefender_CompanyMap AS m ON ISNULL(m.Active,1)=1
-WHERE (e.CustomerCode IS NULL OR LTRIM(RTRIM(e.CustomerCode)) = N'')
-  AND m.CompanyName NOT LIKE N'Invalid%'
-  AND (
-    UPPER(LTRIM(RTRIM(ISNULL(e.CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
-    OR (
-      LEN(LTRIM(RTRIM(m.CompanyName))) >= 6
-      AND UPPER(ISNULL(e.CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.CompanyName))) + N'%'
-    )
-  )`);
-  } catch (e) {
-    console.warn("[rpm-assure] EPP company restamp:", e instanceof Error ? e.message : e);
-  }
-  try {
-    await pool.request().query(`
-UPDATE e SET e.CustomerCode = c.CustomerCode
-FROM dbo.Bitdefender_Endpoints AS e
-INNER JOIN dbo.Dim_Customer AS c ON ISNULL(c.Active,1)=1
-WHERE (e.CustomerCode IS NULL OR LTRIM(RTRIM(e.CustomerCode)) = N'')
-  AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
-  AND (
-    UPPER(ISNULL(e.DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-    OR UPPER(ISNULL(e.Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-  )`);
-  } catch (e) {
-    console.warn("[rpm-assure] EPP name restamp:", e instanceof Error ? e.message : e);
   }
 }
 
@@ -6274,126 +6244,16 @@ ORDER BY DeviceName, AccountId`);
     policies: [],
   };
   if (want("epp")) try {
-    // PolicyName is optional (added by 450); select only columns that exist
-    let hasPolicyName = false;
-    let hasDetailCols = false;
-    try {
-      const col = await pool.request().query(
-        `SELECT
-  CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'PolicyName') IS NOT NULL THEN 1 ELSE 0 END AS policyOk,
-  CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSeenAt') IS NOT NULL THEN 1 ELSE 0 END AS detailOk`,
-      );
-      hasPolicyName = Number(col.recordset?.[0]?.policyOk) === 1;
-      hasDetailCols = Number(col.recordset?.[0]?.detailOk) === 1;
-    } catch {
-      hasPolicyName = false;
-      hasDetailCols = false;
-    }
-    let hasScanName = false;
-    if (hasDetailCols) {
-      try {
-        const sn = await pool.request().query(
-          `SELECT CASE WHEN COL_LENGTH(N'dbo.Bitdefender_Endpoints', N'LastSuccessfulScanName') IS NOT NULL THEN 1 ELSE 0 END AS ok`,
-        );
-        hasScanName = Number(sn.recordset?.[0]?.ok) === 1;
-      } catch {
-        hasScanName = false;
-      }
-    }
-    const detailCols = hasDetailCols
-      ? `, LastSeenAt, LastSuccessfulScanAt, MalwareDetected, Infected, ProductOutdated, SignatureOutdated${hasScanName ? ", LastSuccessfulScanName" : ""}`
-      : "";
-    const epSql = hasPolicyName
-      ? `
-SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
-       PolicyName, SnapshotDate${detailCols}
-FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-WHERE (
-    UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active,1) = 1
-        AND m.CompanyName NOT LIKE N'Invalid%'
-        AND (
-          UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
-        )
-    )
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
-      WHERE c.CustomerCode = @code
-        AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
-        AND (
-          UPPER(ISNULL(DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-          OR UPPER(ISNULL(Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-          OR UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-        )
-    )
-  )
-  AND SnapshotDate = (
-    SELECT MAX(e2.SnapshotDate) FROM dbo.Bitdefender_Endpoints AS e2 WITH (NOLOCK)
-    WHERE (
-      UPPER(LTRIM(RTRIM(ISNULL(e2.CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
-      OR EXISTS (
-        SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m2 WITH (NOLOCK)
-        WHERE m2.CustomerCode = @code AND ISNULL(m2.Active,1) = 1
-          AND (
-            UPPER(LTRIM(RTRIM(ISNULL(e2.CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m2.CompanyName)))
-            OR (
-              LEN(LTRIM(RTRIM(m2.CompanyName))) >= 6
-              AND UPPER(ISNULL(e2.CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.CompanyName))) + N'%'
-            )
-          )
-      )
-    )
-  )
-ORDER BY DeviceName`
-      : `
-SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
-       CAST(NULL AS nvarchar(200)) AS PolicyName, SnapshotDate${detailCols}
-FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-WHERE (
-    UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active,1) = 1
-        AND m.CompanyName NOT LIKE N'Invalid%'
-        AND (
-          UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
-        )
-    )
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
-      WHERE c.CustomerCode = @code
-        AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
-        AND (
-          UPPER(ISNULL(DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-          OR UPPER(ISNULL(Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-          OR UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-        )
-    )
-  )
-  AND SnapshotDate = (
-    SELECT MAX(e2.SnapshotDate) FROM dbo.Bitdefender_Endpoints AS e2 WITH (NOLOCK)
-    WHERE (
-      UPPER(LTRIM(RTRIM(ISNULL(e2.CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
-      OR EXISTS (
-        SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m2 WITH (NOLOCK)
-        WHERE m2.CustomerCode = @code AND ISNULL(m2.Active,1) = 1
-          AND (
-            UPPER(LTRIM(RTRIM(ISNULL(e2.CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m2.CompanyName)))
-            OR (
-              LEN(LTRIM(RTRIM(m2.CompanyName))) >= 6
-              AND UPPER(ISNULL(e2.CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.CompanyName))) + N'%'
-            )
-          )
-      )
-    )
-  )
-ORDER BY DeviceName`;
     const epRes = await pool
       .request()
       .input("code", sql.NVarChar(50), code)
-      .query(epSql);
+      .query(`
+SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
+  PolicyName, SnapshotDate, LastSeenAt, LastSuccessfulScanAt, LastSuccessfulScanName,
+  MalwareDetected, Infected, ProductOutdated, SignatureOutdated, CustomerCode
+FROM dbo.vw_Epp_Endpoints_Latest WITH (NOLOCK)
+WHERE CustomerCode = @code
+ORDER BY DeviceName`);
     epp.devices = (epRes.recordset ?? []).map((r: any) => ({
       endpointId: String(r.EndpointId ?? ""),
       deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
@@ -6496,64 +6356,6 @@ ORDER BY AsOfDate DESC`);
     if (epp.devices.length) {
       const priorImport = epp.summary?.lastImportAt ?? null;
       epp.summary = eppSummaryFromDevices(epp.devices, priorImport);
-    }
-    // If still empty, try all rows for this code (any snap) then keep latest date only
-    if (epp.devices.length === 0) {
-      try {
-        const fallback = await pool
-          .request()
-          .input("code", sql.NVarChar(50), code)
-          .query(`
-SELECT EndpointId, DeviceName, Fqdn, IpAddress, IsManaged, MachineType, OperatingSystem,
-       ${hasPolicyName ? "PolicyName" : "CAST(NULL AS nvarchar(200)) AS PolicyName"}, SnapshotDate
-FROM dbo.Bitdefender_Endpoints WITH (NOLOCK)
-WHERE (
-    UPPER(LTRIM(RTRIM(ISNULL(CustomerCode,N'')))) = UPPER(LTRIM(RTRIM(@code)))
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Bitdefender_CompanyMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active,1) = 1
-        AND m.CompanyName NOT LIKE N'Invalid%'
-        AND (
-          UPPER(LTRIM(RTRIM(ISNULL(CompanyName,N'')))) = UPPER(LTRIM(RTRIM(m.CompanyName)))
-        )
-    )
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Customer AS c WITH (NOLOCK)
-      WHERE c.CustomerCode = @code
-        AND LEN(LTRIM(RTRIM(ISNULL(c.DisplayName,N'')))) >= 8
-        AND (
-          UPPER(ISNULL(DeviceName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-          OR UPPER(ISNULL(Fqdn,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-          OR UPPER(ISNULL(CompanyName,N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(c.DisplayName))) + N'%'
-        )
-    )
-  )
-ORDER BY SnapshotDate DESC, DeviceName`);
-        epp.devices = (fallback.recordset ?? []).map((r: any) => ({
-          endpointId: String(r.EndpointId ?? ""),
-          deviceName: r.DeviceName != null ? String(r.DeviceName) : null,
-          fqdn: r.Fqdn != null ? String(r.Fqdn) : null,
-          ipAddress: r.IpAddress != null ? String(r.IpAddress) : null,
-          isManaged: r.IsManaged == null ? null : Boolean(r.IsManaged),
-          machineType: r.MachineType != null ? Number(r.MachineType) : null,
-          operatingSystem:
-            r.OperatingSystem != null ? String(r.OperatingSystem) : null,
-          policyName: r.PolicyName != null ? String(r.PolicyName) : null,
-          snapshotDate: toDateOnly(r.SnapshotDate),
-        }));
-        // Keep only the latest snapshot date rows
-        if (epp.devices.length) {
-          const mx = epp.devices[0]?.snapshotDate;
-          epp.devices = epp.devices.filter((d) => d.snapshotDate === mx);
-          epp.devices = dedupeEppDevices(epp.devices);
-          epp.devices = epp.devices.filter((d) =>
-            tenantAssetBelongs(code, { host: d.deviceName || d.fqdn }),
-          );
-          epp.summary = eppSummaryFromDevices(epp.devices, null);
-        }
-      } catch {
-        /* keep empty */
-      }
     }
     // Prefer portfolio enrich count if detail query somehow empty but count known
     const enrichCount = Number(customer.eppDeviceCount) || 0;

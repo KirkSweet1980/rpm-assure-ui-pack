@@ -45,6 +45,15 @@ Stamp Cove: `EXEC dbo.usp_StampCoveFromIdentity;`
 
 Stamp RMM: `EXEC dbo.usp_StampPulsewayFromIdentity;`
 
+## Gold views (EPP / Bitdefender)
+
+| Screen | View | Filter |
+|--------|------|--------|
+| Endpoints | `vw_Epp_Endpoints_Latest` | `CustomerCode = @code` |
+| Summary | `vw_Kpi_Epp_Summary` | `CustomerCode = @code` |
+
+Stamp EPP: `EXEC dbo.usp_StampEppFromIdentity;`
+
 **Rule:** new UI column → migration + view first, then collector fills it. UI does not `LIKE` vendor names.
 
 ## Bronze
