@@ -1,21 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { KeyRound, Save, Trash2, UserCheck, Users, UserX } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { KeyRound, Plus, Save, Trash2, UserCheck, Users, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfigPageHead } from "@/components/settings/config-page";
-import { STAFF_ROLES, type StaffRole } from "@/lib/auth/roles";
+import { STAFF_ROLES, permissionsFor, type StaffRole } from "@/lib/auth/roles";
 import {
+  adminCreateUser,
   adminDeleteAuthUser,
   adminSetUserCustomers,
   adminUpdateUser,
   listManagedUsers,
   type ManagedUser,
 } from "@/lib/auth/admin-accounts";
-import { CreateUserPanel } from "@/components/settings/create-user-panel";
 import { USER_ACCOUNTS_ENABLED } from "@/lib/auth/features";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/users")({
   component: UsersPage,
+});
+
+type Draft = {
+  email: string;
+  displayName: string;
+  staffRole: StaffRole;
+  isActive: boolean;
+  password: string;
+  customerCodes: string[];
+  emailWelcome: boolean;
+};
+
+const emptyDraft = (): Draft => ({
+  email: "",
+  displayName: "",
+  staffRole: "Operator",
+  isActive: true,
+  password: "",
+  customerCodes: [],
+  emailWelcome: true,
 });
 
 function UsersPage() {
@@ -38,8 +59,9 @@ function UsersPageActive() {
   const [message, setMessage] = useState<string | null>(null);
   const [ok, setOk] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [pwDraft, setPwDraft] = useState<Record<string, string>>({});
-  const [scopeDraft, setScopeDraft] = useState<Record<string, string[]>>({});
+  const [filter, setFilter] = useState("");
+  const [selectedEmail, setSelectedEmail] = useState<string | "new" | null>("new");
+  const [draft, setDraft] = useState<Draft>(emptyDraft());
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -48,83 +70,123 @@ function UsersPageActive() {
     setMessage(r.message);
     setUsers(r.users);
     setCustomers(r.customers);
-    const scopes: Record<string, string[]> = {};
-    for (const u of r.users) scopes[u.email] = [...u.customerCodes];
-    setScopeDraft(scopes);
     setBusy(false);
+    return r.users;
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const activeCount = useMemo(() => users.filter((u) => u.isActive).length, [users]);
+  const selected = users.find((u) => u.email === selectedEmail) ?? null;
+  const isNew = selectedEmail === "new" || !selected;
 
-  async function saveUser(u: ManagedUser) {
-    setBusy(true);
-    const r = await adminUpdateUser({
-      data: {
-        email: u.email,
-        displayName: u.displayName,
-        staffRole: u.staffRole,
-        isActive: u.isActive,
-        password: pwDraft[u.email] || undefined,
-        customerCodes: scopeDraft[u.email] ?? u.customerCodes,
-      },
+  function openUser(u: ManagedUser) {
+    setSelectedEmail(u.email);
+    setDraft({
+      email: u.email,
+      displayName: u.displayName,
+      staffRole: u.staffRole,
+      isActive: u.isActive,
+      password: "",
+      customerCodes: [...u.customerCodes],
+      emailWelcome: false,
     });
-    setMessage(r.message);
-    setOk(r.ok);
-    if (r.ok) setPwDraft((p) => ({ ...p, [u.email]: "" }));
-    await load();
-    setBusy(false);
   }
 
-  async function resetPasswordOnly(email: string) {
-    const pw = pwDraft[email];
-    if (!pw || pw.length < 8) {
+  function openNew() {
+    setSelectedEmail("new");
+    setDraft(emptyDraft());
+  }
+
+  function toggleCode(code: string) {
+    setDraft((d) => ({
+      ...d,
+      customerCodes: d.customerCodes.includes(code)
+        ? d.customerCodes.filter((c) => c !== code)
+        : [...d.customerCodes, code],
+    }));
+  }
+
+  const q = filter.trim().toLowerCase();
+  const shownUsers = q
+    ? users.filter(
+        (u) =>
+          u.email.includes(q) ||
+          u.displayName.toLowerCase().includes(q) ||
+          u.customerCodes.some((c) => c.toLowerCase().includes(q)),
+      )
+    : users;
+  const shownCustomers = q
+    ? customers.filter(
+        (c) => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q),
+      )
+    : customers;
+
+  const perms = permissionsFor(draft.staffRole);
+  const adminAll = draft.staffRole === "PlatformAdmin";
+
+  async function create() {
+    if (!draft.email.trim() || !draft.password) {
       setOk(false);
-      setMessage("Enter a new password (min 8).");
+      setMessage("Email and a temporary password (min 8) are required.");
+      return;
+    }
+    if (!adminAll && draft.customerCodes.length === 0) {
+      setOk(false);
+      setMessage("Pick at least one tenant, or set the role to Platform Admin.");
       return;
     }
     setBusy(true);
-    const r = await adminUpdateUser({ data: { email, password: pw } });
-    setMessage(r.message);
-    setOk(r.ok);
-    if (r.ok) setPwDraft((p) => ({ ...p, [email]: "" }));
-    await load();
-    setBusy(false);
-  }
-
-  async function toggleActive(u: ManagedUser) {
-    setBusy(true);
-    const r = await adminUpdateUser({
+    const r = await adminCreateUser({
       data: {
-        email: u.email,
-        displayName: u.displayName,
-        staffRole: u.staffRole,
-        isActive: !u.isActive,
+        email: draft.email,
+        displayName: draft.displayName || draft.email,
+        staffRole: draft.staffRole,
+        password: draft.password,
+        isActive: draft.isActive,
+        customerCodes: adminAll ? [] : draft.customerCodes,
+        emailWelcome: draft.emailWelcome,
       },
     });
     setMessage(r.message);
     setOk(r.ok);
-    await load();
+    if (r.ok) {
+      const list = await load();
+      const created = list.find((u) => u.email === draft.email.trim().toLowerCase());
+      if (created) openUser(created);
+      else openNew();
+    }
     setBusy(false);
   }
 
-  async function removeUser(u: ManagedUser) {
-    if (!confirm(`Remove sign-in for ${u.email}?`)) return;
+  async function save() {
+    if (!selected) return;
     setBusy(true);
-    const r = await adminDeleteAuthUser({ data: { email: u.email, removeAppUser: false } });
+    const r = await adminUpdateUser({
+      data: {
+        email: selected.email,
+        displayName: draft.displayName,
+        staffRole: draft.staffRole,
+        isActive: draft.isActive,
+        password: draft.password || undefined,
+        customerCodes: adminAll ? [] : draft.customerCodes,
+      },
+    });
     setMessage(r.message);
     setOk(r.ok);
-    await load();
+    if (r.ok) {
+      setDraft((d) => ({ ...d, password: "" }));
+      await load();
+    }
     setBusy(false);
   }
 
-  async function saveScope(email: string) {
+  async function saveScopeOnly() {
+    if (!selected) return;
     setBusy(true);
     const r = await adminSetUserCustomers({
-      data: { email, customerCodes: scopeDraft[email] ?? [] },
+      data: { email: selected.email, customerCodes: adminAll ? [] : draft.customerCodes },
     });
     setMessage(r.message);
     setOk(r.ok);
@@ -132,173 +194,247 @@ function UsersPageActive() {
     setBusy(false);
   }
 
-  function toggleCode(email: string, code: string) {
-    setScopeDraft((prev) => {
-      const cur = new Set(prev[email] ?? []);
-      if (cur.has(code)) cur.delete(code);
-      else cur.add(code);
-      return { ...prev, [email]: [...cur] };
+  async function toggleActive() {
+    if (!selected) return;
+    setBusy(true);
+    const r = await adminUpdateUser({
+      data: {
+        email: selected.email,
+        displayName: draft.displayName,
+        staffRole: draft.staffRole,
+        isActive: !draft.isActive,
+      },
     });
+    setMessage(r.message);
+    setOk(r.ok);
+    if (r.ok) setDraft((d) => ({ ...d, isActive: !d.isActive }));
+    await load();
+    setBusy(false);
+  }
+
+  async function removeUser() {
+    if (!selected) return;
+    if (!confirm(`Remove sign-in for ${selected.email}?`)) return;
+    setBusy(true);
+    const r = await adminDeleteAuthUser({ data: { email: selected.email, removeAppUser: false } });
+    setMessage(r.message);
+    setOk(r.ok);
+    openNew();
+    await load();
+    setBusy(false);
   }
 
   return (
-    <div className="space-y-6">
+    <div className="rpma-user-admin">
       <ConfigPageHead
-        kicker="Settings"
-        title="Users"
+        kicker="Access"
+        title="Users & tenant access"
         icon={Users}
         actions={
           <p className="text-[12px] text-muted">
-            {users.length} total · {activeCount} active
+            {users.length} account{users.length === 1 ? "" : "s"} · {customers.length} tenant
+            {customers.length === 1 ? "" : "s"}
           </p>
         }
       />
       {message ? (
-        <p className={`text-[12px] ${ok ? "text-rag-green" : "text-rag-red"}`}>{message}</p>
+        <p className={cn("px-1 text-[12px]", ok ? "text-rag-green" : "text-rag-red")}>{message}</p>
       ) : null}
 
-      <CreateUserPanel customers={customers} onCreated={() => void load()} />
+      <div className="rpma-user-split">
+        <nav className="rpma-user-list" aria-label="Users">
+          <p className="rpma-agent-kicker">Users</p>
+          <button type="button" className={cn("rpma-agent-cust-btn", isNew && "is-on")} onClick={openNew}>
+            <Plus className="size-3.5 shrink-0" />
+            <span className="rpma-agent-cust-name">New user</span>
+          </button>
+          <input
+            className="rpma-user-filter"
+            placeholder="Filter users or tenants…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
+          {shownUsers.map((u) => (
+            <button
+              key={u.email}
+              type="button"
+              className={cn("rpma-agent-cust-btn", selectedEmail === u.email && "is-on")}
+              onClick={() => openUser(u)}
+            >
+              <span className="rpma-agent-cust-name">{u.displayName || u.email}</span>
+              <span className="rpma-agent-cust-meta">
+                {u.isActive ? u.staffRole : "Disabled"}
+              </span>
+            </button>
+          ))}
+        </nav>
 
-      <section className="rpma-panel overflow-hidden p-0">
-        <div className="px-4 py-3">
-          <h2 className="text-[16px] font-extrabold text-fg">Accounts</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="rpma-xls">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Password</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={6}>No users yet.</td>
-                </tr>
-              ) : (
-                users.map((u) => (
-                  <tr key={u.email}>
-                    <td>
-                      <input
-                        className="w-full border-0 bg-transparent text-[12px] outline-none"
-                        value={u.displayName}
-                        onChange={(e) =>
-                          setUsers((list) =>
-                            list.map((x) => (x.email === u.email ? { ...x, displayName: e.target.value } : x)),
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="font-mono">{u.email}</td>
-                    <td>
-                      <select
-                        className="border-0 bg-transparent text-[12px] outline-none"
-                        value={u.staffRole}
-                        onChange={(e) =>
-                          setUsers((list) =>
-                            list.map((x) =>
-                              x.email === u.email ? { ...x, staffRole: e.target.value as StaffRole } : x,
-                            ),
-                          )
-                        }
-                      >
-                        {STAFF_ROLES.map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>{u.isActive ? "Active" : "Disabled"}</td>
-                    <td>
-                      <span className="inline-flex items-center gap-1">
-                        <input
-                          className="w-28 border-0 bg-transparent text-[12px] outline-none"
-                          type="password"
-                          value={pwDraft[u.email] ?? ""}
-                          onChange={(e) => setPwDraft((p) => ({ ...p, [u.email]: e.target.value }))}
-                          placeholder="Reset…"
-                        />
-                        <Button type="button" size="sm" variant="secondary" className="h-7 px-2 text-[11px]" disabled={busy} onClick={() => void resetPasswordOnly(u.email)}>
-                          <KeyRound className="size-3" />
-                        </Button>
-                      </span>
-                    </td>
-                    <td>
-                      <span className="inline-flex flex-wrap gap-1">
-                        <Button type="button" size="sm" className="h-7 px-2 text-[11px]" disabled={busy} onClick={() => void saveUser(u)}>
-                          <Save className="size-3" />
-                          Save
-                        </Button>
-                        <Button type="button" size="sm" variant="secondary" className="h-7 px-2 text-[11px]" disabled={busy} onClick={() => void toggleActive(u)}>
-                          {u.isActive ? <UserX className="size-3" /> : <UserCheck className="size-3" />}
-                          {u.isActive ? "Disable" : "Enable"}
-                        </Button>
-                        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-[11px]" disabled={busy} onClick={() => void removeUser(u)}>
-                          <Trash2 className="size-3" />
-                        </Button>
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="rpma-panel overflow-hidden p-0">
-          <div className="px-4 py-3">
-            <h2 className="text-[16px] font-extrabold text-fg">Tenant access</h2>
-            <p className="text-[12px] text-muted">Tick the customers this operator may open. Save Scope per user.</p>
-          </div>
-          {customers.length === 0 ? (
-            <p className="px-4 pb-4 text-[12px] text-muted">No tenants loaded yet.</p>
+        <nav className="rpma-user-tenants" aria-label="Tenant access">
+          <p className="rpma-agent-kicker">Tenant access</p>
+          {adminAll ? (
+            <p className="px-2 text-[12px] text-[color:inherit] opacity-80">
+              Platform Admin opens every tenant. Scope is not limited.
+            </p>
+          ) : customers.length === 0 ? (
+            <p className="px-2 text-[12px] opacity-80">
+              No tenants in Dim_Customer. Open Customer Eco-System once, then return.
+            </p>
           ) : (
-          <div className="overflow-x-auto">
-            <table className="rpma-xls">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Customers</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {users
-                  .filter((u) => u.staffRole !== "PlatformAdmin")
-                  .map((u) => (
-                    <tr key={u.email}>
-                      <td>{u.displayName || u.email}</td>
-                      <td>
-                        <div className="flex flex-wrap gap-2">
-                          {customers.map((c) => (
-                            <label key={c.code} className="inline-flex items-center gap-1 text-[11px]">
-                              <input
-                                type="checkbox"
-                                checked={(scopeDraft[u.email] ?? []).includes(c.code)}
-                                onChange={() => toggleCode(u.email, c.code)}
-                              />
-                              {c.name}
-                            </label>
-                          ))}
-                        </div>
-                      </td>
-                      <td>
-                        <Button type="button" size="sm" className="h-7 px-2 text-[11px]" disabled={busy} onClick={() => void saveScope(u.email)}>
-                          Save Scope
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+            <>
+              <div className="mb-2 flex gap-1 px-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => setDraft((d) => ({ ...d, customerCodes: customers.map((c) => c.code) }))}
+                >
+                  All
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => setDraft((d) => ({ ...d, customerCodes: [] }))}
+                >
+                  None
+                </Button>
+                {!isNew ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="ml-auto h-6 px-2 text-[10px]"
+                    disabled={busy}
+                    onClick={() => void saveScopeOnly()}
+                  >
+                    Save scope
+                  </Button>
+                ) : null}
+              </div>
+              {shownCustomers.map((c) => (
+                <label key={c.code} className="rpma-user-tenant">
+                  <input
+                    type="checkbox"
+                    checked={draft.customerCodes.includes(c.code)}
+                    onChange={() => toggleCode(c.code)}
+                  />
+                  <span>
+                    <strong>{c.name}</strong>
+                    <em>{c.code}</em>
+                  </span>
+                </label>
+              ))}
+            </>
           )}
-        </section>
+        </nav>
+
+        <div className="rpma-user-detail">
+          <div className="rpma-agent-detail-head">
+            <strong>{isNew ? "Create user" : draft.displayName || draft.email}</strong>
+            <span className="text-[12px] text-muted">
+              {isNew
+                ? "Account + tenant access + sign-in in one step."
+                : selected?.email}
+            </span>
+          </div>
+
+          <div className="rpma-user-fields">
+            <label>
+              Email
+              <input
+                type="email"
+                value={draft.email}
+                disabled={!isNew}
+                onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
+              />
+            </label>
+            <label>
+              Display name
+              <input
+                value={draft.displayName}
+                onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))}
+              />
+            </label>
+            <label>
+              Role
+              <select
+                value={draft.staffRole}
+                onChange={(e) => setDraft((d) => ({ ...d, staffRole: e.target.value as StaffRole }))}
+              >
+                {STAFF_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {permissionsFor(r).label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {isNew ? "Temporary password" : "Reset password"}
+              <input
+                type="password"
+                value={draft.password}
+                placeholder={isNew ? "Min 8 characters" : "Leave blank to keep"}
+                onChange={(e) => setDraft((d) => ({ ...d, password: e.target.value }))}
+              />
+            </label>
+          </div>
+
+          <ul className="rpma-user-perms">
+            <li>{perms.canViewPortfolio ? "Can" : "Cannot"} see Customer Eco-System</li>
+            <li>{perms.canViewCustomer ? "Can" : "Cannot"} open assigned tenants</li>
+            <li>{perms.canViewTechnicalDetail ? "Can" : "Cannot"} see technical panels</li>
+            <li>{perms.canEdit ? "Can" : "Cannot"} edit facts</li>
+            <li>{perms.canAccessPlatformSettings ? "Can" : "Cannot"} open Configuration</li>
+            {!isNew && selected ? (
+              <li>
+                Sign-in {selected.hasPassword ? "ready" : "needs a password"}
+                {selected.twoFactorEnabled ? " · 2FA on" : " · 2FA off (user enables in Profile)"}
+              </li>
+            ) : null}
+          </ul>
+
+          {isNew ? (
+            <label className="rpma-user-mail">
+              <input
+                type="checkbox"
+                checked={draft.emailWelcome}
+                onChange={(e) => setDraft((d) => ({ ...d, emailWelcome: e.target.checked }))}
+              />
+              Email sign-in details (uses Configuration → SMTP)
+            </label>
+          ) : null}
+
+          <div className="rpma-agent-actions">
+            {isNew ? (
+              <Button type="button" size="sm" disabled={busy} onClick={() => void create()}>
+                <Plus className="size-3.5" />
+                Create and grant access
+              </Button>
+            ) : (
+              <>
+                <Button type="button" size="sm" disabled={busy} onClick={() => void save()}>
+                  <Save className="size-3.5" />
+                  Save account
+                </Button>
+                <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void toggleActive()}>
+                  {draft.isActive ? <UserX className="size-3.5" /> : <UserCheck className="size-3.5" />}
+                  {draft.isActive ? "Disable" : "Enable"}
+                </Button>
+                {draft.password ? (
+                  <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void save()}>
+                    <KeyRound className="size-3.5" />
+                    Set password
+                  </Button>
+                ) : null}
+                <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => void removeUser()}>
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
