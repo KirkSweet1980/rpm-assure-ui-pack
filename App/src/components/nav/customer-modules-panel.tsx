@@ -288,7 +288,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
       <section className="rpma-mod-col">
         <div className="rpma-pillar-rail-head">
           <h2>RPM Service Modules</h2>
-          <HelpTip text="Modules for the selected service. Robot is live RAG. Cover chip is scope." />
+          <HelpTip text="Modules for the selected service. Status lamp is live RAG. Cover chip is scope." />
         </div>
         <div className="rpma-mod-static" role="navigation" aria-label={modulesHeading}>
           {modules.map((m) => {

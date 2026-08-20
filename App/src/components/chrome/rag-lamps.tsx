@@ -1,13 +1,12 @@
 import type { LiveTone } from "@/lib/data/live-status";
+import { StatusRobot } from "@/components/ui/status-robot";
 
-/** Three-lamp RAG button: Red / Amber / Green. Active lamp glows. */
+/** Single illuminated RAG disc. Green/Amber glow; Red flashes. */
 export function RagLamps({ tone }: { tone?: LiveTone | null }) {
   const t = tone ?? "Off";
   return (
     <span className="rpma-emp-rag" aria-label={t} title={t}>
-      <i className={t === "Red" ? "is-red is-on" : "is-red"} />
-      <i className={t === "Amber" ? "is-amber is-on" : "is-amber"} />
-      <i className={t === "Green" ? "is-green is-on" : "is-green"} />
+      <StatusRobot rag={t} size={18} />
     </span>
   );
 }

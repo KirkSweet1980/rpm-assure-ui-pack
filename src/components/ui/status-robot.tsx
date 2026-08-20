@@ -1,5 +1,8 @@
 import { cn } from "@/lib/utils";
 import type { HealthRag } from "@/lib/data/types";
+import ragGreen from "@/assets/status/rag-green.png";
+import ragRed from "@/assets/status/rag-red.png";
+import ragAmber from "@/assets/status/rag-amber.png";
 
 const STATE_COPY: Record<"green" | "amber" | "red" | "off", string> = {
   green: "Live Green — service is clear on the latest collect.",
@@ -8,11 +11,18 @@ const STATE_COPY: Record<"green" | "amber" | "red" | "off", string> = {
   off: "No live status — service is No Cover, so it is not scored.",
 };
 
-/** Compact robot glyph — visor is live RAG. Not used for Cover. */
+const SRC = {
+  green: ragGreen,
+  amber: ragAmber,
+  red: ragRed,
+  off: ragGreen,
+} as const;
+
+/** Glossy RAG disc from the Exco status set. Active lamp illuminates; Red flashes. */
 export function StatusRobot({
   rag,
   title,
-  size = 16,
+  size = 20,
 }: {
   rag: HealthRag | "Off" | null | undefined;
   title?: string;
@@ -26,18 +36,16 @@ export function StatusRobot({
       className={cn("rpma-bot rpma-hovertip", `is-${state}`)}
       aria-label={label}
       role="img"
+      style={{ width: size, height: size }}
     >
-      <svg viewBox="0 0 16 16" width={size} height={size} aria-hidden>
-        <g className="rpma-bot-ant-g">
-          <rect className="rpma-bot-ant" x="7.15" y="0.6" width="1.7" height="2.4" rx="0.6" />
-          <circle className="rpma-bot-ant-tip" cx="8" cy="0.85" r="1.05" />
-        </g>
-        <rect className="rpma-bot-head" x="2.1" y="3.2" width="11.8" height="11.2" rx="2.4" />
-        <rect className="rpma-bot-visor" x="3.6" y="6.1" width="8.8" height="3.6" rx="1.3" />
-        <rect className="rpma-bot-gleam" x="4.3" y="6.6" width="2.6" height="1.1" rx="0.5" />
-        <circle className="rpma-bot-dot" cx="5.7" cy="12.2" r="0.65" />
-        <circle className="rpma-bot-dot" cx="10.3" cy="12.2" r="0.65" />
-      </svg>
+      <img
+        className="rpma-bot-img"
+        src={SRC[state]}
+        alt=""
+        width={size * 2}
+        height={size * 2}
+        draggable={false}
+      />
       <span role="tooltip" className="rpma-help-bubble is-left">
         {label}
       </span>
@@ -55,8 +63,8 @@ export function CoverTag({
   noCover?: string;
 }) {
   const text = on
-    ? `${coverOn} — this service is in scope and collecting. Live health is the robot, not this chip.`
-    : `${noCover} — not in scope. The robot stays grey and this service does not move RAG.`;
+    ? `${coverOn} — this service is in scope and collecting. Live health is the status lamp, not this chip.`
+    : `${noCover} — not in scope. The status lamp stays dim and this service does not move RAG.`;
   return (
     <span className={cn("rpma-cover-tag rpma-hovertip", on ? "is-on" : "is-off")}>
       {on ? coverOn : noCover}

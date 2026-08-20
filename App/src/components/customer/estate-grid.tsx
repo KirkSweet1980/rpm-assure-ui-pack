@@ -679,7 +679,7 @@ export function EstateGrid({
                 className={cn("rpma-cmd-banner", s.on ? "is-on" : "is-off")}
               >
                 <i style={{ background: s.bar }} />
-                <StatusRobot rag={s.rag} title={s.name} size={18} />
+                <StatusRobot rag={s.rag} title={s.name} size={24} />
                 <div>
                   <strong>{s.name}</strong>
                   <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
