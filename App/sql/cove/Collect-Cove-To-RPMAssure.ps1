@@ -564,8 +564,8 @@ $script:DraasBarByKey = @{}
 try {
   $planIds = New-Object System.Collections.Generic.List[string]
   foreach ($it in @($script:DraasByAu.Values)) {
-    $pid = [string](One-Draas $it.id)
-    if ($pid) { [void]$planIds.Add($pid) }
+    $planKey = [string](One-Draas $it.id)
+    if ($planKey) { [void]$planIds.Add($planKey) }
     $auX = [string](Draas-Attr $it 'backup_cloud_device_id')
     if ($auX) { [void]$planIds.Add($auX) }
   }
@@ -637,9 +637,9 @@ function Mark-DraasMatched($draas) {
 function Draas-Last14($draas, [string]$auKey) {
   $colorBar = ColorBar-Text (Draas-AttrRaw $draas 'colorbar')
   if ($null -eq $script:DraasBarByKey) { return $colorBar }
-  $pid = [string](One-Draas $draas.id)
+  $planKey = [string](One-Draas $draas.id)
   $auD = [string](Draas-Attr $draas 'backup_cloud_device_id')
-  foreach ($k in @($pid, $auD, $auKey)) {
+  foreach ($k in @($planKey, $auD, $auKey)) {
     if ($k -and $script:DraasBarByKey.ContainsKey([string]$k) -and $script:DraasBarByKey[[string]$k].Count -gt 0) {
       return ($script:DraasBarByKey[[string]$k] -join ',')
     }
