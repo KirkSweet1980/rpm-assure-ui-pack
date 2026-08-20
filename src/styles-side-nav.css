@@ -1,3 +1,4 @@
+/* Chrome colours/layout: src/chrome.css (imported last). Do not add header colour here. */
 /* Soft vertical nav — full labels, no ellipsis */
 .rpma-emp.is-side {
   display: flex !important;

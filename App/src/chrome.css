@@ -1,0 +1,277 @@
+/**
+ * RPM Assure chrome contract — imported LAST.
+ * Change a token here; do not add one-off header colours in styles.css.
+ *
+ * Navy chrome is the same in light and dark.
+ * Dark Mode only paints page surfaces (cards, tables, EXCO widgets).
+ */
+
+:root,
+html,
+html.dark,
+html.snow,
+html[data-theme="dark"],
+html[data-theme="light"] {
+  --nav-bg: #1b2838;
+  --nav-fg: #ffffff;
+  --nav-hover-bg: #c8ecd4;
+  --nav-hover-fg: #0f3d24;
+  --nav-selected-bg: transparent;
+  --nav-muted: #9fb0c3;
+  --gap: 12px;
+  --pane-r: 12px;
+  --rail-svc-w: 220px;
+  --rail-mod-w: 220px;
+  --header-h: 64px;
+  --pc-header-height: 64px;
+  --pc-header-background: #1b2838;
+  --pc-header-color: #ffffff;
+  --rpma-chrome: #1b2838;
+  --rpma-chrome-fg: #ffffff;
+  --rpma-chrome-hover: #c8ecd4;
+  --rpma-chrome-selected: transparent;
+}
+
+/* ---------- Header: one navy row, all controls identical ---------- */
+.dk-shell.is-topnav,
+.dk-shell.is-topnav.is-menu-open {
+  --pc-header-height: var(--header-h) !important;
+}
+.dk-header,
+.dk-header-one,
+.dk-header-tall {
+  background: var(--nav-bg) !important;
+  color: var(--nav-fg) !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.dk-header-row {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  min-height: var(--header-h) !important;
+  padding: 0 16px !important;
+  gap: 18px !important;
+  background: var(--nav-bg) !important;
+}
+.dk-header-navrow {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.dk-header-row a,
+.dk-header-row button,
+.dk-header-row span,
+.dk-header-row strong,
+.dk-header-row .dk-link,
+.dk-header-row .dk-help-btn,
+.dk-header-row .rpma-theme-switch,
+.dk-header-row .rpma-theme-switch-label,
+.dk-header-row .rpma-userchip,
+.dk-header-row .rpma-userchip-name,
+.dk-header-row .rpma-userchip-out,
+.dk-header-row .dk-iconbtn,
+.dk-header-row .rpma-nav-seg-btn,
+.dk-header-row .dk-brand-text,
+.dk-header-row .dk-brand-text strong {
+  color: var(--nav-fg) !important;
+  fill: var(--nav-fg) !important;
+}
+
+.dk-header-navrow .dk-link,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link,
+.dk-header-right .dk-help-btn,
+.dk-header-right .rpma-userchip-out {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 36px !important;
+  padding: 6px 12px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--nav-fg) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.dk-header-navrow .dk-link:hover,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link:hover,
+.dk-header-right .dk-help-btn:hover,
+.dk-header-right .rpma-userchip-out:hover,
+.dk-header-right .rpma-nav-seg-btn:hover,
+.dk-header-right .dk-iconbtn:hover,
+.dk-header-right .rpma-theme-switch:hover .rpma-theme-switch-label {
+  background: var(--nav-hover-bg) !important;
+  color: var(--nav-hover-fg) !important;
+}
+
+.dk-header-navrow .dk-link.is-active,
+.dk-header-navrow .rpma-top-tab-wrap > .dk-link.is-active,
+.dk-header-navrow .rpma-top-link-active,
+.dk-header-right .dk-help-btn.is-active,
+.dk-header-right .rpma-nav-seg-btn-active {
+  background: var(--nav-selected-bg) !important;
+  color: var(--nav-fg) !important;
+  box-shadow: none !important;
+}
+
+.dk-header-right .rpma-nav-seg {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* ---------- Shell: gap then one large pane ---------- */
+.dk-shell.is-topnav .dk-main {
+  padding: var(--gap) 16px 16px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.dk-shell.is-topnav .dk-content.rpma-topnav-main {
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  gap: var(--gap) !important;
+}
+.dk-shell.is-topnav .dk-canvas.rpma-topnav-canvas {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  background: #ffffff !important;
+  border: 1px solid #e8eaed !important;
+  border-radius: var(--pane-r) !important;
+  padding: 16px !important;
+}
+
+/* Tenant: the canvas IS the three rails — no extra white wrap */
+.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-content.rpma-topnav-main,
+.dk-shell.is-topnav:has(.rpma-emp.is-triple) .dk-canvas.rpma-topnav-canvas {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ---------- Tenant: 3 columns, full height ---------- */
+.rpma-emp.is-side.is-triple,
+.rpma-emp.is-triple {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+}
+.rpma-emp.is-triple .rpma-emp-title {
+  flex: 0 0 auto !important;
+}
+.rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
+.rpma-emp.is-triple .rpma-emp-bodyrow {
+  display: grid !important;
+  grid-template-columns: var(--rail-svc-w) var(--rail-mod-w) minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  gap: var(--gap) !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  align-items: stretch !important;
+}
+.rpma-emp.is-triple .rpma-rail,
+.rpma-emp.is-triple .rpma-emp-work {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+  align-self: stretch !important;
+  overflow: auto !important;
+  border-radius: var(--pane-r) !important;
+}
+.rpma-emp.is-triple .rpma-emp-work {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+.rpma-emp.is-triple .rpma-work-window,
+.rpma-emp.is-triple .rpma-win.is-fill {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border-radius: var(--pane-r) !important;
+}
+
+/* ---------- Help: two panes, always readable ---------- */
+.rpma-help.is-page {
+  display: grid !important;
+  grid-template-columns: 240px minmax(0, 1fr) !important;
+  gap: var(--gap) !important;
+  height: 100% !important;
+  min-height: 480px !important;
+  color: #1f2937 !important;
+}
+.rpma-help-nav {
+  min-height: 480px !important;
+  height: 100% !important;
+  overflow: auto !important;
+  background: var(--nav-bg) !important;
+  color: var(--nav-fg) !important;
+  border: 0 !important;
+  border-radius: var(--pane-r) !important;
+}
+.rpma-help-link { color: var(--nav-fg) !important; background: transparent !important; }
+.rpma-help-link:hover,
+.rpma-help-link.is-on {
+  background: var(--nav-hover-bg) !important;
+  color: var(--nav-hover-fg) !important;
+}
+.rpma-help-body {
+  min-height: 480px !important;
+  overflow: auto !important;
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #e8eaed !important;
+  border-radius: var(--pane-r) !important;
+  padding: 24px 28px !important;
+}
+
+/* ---------- Dark Mode: page surfaces only, not the header ---------- */
+html.dark .dk-shell.is-topnav .dk-canvas.rpma-topnav-canvas,
+html[data-theme="dark"] .dk-shell.is-topnav .dk-canvas.rpma-topnav-canvas {
+  background: #15202c !important;
+  border-color: #243040 !important;
+  color: #e8eef4 !important;
+}
+html.dark .rpma-help-body,
+html[data-theme="dark"] .rpma-help-body {
+  background: #15202c !important;
+  color: #e8eef4 !important;
+  border-color: #243040 !important;
+}
+
+@media (max-width: 960px) {
+  .dk-shell.is-topnav.is-menu-open { --pc-header-height: 168px !important; }
+  .dk-header-navrow.is-collapsed { display: none !important; }
+  .rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
+  .rpma-emp.is-triple .rpma-emp-bodyrow {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto minmax(40vh, 1fr) !important;
+  }
+  .rpma-help.is-page { grid-template-columns: 1fr !important; }
+}
