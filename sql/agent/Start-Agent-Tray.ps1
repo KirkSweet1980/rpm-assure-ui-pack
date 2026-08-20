@@ -83,16 +83,14 @@ $notify.Visible = $true
 $notify.Text = 'RPM Assure'
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
-$miTitle = $menu.Items.Add('RPM Assure Agent')
-$miTitle.Enabled = $false
-$miState = $menu.Items.Add('Agent: ...')
+$miState = $menu.Items.Add('Heartbeat: ...')
 $miState.Enabled = $false
-$miSync = $menu.Items.Add('Last sync: ...')
+$miSync = $menu.Items.Add('Assure Sync: ...')
 $miSync.Enabled = $false
 [void]$menu.Items.Add('-')
 $miDo = $menu.Items.Add('Sync now')
-$miRestart = $menu.Items.Add('Restart agent')
 $miSet = $menu.Items.Add('Settings (Administrator)')
+$miRestart = $menu.Items.Add('Restart Assure Agent')
 [void]$menu.Items.Add('-')
 $miExit = $menu.Items.Add('Exit tray')
 $notify.ContextMenuStrip = $menu
@@ -186,8 +184,8 @@ function Update-Tray {
   if ($tip.Length -gt 63) { $tip = $tip.Substring(0, 63) }
   $notify.Text = $tip
   $notify.Icon = if ($s.kind -eq 'green') { $iconOn } elseif ($s.kind -eq 'amber') { $iconWait } else { $iconOff }
-  $miState.Text = "Agent: $($s.state)"
-  $miSync.Text = "Last sync: $(FmtUtc $s.sync)"
+  $miState.Text = "Heartbeat: $($s.state)"
+  $miSync.Text = "Assure Sync: $(FmtUtc $s.sync)"
 }
 
 $timer = New-Object System.Windows.Forms.Timer

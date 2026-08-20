@@ -31,4 +31,4 @@ Get-Process powershell -EA SilentlyContinue | Where-Object {
 
 Start-Process powershell.exe -ArgumentList @('-WindowStyle','Hidden','-NoProfile','-ExecutionPolicy','Bypass','-File',$tray,'-AgentRoot',$AgentRoot)
 Write-Host 'RPM Assure tray started. Look next to the clock.'
-Write-Host 'Right-click or left-click: status, Sync now, Restart agent, Settings, Exit tray.'
+Write-Host 'Click tray: Heartbeat, Assure Sync, Sync now, Settings, Restart Assure Agent, Exit tray.'
