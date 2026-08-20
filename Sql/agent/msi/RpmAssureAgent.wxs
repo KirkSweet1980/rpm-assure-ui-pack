@@ -31,7 +31,7 @@
       <ComponentRef Id="BootstrapExe" />
     </Feature>
     <CustomAction Id="SetRunBootstrap" Property="RunBootstrap" Value="-CustomerCode [CUSTOMERCODE] -Url [ASSUREURL]" />
-    <CustomAction Id="RunBootstrap" FileRef="BootstrapFile" Execute="deferred" Impersonate="no" Return="check" />
+    <CustomAction Id="RunBootstrap" FileRef="BootstrapFile" ExeCommand="-CustomerCode [CUSTOMERCODE] -Url [ASSUREURL]" Execute="deferred" Impersonate="no" Return="check" />
     <InstallExecuteSequence>
       <Custom Action="SetRunBootstrap" After="InstallFiles" Condition="NOT Installed" />
       <Custom Action="RunBootstrap" After="SetRunBootstrap" Condition="NOT Installed" />
