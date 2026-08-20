@@ -1,12 +1,12 @@
-# Non-secret only. Copy to Agent.Config.ps1
-# Passwords: Agent.Secrets.bin (DPAPI). Edit via Set-AgentSettings.ps1
-$CustomerCode = 'SIRF'
-$DisplayName = 'Sir Fruit'
-$InstanceName = 'SIRZAAPSQL01'
-$RoleTags = 'syspro'
-$CentralDataSource = '102.222.21.220,14333'
+# Example only. Deploy-Assure-Agent.ps1 writes the live file.
+# Agents talk HTTPS to Assure. Do not put a SQL password here.
+$CustomerCode = 'AHIC'
+$DisplayName = 'AHI'
+$InstanceName = $env:COMPUTERNAME
+$RoleTags = 'edge'
+$CentralDataSource = ''
 $CentralDatabase = 'RPMAssure_App'
-$CentralSqlUser = 'rpmassure'
+$CentralSqlUser = ''
 $SqlRoot = 'C:\RPM-Assure\Sql'
 $AgentRoot = 'C:\RPM-Assure\Agent'
 $LogDir = 'C:\RPM-Assure\Agent\logs'

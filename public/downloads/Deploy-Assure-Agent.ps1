@@ -12,10 +12,10 @@ param(
   [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
   [string]$Root = 'C:\RPM-Assure',
-  [string]$RoleTags = 'syspro',
-  [string]$CentralDataSource = '102.222.21.220,14333',
+  [string]$RoleTags = 'edge',
+  [string]$CentralDataSource = '',
   [string]$CentralDatabase = 'RPMAssure_App',
-  [string]$CentralSqlUser = 'rpmassure',
+  [string]$CentralSqlUser = '',
   [string]$CentralSqlPassword = '',
   [string]$AgentAdminPassword = '',
   [switch]$SkipHeartbeat,
@@ -225,6 +225,6 @@ Write-Host (' Host     ' + $env:COMPUTERNAME)
 Write-Host (' Customer ' + $CustomerCode)
 Write-Host (' HTTPS    ' + $AppHttpsUrl)
 Write-Host ' Service  RPMAssure-Edge'
-Write-Host ' Re-run this script to pull git and refresh files.'
+Write-Host ' Re-run this script to refresh from Assure HTTPS.'
 Write-Host '========================================'
 Get-Service RPMAssure-Edge -ErrorAction SilentlyContinue | Format-Table Name, Status -AutoSize

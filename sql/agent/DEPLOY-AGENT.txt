@@ -1,21 +1,25 @@
-RPM Assure Edge - one script, no wizard, no Git
+RPM Assure Edge v2.9.0 - production deploy (HTTPS only, no Git)
 
-On the customer Windows host (Administrator PowerShell):
+On the customer Windows host, Administrator PowerShell:
 
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   Invoke-WebRequest -UseBasicParsing -Uri 'https://assure.rpmresources.co.za/downloads/Deploy-Assure-Agent.ps1' -OutFile $env:TEMP\Deploy-Assure-Agent.ps1
-  powershell -NoProfile -ExecutionPolicy Bypass -File $env:TEMP\Deploy-Assure-Agent.ps1 -CustomerCode AHIC -AgentSecret '<website RPM_ASSURE_IOPS_SECRET>'
+  powershell -NoProfile -ExecutionPolicy Bypass -File $env:TEMP\Deploy-Assure-Agent.ps1 -CustomerCode AHIC
 
 What it does:
   - GET https://assure.rpmresources.co.za/downloads/rpm-assure-agent.zip
   - copies Sql\agent to C:\RPM-Assure\Agent
-  - writes HTTPS URL https://assure.rpmresources.co.za + the secret
+  - writes HTTPS URL + ingest secret (not SQL 14333)
   - installs Windows service RPMAssure-Edge
-  - first HTTPS heartbeat (Let's Encrypt)
+  - first HTTPS heartbeat
+  - hourly VERSION compare + zip fetch from Assure (never GitHub)
 
-Agents never talk to GitHub. Re-run the same command to update. Keeps Agent.Config.ps1 and Agent.Secrets.bin.
+Existing agents: they pull this pack on the next hourly VERSION mismatch (2.9.0).
+Re-run the same two lines to force an update. Keeps Agent.Config.ps1 and Agent.Secrets.bin.
 
 Optional:
-  -CentralSqlPassword  '...'     SQL fallback / SYSPRO collect
-  -RoleTags            'sql'
+  -RoleTags           'sql'     (default edge)
   -SkipHeartbeat
+  -CentralSqlPassword only if this host still collects local SYSPRO SQL (not central 14333)
+
+Interbrand has no SYSPRO cover - do not install an agent there.

@@ -47,10 +47,8 @@ foreach ($pair in @(
     @('sql\agent\Update-From-Https.ps1', 'Update-From-Https.ps1'),
     @('Sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
     @('sql\agent\Apply-Staged-Pack.ps1', 'Apply-Staged-Pack.ps1'),
-    @('sql\customers\IB\Onboard-IB-Syspro.ps1', 'Onboard-IB-Syspro.ps1'),
     @('Sql\agent\Uninstall-Assure-Agent.ps1', 'Uninstall-Assure-Agent.ps1'),
-    @('sql\agent\Uninstall-Assure-Agent.ps1', 'Uninstall-Assure-Agent.ps1'),
-    @('sql\agent\customers\Uninstall-IB-Agent.ps1', 'Uninstall-IB-Agent.ps1')
+    @('sql\agent\Uninstall-Assure-Agent.ps1', 'Uninstall-Assure-Agent.ps1')
   )) {
   $src = Join-Path $Pack $pair[0]
   if (Test-Path $src) { [void](Copy-ShareRead $src (Join-Path $dl $pair[1])) }
@@ -59,7 +57,7 @@ foreach ($pair in @(
 $stage = Join-Path $env:TEMP ('rpma-pack-clean-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 $excludeDir = [regex]'\\installer\\|\\logs\\|\\\.git\\'
-$excludeName = [regex]'(?i)(Launch-From-Git|Launch-ABLE|Launch-Fresh-Wizard|Repair-Pack-And-Launch|Bootstrap-Customer-Agent|Replace-Old-Agent|Onboard-IB-Syspro)\.ps1$'
+$excludeName = [regex]'(?i)(Launch-From-Git|Launch-ABLE|Launch-Fresh-Wizard|Repair-Pack-And-Launch|Bootstrap-Customer-Agent|Replace-Old-Agent|Onboard-IB-Syspro|Deploy-Customer-Sql-Agent|Deploy-IB-Agent)\.ps1$'
 
 function Copy-Clean([string]$Rel) {
   $from = Join-Path $Pack $Rel
