@@ -3,6 +3,7 @@ import { useId } from "react";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { Route as PillarRoute } from "./customers.$code.epp";
 import { NoCoverPanel } from "@/components/ui/no-cover";
+import { withFullEppModules } from "@/lib/data/epp-modules";
 import { cn } from "@/lib/utils";
 
 function EppLamp({ on, small }: { on: boolean; small?: boolean }) {
@@ -57,12 +58,36 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
       const k = d.policyName?.trim() || "(no policy name)";
       byPolicy.set(k, (byPolicy.get(k) ?? 0) + 1);
     }
+    const assignedName = [...byPolicy.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+    const policyCards = (policies.length
+      ? policies.map((p) => ({ ...p, modules: withFullEppModules(p.modules) }))
+      : [...byPolicy.entries()].map(([name, n]) => ({
+          policyId: name,
+          policyName: name,
+          deviceCount: n,
+          modules: withFullEppModules([]),
+        }))
+    ).slice().sort((a, b) => {
+      const aOn = String(a.policyName ?? "") === assignedName ? 0 : 1;
+      const bOn = String(b.policyName ?? "") === assignedName ? 0 : 1;
+      return aOn - bOn || b.deviceCount - a.deviceCount;
+    });
 
     const moduleRollup = new Map<
       string,
       { label: string; onPolicies: number; offPolicies: number; devicesOn: number; devicesOff: number }
     >();
-    for (const p of policies) {
+    for (const c of withFullEppModules([])) {
+      moduleRollup.set(c.label, {
+        label: c.label,
+        onPolicies: 0,
+        offPolicies: 0,
+        devicesOn: 0,
+        devicesOff: 0,
+      });
+    }
+    for (const p of policyCards) {
       for (const m of p.modules ?? []) {
         const cur = moduleRollup.get(m.label) ?? {
           label: m.label,
@@ -86,29 +111,15 @@ export const Route = createFileRoute("/customers/$code/epp/modules")({
       const bOn = b.onPolicies > 0 ? 0 : 1;
       return aOn - bOn || b.devicesOn - a.devicesOn || a.label.localeCompare(b.label);
     });
-    const assignedName = [...byPolicy.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    const policyCards = (policies.length
-      ? policies
-      : [...byPolicy.entries()].map(([name, n]) => ({
-          policyId: name,
-          policyName: name,
-          deviceCount: n,
-          modules: [] as { id: string; label: string; enabled: boolean }[],
-        }))
-    ).slice().sort((a, b) => {
-      const aOn = String(a.policyName ?? "") === assignedName ? 0 : 1;
-      const bOn = String(b.policyName ?? "") === assignedName ? 0 : 1;
-      return aOn - bOn || b.deviceCount - a.deviceCount;
-    });
     const armed = installed.filter((m) => m.onPolicies > 0).length;
 
     return (
       <div className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 className="text-[15px] font-bold">Installed EPP modules</h2>
+            <h2 className="text-[15px] font-bold">EPP Modules</h2>
             <p className="text-[12px] text-muted">
-              Policy modules for this tenant. Green lamp = on. Red lamp = off.
+              Full GravityZone module set for this tenant. Green lamp = on. Red lamp = off.
             </p>
           </div>
           {installed.length ? (

@@ -137,6 +137,7 @@ const eppLeaves = [
   { label: "Policies & Modules", path: "modules" },
   { label: "Security Incidents", path: "incidents" },
   { label: "Quarantine", path: "quarantine" },
+  { label: "Service SLA", path: "sla" },
 ];
 
 const cspLeaves = [

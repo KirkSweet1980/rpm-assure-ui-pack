@@ -457,9 +457,12 @@ export function EstateGrid({
     { label: "Backup Agents", href: `${base}/cove/devices`, on: cover.cove, rag: live.modules["/cove/devices"]?.rag ?? live.pillars.cove?.rag },
     { label: "Recovery Testing", href: `${base}/cove/recovery`, on: cover.cove, rag: live.modules["/cove/recovery"]?.rag ?? live.pillars.cove?.rag },
     { label: "Backup Retention", href: `${base}/cove/retention`, on: cover.cove, rag: live.modules["/cove/retention"]?.rag ?? live.pillars.cove?.rag },
+    { label: "EPP Overview", href: `${base}/epp`, on: Boolean(cover.epp), rag: live.pillars.epp?.rag },
     { label: "EndPoint Agents", href: `${base}/epp/endpoints`, on: Boolean(cover.epp), rag: live.pillars.epp?.rag },
     { label: "Policies & Modules", href: `${base}/epp/modules`, on: Boolean(cover.epp), rag: live.modules["/epp/modules"]?.rag ?? live.pillars.epp?.rag },
     { label: "Security Incidents", href: `${base}/epp/incidents`, on: Boolean(cover.epp), rag: live.modules["/epp/incidents"]?.rag ?? live.pillars.epp?.rag },
+    { label: "Quarantine", href: `${base}/epp/quarantine`, on: Boolean(cover.epp), rag: live.modules["/epp/quarantine"]?.rag ?? live.pillars.epp?.rag },
+    { label: "Service SLA", href: `${base}/epp/sla`, on: Boolean(cover.epp), rag: live.modules["/epp/sla"]?.rag ?? live.pillars.epp?.rag },
     { label: "Open Tickets", href: `${base}/tickets/open`, on: Boolean(cover.tickets), rag: tix.open > 0 ? "Amber" : "Green" },
   ]
     .filter((h) => {
@@ -768,13 +771,15 @@ export function EstateGrid({
           {focus === "eco" ? "AMS Coverage" : `${DECK_TITLE[focus]} Modules`}
         </div>
         <div className="rpma-cmd-heat" aria-label={focus === "eco" ? "AMS Coverage" : "Service Modules"}>
-          {heatAll.filter((h) => h.on).map((h) => (
+          {heatAll
+            .filter((h) => h.on || h.href.includes("/epp"))
+            .map((h) => (
             <SpaLink key={h.label} href={h.href} className={cn("rpma-cmd-cell", `is-${h.tone}`)}>
               <em>{h.label}</em>
-              <strong>{h.rag === "Off" ? "Cover" : String(h.rag)}</strong>
+              <strong>{!h.on ? "No Cover" : h.rag === "Off" ? "Cover" : String(h.rag)}</strong>
             </SpaLink>
           ))}
-          {heatAll.filter((h) => h.on).length === 0 ? (
+          {heatAll.filter((h) => h.on || h.href.includes("/epp")).length === 0 ? (
             <p className="px-3 py-3 text-[12px] text-muted">No modules on cover for this service.</p>
           ) : null}
         </div>

@@ -55,6 +55,7 @@ import { formatSastDate } from "@/lib/utils";
 import { finsightOobAttention } from "@/lib/brand/finsight";
 import { classifyRmmDevice } from "@/lib/data/rmm-device-class";
 import { rmmDeviceBelongsToCustomer, tenantAssetBelongs } from "@/lib/data/rmm-device-owner";
+import { withFullEppModules } from "@/lib/data/epp-modules";
 import { coveHealthFor, eppHealthFor, finalizeEstateHealth, healthFor, healthScorePctFromRag, rmmHealthFor } from "./health-rag";
 import { floorScoreToRag } from "./rag-score";
 import { worstLiveRag } from "./live-status";
@@ -6715,13 +6716,15 @@ ORDER BY DeviceCount DESC, PolicyName`);
         try {
           const raw = r.ModulesJson != null ? String(r.ModulesJson) : "[]";
           const parsed = JSON.parse(raw);
-          modules = (Array.isArray(parsed) ? parsed : []).map((m: any) => ({
-            id: String(m.id ?? m.label ?? ""),
-            label: String(m.label ?? m.id ?? ""),
-            enabled: Boolean(m.enabled),
-          }));
+          modules = withFullEppModules(
+            (Array.isArray(parsed) ? parsed : []).map((m: any) => ({
+              id: String(m.id ?? m.label ?? ""),
+              label: String(m.label ?? m.id ?? ""),
+              enabled: Boolean(m.enabled),
+            })),
+          );
         } catch {
-          modules = [];
+          modules = withFullEppModules([]);
         }
         return {
           policyId: String(r.PolicyId ?? ""),

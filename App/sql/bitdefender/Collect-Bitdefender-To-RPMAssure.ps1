@@ -872,9 +872,11 @@ function Get-EppModulesJsonFromRaw([string]$raw) {
   foreach ($p in $pairs) {
     $k = [string]$p.k
     if ($seen.ContainsKey($p.l)) { continue }
-    if ($raw -notmatch ('"' + [regex]::Escape($k) + '"\s*:')) { continue }
-    $on = $true
-    if ($raw -match ('"' + [regex]::Escape($k) + '"\s*:\s*false')) { $on = $false }
+    $on = $false
+    if ($raw -match ('"' + [regex]::Escape($k) + '"\s*:')) {
+      $on = $true
+      if ($raw -match ('"' + [regex]::Escape($k) + '"\s*:\s*false')) { $on = $false }
+    }
     $seen[$p.l] = $true
     $en = 'true'
     if (-not $on) { $en = 'false' }
