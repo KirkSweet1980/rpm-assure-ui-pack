@@ -375,6 +375,17 @@ function Draas-Attr($item, [string]$name) {
   } catch {}
   return $null
 }
+function Draas-AttrRaw($item, [string]$name) {
+  if ($null -eq $item) { return $null }
+  $a = $null
+  try { $a = $item.attributes } catch {}
+  foreach ($src in @($a, $item)) {
+    if ($null -eq $src) { continue }
+    $p = $src.PSObject.Properties[$name]
+    if ($p -and $null -ne $p.Value) { return $p.Value }
+  }
+  return $null
+}
 function Compact-CoveName([string]$n) {
   if ([string]::IsNullOrWhiteSpace($n)) { return '' }
   $s = $n.Trim().ToLowerInvariant()
@@ -529,7 +540,7 @@ try {
         elseif ($sample.PSObject) { $attrNames = @($sample.PSObject.Properties.Name) }
       } catch {}
       Write-Log ('DRaaS sample id=' + (One-Draas $sample.id) + ' attrs=' + ($attrNames -join ','))
-      Write-Log ('DRaaS sample name=' + (Draas-Attr $sample 'backup_cloud_device_name') + ' au=' + (Draas-Attr $sample 'backup_cloud_device_id') + ' bar=' + (ColorBar-Text (Draas-Attr $sample 'colorbar')))
+      Write-Log ('DRaaS sample name=' + (Draas-Attr $sample 'backup_cloud_device_name') + ' au=' + (Draas-Attr $sample 'backup_cloud_device_id') + ' bar=' + (ColorBar-Text (Draas-AttrRaw $sample 'colorbar')))
     }
     if ($items.Count -lt 200) { break }
     $offset += 200
@@ -812,7 +823,7 @@ foreach ($row in $allRows) {
     $freq = [string](Draas-Attr $draas 'device_recovery_frequency')
     if ($freq) { $planLabel = (Title-Status $freq); if ($planType -eq 0) { $planType = 1 } }
     elseif ($planName) { $planLabel = $planName; if ($planType -eq 0) { $planType = 1 } }
-    $colorBar = ColorBar-Text (Draas-Attr $draas 'colorbar')
+    $colorBar = ColorBar-Text (Draas-AttrRaw $draas 'colorbar')
     $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
     if (-not $recStatus) { $recStatus = Title-Status ([string](Draas-Attr $draas 'current_recovery_status')) }
     $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_boot_test_status'))
@@ -982,7 +993,7 @@ if ($script:DraasByAu) {
     $freq = [string](Draas-Attr $draas 'device_recovery_frequency')
     if ($freq) { $planName = Title-Status $freq }
     if (-not $planName) { $planName = 'Recovery Testing' }
-    $colorBar = ColorBar-Text (Draas-Attr $draas 'colorbar')
+    $colorBar = ColorBar-Text (Draas-AttrRaw $draas 'colorbar')
     $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
     if (-not $recStatus) { $recStatus = Title-Status ([string](Draas-Attr $draas 'current_recovery_status')) }
     $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_boot_test_status'))
@@ -1260,7 +1271,7 @@ try {
         partner = [string](Draas-Attr $it 'backup_cloud_partner_name')
         plan = [string](Draas-Attr $it 'plan_name')
         freq = [string](Draas-Attr $it 'device_recovery_frequency')
-        bar = ColorBar-Text (Draas-Attr $it 'colorbar')
+        bar = ColorBar-Text (Draas-AttrRaw $it 'colorbar')
         status = [string](Draas-Attr $it 'last_recovery_status')
         boot = [string](Draas-Attr $it 'last_boot_test_status')
         duration = [string](Draas-Attr $it 'last_recovery_duration_user')
