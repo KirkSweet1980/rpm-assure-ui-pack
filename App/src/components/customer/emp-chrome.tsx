@@ -5,6 +5,7 @@ import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
 import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
 import { RagLamps } from "@/components/chrome/rag-lamps";
+import { StatusRobot } from "@/components/ui/status-robot";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -124,6 +125,52 @@ function worstRag(
   return "Off";
 }
 
+function toneRank(t: LiveTone): number {
+  if (t === "Red") return 0;
+  if (t === "Amber") return 1;
+  if (t === "Green") return 2;
+  return 3;
+}
+
+/** Module that is driving this service's RAG — used so the click lands on the alert. */
+function alertItem(
+  g: RibbonGroup,
+  live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
+): RibbonItem {
+  return [...g.items].sort((a, b) => toneRank(ragOf(a.rel, live)) - toneRank(ragOf(b.rel, live)))[0] ?? g.items[0];
+}
+
+function alertHref(
+  g: RibbonGroup,
+  live: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> } | undefined,
+  base: string,
+  tone: LiveTone,
+): string {
+  if (tone !== "Red" && tone !== "Amber") {
+    return `${base}${g.items[0]?.rel ?? g.match}`;
+  }
+  if (g.id !== "estate") {
+    return `${base}${alertItem(g, live).rel}`;
+  }
+  const services = ALWAYS_SHOW_SERVICES.filter((s) => s.id !== "estate");
+  const topSvc = [...services].sort((a, b) => {
+    const ta = pillarCovered(a.id, live) ? worstRag(a, live) : "Off";
+    const tb = pillarCovered(b.id, live) ? worstRag(b, live) : "Off";
+    return toneRank(ta) - toneRank(tb);
+  })[0];
+  const svcTone = topSvc && pillarCovered(topSvc.id, live) ? worstRag(topSvc, live) : "Off";
+  const ecoMods = g.items.filter((it) => it.rel);
+  const topEco = [...ecoMods].sort((a, b) => toneRank(ragOf(a.rel, live)) - toneRank(ragOf(b.rel, live)))[0];
+  const ecoTone = topEco ? ragOf(topEco.rel, live) : "Off";
+  if ((svcTone === "Red" || svcTone === "Amber") && toneRank(svcTone) <= toneRank(ecoTone)) {
+    return `${base}${alertItem(topSvc, live).rel}`;
+  }
+  if (topEco && (ecoTone === "Red" || ecoTone === "Amber")) {
+    return `${base}${topEco.rel}`;
+  }
+  return `${base}${g.items[0]?.rel ?? ""}`;
+}
+
 function pillarCovered(
   id: string,
   live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
@@ -186,9 +233,9 @@ export function EmpChrome({
                 g.match === ""
                   ? rest === "" || rest.startsWith("/ams")
                   : rest === g.match || rest.startsWith(`${g.match}/`);
-              const href = `${base}${g.items[0]?.rel ?? g.match}`;
               const covered = pillarCovered(g.id, live);
               const tone = covered ? worstRag(g, live) : "Off";
+              const href = alertHref(g, live, base, covered ? tone : "Off");
               return (
                 <SpaLink
                   key={g.id}
@@ -223,8 +270,12 @@ export function EmpChrome({
                   <span className="rpma-emp-ico" style={{ color: it.color }}>
                     <Icon className="size-5" />
                   </span>
-                  <span>{it.label}</span>
-                  {!covered ? <em className="rpma-emp-nocover">No Cover</em> : null}
+                  <span className="rpma-emp-tool-name">{it.label}</span>
+                  {covered ? (
+                    <StatusRobot rag={rag} title={it.label} size={18} />
+                  ) : (
+                    <em className="rpma-emp-nocover">No Cover</em>
+                  )}
                 </SpaLink>
               );
             })}

@@ -408,7 +408,7 @@ export function EstateGrid({
     {
       on: cover.syspro,
       name: "SYSPRO Landscape",
-      href: `${base}/syspro`,
+      href: live.pillars.syspro?.href ?? `${base}/syspro`,
       bar: "#0d9488",
       rag: live.pillars.syspro?.rag ?? (cover.syspro ? "Green" : "Off"),
       bits: [
@@ -420,7 +420,7 @@ export function EstateGrid({
     {
       on: cover.rmm,
       name: "RMM Management",
-      href: `${base}/rmm`,
+      href: live.pillars.rmm?.href ?? `${base}/rmm`,
       bar: "#2563eb",
       rag: live.pillars.rmm?.rag ?? (cover.rmm ? "Green" : "Off"),
       bits: [`${srvOn} online`, `${srvOff} offline`, `${iopsN} IOPS vols`],
@@ -428,7 +428,7 @@ export function EstateGrid({
     {
       on: cover.cove,
       name: "RPM Cloud Backup",
-      href: `${base}/cove`,
+      href: live.pillars.cove?.href ?? `${base}/cove`,
       bar: "#7c3aed",
       rag: live.pillars.cove?.rag ?? (cover.cove ? "Green" : "Off"),
       bits: [`${coveN} agents`, `${coveFail} failed / stale`],
@@ -436,7 +436,7 @@ export function EstateGrid({
     {
       on: Boolean(cover.epp),
       name: "RPM End Point Protection",
-      href: `${base}/epp`,
+      href: live.pillars.epp?.href ?? `${base}/epp`,
       bar: "#dc2626",
       rag: live.pillars.epp?.rag ?? (cover.epp ? "Green" : "Off"),
       bits: [`${eppN} agents`, infected ? `${infected} infected` : "clean"],
@@ -676,7 +676,12 @@ export function EstateGrid({
               <SpaLink
                 key={s.name}
                 href={s.href}
-                className={cn("rpma-cmd-banner", s.on ? "is-on" : "is-off")}
+                className={cn(
+                  "rpma-cmd-banner",
+                  s.on ? "is-on" : "is-off",
+                  (s.rag === "Red" || s.rag === "Amber") && `is-alert is-${String(s.rag).toLowerCase()}`,
+                )}
+                data-rag={s.rag}
               >
                 <i style={{ background: s.bar }} />
                 <StatusRobot rag={s.rag} title={s.name} size={24} />
@@ -774,7 +779,16 @@ export function EstateGrid({
           {heatAll
             .filter((h) => h.on || h.href.includes("/epp"))
             .map((h) => (
-            <SpaLink key={h.label} href={h.href} className={cn("rpma-cmd-cell", `is-${h.tone}`)}>
+            <SpaLink
+              key={h.label}
+              href={h.href}
+              className={cn(
+                "rpma-cmd-cell",
+                `is-${h.tone}`,
+                (h.tone === "red" || h.tone === "amber") && "is-alert",
+              )}
+              data-rag={h.on ? h.rag : "Off"}
+            >
               <em>{h.label}</em>
               <strong>{!h.on ? "No Cover" : h.rag === "Off" ? "Cover" : String(h.rag)}</strong>
             </SpaLink>

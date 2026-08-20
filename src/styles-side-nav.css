@@ -63,10 +63,23 @@
   font-size: 12.5px !important;
   font-weight: 700 !important;
   text-align: left !important;
+}
+.rpma-emp.is-side .rpma-emp-gtab:not([data-rag="Red"]):not([data-rag="Amber"]),
+.rpma-emp.is-side .rpma-emp-tool:not([data-rag="Red"]):not([data-rag="Amber"]) {
   box-shadow: none !important;
 }
+.rpma-emp.is-side .rpma-emp-gtab[data-rag="Red"],
+.rpma-emp.is-side .rpma-emp-tool[data-rag="Red"] {
+  background: rgba(239, 68, 68, 0.14) !important;
+  animation: rpma-row-flash-red 0.48s ease-in-out infinite !important;
+}
+.rpma-emp.is-side .rpma-emp-gtab[data-rag="Amber"],
+.rpma-emp.is-side .rpma-emp-tool[data-rag="Amber"] {
+  background: rgba(234, 179, 8, 0.16) !important;
+  animation: rpma-row-flash-amber 0.85s ease-in-out infinite !important;
+}
 .rpma-emp.is-side .rpma-emp-gtab-name,
-.rpma-emp.is-side .rpma-emp-tool > span:last-child {
+.rpma-emp.is-side .rpma-emp-tool-name {
   flex: 1 !important;
   min-width: 0 !important;
   text-align: left !important;
