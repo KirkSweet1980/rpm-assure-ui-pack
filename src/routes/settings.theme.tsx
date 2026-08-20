@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Palette } from "lucide-react";
-import { useTheme } from "@/lib/theme";
-import { useDensity } from "@/lib/density";
+import { useTheme, type ThemeMode } from "@/lib/theme";
+import { useDensity, type Density } from "@/lib/density";
+import { Button } from "@/components/ui/button";
 import { ConfigPageHead } from "@/components/settings/config-page";
 import { ThemeChromePreview } from "@/components/theme/theme-chrome-preview";
 import {
@@ -10,6 +11,7 @@ import {
   THEME_TOKENS,
   TOKEN_GROUPS,
   UI_TEMPLATES,
+  applyPalette,
   persistPalette,
   readComputedToken,
   readPalette,
@@ -21,20 +23,53 @@ export const Route = createFileRoute("/settings/theme")({
   component: ThemeTokensPage,
 });
 
+type Draft = {
+  palette: PaletteId;
+  theme: ThemeMode;
+  density: Density;
+};
+
 function ThemeTokensPage() {
   const { theme, setTheme } = useTheme();
-  const { setDensity } = useDensity();
-  const [palette, setPalette] = useState<PaletteId>("slate");
+  const { density, setDensity } = useDensity();
+  const [saved, setSaved] = useState<Draft>({ palette: "slate", theme: "dark", density: "compact" });
+  const [draft, setDraft] = useState<Draft>(saved);
   const [tick, setTick] = useState(0);
+  const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    setPalette(readPalette());
+    const next: Draft = { palette: readPalette(), theme, density };
+    setSaved(next);
+    setDraft(next);
+    // mount only — live header toggle should not reset an unsaved draft
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    persistPalette(palette, theme);
+    applyPalette(draft.palette, draft.theme);
     setTick((n) => n + 1);
-  }, [palette, theme]);
+  }, [draft.palette, draft.theme]);
+
+  const dirty =
+    draft.palette !== saved.palette ||
+    draft.theme !== saved.theme ||
+    draft.density !== saved.density;
+
+  function apply() {
+    persistPalette(draft.palette, draft.theme);
+    setTheme(draft.theme);
+    setDensity(draft.density);
+    setSaved(draft);
+    setMsg("Theme applied.");
+  }
+
+  function cancel() {
+    setDraft(saved);
+    persistPalette(saved.palette, saved.theme);
+    setTheme(saved.theme);
+    setDensity(saved.density);
+    setMsg(null);
+  }
 
   const computed = useMemo(() => {
     const map: Record<string, string> = {};
@@ -43,29 +78,48 @@ function ThemeTokensPage() {
     });
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick, theme, palette]);
+  }, [tick, draft.palette, draft.theme]);
 
   return (
     <div className="space-y-6">
       <ConfigPageHead title="UI templates & colour palettes" icon={Palette} />
 
+      <div className="rpma-theme-apply">
+        <p className="text-[12px] text-muted">
+          Choose a template or palette to preview. Click <strong>Apply</strong> to keep it.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" disabled={!dirty} onClick={apply}>
+            Apply
+          </Button>
+          <Button size="sm" variant="secondary" disabled={!dirty} onClick={cancel}>
+            Cancel
+          </Button>
+          {msg && !dirty ? <span className="text-[12px] text-muted">{msg}</span> : null}
+          {dirty ? <span className="text-[12px] font-semibold text-fg">Unsaved preview</span> : null}
+        </div>
+      </div>
+
       <section className="rpma-panel overflow-hidden p-0">
         <div className="px-4 py-3">
           <h2 className="text-[16px] font-extrabold text-fg">Templates</h2>
-          <p className="text-[12px] text-muted">Applies palette, light/dark, and density together. Header toggle still overrides light/dark.</p>
+          <p className="text-[12px] text-muted">Palette + light/dark + density. Header toggle still works after Apply.</p>
         </div>
         <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 xl:grid-cols-4">
           {UI_TEMPLATES.map((tpl) => {
-            const on = palette === tpl.id;
+            const on = draft.palette === tpl.id;
+            const mode = tpl.theme === "light" || tpl.theme === "dark" ? tpl.theme : draft.theme;
             return (
               <button
                 key={tpl.id}
                 type="button"
-                onClick={() => {
-                  setPalette(tpl.id);
-                  if (tpl.theme === "light" || tpl.theme === "dark") setTheme(tpl.theme);
-                  setDensity(tpl.density);
-                }}
+                onClick={() =>
+                  setDraft({
+                    palette: tpl.id,
+                    theme: mode,
+                    density: tpl.density,
+                  })
+                }
                 className={cn(
                   "rounded-md border p-3 text-left",
                   on ? "border-[var(--color-nav)] bg-[var(--color-surface-2)]" : "border-border bg-surface",
@@ -90,12 +144,12 @@ function ThemeTokensPage() {
         <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 xl:grid-cols-3">
           {(Object.keys(PALETTES) as PaletteId[]).map((id) => {
             const p = PALETTES[id];
-            const on = palette === id;
+            const on = draft.palette === id;
             return (
               <button
                 key={id}
                 type="button"
-                onClick={() => setPalette(id)}
+                onClick={() => setDraft((d) => ({ ...d, palette: id }))}
                 className={cn(
                   "rounded-md border p-3 text-left",
                   on
