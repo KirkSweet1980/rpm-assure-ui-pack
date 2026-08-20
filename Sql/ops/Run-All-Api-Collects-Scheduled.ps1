@@ -75,6 +75,21 @@ foreach ($l in $legs) {
   $state.legs[$i - 1].message = "Running"
   Write-Status $state
 
+  if ($l.Name -eq 'Freshdesk') {
+    $fdTask = $null
+    try { $fdTask = Get-ScheduledTask -TaskName 'RPMAssure-Freshdesk-Collect' -ErrorAction SilentlyContinue } catch {}
+    if ($fdTask -and $fdTask.State -ne 'Disabled') {
+      W "SKIP Freshdesk - owned by RPMAssure-Freshdesk-Collect (1 min)"
+      $state.legs[$i - 1].status = "skip"
+      $state.legs[$i - 1].pct = 100
+      $state.legs[$i - 1].message = "1-min dedicated task"
+      $state.legs[$i - 1].finishedUtc = (Get-Date).ToUniversalTime().ToString("o")
+      $state.pct = [int](($i / $legs.Count) * 100)
+      Write-Status $state
+      continue
+    }
+  }
+
   if (-not (Test-Path -LiteralPath $path)) {
     W ("SKIP " + $l.Name + " missing " + $path)
     $state.legs[$i - 1].status = "skip"

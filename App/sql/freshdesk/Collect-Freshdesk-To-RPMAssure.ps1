@@ -1,5 +1,11 @@
 # Collect-Freshdesk-To-RPMAssure.ps1
-#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\Sql\freshdesk\Collect-Freshdesk-To-RPMAssure.ps1
+#   1-min incremental (SLA clocks) + 15-min full catch-up
+#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\Sql\freshdesk\Collect-Freshdesk-To-RPMAssure.ps1 -Mode Auto
+
+param(
+  [ValidateSet('Auto', 'Incremental', 'Full')]
+  [string]$Mode = 'Auto'
+)
 
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
@@ -7,6 +13,7 @@ $logDir = Join-Path $here 'logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 $log = Join-Path $logDir ("freshdesk_{0}.log" -f $stamp)
+$lock = Join-Path $logDir 'freshdesk.collect.lock'
 
 function Write-Log([string]$m) {
   $line = ('{0:u} {1}' -f (Get-Date).ToUniversalTime(), $m)
@@ -36,13 +43,32 @@ if (-not $FreshdeskSqlServer -or $FreshdeskSqlServer -match '14333|102\.222\.21\
 if (-not $FreshdeskSqlServer) { $FreshdeskSqlServer = '.\RPMREPORTS' }
 if (-not $FreshdeskSqlDatabase) { $FreshdeskSqlDatabase = 'RPMAssure_App' }
 if (-not $FreshdeskLookbackDays) { $FreshdeskLookbackDays = 90 }
+if (-not $FreshdeskLookbackMinutes) { $FreshdeskLookbackMinutes = 15 }
 if (-not $FreshdeskSqlUser -and $SqlUser) { $FreshdeskSqlUser = $SqlUser }
 if (-not $FreshdeskSqlPassword -and $SqlPassword) { $FreshdeskSqlPassword = $SqlPassword }
 if (-not $FreshdeskSqlUser) { $FreshdeskSqlUser = 'Rpm_collect' }
 if (-not $FreshdeskSqlPassword) { $FreshdeskSqlPassword = 'RpmCollect#AHIC2026' }
 
+if ($Mode -eq 'Auto') {
+  $min = [int](Get-Date).Minute
+  $Mode = if (($min % 15) -eq 0) { 'Full' } else { 'Incremental' }
+}
+$isFull = ($Mode -eq 'Full')
+
+if (Test-Path -LiteralPath $lock) {
+  try {
+    $ageMin = ((Get-Date) - (Get-Item -LiteralPath $lock).LastWriteTime).TotalMinutes
+    if ($ageMin -lt 12) {
+      Write-Host ('SKIP Freshdesk - collect already running (' + [int]$ageMin + ' min)')
+      exit 0
+    }
+    Write-Host ('stale lock ' + [int]$ageMin + ' min - taking over')
+  } catch {}
+}
+[IO.File]::WriteAllText($lock, (Get-Date).ToUniversalTime().ToString('o'))
+
 Write-Log '=== Freshdesk collect start ==='
-Write-Log ('domain=' + $FreshdeskDomain + ' lookbackDays=' + $FreshdeskLookbackDays)
+Write-Log ('domain=' + $FreshdeskDomain + ' mode=' + $Mode + ' lookbackDays=' + $FreshdeskLookbackDays)
 
 $sqlcmd = 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE'
 if (-not (Test-Path $sqlcmd)) { $sqlcmd = 'sqlcmd' }
@@ -135,7 +161,12 @@ function Sql-Json($obj) {
   } catch { return 'NULL' }
 }
 
-$since = (Get-Date).ToUniversalTime().AddDays(-[int]$FreshdeskLookbackDays)
+if ($isFull) {
+  $since = (Get-Date).ToUniversalTime().AddDays(-[int]$FreshdeskLookbackDays)
+} else {
+  $since = (Get-Date).ToUniversalTime().AddMinutes(-[int]$FreshdeskLookbackMinutes)
+}
+Write-Log ('updated_since=' + $since.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"))
 $all = New-Object System.Collections.Generic.List[object]
 $seen = @{}
 
@@ -163,10 +194,11 @@ try {
     Add-Tickets $batch ('list-since page=' + $page)
     $page++
     Start-Sleep -Milliseconds 200
-  } while ($page -le 50 -and $batch.Count -eq 100)
+  } while ($page -le $(if ($isFull) { 50 } else { 5 }) -and $batch.Count -eq 100)
 } catch {
   Write-Log ('list-since warn ' + $_.Exception.Message)
 }
+if ($isFull) {
 try {
   $page = 1
   do {
@@ -179,9 +211,13 @@ try {
 } catch {
   Write-Log ('list-all warn ' + $_.Exception.Message)
 }
+} else {
+  Write-Log 'incremental - skip list-all'
+}
 
 # Company catalog (id -> name) so blank company_id rows can be mapped
 $companyName = @{}
+if ($isFull) {
 try {
   $cp = 1
   do {
@@ -197,6 +233,9 @@ try {
   } while ($cp -le 10 -and $cos.Count -eq 100)
 } catch {
   Write-Log ('companies catalog warn ' + $_.Exception.Message)
+}
+} else {
+  Write-Log 'incremental - skip companies catalog'
 }
 
 # 2) Pull tickets per mapped company_id (list filter + search)
@@ -246,6 +285,7 @@ try {
 } catch {}
 Write-Log ('maps ticket=' + $codeByTicket.Count + ' companyId=' + $codeByCompanyId.Count)
 
+if ($isFull) {
 foreach ($m in $maps) {
   try {
     $page = 1
@@ -260,10 +300,14 @@ foreach ($m in $maps) {
     Write-Log ('list-co warn ' + $m.Code + ' ' + $_.Exception.Message)
   }
 }
+} else {
+  Write-Log 'incremental - skip per-company list'
+}
 
 Write-Log ('tickets pulled=' + $all.Count)
 
 # 3) Force-get tickets pinned in Dim_Freshdesk_TicketMap (BHF test 16248, etc.)
+if ($isFull) {
 $forceTxt = & $sqlcmd -S $FreshdeskSqlServer -d $FreshdeskSqlDatabase -E -C -h -1 -W -Q "SET NOCOUNT ON; IF OBJECT_ID(N'dbo.Dim_Freshdesk_TicketMap') IS NULL SELECT 16248 ELSE SELECT TicketId FROM dbo.Dim_Freshdesk_TicketMap WHERE Active = 1 UNION SELECT 16248;"
 $forceIds = @()
 foreach ($line in @($forceTxt)) {
@@ -291,8 +335,11 @@ foreach ($fid in $forceIds) {
   }
   Start-Sleep -Milliseconds 200
 }
+} else {
+  Write-Log 'incremental - skip force-id pins'
+}
 
-$maxStats = [Math]::Min(400, $all.Count)
+$maxStats = if ($isFull) { [Math]::Min(400, $all.Count) } else { $all.Count }
 $statsOk = 0
 for ($i = 0; $i -lt $maxStats; $i++) {
   $t = $all[$i]
@@ -332,6 +379,7 @@ function Fd-PriBucket([string]$key) {
 }
 
 $slaRows = New-Object System.Collections.Generic.List[object]
+if ($isFull) {
 try {
   $rawSla = Invoke-FdGet 'sla_policies'
   $policies = @()
@@ -410,6 +458,9 @@ try {
 } catch {
   Write-Log ('sla_policies warn ' + $_.Exception.Message)
 }
+} else {
+  Write-Log 'incremental - skip sla_policies'
+}
 Write-Log ('sla rows=' + $slaRows.Count)
 
 $slaSqlFile = $null
@@ -451,7 +502,9 @@ $sb = New-Object System.Text.StringBuilder
 [void]$sb.AppendLine("DECLARE @Snap date = CAST(SYSUTCDATETIME() AT TIME ZONE 'UTC' AT TIME ZONE 'South Africa Standard Time' AS date);")
 [void]$sb.AppendLine('DECLARE @Imp datetime2(3) = SYSUTCDATETIME();')
 [void]$sb.AppendLine('IF OBJECT_ID(N''dbo.Freshdesk_Tickets'', N''U'') IS NULL BEGIN RAISERROR(N''Freshdesk_Tickets missing - run 510_Ensure_Freshdesk_Tickets.sql'', 16, 1); RETURN; END')
-[void]$sb.AppendLine('DELETE FROM dbo.Freshdesk_Tickets WHERE SnapshotDate = @Snap;')
+if ($isFull) {
+  [void]$sb.AppendLine('DELETE FROM dbo.Freshdesk_Tickets WHERE SnapshotDate = @Snap;')
+}
 
 foreach ($t in $all) {
   $tid = $t.id
@@ -496,7 +549,8 @@ foreach ($t in $all) {
     $codeLit = Sql-Esc $codeByCompanyName[$coName.ToLowerInvariant()]
   }
 
-  $line = 'INSERT INTO dbo.Freshdesk_Tickets (SnapshotDate, TicketId, CustomerCode, Subject, StatusId, StatusName, PriorityId, PriorityName, SourceId, TypeName, RequesterId, RequesterEmail, ResponderId, GroupId, CompanyId, CompanyName, CreatedAtUtc, UpdatedAtUtc, DueByUtc, FirstRespondedAtUtc, ResolvedAtUtc, ClosedAtUtc, TagsJson, CustomFieldsJson, ImportedAt) VALUES (@Snap, ' +
+  $line = $(if ($isFull) { '' } else { 'DELETE FROM dbo.Freshdesk_Tickets WHERE SnapshotDate = @Snap AND TicketId = ' + (Sql-Num $tid) + '; ' }) +
+    'INSERT INTO dbo.Freshdesk_Tickets (SnapshotDate, TicketId, CustomerCode, Subject, StatusId, StatusName, PriorityId, PriorityName, SourceId, TypeName, RequesterId, RequesterEmail, ResponderId, GroupId, CompanyId, CompanyName, CreatedAtUtc, UpdatedAtUtc, DueByUtc, FirstRespondedAtUtc, ResolvedAtUtc, ClosedAtUtc, TagsJson, CustomFieldsJson, ImportedAt) VALUES (@Snap, ' +
     (Sql-Num $tid) + ', ' +
     $codeLit + ', ' +
     (Sql-Esc $subj) + ', ' +
@@ -539,36 +593,49 @@ END
 "@)
 
 $sqlFile = Join-Path $logDir ("freshdesk_load_{0}.sql" -f $stamp)
-[IO.File]::WriteAllText($sqlFile, $sb.ToString())
-Write-Log ('SQL written ' + $sqlFile)
-
-Invoke-FdSql $sqlFile
-if ($LASTEXITCODE -ne 0) {
-  Write-Log ('sqlcmd failed exit=' + $LASTEXITCODE)
-  throw ('sqlcmd failed ' + $LASTEXITCODE)
+if ($all.Count -gt 0) {
+  [IO.File]::WriteAllText($sqlFile, $sb.ToString())
+  Write-Log ('SQL written ' + $sqlFile)
+  Invoke-FdSql $sqlFile
+  if ($LASTEXITCODE -ne 0) {
+    Write-Log ('sqlcmd failed exit=' + $LASTEXITCODE)
+    throw ('sqlcmd failed ' + $LASTEXITCODE)
+  }
+} else {
+  Write-Log 'no tickets this cycle - skip load'
 }
 
-Write-Log ('=== Freshdesk collect done tickets=' + $all.Count + ' log=' + $log + ' ===')
+Write-Log ('=== Freshdesk collect done tickets=' + $all.Count + ' mode=' + $Mode + ' log=' + $log + ' ===')
 
 $ensureSla = Join-Path $here '519_Ensure_Freshdesk_Sla.sql'
-if (Test-Path -LiteralPath $ensureSla) {
+if ($isFull -and (Test-Path -LiteralPath $ensureSla)) {
   Write-Log 'SQL 519_Ensure_Freshdesk_Sla.sql'
   Invoke-FdSql $ensureSla
 }
-if ($slaSqlFile -and (Test-Path -LiteralPath $slaSqlFile)) {
+if ($isFull -and $slaSqlFile -and (Test-Path -LiteralPath $slaSqlFile)) {
   Write-Log 'SQL freshdesk_sla load'
   Invoke-FdSql $slaSqlFile
   if ($LASTEXITCODE -ne 0) { Write-Log ('sla load warned exit=' + $LASTEXITCODE) }
   else { Write-Log 'sla load OK' }
 }
 
-foreach ($sqlName in @(
-  '518_Ensure_Customers_From_Freshdesk.sql',
-  '512_Register_SBT_And_Map_BHF.sql',
-  '514_Fuzzy_Map_Freshdesk_Companies.sql',
-  '513_Sync_Freshdesk_To_Fact_Incident.sql',
-  '516_Stamp_Ticket_Sla_Flags.sql'
-)) {
+$postSql = if ($isFull) {
+  @(
+    '518_Ensure_Customers_From_Freshdesk.sql',
+    '512_Register_SBT_And_Map_BHF.sql',
+    '514_Fuzzy_Map_Freshdesk_Companies.sql',
+    '513_Sync_Freshdesk_To_Fact_Incident.sql',
+    '516_Stamp_Ticket_Sla_Flags.sql'
+  )
+} elseif ($all.Count -gt 0) {
+  @(
+    '513_Sync_Freshdesk_To_Fact_Incident.sql',
+    '516_Stamp_Ticket_Sla_Flags.sql'
+  )
+} else {
+  @()
+}
+foreach ($sqlName in $postSql) {
   $sync = Join-Path $here $sqlName
   if (-not (Test-Path -LiteralPath $sync)) { continue }
   Write-Log ('SQL ' + $sqlName)
@@ -594,4 +661,5 @@ $stampFile = Join-Path $logDir ("fd_stamp_" + $stamp + ".sql")
 [IO.File]::WriteAllText($stampFile, $stampSql)
 Invoke-FdSql $stampFile
 Write-Log 'Dim_Connection FRESHDESK stamped Active'
+Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
 

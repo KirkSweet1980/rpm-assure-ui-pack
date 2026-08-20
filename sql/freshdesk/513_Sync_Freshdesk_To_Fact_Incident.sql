@@ -56,8 +56,12 @@ WHERE (t.CustomerCode IS NULL OR t.CustomerCode <> m.CustomerCode)
     WHERE x.Active = 1 AND x.TicketId = t.TicketId
   );
 
-;WITH latest AS (
-  SELECT MAX(SnapshotDate) AS Snap FROM dbo.Freshdesk_Tickets
+;WITH ranked AS (
+  SELECT
+    t.*,
+    ROW_NUMBER() OVER (PARTITION BY t.TicketId ORDER BY t.SnapshotDate DESC, t.ImportedAt DESC) AS rn
+  FROM dbo.Freshdesk_Tickets t
+  WHERE t.TicketId IS NOT NULL
 ),
 src AS (
   SELECT
@@ -104,9 +108,8 @@ src AS (
       ELSE N'AMS'
     END AS ModuleCode,
     LEFT(COALESCE(t.TypeName, t.CompanyName), 400) AS BusinessImpact
-  FROM dbo.Freshdesk_Tickets t
-  CROSS JOIN latest l
-  WHERE t.SnapshotDate = l.Snap
+  FROM ranked t
+  WHERE t.rn = 1
     AND t.CustomerCode IS NOT NULL
     AND t.TicketId IS NOT NULL
 )

@@ -71,5 +71,17 @@ if (Test-Path $task) {
   try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $task } catch { Write-Host ("WARN publish task " + $_.Exception.Message) }
 }
 
+$fdInstall = Join-Path $Root 'Sql\freshdesk\Install-Freshdesk-15min.ps1'
+if (-not (Test-Path $fdInstall)) { $fdInstall = Join-Path $Pack 'sql\freshdesk\Install-Freshdesk-15min.ps1' }
+if (-not (Test-Path $fdInstall)) { $fdInstall = Join-Path $Pack 'Sql\freshdesk\Install-Freshdesk-15min.ps1' }
+if (Test-Path $fdInstall) {
+  Write-Host '--- Freshdesk collect every 1 minute ---'
+  try {
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $fdInstall -Root $Root -Minutes 1
+  } catch {
+    Write-Host ("WARN Freshdesk 1-min task " + $_.Exception.Message)
+  }
+}
+
 Write-Host '=== apply done — agents pull /downloads on next cycle (VERSION mismatch) ==='
 Write-Host $head
