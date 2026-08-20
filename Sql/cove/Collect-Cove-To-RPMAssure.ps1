@@ -490,6 +490,7 @@ $script:DraasByAu = @{}
 $script:DraasByName = @{}
 $script:DraasMatched = @{}
 $script:SeenAu = @{}
+$script:DraasBarByKey = @{}
 $shotDir = 'C:\RPM-Assure\data\cove-recovery'
 try { New-Item -ItemType Directory -Force -Path $shotDir | Out-Null } catch {
   $shotDir = 'C:\RPM-Assure\downloads\cove-recovery'
@@ -517,6 +518,58 @@ try {
     $uri = 'https://api.backup.management/draas/actual-statistics/v1/dashboard/?' + $q
     $resp = Invoke-WebRequest -Uri $uri -Method GET -Headers @{ Authorization = ('Bearer ' + $visa) } -UseBasicParsing -TimeoutSec 120
     $body = ConvertTo-Text $resp.Content
+    if ($offset -eq 0) {
+      $rawCb = [regex]::Match($body, '"colorbar"\s*:\s*(\[[\s\S]{0,4000}?\]|\{[\s\S]{0,900}?\})')
+      if ($rawCb.Success) {
+        $snip = [string]$rawCb.Groups[1].Value
+        if ($snip.Length -gt 700) { $snip = $snip.Substring(0, 700) }
+        Write-Log ('raw colorbar=' + $snip)
+      } else {
+        Write-Log 'raw colorbar=NOTFOUND'
+      }
+    }
+    try {
+      Add-Type -AssemblyName System.Web.Extensions -ErrorAction SilentlyContinue
+      $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+      $ser.MaxJsonLength = 67108864
+      $js = $ser.DeserializeObject($body)
+      $jsData = $null
+      if ($js -is [System.Collections.IDictionary] -and $js.Contains('data')) { $jsData = $js['data'] }
+      $tickMax = 0
+      foreach ($jit in @($jsData)) {
+        if ($null -eq $jit) { continue }
+        $attrs = $null
+        if ($jit -is [System.Collections.IDictionary] -and $jit.Contains('attributes')) { $attrs = $jit['attributes'] }
+        if ($null -eq $attrs) { continue }
+        $cb = $null
+        if ($attrs -is [System.Collections.IDictionary] -and $attrs.Contains('colorbar')) { $cb = $attrs['colorbar'] }
+        $auJs = ''
+        $idJs = ''
+        if ($attrs.Contains('backup_cloud_device_id')) { $auJs = [string]$attrs['backup_cloud_device_id'] }
+        if ($jit.Contains('id')) { $idJs = [string]$jit['id'] }
+        $parts = New-Object System.Collections.Generic.List[string]
+        if ($cb -is [System.Collections.IDictionary]) {
+          $st = ''
+          if ($cb.Contains('status')) { $st = [string]$cb['status'] }
+          if ($st) { [void]$parts.Add($st) }
+        } elseif ($cb -is [System.Collections.IEnumerable] -and -not ($cb -is [string])) {
+          foreach ($c in @($cb)) {
+            $st = ''
+            if ($c -is [System.Collections.IDictionary] -and $c.Contains('status')) { $st = [string]$c['status'] }
+            elseif ($c -is [string]) { $st = [string]$c }
+            if ($st) { [void]$parts.Add($st) }
+          }
+        }
+        if ($parts.Count -gt $tickMax) { $tickMax = $parts.Count }
+        if ($parts.Count -gt 0) {
+          if ($auJs) { $script:DraasBarByKey[$auJs] = $parts }
+          if ($idJs) { $script:DraasBarByKey[$idJs] = $parts }
+        }
+      }
+      Write-Log ('js colorbar devices=' + $script:DraasBarByKey.Count + ' maxTicks=' + $tickMax)
+    } catch {
+      Write-Log ('WARN js colorbar ' + $_.Exception.Message)
+    }
     $obj = $null
     try { $obj = $body | ConvertFrom-Json } catch {}
     $items = @()
@@ -560,53 +613,35 @@ try {
   Write-Log ('WARN DRaaS dashboard ' + $_.Exception.Message)
 }
 
-$script:DraasBarByKey = @{}
 try {
-  $planIds = New-Object System.Collections.Generic.List[string]
+  $sampleId = ''
   foreach ($it in @($script:DraasByAu.Values)) {
-    $planKey = [string](One-Draas $it.id)
-    if ($planKey) { [void]$planIds.Add($planKey) }
-    $auX = [string](Draas-Attr $it 'backup_cloud_device_id')
-    if ($auX) { [void]$planIds.Add($auX) }
+    $sampleId = [string](One-Draas $it.id)
+    if ($sampleId) { break }
   }
-  $uniq = @($planIds | Select-Object -Unique)
-  if ($uniq.Count -gt 0) {
-    $filt = 'filter[plan_device_id.in]=' + [uri]::EscapeDataString(($uniq -join ','))
-    $sUri = 'https://api.backup.management/draas/actual-statistics/v1/sessions/?limit=250&sort=-created_at&' + $filt
-    $sResp = Invoke-WebRequest -Uri $sUri -Method GET -Headers @{ Authorization = ('Bearer ' + $visa) } -UseBasicParsing -TimeoutSec 120
-    $sObj = $null
-    try { $sObj = (ConvertTo-Text $sResp.Content) | ConvertFrom-Json } catch {}
-    $sItems = @()
-    if ($sObj -and $sObj.data) { $sItems = @($sObj.data) }
-    Write-Log ('DRaaS sessions got=' + $sItems.Count)
-    if ($sItems.Count -gt 0) {
-      $sn = @()
-      try { if ($sItems[0].attributes) { $sn = @($sItems[0].attributes.PSObject.Properties.Name) } } catch {}
-      Write-Log ('session sample id=' + (One-Draas $sItems[0].id) + ' attrs=' + ($sn -join ','))
+  $hdr = @{ Authorization = ('Bearer ' + $visa) }
+  $paths = @(
+    ('/draas/actual-statistics/v1/dashboard/' + $sampleId + '/'),
+    ('/draas/actual-statistics/v1/dashboard/' + $sampleId + '/sessions/'),
+    ('/draas/actual-statistics/v1/dashboard/' + $sampleId + '/colorbar/'),
+    '/draas/actual-statistics/v1/recovery-sessions/?limit=5',
+    '/draas/recovery-testing/v1/sessions/?limit=5',
+    '/continuity/v1/sessions/?limit=5'
+  )
+  foreach ($p in $paths) {
+    if ([string]::IsNullOrWhiteSpace($sampleId) -and $p -match '/dashboard/') { continue }
+    $u = 'https://api.backup.management' + $p
+    try {
+      $r = Invoke-WebRequest -Uri $u -Method GET -Headers $hdr -UseBasicParsing -TimeoutSec 25
+      Write-Log ('probe ' + $p + ' ' + [int]$r.StatusCode + ' bytes=' + ([string]$r.Content).Length)
+    } catch {
+      $code = 'err'
+      try { if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode } } catch { $code = $_.Exception.Message }
+      Write-Log ('probe ' + $p + ' ' + $code)
     }
-    foreach ($s in $sItems) {
-      $keys = @(
-        [string](Draas-Attr $s 'plan_device_id'),
-        [string](Draas-Attr $s 'backup_cloud_device_id'),
-        [string](One-Draas $s.id)
-      )
-      $st = [string](Draas-Attr $s 'status')
-      if (-not $st) { $st = [string](Draas-Attr $s 'recovery_status') }
-      if (-not $st) { $st = [string](Draas-Attr $s 'last_recovery_status') }
-      if (-not $st) { $st = [string](Draas-Attr $s 'result') }
-      if ([string]::IsNullOrWhiteSpace($st)) { continue }
-      foreach ($k in $keys) {
-        if ([string]::IsNullOrWhiteSpace($k)) { continue }
-        if (-not $script:DraasBarByKey.ContainsKey($k)) { $script:DraasBarByKey[$k] = New-Object System.Collections.Generic.List[string] }
-        if ($script:DraasBarByKey[$k].Count -lt 14) { [void]$script:DraasBarByKey[$k].Add($st) }
-      }
-    }
-    $mx = 0
-    foreach ($k in @($script:DraasBarByKey.Keys)) { if ($script:DraasBarByKey[$k].Count -gt $mx) { $mx = $script:DraasBarByKey[$k].Count } }
-    Write-Log ('DRaaS session bars keys=' + $script:DraasBarByKey.Count + ' maxTicks=' + $mx)
   }
 } catch {
-  Write-Log ('WARN DRaaS sessions ' + $_.Exception.Message)
+  Write-Log ('WARN DRaaS probe ' + $_.Exception.Message)
 }
 
 function Find-Draas([string]$au, [string]$an, [string]$mn) {
