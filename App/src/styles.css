@@ -2326,7 +2326,7 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   height: calc(100dvh - var(--pc-header-height));
   max-height: calc(100dvh - var(--pc-header-height));
   overflow: hidden;
-  padding: 22px 14px 12px;
+  padding: 40px 14px 12px;
 }
 .dk-shell.is-topnav .rpma-topnav-canvas {
   flex: 1;
