@@ -4,11 +4,12 @@
  * Layer A — RPM contract (SYSPRO Support & AMS Rev 5.0, Aug 2026).
  *   Ticket clocks in Business Hours. No uptime %. Targets, not guarantees.
  *
- * Layer B — Operational posture for RMM / RPM Cloud Backup / EPP.
+ * Layer B — Operational posture for RMM / RPM Cloud Backup / EPP / M365.
  *   Industry measures from RMM SLA Metrics Recommendations (14 Aug 2026).
- *   These are NOT in the RPM SYSPRO+AMS contract (clauses 5.1, 11.2).
+ *   Shown as live posture. NOT scored as SLA until a matching ticket is in Assure.
  *
- * Microsoft 365 is not in Layer A or Layer B. Always Green until contracted.
+ * Golden clock rule: SLA counters start only when an amber/red item has a ticket
+ * in Assure. Telemetry without a ticket is live status, not an SLA miss.
  */
 
 export const RPM_SLA_REVISION = "5.0";
@@ -90,6 +91,9 @@ export const RPM_SECURITY_ADMIN = [
   },
 ] as const;
 
+export const SLA_CLOCK_STARTS =
+  "SLA clocks start when an amber/red alert has a ticket in Assure. Clock start = ticket opened time, not first collect blip.";
+
 export const RPM_CONTRACT_RULES = {
   businessHours: "08:00–17:00 on a Business Day, local to the jurisdiction in Schedule 3.",
   measuredAs: "Monthly average across qualifying tickets. Restoration includes a reasonable workaround.",
@@ -132,7 +136,7 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
     targetPct: 99.9,
     targetLabel: "99.9% monthly uptime",
     howWeMeasure:
-      "From RPM RMM OfflineHours30d when present: (43,200 − offline minutes) / 43,200. Otherwise snapshot servers online ÷ classified servers. Critical alerts deduct 12 pts each (cap −40). Workstations excluded.",
+      "Ticket-gated. Server down / critical RMM alerts start an SLA clock only after a matching ticket exists in Assure. 99.9% uptime is posture, not a miss on its own. Workstations excluded from availability.",
     source: INDUSTRY_SLA_DOC,
   },
   cove: {
@@ -142,17 +146,17 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
     targetPct: 99.5,
     targetLabel: "99.5% success · 24h RPO",
     howWeMeasure:
-      "Success = OK jobs ÷ (OK + failed). RPO met = devices whose last success is within 24h. Recovery tests are not scored — last session time is not on the statistics API.",
+      "Ticket-gated. Failed / stale backups start an SLA clock only after a matching ticket exists in Assure. Job success and 24h RPO are live posture. Recovery tests are posture unless ticketed.",
     source: INDUSTRY_SLA_DOC,
   },
   epp: {
     pillar: "epp",
     label: "RPM EndPoint Protection",
-    metric: "Protection coverage",
-    targetPct: 98,
-    targetLabel: "98% endpoints managed",
+    metric: "Definitions current and last scan",
+    targetPct: 95,
+    targetLabel: "95% current · scan ≤ 24h",
     howWeMeasure:
-      "managed ÷ (managed + unmanaged) from RPM EndPoint Protection. Open critical incidents pull the score down.",
+      "Ticket-gated. Outdated signatures or scan older than 24h start an SLA clock only after a matching ticket exists in Assure. Coverage and update % are live posture.",
     source: INDUSTRY_SLA_DOC,
   },
   syspro: {
@@ -168,12 +172,12 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
   csp: {
     pillar: "csp",
     label: "Microsoft 365",
-    metric: "Not on SLA",
-    targetPct: 0,
-    targetLabel: "Not contracted — posture only, always Green",
+    metric: "Platform incidents (ticket-gated)",
+    targetPct: 90,
+    targetLabel: "90% ticket ack / restore · Microsoft platform 99.9% excluded",
     howWeMeasure:
-      "Microsoft 365 is visibility only until it is added to a signed SLA. Secure Score, MFA and Global Admins are shown, never scored.",
-    source: "Not in RPM SYSPRO+AMS or industry posture SLA",
+      "RPM SLA is ticket clocks for M365 issues logged in Assure (mailbox, Teams, SharePoint, identity). Microsoft's own 99.9% service-health SLA is Microsoft's, not RPM's. Secure Score and MFA stay posture — they do not start a clock.",
+    source: "Ticket-gated · Microsoft 365 platform",
   },
   tickets: {
     pillar: "tickets",
@@ -191,20 +195,29 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
 export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]> = {
   rmm: [
     {
-      id: "rmm-uptime",
-      metric: "Server uptime / availability",
-      targetPct: 99.9,
-      targetLabel: "99.9% (standard) · 99.95% important · 99.99% HA",
+      id: "rmm-ticket",
+      metric: "Ticketed server availability",
+      targetPct: 90,
+      targetLabel: "≥ 90% ack / restore on ticketed down events",
       contractual: true,
       measurable: true,
-      how: "Unplanned downtime minutes vs period. RPM RMM 30-day offline hours, else current online/offline snapshot. Servers only.",
+      how: "Clock starts when a server is amber/red AND a matching RMM ticket exists in Assure. Start = ticket opened time. Offline with no ticket is live status, not a miss. P1–P4 clocks from Freshdesk / signed contract.",
+    },
+    {
+      id: "rmm-uptime",
+      metric: "Server uptime / availability (posture)",
+      targetPct: 99.9,
+      targetLabel: "99.9% (standard) · posture only",
+      contractual: false,
+      measurable: true,
+      how: "Unplanned downtime minutes vs period from RPM RMM 30-day offline hours, else current online/offline snapshot. Servers only. Does not fail SLA until a ticket is in Assure.",
     },
     {
       id: "rmm-coverage",
       metric: "Agent / monitoring coverage",
       targetPct: 99,
       targetLabel: "≥ 99% in-scope servers reporting",
-      contractual: true,
+      contractual: false,
       measurable: true,
       how: "Classified servers with a reporting RPM RMM agent (online or last-seen within 15 minutes).",
     },
@@ -215,7 +228,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "≥ 95% servers with no outstanding critical/important",
       contractual: false,
       measurable: true,
-      how: "Servers with zero outstanding updates ÷ classified servers that report a patch count.",
+      how: "Servers with zero outstanding updates ÷ classified servers that report a patch count. Posture — ticket starts the clock.",
     },
     {
       id: "rmm-disk",
@@ -224,56 +237,74 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "0 servers at ≥85% used",
       contractual: false,
       measurable: true,
-      how: "Servers with a disk at or above 85% used. One at-risk volume is a miss on that server.",
+      how: "Servers with a disk at or above 85% used. Live posture only.",
     },
   ],
   cove: [
     {
-      id: "cove-success",
-      metric: "Backup success rate",
-      targetPct: 99.5,
-      targetLabel: "99% – 99.9%+ of scheduled jobs",
+      id: "cove-ticket",
+      metric: "Ticketed backup / restore",
+      targetPct: 90,
+      targetLabel: "≥ 90% ack / restore on ticketed backup fails",
       contractual: true,
       measurable: true,
-      how: "OK jobs ÷ (OK + failed) on latest Cloud Backup collect. Warnings that still meet RPO count as OK.",
+      how: "Clock starts when a backup is failed/stale (amber/red) AND a matching Cloud Backup ticket exists in Assure. Start = ticket opened time.",
+    },
+    {
+      id: "cove-success",
+      metric: "Backup success rate (posture)",
+      targetPct: 99.5,
+      targetLabel: "99% – 99.9%+ of scheduled jobs",
+      contractual: false,
+      measurable: true,
+      how: "OK jobs ÷ (OK + failed) on latest Cloud Backup collect. Does not fail SLA until a ticket is in Assure.",
     },
     {
       id: "cove-rpo",
-      metric: "RPO — standard servers / files",
+      metric: "RPO — standard servers / files (posture)",
       targetPct: 100,
       targetLabel: "4–24 hours (we score 24h)",
-      contractual: true,
+      contractual: false,
       measurable: true,
-      how: "Devices whose last successful backup is within 24 hours. Stale devices miss RPO.",
+      how: "Devices whose last successful backup is within 24 hours. Posture — ticket starts the clock.",
     },
     {
       id: "cove-recover",
-      metric: "Successful Recoveries",
+      metric: "Successful recoveries (posture)",
       targetPct: 95,
       targetLabel: "≥ 95% of completed recovery tests pass",
-      contractual: true,
+      contractual: false,
       measurable: true,
-      how: "Passed recovery tests ÷ (passed + failed) on last Cloud Backup collect. In-plan devices with no completed session are excluded, not a miss.",
+      how: "Passed recovery tests ÷ (passed + failed). Ticketed failed recoveries start an SLA clock.",
     },
   ],
   epp: [
+    {
+      id: "epp-ticket",
+      metric: "Ticketed protection / scan",
+      targetPct: 90,
+      targetLabel: "≥ 90% ack / restore on ticketed outdated or not-scanning",
+      contractual: true,
+      measurable: true,
+      how: "Clock starts when an endpoint is outdated or not scanning (amber/red) AND a matching EPP ticket exists in Assure. Infected devices are P1 when ticketed.",
+    },
     {
       id: "epp-coverage",
       metric: "Protection coverage / agent deployment",
       targetPct: 98,
       targetLabel: "≥ 98–100% of in-scope endpoints",
-      contractual: true,
+      contractual: false,
       measurable: true,
-      how: "RPM EndPoint Protection managed ÷ (managed + unmanaged).",
+      how: "RPM EndPoint Protection managed ÷ (managed + unmanaged). Posture.",
     },
     {
       id: "epp-update",
-      metric: "Definition / content update compliance",
+      metric: "Definitions current and last scan (posture)",
       targetPct: 95,
-      targetLabel: "≥ 95–99% within 24 hours",
-      contractual: true,
+      targetLabel: "≥ 95% current · last scan ≤ 24 hours",
+      contractual: false,
       measurable: true,
-      how: "From GravityZone productOutdated / signatureOutdated flags. Missing flags are treated as current — last scan age is shown on EndPoint Agents, not scored as update compliance.",
+      how: "Product/signature outdated flags and last successful scan age. Does not fail SLA until a ticket is in Assure.",
     },
     {
       id: "epp-open",
@@ -282,27 +313,36 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "0 open criticals",
       contractual: false,
       measurable: true,
-      how: "RPM EndPoint Protection incidents currently open at critical / high. Operational, not a contractual nines target.",
+      how: "RPM EndPoint Protection incidents currently open at critical / high. Operational.",
     },
   ],
   syspro: [
     {
-      id: "syspro-jobs",
-      metric: "Job logging",
-      targetPct: 100,
-      targetLabel: "0 failed / error jobs on last collect",
+      id: "syspro-ticket",
+      metric: "Ticketed SYSPRO incidents",
+      targetPct: 90,
+      targetLabel: "≥ 90% ack / restore on ticketed SYSPRO alerts",
       contractual: true,
       measurable: true,
-      how: "SYSPRO job error count. Each error deducts 8 points (floor 0).",
+      how: "Clock starts when a SYSPRO amber/red item has a matching ticket in Assure. Job errors and FinSight OOB without a ticket are live status, not a miss.",
+    },
+    {
+      id: "syspro-jobs",
+      metric: "Job logging (posture)",
+      targetPct: 100,
+      targetLabel: "0 failed / error jobs on last collect",
+      contractual: false,
+      measurable: true,
+      how: "SYSPRO job error count. Posture — ticket starts the clock.",
     },
     {
       id: "syspro-finsight",
-      metric: "FinSight control",
+      metric: "FinSight control (posture)",
       targetPct: 100,
       targetLabel: "0 out-of-balance recon lines",
-      contractual: true,
+      contractual: false,
       measurable: true,
-      how: "Open FinSight OOB lines. Each line deducts 10 points (floor 0).",
+      how: "Open FinSight OOB lines. Posture — ticket starts the clock.",
     },
     {
       id: "syspro-collect",
@@ -311,36 +351,45 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       targetLabel: "Last collect within 24 hours",
       contractual: false,
       measurable: true,
-      how: "Hours since last SYSPRO import. Green ≤ 24h, amber ≤ 48h, then a miss.",
+      how: "Hours since last SYSPRO import. Green ≤ 24h, amber ≤ 48h.",
     },
   ],
   csp: [
     {
+      id: "csp-ticket",
+      metric: "Ticketed Microsoft 365 platform",
+      targetPct: 90,
+      targetLabel: "≥ 90% ack / restore on ticketed M365 issues",
+      contractual: true,
+      measurable: true,
+      how: "Clock starts when an M365 ticket exists in Assure (mailbox, Teams, SharePoint, identity). Microsoft service-health outages are Microsoft's 99.9% SLA, excluded. Secure Score and MFA do not start a clock.",
+    },
+    {
       id: "csp-score",
       metric: "Secure Score",
       targetPct: null,
-      targetLabel: "Not on SLA",
+      targetLabel: "Posture — not a clock",
       contractual: false,
       measurable: false,
-      how: "Shown from Graph collect. Not scored until Microsoft 365 is added to a signed SLA.",
+      how: "Shown from Graph collect. Does not paint Red/Amber and does not start an SLA clock.",
     },
     {
       id: "csp-mfa",
       metric: "MFA registration",
       targetPct: null,
-      targetLabel: "Not on SLA",
+      targetLabel: "Posture — not a clock",
       contractual: false,
       measurable: false,
-      how: "Shown from Graph collect. Not scored until Microsoft 365 is added to a signed SLA.",
+      how: "Shown from Graph collect. Does not start an SLA clock.",
     },
     {
       id: "csp-seats",
       metric: "Licence assignment",
       targetPct: null,
-      targetLabel: "Not on SLA",
+      targetLabel: "Posture — not a clock",
       contractual: false,
       measurable: false,
-      how: "Shown from Graph collect. Unused seats are not a breach — Microsoft 365 is not on SLA.",
+      how: "Assigned seats ÷ purchased seats. Visibility only.",
     },
   ],
   tickets: [
@@ -376,6 +425,7 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
 
 export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
   rmm: [
+    "SLA clock starts only when an amber/red RMM alert has a ticket in Assure.",
     "Planned maintenance with 48–72 hours’ notice (except emergency security patches).",
     "Force majeure, client-caused issues, power or ISP failures outside RPM control.",
     "Third-party cloud platform outages.",
@@ -383,26 +433,29 @@ export const INDUSTRY_SLA_EXCLUSIONS: Record<IndustryPillarKey, string[]> = {
     "No Cover for Devices: 0 servers or 0 workstations are not scored in SLA.",
   ],
   cove: [
+    "SLA clock starts only when a failed/stale backup has a ticket in Assure.",
     "Long-term offline devices, full disks, and application locks not remediated by the client.",
     "Extreme bandwidth constraints outside RPM control.",
     "A job that fails then succeeds inside the RPO window is still compliant.",
-    "Recovery test success and test-frequency are not scored. Cove statistics do not publish last-session time (RVO/RVL); emails still fire.",
     "No Cover for Devices: customers with 0 backup devices are not scored in SLA.",
   ],
   epp: [
+    "SLA clock starts only when outdated / not-scanning / infected has a ticket in Assure.",
     "Detection-efficacy percentages are not contractual (threat novelty).",
     "Unmanaged devices the client has not approved for deployment.",
     "Endpoints offline longer than the update window are excluded from update compliance.",
     "No Cover for Devices: 0 endpoints are not scored in SLA.",
   ],
   syspro: [
+    "SLA clock starts only when a SYSPRO amber/red item has a ticket in Assure.",
     "Demo or deferred companies are not scored until collect is enabled.",
     "Hotfixes and SQL instance health are visibility, not this score.",
   ],
   csp: [
-    "Microsoft 365 is not in any SLA — no Red/Amber, always Green when on cover.",
-    "Secure Score, MFA and Global Admins are posture / visibility only.",
-    "Scoring starts only when Microsoft 365 is added to a signed SLA.",
+    "Microsoft's 99.9% Exchange / Teams / SharePoint SLA is Microsoft's, not RPM's.",
+    "RPM SLA is ticket clocks for M365 issues logged in Assure.",
+    "Secure Score, MFA and Global Admins stay posture — they never start a clock and never paint Red/Amber.",
+    "Clock start = ticket opened time in Assure.",
   ],
   tickets: [
     "Open clocks are not scored as a miss until the clock expires.",

@@ -91,10 +91,16 @@ src AS (
     N'FD-' + CAST(t.TicketId AS nvarchar(20)) AS ExternalRef,
     LEFT(COALESCE(t.RequesterEmail, t.CompanyName), 200) AS OwnerName,
     CASE
-      WHEN t.TypeName LIKE N'%SYSPRO%' OR t.TypeName LIKE N'%Financial%' OR t.TypeName LIKE N'%Distribution%' OR t.TypeName LIKE N'%Manufactur%' THEN N'SYSPRO'
-      WHEN t.TypeName LIKE N'%Infra%' OR t.TypeName LIKE N'%Backup%' OR t.TypeName LIKE N'%RMM%' THEN N'RMM'
-      WHEN t.TypeName LIKE N'%EPP%' OR t.TypeName LIKE N'%Security%' THEN N'EPP'
-      WHEN t.TypeName LIKE N'%365%' OR t.TypeName LIKE N'%CSP%' OR t.TypeName LIKE N'%M365%' THEN N'CSP'
+      WHEN t.TypeName LIKE N'%SYSPRO%' OR t.TypeName LIKE N'%Financial%' OR t.TypeName LIKE N'%Distribution%' OR t.TypeName LIKE N'%Manufactur%'
+        OR t.Subject LIKE N'%SYSPRO%' OR t.Subject LIKE N'%FinSight%' THEN N'SYSPRO'
+      WHEN t.TypeName LIKE N'%Cove%' OR t.TypeName LIKE N'%Backup%' OR t.TypeName LIKE N'%Datto%'
+        OR t.Subject LIKE N'%Cove%' OR t.Subject LIKE N'%backup%' OR t.Subject LIKE N'%Backup%' THEN N'COVE'
+      WHEN t.TypeName LIKE N'%EPP%' OR t.TypeName LIKE N'%Bitdefender%' OR t.TypeName LIKE N'%Security%'
+        OR t.Subject LIKE N'%Bitdefender%' OR t.Subject LIKE N'%malware%' OR t.Subject LIKE N'%EPP%' THEN N'EPP'
+      WHEN t.TypeName LIKE N'%365%' OR t.TypeName LIKE N'%CSP%' OR t.TypeName LIKE N'%M365%' OR t.TypeName LIKE N'%Office%'
+        OR t.Subject LIKE N'%365%' OR t.Subject LIKE N'%Exchange%' OR t.Subject LIKE N'%Teams%' OR t.Subject LIKE N'%SharePoint%' THEN N'CSP'
+      WHEN t.TypeName LIKE N'%Infra%' OR t.TypeName LIKE N'%RMM%' OR t.TypeName LIKE N'%Pulseway%'
+        OR t.Subject LIKE N'%Pulseway%' OR t.Subject LIKE N'%server offline%' OR t.Subject LIKE N'%RMM%' THEN N'RMM'
       ELSE N'AMS'
     END AS ModuleCode,
     LEFT(COALESCE(t.TypeName, t.CompanyName), 400) AS BusinessImpact

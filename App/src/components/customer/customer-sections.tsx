@@ -325,9 +325,6 @@ function slaHeadKpis(data: CustomerDetailPayload, pillar: IndustryPillarKey): Ec
               ? buildCspServiceSla(data)
               : buildTicketsServiceSla(data);
   if (!pack.covered) return [];
-  if (pillar === "csp") {
-    return [{ label: "SLA", value: "Not on SLA", tone: "green" }];
-  }
   return [
     {
       label: "SLA",

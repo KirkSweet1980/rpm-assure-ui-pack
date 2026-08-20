@@ -114,7 +114,7 @@ export function CustomerSlaTree({ data }: { data: CustomerDetailPayload }) {
     { id: "rmm", label: "RMM Management", meta: packs.rmm.overallPct != null ? `${packs.rmm.overallPct}%` : "—", tone: cover.rmm ? "green" : "off" },
     { id: "cove", label: "RPM Cloud Backup", meta: packs.cove.overallPct != null ? `${packs.cove.overallPct}%` : cover.cove ? "Cover" : "No Cover", tone: packs.cove.overallPct != null ? (packs.cove.overallPct >= 99 ? "green" : packs.cove.overallPct >= 90 ? "amber" : "red") : cover.cove ? "amber" : "off" },
     { id: "epp", label: "RPM End Point Protection", meta: packs.epp.overallPct != null ? `${packs.epp.overallPct}%` : cover.epp ? "Cover" : "No Cover", tone: packs.epp.overallPct != null ? (packs.epp.overallPct >= 98 ? "green" : packs.epp.overallPct >= 90 ? "amber" : "red") : cover.epp ? "amber" : "off" },
-    { id: "csp", label: "Microsoft 365", meta: "Not on SLA", tone: cover.csp ? "green" : "off" },
+    { id: "csp", label: "Microsoft 365", meta: packs.csp.overallPct != null ? `${packs.csp.overallPct}%` : "Ticket clocks", tone: (cover.csp ? (packs.csp.overallPct != null && packs.csp.overallPct < 90 ? "red" : "green") : "off") as "green" | "red" | "off" },
     { id: "tickets", label: "RPM Service Desk", meta: packs.tickets.overallPct != null ? `${packs.tickets.overallPct}%` : "—", tone: "green" as const },
   ];
 

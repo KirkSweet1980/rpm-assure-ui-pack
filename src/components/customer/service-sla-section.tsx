@@ -7,7 +7,7 @@ import { buildServiceSla, type ServiceSlaPack } from "@/lib/data/service-sla";
 import { fetchCustomerSlaContract } from "@/lib/data/customer-sla-contract";
 import { kpisOnCover, withSlaKpis, type SlaKpiOverrides } from "@/lib/data/apply-sla-kpis";
 import { coverFromDetail } from "@/lib/data/cover";
-import { INDUSTRY_SLA_DOC } from "@/lib/data/sla-metrics";
+import { INDUSTRY_SLA_DOC, SLA_CLOCK_STARTS } from "@/lib/data/sla-metrics";
 import { TenantTree } from "@/components/customer/tenant-tree";
 import type { IndustryPillarKey } from "@/lib/data/sla-metrics";
 import type { CustomerDetailPayload } from "@/lib/data/types";
@@ -18,7 +18,7 @@ const TITLES: Record<IndustryPillarKey, string> = {
   cove: "RPM Cloud Backup · Service SLA",
   epp: "RPM EndPoint Protection · Service SLA",
   syspro: "SYSPRO · Service SLA",
-  csp: "Microsoft 365 · Not on SLA",
+  csp: "Microsoft 365 · Ticket-gated platform SLA",
   tickets: "RPM Service Desk · Service SLA",
 };
 
@@ -30,8 +30,8 @@ function toneClass(tone: ServiceSlaPack["lines"][number]["tone"]) {
 }
 
 export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
-  const measured = pack.lines.filter((l) => l.measured).length;
-  const miss = pack.lines.filter((l) => l.measured && (l.tone === "red" || l.tone === "amber")).length;
+  const measured = pack.lines.filter((l) => l.measured && l.contractual).length;
+  const miss = pack.lines.filter((l) => l.measured && l.contractual && (l.tone === "red" || l.tone === "amber")).length;
   return (
     <div className="rpma-exco">
       <EcoHead
@@ -52,13 +52,13 @@ export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
           },
           { label: "Measured", value: measured },
           { label: "Watch / miss", value: miss, tone: miss > 0 ? "amber" : "green" },
-          { label: "Source", value: "Collect", hint: pack.source },
+          { label: "Source", value: "Ticket clocks", hint: pack.source },
         ]}
       />
 
       <div className="rpma-glass overflow-x-auto">
         <p className="px-3 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-          Metrics · actual vs industry target
+          {SLA_CLOCK_STARTS}
         </p>
         <table className="w-full text-left text-[12px]">
           <thead className="rpma-table-head">
@@ -84,6 +84,8 @@ export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
                 <td className="px-2 py-1.5">
                   {!l.measured ? (
                     <Badge variant="muted">{l.badge ?? (l.excluded ? "No plan" : "Not scored")}</Badge>
+                  ) : !l.contractual ? (
+                    <Badge variant="muted">{l.badge ?? "Posture"}</Badge>
                   ) : l.tone === "green" ? (
                     <Badge variant="green">Met</Badge>
                   ) : l.tone === "amber" ? (
@@ -106,7 +108,7 @@ export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
           ))}
         </ul>
         <p className="mt-1 text-[11px] text-subtle">
-          {INDUSTRY_SLA_DOC}. These are operational targets, not the signed SYSPRO + AMS contract.
+          {INDUSTRY_SLA_DOC}. Live posture is not an SLA miss. {SLA_CLOCK_STARTS}
         </p>
       </div>
     </div>
@@ -188,8 +190,8 @@ export function ServiceSlaSection({
 function ServiceSlaTree({ pack, title }: { pack: ServiceSlaPack; title: string }) {
   const [sel, setSel] = useState(pack.lines[0]?.id ?? "");
   const line = pack.lines.find((l) => l.id === sel) ?? pack.lines[0];
-  const measured = pack.lines.filter((l) => l.measured).length;
-  const miss = pack.lines.filter((l) => l.measured && (l.tone === "red" || l.tone === "amber")).length;
+  const measured = pack.lines.filter((l) => l.measured && l.contractual).length;
+  const miss = pack.lines.filter((l) => l.measured && l.contractual && (l.tone === "red" || l.tone === "amber")).length;
   return (
     <div className="rpma-exco">
       <EcoHead
@@ -218,7 +220,7 @@ function ServiceSlaTree({ pack, title }: { pack: ServiceSlaPack; title: string }
           id: l.id,
           label: l.metric,
           meta: l.actualPct != null ? `${l.actualPct}%` : l.badge ?? "—",
-          tone: l.tone === "green" || l.tone === "amber" || l.tone === "red" ? l.tone : "off",
+          tone: !l.contractual || l.tone === "default" ? "off" : l.tone === "green" || l.tone === "amber" || l.tone === "red" ? l.tone : "off",
         }))}
         selected={line?.id ?? ""}
         onSelect={setSel}

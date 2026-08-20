@@ -271,6 +271,8 @@ export type FactIncidentRow = {
   ownerName?: string | null;
   sourceSystem?: string | null;
   businessImpact?: string | null;
+  /** Pillar stamp from Freshdesk type / subject (RMM, COVE, EPP, CSP, SYSPRO, AMS). */
+  moduleCode?: string | null;
   respondMins?: number | null;
   resolveMins?: number | null;
   responseMinsElapsed?: number | null;

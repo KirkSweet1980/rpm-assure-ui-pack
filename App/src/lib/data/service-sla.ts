@@ -14,6 +14,7 @@ import {
 } from "./sla-metrics";
 import type { CustomerDetailPayload } from "./types";
 import { slaKpiFor } from "./apply-sla-kpis";
+import { ticketGatedSla } from "./alert-ticket-sla";
 export { withSlaKpis, type SlaKpiOverrides } from "./apply-sla-kpis";
 
 export type ServiceSlaLine = {
@@ -41,6 +42,24 @@ export type ServiceSlaPack = {
   exclusions: string[];
   source: string;
 };
+
+function ticketLine(pillar: IndustryPillarKey, data: CustomerDetailPayload, defId: string): ServiceSlaLine {
+  const g = ticketGatedSla(data, pillar);
+  const def = INDUSTRY_SLA_LINES[pillar].find((d) => d.id === defId);
+  return {
+    id: defId,
+    metric: def?.metric ?? defId,
+    targetLabel: def?.targetLabel ?? "≥ 90% ticket clocks",
+    targetPct: def?.targetPct ?? 90,
+    actualPct: g.actualPct,
+    actualLabel: g.actualLabel,
+    tone: g.tone,
+    measured: g.measured,
+    contractual: true,
+    how: def?.how ?? "",
+    badge: g.badge,
+  };
+}
 
 function clamp(n: number): number {
   if (!Number.isFinite(n)) return 0;
@@ -159,6 +178,7 @@ export function buildRmmServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const diskLabel = slaCover ? `${diskHigh} volume(s) at ≥85% used` : "No Cover for Devices";
 
   const lines: ServiceSlaLine[] = [
+    ticketLine("rmm", data, "rmm-ticket"),
     line("rmm-uptime", "rmm", uptime, upLabel, slaCover && uptime != null),
     line("rmm-coverage", "rmm", covPct, covLabel, slaCover && covPct != null),
     line("rmm-patch", "rmm", patchPct, patchLabel, slaCover && patchPct != null),
@@ -231,6 +251,7 @@ export function buildCoveServiceSla(data: CustomerDetailPayload): ServiceSlaPack
         : "No completed recovery tests on last collect";
 
   const lines: ServiceSlaLine[] = [
+    ticketLine("cove", data, "cove-ticket"),
     line("cove-success", "cove", success, successLabel, slaCover && success != null),
     line("cove-rpo", "cove", rpo, rpoLabel, slaCover && rpo != null),
     line("cove-recover", "cove", recPct, recLabel, slaCover && recPct != null),
@@ -306,6 +327,7 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const upd = updMeasurable && scoredN > 0 ? clamp((current / scoredN) * 100) : null;
 
   const lines: ServiceSlaLine[] = [
+    ticketLine("epp", data, "epp-ticket"),
     line("epp-coverage", "epp", cov, covLabel, slaCover && cov != null),
     line("epp-update", "epp", upd, updLabel, slaCover && upd != null),
     line("epp-open", "epp", openPct, openLabel, slaCover && openPct != null),
@@ -338,6 +360,7 @@ export function buildSysproServiceSla(data: CustomerDetailPayload): ServiceSlaPa
     collectLabel = `Last collect ${age < 2 ? `${Math.round(age * 60)} min` : `${age.toFixed(1)} h`} ago`;
   }
   const lines: ServiceSlaLine[] = [
+    ticketLine("syspro", data, "syspro-ticket"),
     line("syspro-jobs", "syspro", jobPct, `${errors} job error(s)`, cover && jobPct != null),
     line("syspro-finsight", "syspro", finPct, `${oob} FinSight OOB line(s)`, cover && finPct != null),
     line("syspro-collect", "syspro", collectPct, collectLabel, cover && collectPct != null),
@@ -362,15 +385,15 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const scorePct = score != null ? clamp(score) : null;
   const mfa = p?.mfaRegisteredPct != null ? clamp(p.mfaRegisteredPct) : null;
   const seats = s?.totalSeats ? clamp(((s.assignedSeats ?? 0) / s.totalSeats) * 100) : null;
-  const slaCover = cover && Boolean(p || s);
-  // Microsoft 365 is not on any SLA. Keep the numbers visible, never score Red/Amber.
-  const notOnSla = { excluded: true, badge: "Not on SLA" };
+  const slaCover = cover;
+  const notOnSla = { excluded: true, badge: "Posture — no clock" };
   const lines: ServiceSlaLine[] = [
+    ticketLine("csp", data, "csp-ticket"),
     line(
       "csp-score",
       "csp",
       scorePct,
-      scorePct != null ? `${scorePct}% Secure Score (not on SLA)` : "No Secure Score on collect",
+      scorePct != null ? `${scorePct}% Secure Score` : "No Secure Score on collect",
       false,
       notOnSla,
     ),
@@ -379,7 +402,7 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
       "csp",
       mfa,
       mfa != null
-        ? `${p?.mfaRegisteredCount ?? "—"}/${p?.mfaCapableCount ?? "—"} registered (not on SLA)`
+        ? `${p?.mfaRegisteredCount ?? "—"}/${p?.mfaCapableCount ?? "—"} registered`
         : "No MFA counts on collect",
       false,
       notOnSla,
@@ -388,7 +411,7 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
       "csp-seats",
       "csp",
       seats,
-      s?.totalSeats ? `${s.assignedSeats}/${s.totalSeats} seats assigned (not on SLA)` : "No seat counts",
+      s?.totalSeats ? `${s.assignedSeats}/${s.totalSeats} seats assigned` : "No seat counts",
       false,
       notOnSla,
     ),
@@ -397,7 +420,7 @@ export function buildCspServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
     pillar: "csp",
     title: INDUSTRY_MEASURES.csp.label,
     covered: slaCover,
-    overallPct: null,
+    overallPct: slaCover ? overallOf(lines) : null,
     headline: INDUSTRY_MEASURES.csp.targetLabel,
     lines,
     exclusions: INDUSTRY_SLA_EXCLUSIONS.csp,
