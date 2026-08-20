@@ -108,7 +108,7 @@ $miDo.add_Click({
   $script:SyncTicks = 0
   [IO.File]::WriteAllText($flagFile, (Get-Date).ToUniversalTime().ToString('o'))
   $form = New-Object System.Windows.Forms.Form
-  $form.Text = 'Application Management System'
+  $form.Text = 'RPM Application Management System'
   $form.Size = New-Object System.Drawing.Size(420, 150)
   $form.StartPosition = 'CenterScreen'
   $form.FormBorderStyle = 'FixedDialog'
