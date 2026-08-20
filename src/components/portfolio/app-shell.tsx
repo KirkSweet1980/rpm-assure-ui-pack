@@ -77,6 +77,7 @@ export function AppShell({
       const mapped = rows
         .filter(
           (r) =>
+            Boolean(r.cover?.syspro || r.cover?.rmm || r.cover?.cove || r.cover?.epp || r.cover?.csp || r.cover?.tickets) ||
             Boolean(r.sqlInstanceName && String(r.sqlInstanceName).trim()) ||
             (r.operatorCount ?? 0) > 0 ||
             (r.pulsewayDeviceCount ?? 0) > 0 ||
@@ -85,15 +86,14 @@ export function AppShell({
             (r.coveDeviceCount ?? 0) > 0 ||
             (r.eppDeviceCount ?? 0) > 0 ||
             (r.cspUserCount ?? 0) > 0 ||
-            r.cover?.syspro ||
-            r.cover?.rmm ||
-            r.cover?.cove ||
-            r.cover?.epp ||
-            r.cover?.csp,
+            (r.ticketCount ?? 0) > 0,
         )
         .map((r) => {
           const b = boardBy.get(r.customerCode.toUpperCase());
-          const cover = inferCustomerCover({
+          const cover =
+            r.cover && typeof r.cover.syspro === "boolean"
+              ? r.cover
+              : inferCustomerCover({
               pillarSyspro: r.pillarSyspro,
               pillarPulseway: r.pillarPulseway,
               pillarCove: r.pillarCove,
@@ -107,10 +107,18 @@ export function AppShell({
               sysproDtrVarianceLines: r.sysproDtrVarianceLines,
               pulsewayOrgName: r.pulsewayOrgName,
               pulsewayDeviceCount: r.pulsewayDeviceCount,
+              pulsewayMapped: r.pulsewayMapped,
               coveDeviceCount: r.coveDeviceCount,
+              coveMapped: r.coveMapped,
               eppDeviceCount: r.eppDeviceCount,
+              eppMapped: r.eppMapped,
               cspUserCount: r.cspUserCount,
               cspLicenseCount: r.cspLicenseSkuCount,
+              cspMapped: r.cspMapped,
+              ticketCount: r.ticketCount,
+              ticketsMapped: r.ticketsMapped,
+              agentCount: r.agentCount,
+              sysproAgentLive: r.sysproAgentLive,
             });
           return {
             code: r.customerCode,

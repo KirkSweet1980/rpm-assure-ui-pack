@@ -9,6 +9,7 @@ import { fetchCustomerDetail } from "@/lib/data/portfolio";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import { noCoverForDevicesLabel } from "@/lib/data/device-cover";
 import { coverFromDetail } from "@/lib/data/cover";
+import { tenantHeaderRag } from "@/lib/data/ui-contract";
 import type { CustomerDetailPayload, HealthRag } from "@/lib/data/types";
 import { useCustomerList } from "@/lib/nav/customer-list-context";
 import { useRouterState } from "@tanstack/react-router";
@@ -225,8 +226,10 @@ function CustomerLayout() {
     pageCover,
     data,
   );
-  const tenantRag: HealthRag =
-    live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
+  const tenantRag: HealthRag = tenantHeaderRag(
+    Boolean(pageCover.dormant),
+    live.pillars.eco.rag,
+  );
   const noDeviceCover = noCoverForDevicesLabel(pathname, customer, data);
 
   return (

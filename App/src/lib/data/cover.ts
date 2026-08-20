@@ -33,10 +33,6 @@ export function coverLabel(on: boolean): string {
   return on ? COVERED : NO_COVER;
 }
 
-function hasText(v: string | null | undefined): boolean {
-  return Boolean(v != null && String(v).trim());
-}
-
 function firstPositive(
   ...vals: Array<number | null | undefined>
 ): number {
@@ -105,17 +101,6 @@ export type CoverInput = {
  * Infer cover from live data + maps. Same function for every customer and every surface.
  */
 export function inferCustomerCover(input: CoverInput): CustomerCover {
-  const sysproEvidence =
-    hasText(input.sqlInstanceName) ||
-    (Number(input.operatorCount) || 0) > 0 ||
-    (Number(input.activeUserCount) || 0) > 0 ||
-    hasText(input.sysproLastImportAt) ||
-    (Number(input.sysproJobErrorCount) || 0) > 0 ||
-    (Number(input.sysproDtrVarianceLines) || 0) > 0 ||
-    Boolean(input.sysproHasLicense) ||
-    Boolean(input.sysproHasVersion) ||
-    (Number(input.sysproHotfixCount) || 0) > 0;
-
   const rmmEvidence =
     (Number(input.pulsewayDeviceCount) || 0) > 0 ||
     (Number(input.rmmIopsCount) || 0) > 0 ||
@@ -130,7 +115,7 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     (Number(input.cspUserCount) || 0) > 0 ||
     (Number(input.cspLicenseCount) || 0) > 0;
 
-  const sysproFromData = sysproEvidence || input.pillarSyspro === true;
+  const sysproFromData = input.pillarSyspro === true;
   const syspro =
     input.pillarSyspro === false
       ? false
@@ -150,7 +135,8 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
   };
   const dormant = isDormantCover(out);
   out.dormant = dormant;
-  out.tickets = !dormant;
+  out.tickets =
+    (Number(input.ticketCount) || 0) > 0 || input.ticketsMapped === true;
   return out;
 }
 
@@ -269,6 +255,10 @@ export function coverFromDetail(data: {
   } | null;
   incidents?: unknown[] | null;
 }): CustomerCover {
+  const stamped = (data as { cover?: CustomerCover | null }).cover;
+  if (stamped && typeof stamped.syspro === "boolean" && typeof stamped.rmm === "boolean") {
+    return stamped;
+  }
   const c = data.customer;
   const rmmCount = firstPositive(
     data.rmm?.summary?.deviceCount,

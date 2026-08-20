@@ -22,6 +22,7 @@ import { StatCard } from "@/components/portfolio/stat-card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { CoverTag } from "@/components/ui/status-robot";
 import { coverFromDetail, isDormantCover, isPillarCovered } from "@/lib/data/cover";
+import { tenantHeaderRag } from "@/lib/data/ui-contract";
 import { customerLiveStatus } from "@/lib/data/live-status";
 import { assuranceTone, floorScoreToRag } from "@/lib/data/rag-score";
 import { buildExcoPillarSla, slaInputFromDetail } from "@/lib/data/exco-sla-stats";
@@ -86,7 +87,7 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
   const cover = coverFromDetail(data);
   const dormant = isDormantCover(cover);
   const live = customerLiveStatus(customer.customerCode, customer, cover, data);
-  const tenantRag = dormant ? "Off" : live.pillars.eco.rag === "Off" ? "Green" : live.pillars.eco.rag;
+  const tenantRag = tenantHeaderRag(dormant, live.pillars.eco.rag);
   const rawScore = dormant
     ? 0
     : data.operationalAssurance?.scorePct ??

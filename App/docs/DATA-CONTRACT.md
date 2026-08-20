@@ -62,7 +62,16 @@ Stamp EPP: `EXEC dbo.usp_StampEppFromIdentity;`
 
 Stamp tickets: `EXEC dbo.usp_StampFreshdeskFromIdentity;` then `513_Sync_Freshdesk_To_Fact_Incident`.
 
-**Clock rule:** SLA counters start only when an amber/red live alert has a matching ticket in Assure (`ModuleCode` + subject). Clock start = ticket `OpenedAt`. No ticket = live robot only, not an SLA miss. Microsoft 365 is not on the signed SLA — robots stay Green.
+**Clock rule:** SLA counters start only when an amber/red live alert has a matching ticket in Assure (`ModuleCode` + subject). Clock start = ticket `OpenedAt`. No ticket = live robot only, not an SLA miss (`measured: false`, not 100%). Microsoft 365 is not on the signed SLA — robots stay Green when covered, Off when No Cover.
+
+**UI paint (do not re-implement in views):** `src/lib/data/ui-contract.ts`
+
+1. Trust `payload.cover` from live-portfolio. Do not `inferCustomerCover` again in AppShell / EMP / ExCo.
+2. `AmsConfig` pillar `false` is a hard off. Maps and leftover warehouse rows do not turn it back on.
+3. SYSPRO cover = live Edge agent **or** explicit `PillarSyspro = true`. Leftover operators / `SqlInstanceName` is not cover.
+4. No Cover → RAG **Off** (grey, no flash). Never coerce Off → Green.
+5. Agent Status = heartbeat. Agent Sync = last job (`JOB_FAIL` is not Disconnected).
+6. New UI column → migration + gold view first. TypeScript must not `LIKE` vendor names.
 
 **Rule:** new UI column → migration + view first, then collector fills it. UI does not `LIKE` vendor names.
 

@@ -4,6 +4,7 @@ import { Building2 } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
 import type { LiveFlag, LiveTone } from "@/lib/data/live-status";
+import { paintRag } from "@/lib/data/ui-contract";
 import { RagLamps } from "@/components/chrome/rag-lamps";
 import { StatusRobot } from "@/components/ui/status-robot";
 import { cn } from "@/lib/utils";
@@ -99,22 +100,17 @@ function ragOf(
   live?: { pillars: Record<string, LiveFlag>; modules: Record<string, LiveFlag> },
 ): LiveTone {
   const m = live?.modules[rel];
-  if (m) {
-    if (!m.cover) return "Off";
-    if (m.rag && m.rag !== "Off") return m.rag;
-    return "Green";
-  }
-  if (rel.startsWith("/syspro")) return live?.pillars.syspro?.cover ? (live.pillars.syspro.rag === "Off" ? "Green" : live.pillars.syspro.rag) : "Off";
-  if (rel.startsWith("/rmm")) return live?.pillars.rmm?.cover ? (live.pillars.rmm.rag === "Off" ? "Green" : live.pillars.rmm.rag) : "Off";
-  if (rel.startsWith("/cove")) return live?.pillars.cove?.cover ? (live.pillars.cove.rag === "Off" ? "Green" : live.pillars.cove.rag) : "Off";
-  if (rel.startsWith("/epp")) return live?.pillars.epp?.cover ? (live.pillars.epp.rag === "Off" ? "Green" : live.pillars.epp.rag) : "Off";
-  if (rel.startsWith("/csp")) return live?.pillars.csp?.cover ? (live.pillars.csp.rag === "Off" ? "Green" : live.pillars.csp.rag) : "Off";
+  if (m) return paintRag(Boolean(m.cover), m.rag, { csp: rel.startsWith("/csp") });
+  if (rel.startsWith("/syspro")) return paintRag(Boolean(live?.pillars.syspro?.cover), live?.pillars.syspro?.rag);
+  if (rel.startsWith("/rmm")) return paintRag(Boolean(live?.pillars.rmm?.cover), live?.pillars.rmm?.rag);
+  if (rel.startsWith("/cove")) return paintRag(Boolean(live?.pillars.cove?.cover), live?.pillars.cove?.rag);
+  if (rel.startsWith("/epp")) return paintRag(Boolean(live?.pillars.epp?.cover), live?.pillars.epp?.rag);
+  if (rel.startsWith("/csp")) return paintRag(Boolean(live?.pillars.csp?.cover), live?.pillars.csp?.rag, { csp: true });
   if (rel.startsWith("/tickets") || rel.startsWith("/ams")) {
     const p = live?.pillars.tickets ?? live?.pillars.ams;
-    if (p?.cover) return p.rag === "Off" ? "Green" : p.rag;
-    return "Off";
+    return paintRag(Boolean(p?.cover), p?.rag);
   }
-  return live?.pillars.eco?.rag && live.pillars.eco.rag !== "Off" ? live.pillars.eco.rag : "Green";
+  return paintRag(Boolean(live?.pillars.eco?.cover), live?.pillars.eco?.rag);
 }
 
 function worstRag(

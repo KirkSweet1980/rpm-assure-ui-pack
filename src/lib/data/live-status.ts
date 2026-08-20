@@ -250,7 +250,7 @@ export function customerLiveStatus(
   // Microsoft 365 is posture only — never rolls into tenant RAG, assurance, or SLA.
   const ecoRag = dormant
     ? "Off"
-    : [sysproRag, rmmRag, coveRag, eppRag, amsRag, ticketRag].reduce(worse, "Green");
+    : [sysproRag, rmmRag, coveRag, eppRag, amsRag, ticketRag].reduce(worse, "Off");
 
   const off = (on: boolean): LiveTone => (on ? "Green" : "Off");
 
@@ -262,12 +262,12 @@ export function customerLiveStatus(
 
   const pillars: Record<string, LiveFlag> = {
     eco: {
-      rag: dormant ? "Off" : ecoRag === "Off" ? "Green" : ecoRag,
+      rag: dormant ? "Off" : ecoRag,
       cover: !dormant,
       href: `${base}/ams`,
       hint: dormant
         ? "Dormant — Freshdesk only. No agent / no service cover. Not scored."
-        : `Tenant live ${ecoRag === "Off" ? "Green" : ecoRag}`,
+        : `Tenant live ${ecoRag === "Off" ? "Off" : ecoRag}`,
     },
     syspro: {
       rag: sysproRag,

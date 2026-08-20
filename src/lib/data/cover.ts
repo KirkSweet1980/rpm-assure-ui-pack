@@ -6,7 +6,8 @@
  *   live warehouse rows OR an active vendor map (partner / org / tenant)
  *     → Covered
  *   AmsConfig pillar = false is a hard off.
- *   SYSPRO: mapped SqlInstanceName or live collect is evidence.
+ *   SYSPRO: a live Edge agent is required. Uninstall / silent agent → No Cover.
+ *   Leftover operators / last import is not cover after the agent is gone.
  *   M365 (CSP) is visibility only — not scored in assurance / SLA.
  *
  * Uncovered legs stay in the menu and show "No Cover". They do not drive estate health / SLA.
@@ -30,10 +31,6 @@ export const COVERED = "Cover";
 
 export function coverLabel(on: boolean): string {
   return on ? COVERED : NO_COVER;
-}
-
-function hasText(v: string | null | undefined): boolean {
-  return Boolean(v != null && String(v).trim());
 }
 
 function firstPositive(
@@ -91,23 +88,19 @@ export type CoverInput = {
   ticketsMapped?: boolean | null;
   /** Registered Assure agents — wakes a tickets-only tenant */
   agentCount?: number | null;
+  /**
+   * Live SYSPRO Edge agent (heartbeat recent, not UNINSTALLED).
+   * false = drop SYSPRO cover even if warehouse leftovers remain.
+   * true  = SYSPRO is in scope.
+   * unset = not queried — fall back to warehouse evidence.
+   */
+  sysproAgentLive?: boolean | null;
 };
 
 /**
  * Infer cover from live data + maps. Same function for every customer and every surface.
  */
 export function inferCustomerCover(input: CoverInput): CustomerCover {
-  const sysproEvidence =
-    hasText(input.sqlInstanceName) ||
-    (Number(input.operatorCount) || 0) > 0 ||
-    (Number(input.activeUserCount) || 0) > 0 ||
-    hasText(input.sysproLastImportAt) ||
-    (Number(input.sysproJobErrorCount) || 0) > 0 ||
-    (Number(input.sysproDtrVarianceLines) || 0) > 0 ||
-    Boolean(input.sysproHasLicense) ||
-    Boolean(input.sysproHasVersion) ||
-    (Number(input.sysproHotfixCount) || 0) > 0;
-
   const rmmEvidence =
     (Number(input.pulsewayDeviceCount) || 0) > 0 ||
     (Number(input.rmmIopsCount) || 0) > 0 ||
@@ -122,8 +115,18 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
     (Number(input.cspUserCount) || 0) > 0 ||
     (Number(input.cspLicenseCount) || 0) > 0;
 
+  const sysproFromData = input.pillarSyspro === true;
+  const syspro =
+    input.pillarSyspro === false
+      ? false
+      : input.sysproAgentLive === false
+        ? false
+        : input.sysproAgentLive === true
+          ? true
+          : sysproFromData;
+
   const out: CustomerCover = {
-    syspro: input.pillarSyspro === false ? false : sysproEvidence || input.pillarSyspro === true,
+    syspro,
     rmm: resolveVendor(rmmEvidence, input.pulsewayMapped, input.pillarPulseway),
     cove: resolveVendor(coveEvidence, input.coveMapped, input.pillarCove),
     epp: resolveVendor(eppEvidence, input.eppMapped, input.pillarEpp),
@@ -132,7 +135,8 @@ export function inferCustomerCover(input: CoverInput): CustomerCover {
   };
   const dormant = isDormantCover(out);
   out.dormant = dormant;
-  out.tickets = !dormant;
+  out.tickets =
+    (Number(input.ticketCount) || 0) > 0 || input.ticketsMapped === true;
   return out;
 }
 
@@ -163,6 +167,7 @@ export function coverFromRow(row: {
   ticketCount?: number | null;
   ticketsMapped?: boolean | null;
   agentCount?: number | null;
+  sysproAgentLive?: boolean | null;
 }): CustomerCover {
   return inferCustomerCover({
     pillarSyspro: row.pillarSyspro,
@@ -189,6 +194,7 @@ export function coverFromRow(row: {
     ticketCount: row.ticketCount,
     ticketsMapped: row.ticketsMapped,
     agentCount: row.agentCount,
+    sysproAgentLive: row.sysproAgentLive,
   });
 }
 
@@ -221,6 +227,7 @@ export function coverFromDetail(data: {
     ticketCount?: number | null;
     ticketsMapped?: boolean | null;
     agentCount?: number | null;
+    sysproAgentLive?: boolean | null;
   } | null;
   license?: unknown;
   sysproVersion?: unknown;
@@ -248,6 +255,10 @@ export function coverFromDetail(data: {
   } | null;
   incidents?: unknown[] | null;
 }): CustomerCover {
+  const stamped = (data as { cover?: CustomerCover | null }).cover;
+  if (stamped && typeof stamped.syspro === "boolean" && typeof stamped.rmm === "boolean") {
+    return stamped;
+  }
   const c = data.customer;
   const rmmCount = firstPositive(
     data.rmm?.summary?.deviceCount,
@@ -305,6 +316,7 @@ export function coverFromDetail(data: {
       (data as { agents?: unknown[] | null }).agents?.length,
       c?.agentCount,
     ),
+    sysproAgentLive: c?.sysproAgentLive ?? null,
   });
 }
 
@@ -336,7 +348,9 @@ export function anyCover(c: CustomerCover): boolean {
 export function forceSysproCoverIfEvidence(
   cover: CustomerCover,
   evidence: boolean,
+  sysproAgentLive?: boolean | null,
 ): CustomerCover {
+  if (sysproAgentLive === false) return { ...cover, syspro: false };
   if (evidence && !cover.syspro) return { ...cover, syspro: true };
   return cover;
 }
