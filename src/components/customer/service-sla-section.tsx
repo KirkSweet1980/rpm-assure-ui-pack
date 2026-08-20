@@ -19,7 +19,7 @@ const TITLES: Record<IndustryPillarKey, string> = {
   epp: "RPM EndPoint Protection · Service SLA",
   syspro: "SYSPRO · Service SLA",
   csp: "Microsoft 365 · Tenant posture",
-  tickets: "Customer Tickets · Service SLA",
+  tickets: "RPM Service Desk · Service SLA",
 };
 
 function toneClass(tone: ServiceSlaPack["lines"][number]["tone"]) {

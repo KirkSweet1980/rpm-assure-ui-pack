@@ -45,7 +45,7 @@ export const ECO_WIDGETS: EcoWidgetMeta[] = [
   { id: "backup", label: "Cloud Backup", span: 4, hint: "Healthy vs failed or stale", requires: "cove" },
   { id: "epp", label: "RPM EndPoint Protection", span: 4, hint: "Managed endpoints and infections", requires: "epp" },
   { id: "csp", label: "Microsoft CSP", span: 4, hint: "Secure Score, MFA, seats", requires: "csp" },
-  { id: "tickets", label: "Customer Tickets", span: 4, hint: "Open / resolved / closed", requires: "tickets" },
+  { id: "tickets", label: "RPM Service Desk", span: 4, hint: "Open / resolved / closed", requires: "tickets" },
   { id: "finsight", label: "FinSight Close", span: 12, hint: "Out-of-balance modules", requires: "syspro" },
   { id: "jumps", label: "Assurance Shortcuts", span: 12, hint: "Incidents, risks, SLA, issues", requires: null },
   { id: "incidents", label: "Open Incidents", span: 6, hint: "Latest open / major incidents", requires: null },

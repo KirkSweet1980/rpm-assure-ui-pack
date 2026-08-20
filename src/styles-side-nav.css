@@ -452,6 +452,19 @@ html:has(.rpma-emp.is-side) .rpma-amx-workspace {
 .rpma-tix-card strong { display: block; font-size: 13px; font-weight: 800; color: #1e3a4c; }
 .rpma-tix-card em { display: block; margin-top: 4px; font-style: normal; font-size: 11px; color: #5b6b7c; }
 .rpma-tix-card span { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #eef5fb; }
+.rpma-tix-ref {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e6f4ff;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+.rpma-tix-card.is-resolved { border-left: 4px solid #2563eb; }
+.rpma-tix-card.is-closed { border-left: 4px solid #0d9488; }
 .rpma-tix-sla { display: flex; gap: 6px; margin-top: 8px; }
 
 .rpma-drive-ico { display: inline-grid; place-items: center; flex: 0 0 auto; }

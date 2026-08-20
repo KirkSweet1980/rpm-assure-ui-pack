@@ -175,7 +175,7 @@ export const INDUSTRY_MEASURES: Record<IndustryPillarKey, IndustryMeasure> = {
   },
   tickets: {
     pillar: "tickets",
-    label: "Customer Tickets",
+    label: "RPM Service Desk",
     metric: "Response and restore",
     targetPct: 90,
     targetLabel: "90% response · 90% restore (SAST BH)",
@@ -243,6 +243,15 @@ export const INDUSTRY_SLA_LINES: Record<IndustryPillarKey, IndustrySlaLineDef[]>
       contractual: true,
       measurable: true,
       how: "Devices whose last successful backup is within 24 hours. Stale devices miss RPO.",
+    },
+    {
+      id: "cove-recover",
+      metric: "Successful Recoveries",
+      targetPct: 95,
+      targetLabel: "≥ 95% of completed recovery tests pass",
+      contractual: true,
+      measurable: true,
+      how: "Passed recovery tests ÷ (passed + failed) on last Cloud Backup collect. In-plan devices with no completed session are excluded, not a miss.",
     },
   ],
   epp: [

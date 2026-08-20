@@ -30,7 +30,7 @@ export const Route = createFileRoute("/customers/$code/tickets")({
       <PillarCoverGate
         cover={data?.cover}
         pillar="tickets"
-        service="Customer Tickets"
+        service="RPM Service Desk"
       />
     );
   },

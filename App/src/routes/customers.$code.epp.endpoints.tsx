@@ -28,9 +28,12 @@ export const Route = createFileRoute("/customers/$code/epp/endpoints")({
     const picked = devices.find((d) => d.endpointId === sel) ?? devices[0];
     const updateLabel = (d: (typeof devices)[0] | undefined) => {
       if (!d) return "—";
-      if (d.productOutdated || d.signatureOutdated) return "Outdated";
-      const name = d.policyName ? `Current · ${d.policyName}` : "Current";
-      return name;
+      const bits: string[] = [];
+      if (d.productOutdated) bits.push("Product Outdated");
+      if (d.signatureOutdated) bits.push("Signature Outdated");
+      if (bits.length) return bits.join(" · ");
+      if (d.lastSuccessfulScanAt) return `Current · Last Scan ${formatSastDateTime(d.lastSuccessfulScanAt)}`;
+      return "Current · Definitions";
     };
     const scanLabel = (d: (typeof devices)[0] | undefined) => {
       if (!d?.lastSuccessfulScanAt) return "No Last Scan on last collect";

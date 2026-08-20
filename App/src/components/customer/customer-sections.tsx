@@ -749,7 +749,10 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
       );
     }
     if (mode === "installed") rows = rows.filter((p) => p.status === "installed");
-    else if (mode === "missing") rows = rows.filter((p) => p.status === "missing" || p.status === "pending");
+    else if (mode === "missing")
+      rows = rows.filter(
+        (p) => p.status === "missing" || p.status === "pending" || (p.status === "unknown" && !p.installedAt),
+      );
     else if (mode === "recent") {
       rows = rows.filter(
         (p) => p.status === "installed" && p.installedAt && new Date(p.installedAt).getTime() >= cutoffMs,
@@ -763,7 +766,50 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
       document.getElementById("rpma-patch-list")?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
   };
-  const viewRows = namedForView(patchView.mode, patchView.deviceId);
+  const viewRowsNamed = namedForView(patchView.mode, patchView.deviceId);
+  const fallbackRows =
+    viewRowsNamed.length > 0
+      ? []
+      : devices
+          .filter((d) => !patchView.deviceId || d.deviceId === patchView.deviceId)
+          .flatMap((d) => {
+            const out: {
+              deviceId: string;
+              deviceName: string | null;
+              title: string;
+              kb: string | null;
+              status: "installed" | "missing" | "pending" | "unknown";
+              installedAt: string | null;
+              classification: string | null;
+            }[] = [];
+            const miss = Number(d.patchMissing) || 0;
+            const inst = Number(d.patchInstalled) || 0;
+            if ((patchView.mode === "missing" || patchView.mode === "all") && miss > 0) {
+              out.push({
+                deviceId: d.deviceId,
+                deviceName: d.name,
+                title: `${miss} outstanding Windows update${miss === 1 ? "" : "s"}`,
+                kb: null,
+                status: "missing",
+                installedAt: null,
+                classification: "Outstanding",
+              });
+            }
+            if ((patchView.mode === "installed" || patchView.mode === "recent" || patchView.mode === "all") && inst > 0) {
+              out.push({
+                deviceId: d.deviceId,
+                deviceName: d.name,
+                title: `${inst} installed Windows update${inst === 1 ? "" : "s"}`,
+                kb: null,
+                status: "installed",
+                installedAt: null,
+                classification: "Installed",
+              });
+            }
+            return out;
+          });
+  const viewRows = viewRowsNamed.length ? viewRowsNamed : fallbackRows;
+  const usingCountFallback = viewRowsNamed.length === 0 && fallbackRows.length > 0;
   const viewDeviceName = patchView.deviceId
     ? devices.find((d) => d.deviceId === patchView.deviceId)?.name ||
       namedAll.find((p) => p.deviceId === patchView.deviceId)?.deviceName ||
@@ -1175,6 +1221,13 @@ export function RmmPatchSection({ data }: { data: CustomerDetailPayload }) {
                 ) : null}
               </div>
             </div>
+            {usingCountFallback ? (
+              <p className="px-3 pt-2 text-[12px] text-muted">
+                Named KB titles were not on this snapshot. Showing per-server outstanding / installed
+                counts from the agent Updates counters. Re-run RMM collect after the next agent cycle
+                to land KB articles, titles, and installed dates.
+              </p>
+            ) : null}
             {viewRows.length === 0 ? (
               <p className="px-3 py-4 text-sm text-muted">
                 {namedAll.length === 0
@@ -1561,7 +1614,7 @@ export function RmmDevicesSection({
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-start gap-2">
-                    {mode === "servers" ? <ServerKindIcon device={selected} size={22} /> : null}
+                    <ServerKindIcon device={selected} size={22} />
                     <div>
                     <h3 className="text-[13px] font-extrabold tracking-tight text-fg">
                       {selected.name ?? selected.deviceId}
@@ -2336,12 +2389,22 @@ export function RmmIopsSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <StickyPickSplit
       title="Hosts"
-      items={hosts.map((h) => ({
-        id: h,
-        label: h,
-        meta: rows.some((r) => (r.hostName || "").toLowerCase() === h.toLowerCase()) ? "IOPS" : "no sample",
-        tone: (rows.some((r) => (r.hostName || "").toLowerCase() === h.toLowerCase()) ? "green" : "amber") as const,
-      }))}
+      items={hosts.map((h) => {
+        const d =
+          devices.find((x) => (x.name || "").toLowerCase() === h.toLowerCase()) ??
+          devices.find((x) => {
+            const a = (x.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            const b = h.toLowerCase().replace(/[^a-z0-9]/g, "");
+            return a && b && (a === b || a.startsWith(b) || b.startsWith(a));
+          });
+        return {
+          id: h,
+          label: h,
+          icon: <ServerKindIcon device={d ?? { name: h, deviceType: "Server" }} size={16} />,
+          meta: rows.some((r) => (r.hostName || "").toLowerCase() === h.toLowerCase()) ? "IOPS" : "no sample",
+          tone: (rows.some((r) => (r.hostName || "").toLowerCase() === h.toLowerCase()) ? "green" : "amber") as const,
+        };
+      })}
       selected={focus}
       onSelect={setSel}
     >
@@ -3984,7 +4047,6 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
   const summary = data.amsSlaSummary;
 
   const open = incidents.filter((i) => !/closed|cancelled/i.test(i.status));
-  const recentClosed = incidents.filter((i) => /closed|resolved/i.test(i.status));
 
   async function act(inc: FactIncidentRow, action: "respond" | "resolve" | "close" | "reopen") {
     if (!inc.incidentId) {
@@ -4038,7 +4100,7 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
         <div className="p-2">
           <EcoKpis
             items={[
-              { label: "Open", value: open.length, tone: open.length > 0 ? "amber" : "green" },
+              { label: "Open Incidents", value: open.length, tone: open.length > 0 ? "amber" : "green" },
               {
                 label: "Major Open",
                 value: summary?.majorOpenCount ?? open.filter((i) => i.isMajor).length,
@@ -4145,22 +4207,6 @@ export function IncidentsSection({ data }: { data: CustomerDetailPayload }) {
                 </div>
               ))
             )}
-            {recentClosed.length > 0 ? (
-              <div className="border-t border-border pt-2">
-                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-subtle">
-                  Recent resolved / closed (SLA history)
-                </p>
-                {recentClosed.slice(0, 8).map((inc, i) => (
-                  <div key={inc.incidentId ?? `c${i}`} className="border-t border-border/60 py-1.5 text-[12px] first:border-0">
-                    <p className="font-medium text-fg">{inc.title}</p>
-                    <div className="mt-0.5 flex flex-wrap gap-1">
-                      {slaBadge(inc.responseSlaMet, "Response")}
-                      {slaBadge(inc.resolveSlaMet, "Resolve")}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
           </CardContent>
         </DataWindow>
       </div>
@@ -4552,7 +4598,6 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
                 <th className="px-3 py-2">Recovery plan</th>
                 <th className="px-3 py-2">Test status</th>
                 <th className="px-3 py-2">Last recovery test</th>
-                <th className="px-3 py-2">Verification</th>
               </tr>
             </thead>
             <tbody>
@@ -4631,12 +4676,6 @@ export function CoveDevicesSection({ data }: { data: CustomerDetailPayload }) {
                   </td>
                   <td className="px-3 py-2 text-xs text-muted">
                     {d.lastRecoveryTestAt ? formatSastDateTime(d.lastRecoveryTestAt) : "—"}
-                  </td>
-                  <td
-                    className="max-w-[200px] truncate px-3 py-2 text-xs text-muted"
-                    title={d.recoveryVerification || undefined}
-                  >
-                    {d.recoveryVerification || "—"}
                   </td>
                 </tr>
                 );

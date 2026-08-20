@@ -726,9 +726,11 @@ d AS (
       ELSE 0
     END AS OnlineFlag,
     CASE
+      WHEN p.OsName LIKE N'%Windows Server%' OR p.OsName LIKE N'%Server 201%' OR p.OsName LIKE N'%Server 202%' THEN N'Server'
+      WHEN p.Name LIKE N'%SQL%' OR p.Name LIKE N'%SYSPRO%' OR p.Name LIKE N'%FSDB%' OR p.Name LIKE N'%FSAPP%'
+        OR p.Name LIKE N'%SRV%' OR p.Name LIKE N'%-DC%' OR p.Name LIKE N'%HVHOST%' THEN N'Server'
       WHEN p.DeviceType = N'Server' THEN N'Server'
       WHEN p.DeviceType = N'Workstation' THEN N'Workstation'
-      WHEN p.OsName LIKE N'%Windows Server%' OR p.OsName LIKE N'%Server 201%' OR p.OsName LIKE N'%Server 202%' THEN N'Server'
       WHEN p.OsName LIKE N'%Windows 11%' OR p.OsName LIKE N'%Windows 10%' OR p.OsName LIKE N'%Windows 8%' OR p.OsName LIKE N'%Windows 7%' THEN N'Workstation'
       WHEN p.OsName LIKE N'%Server%' THEN N'Server'
       ELSE N'Workstation'
@@ -4732,6 +4734,14 @@ WHERE CustomerCode = @code`);
       const rmmOwner = `
 (
   CustomerCode = @code
+  OR UPPER(REPLACE(LTRIM(RTRIM(ISNULL(Name, N''))), N'-', N'')) LIKE UPPER(@code) + N'%'
+  OR (@code = N'AHIC' AND (Name LIKE N'AHIC%' OR Name LIKE N'AHI-%' OR Name LIKE N'AHI_%'))
+  OR (@code = N'SIRF' AND (Name LIKE N'SIRZA%' OR Name LIKE N'SIRF%' OR Name LIKE N'SIRFRUIT%'))
+  OR (@code = N'ABLE' AND (Name LIKE N'AT-%' OR Name LIKE N'ATSERVER%' OR Name LIKE N'ABLE%'))
+  OR (@code = N'BHF' AND (Name LIKE N'BHF%' OR Name LIKE N'PCNS%' OR Name LIKE N'PNCS%'))
+  OR (@code = N'RPMINT' AND (Name LIKE N'RPM%' OR Name IN (N'IRONMAN', N'THOR', N'HULK', N'VISION')))
+  OR (@code = N'SBS' AND (Name LIKE N'SBS%' OR Name LIKE N'SIMPLY%'))
+  OR (@code = N'IB' AND (Name LIKE N'IB-%' OR Name LIKE N'IBSQL%' OR Name LIKE N'IBTS%' OR Name LIKE N'IBAPP%'))
   OR LTRIM(RTRIM(OrganizationName)) IN (
     SELECT LTRIM(RTRIM(OrganizationName))
     FROM dbo.Dim_Pulseway_OrgMap WITH (NOLOCK)
@@ -4751,45 +4761,46 @@ WHERE CustomerCode = @code`);
       AND NULLIF(LTRIM(RTRIM(PulsewayOrgName)), N'') IS NOT NULL
   )
 )`;
+      const latestPerDevice = `
+INNER JOIN (
+  SELECT DeviceId, MAX(SnapshotDate) AS mx
+  FROM dbo.Pulseway_Devices WITH (NOLOCK)
+  WHERE ${rmmOwner}
+  GROUP BY DeviceId
+) own ON own.DeviceId = p.DeviceId AND own.mx = p.SnapshotDate`;
       const deviceSelects = [
+        `SELECT TOP 4000
+  p.CustomerCode, p.DeviceId, p.Name, p.IsOnline, p.OsName, p.DeviceType,
+  p.CriticalNotifications, p.ElevatedNotifications, p.LastSeenOnline, p.OrganizationName,
+  p.IpAddress, p.CpuUsagePct, p.MemoryUsagePct, p.OnlinePct,
+  p.UptimeDays, p.LastBootAt, p.PatchInstalledCount, p.PatchMissingCount, p.PatchPendingCount,
+  p.OfflineHoursCurrent, p.OfflineHours7d, p.OfflineHours30d,
+  p.SnapshotDate, p.ImportedAt
+FROM dbo.Pulseway_Devices AS p WITH (NOLOCK)
+${latestPerDevice}
+ORDER BY CASE WHEN p.IsOnline = 0 THEN 0 ELSE 1 END, p.Name`,
+        `SELECT TOP 4000
+  p.CustomerCode, p.DeviceId, p.Name, p.IsOnline, p.OsName, p.DeviceType,
+  p.CriticalNotifications, p.ElevatedNotifications, p.LastSeenOnline, p.OrganizationName,
+  p.IpAddress, p.CpuUsagePct, p.MemoryUsagePct, p.OnlinePct,
+  p.UptimeDays, p.LastBootAt, p.PatchInstalledCount, p.PatchMissingCount, p.PatchPendingCount,
+  p.SnapshotDate, p.ImportedAt
+FROM dbo.Pulseway_Devices AS p WITH (NOLOCK)
+${latestPerDevice}
+ORDER BY CASE WHEN p.IsOnline = 0 THEN 0 ELSE 1 END, p.Name`,
+        `SELECT TOP 4000
+  p.CustomerCode, p.DeviceId, p.Name, p.IsOnline, p.OsName, p.DeviceType,
+  p.CriticalNotifications, p.ElevatedNotifications, p.LastSeenOnline, p.OrganizationName,
+  p.SnapshotDate, p.ImportedAt
+FROM dbo.Pulseway_Devices AS p WITH (NOLOCK)
+${latestPerDevice}
+ORDER BY CASE WHEN p.IsOnline = 0 THEN 0 ELSE 1 END, p.Name`,
         `SELECT TOP 4000
   DeviceId, Name, IsOnline, OsName, DeviceType,
   CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
-  IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
-  UptimeDays, LastBootAt, PatchInstalledCount, PatchMissingCount, PatchPendingCount,
-  OfflineHoursCurrent, OfflineHours7d, OfflineHours30d,
   SnapshotDate, ImportedAt
 FROM dbo.vw_Kpi_Rmm_Devices_Latest WITH (NOLOCK)
 WHERE ${rmmOwner}
-ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 4000
-  DeviceId, Name, IsOnline, OsName, DeviceType,
-  CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
-  IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
-  UptimeDays, LastBootAt, PatchInstalledCount, PatchMissingCount, PatchPendingCount,
-  OfflineHoursCurrent, OfflineHours7d, OfflineHours30d,
-  SnapshotDate, ImportedAt
-FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE ${rmmOwner}
-  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
-ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 4000
-  DeviceId, Name, IsOnline, OsName, DeviceType,
-  CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
-  IpAddress, CpuUsagePct, MemoryUsagePct, OnlinePct,
-  UptimeDays, LastBootAt, PatchInstalledCount, PatchMissingCount, PatchPendingCount,
-  SnapshotDate, ImportedAt
-FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE ${rmmOwner}
-  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
-ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
-        `SELECT TOP 4000
-  DeviceId, Name, IsOnline, OsName, DeviceType,
-  CriticalNotifications, ElevatedNotifications, LastSeenOnline, OrganizationName,
-  SnapshotDate, ImportedAt
-FROM dbo.Pulseway_Devices WITH (NOLOCK)
-WHERE ${rmmOwner}
-  AND SnapshotDate = (SELECT MAX(SnapshotDate) FROM dbo.Pulseway_Devices WITH (NOLOCK))
 ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
       ];
       for (const q of deviceSelects) {
@@ -4847,6 +4858,10 @@ ORDER BY CASE WHEN IsOnline = 0 THEN 0 ELSE 1 END, Name`,
           lastSeenOnline: lastSeenIso,
           organizationName:
             r.OrganizationName != null ? String(r.OrganizationName) : null,
+          customerCode:
+            r.CustomerCode != null && String(r.CustomerCode).trim()
+              ? String(r.CustomerCode).trim()
+              : null,
           ipAddress:
             r.IpAddress != null && String(r.IpAddress).trim()
               ? String(r.IpAddress)
@@ -5460,7 +5475,7 @@ WHERE d.CustomerCode = @code`);
       tenantAssetBelongs(code, {
         host: d.name,
         org: d.organizationName,
-        stamped: (d as { customerCode?: string | null }).customerCode ?? null,
+        stamped: d.customerCode ?? null,
       }),
     );
 
@@ -5482,15 +5497,27 @@ WHERE d.CustomerCode = @code`);
           ]
             .filter(Boolean)
             .join(" OR ");
+          const ownP = [
+            "UPPER(LTRIM(RTRIM(p.CustomerCode))) = UPPER(@code)",
+            ids.length ? `p.DeviceId IN (${ids.map((_, i) => `@pid${i}`).join(", ")})` : "",
+            names.length ? `UPPER(LTRIM(RTRIM(p.DeviceName))) IN (${names.map((_, i) => `UPPER(@pn${i})`).join(", ")})` : "",
+          ]
+            .filter(Boolean)
+            .join(" OR ");
           const pr = await req.query(`
 SELECT TOP 8000
-  DeviceId, DeviceName, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode
-FROM ${tbl} WITH (NOLOCK)
-WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM ${tbl} WITH (NOLOCK))
-  AND (${own})
+  p.DeviceId, p.DeviceName, p.Title, p.KbArticle, p.Status, p.InstalledUtc, p.Classification, p.CustomerCode
+FROM ${tbl} AS p WITH (NOLOCK)
+INNER JOIN (
+  SELECT DeviceId, MAX(SnapshotDate) AS mx
+  FROM ${tbl} WITH (NOLOCK)
+  WHERE (${own})
+  GROUP BY DeviceId
+) m ON m.DeviceId = p.DeviceId AND m.mx = p.SnapshotDate
+WHERE (${ownP})
 ORDER BY
-  CASE WHEN Status = N'installed' THEN 0 WHEN Status = N'missing' THEN 1 ELSE 2 END,
-  InstalledUtc DESC, Title`);
+  CASE WHEN p.Status = N'installed' THEN 0 WHEN p.Status = N'missing' THEN 1 ELSE 2 END,
+  p.InstalledUtc DESC, p.Title`);
           items = (pr.recordset as Array<Record<string, unknown>>).map((r) => {
             const st = String(r.Status ?? "unknown").toLowerCase();
             const status =

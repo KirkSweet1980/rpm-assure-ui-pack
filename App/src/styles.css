@@ -2854,6 +2854,8 @@ html.snow .rpma-eco-kpi.is-ok strong { color: #047857; }
   white-space: nowrap;
 }
 .rpma-est.is-compact .rpma-est-table { font-size: 11px; }
+.rpma-est.is-compact .col-wide { display: none !important; }
+.rpma-est:not(.is-compact) .col-wide { display: table-cell !important; }
 .rpma-est-table th {
   position: sticky; top: 0; z-index: 1;
   text-align: left;
@@ -2899,29 +2901,64 @@ html.snow .rpma-eco-kpi.is-ok strong { color: #047857; }
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  min-height: 36px;
+  min-height: 40px;
   padding: 6px 10px;
-  border-top: 1px solid #14344a;
-  background: #081722;
+  border-top: 1px solid #c5d4e4;
+  background: #eef3f7;
   font-size: 11px;
-  color: #8aa0b0;
+  color: #1e3a4c;
 }
 .rpma-est-pages { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
 .rpma-est-pages button {
   min-width: 26px; height: 24px;
-  border: 1px solid #1a3a4e;
-  background: #0b1c2a;
-  color: #dce6ee;
+  border: 1px solid #c5d4e4;
+  background: #fff;
+  color: #1e3a4c;
   border-radius: 4px;
   font-size: 11px;
+  font-weight: 700;
 }
 .rpma-est-pages button.is-on,
-.rpma-est-pages button:hover:not(:disabled) { background: #14b8a6; color: #042018; border-color: #14b8a6; }
+.rpma-est-pages button:hover:not(:disabled) { background: #0d9488; color: #fff; border-color: #0d9488; }
 .rpma-est-pages button:disabled { opacity: 0.4; }
-.rpma-est-compact { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #1e3a4c; cursor: pointer; user-select: none; }
-.rpma-est-compact input { width: 34px; height: 18px; appearance: none; background: #c5d4e4; border-radius: 999px; position: relative; cursor: pointer; }
+.rpma-est-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #c5d4e4;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e3a4c;
+  cursor: pointer;
+  user-select: none;
+}
+.rpma-est-compact input {
+  width: 34px;
+  height: 18px;
+  appearance: none;
+  background: #c5d4e4;
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+  flex: 0 0 34px;
+}
 .rpma-est-compact input:checked { background: #0d9488; }
-.rpma-est-compact input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.rpma-est-compact input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
 .rpma-est-compact input:checked::after { left: 18px; }
 @media (max-width: 860px) {
   .rpma-emp-title em { display: none; }

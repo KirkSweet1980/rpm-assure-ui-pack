@@ -417,13 +417,13 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         ) : null}
 
         {show("tickets") ? (
-        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={true} {...wgt("tickets")}>
+        <Pane title="RPM Service Desk" tip="Open / resolved / closed tickets." covered={true} {...wgt("tickets")}>
           {tix.total > 0 ? (
             <EcoKpis
               items={[
-                { label: "Open", value: tix.open, tone: tix.open > 0 ? "amber" : "green" },
-                { label: "Resolved", value: tix.resolved },
-                { label: "Closed", value: tix.closed },
+                { label: "Open Tickets", value: tix.open, tone: tix.open > 0 ? "amber" : "green" },
+                { label: "Resolved Tickets", value: tix.resolved },
+                { label: "Closed Tickets", value: tix.closed },
               ]}
             />
           ) : (

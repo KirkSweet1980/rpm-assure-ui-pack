@@ -118,8 +118,8 @@ const COLS: Record<EstateFocus, Col[]> = {
     { key: "host", label: "Hostname" },
     { key: "status", label: "Status" },
     { key: "estate", label: "Type" },
-    { key: "os", label: "Operating System" },
-    { key: "ip", label: "IP Address" },
+    { key: "os", label: "Operating System", wide: true },
+    { key: "ip", label: "IP Address", wide: true },
     { key: "last", label: "Last Active" },
     { key: "patch", label: "Outstanding Patches" },
   ],
@@ -593,7 +593,7 @@ export function EstateGrid({
       case "location":
         return <td key={col.key} className="col-wide">{r.location}</td>;
       case "os":
-        return <td key={col.key}>{r.os || "—"}</td>;
+        return <td key={col.key} className="col-wide">{r.os || "—"}</td>;
       case "patch":
         return (
           <td key={col.key} className={cn((r.patchMissing ?? 0) > 0 && "warn")}>
@@ -745,11 +745,12 @@ export function EstateGrid({
             </button>
           </nav>
           <label className="rpma-est-compact">
-            {compact ? "Compact" : "Comfortable"}
+            Compact
             <input
               type="checkbox"
               checked={compact}
               onChange={(e) => setCompact(e.target.checked)}
+              aria-label="Compact table"
             />
           </label>
         </footer>

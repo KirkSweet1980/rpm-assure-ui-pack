@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardHead } from "@/components/ui/card";
+import { DataWindow } from "@/components/customer/data-window";
 import { Route as PillarRoute } from "./customers.$code.epp";
 import { NoCoverPanel } from "@/components/ui/no-cover";
 import { formatSastDateTime } from "@/lib/utils";
@@ -79,28 +79,18 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
       );
     }
     return (
-      <div className="space-y-3">
-        <Card>
-          <CardHead>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>Active Incidents ({active.length})</span>
-              {feed?.incidentsOk != null ? (
-                <span
-                  className={
-                    feed.incidentsOk
-                      ? "text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
-                      : "text-[11px] font-medium text-amber-600 dark:text-amber-400"
-                  }
-                >
-                  Feed {feed.incidentsOk ? "OK" : "fail"}
-                  {feed.incidentsCount != null
-                    ? ` · estate ${feed.incidentsCount}`
-                    : ""}
-                </span>
-              ) : null}
-            </div>
-          </CardHead>
-          <CardContent className="p-0">
+      <div className="rpma-win-stack">
+        <DataWindow
+          title={`Active Incidents (${active.length})`}
+          subtitle={
+            feed?.incidentsOk == null
+              ? undefined
+              : feed.incidentsOk
+                ? `Feed OK${feed.incidentsCount != null ? ` · estate ${feed.incidentsCount}` : ""}`
+                : `Feed fail${feed.incidentsMessage ? ` · ${feed.incidentsMessage}` : ""}`
+          }
+          fill
+        >
             {rows.length === 0 ? (
               <div className="space-y-2 p-4 text-sm text-muted">
                 <p className="font-medium text-fg">No Incidents for this customer.</p>
@@ -127,14 +117,10 @@ export const Route = createFileRoute("/customers/$code/epp/incidents")({
             ) : (
               <Table list={active} />
             )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHead>Prior Incidents ({prior.length})</CardHead>
-          <CardContent className="p-0">
-            <Table list={prior} />
-          </CardContent>
-        </Card>
+        </DataWindow>
+        <DataWindow title={`Prior Incidents (${prior.length})`} fill>
+          <Table list={prior} />
+        </DataWindow>
       </div>
     );
   },

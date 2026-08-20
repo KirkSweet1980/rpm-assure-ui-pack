@@ -273,19 +273,35 @@ export function buildEppServiceSla(data: CustomerDetailPayload): ServiceSlaPack 
   const devices = data.epp?.devices ?? [];
   let current = 0;
   let scoredN = 0;
-  let updLabel = "No endpoints to score";
+  let outdatedN = 0;
+  let scanFreshN = 0;
+  const pool = devices.filter((d) => d.isManaged !== false);
+  const scorePool = pool.length ? pool : devices;
+  function flagOn(v: unknown): boolean {
+    return v === true || v === 1 || v === "1" || v === "true";
+  }
+  for (const d of scorePool) {
+    scoredN += 1;
+    const scanH = hoursAgo(d.lastSuccessfulScanAt);
+    const scanFresh = scanH != null && scanH <= 24;
+    if (scanFresh) scanFreshN += 1;
+    const outdated = flagOn(d.productOutdated) || flagOn(d.signatureOutdated);
+    if (outdated && !scanFresh) {
+      outdatedN += 1;
+      continue;
+    }
+    current += 1;
+  }
+  let updLabel = "No EndPoint Agents to score";
   let updMeasurable = false;
-  const withFlags = devices.filter((d) => d.productOutdated != null || d.signatureOutdated != null);
-  if (withFlags.length) {
-    scoredN = withFlags.length;
-    current = withFlags.filter((d) => !d.productOutdated && !d.signatureOutdated).length;
-    updLabel = `${current}/${scoredN} product + signatures current`;
+  if (scoredN > 0) {
     updMeasurable = true;
-  } else if (slaCover && devices.length) {
-    scoredN = devices.length;
-    current = devices.length;
-    updLabel = `${devices.length} managed endpoints · outdated flags not on last collect. Treated as current (not a miss).`;
-    updMeasurable = true;
+    updLabel =
+      outdatedN > 0
+        ? `${current}/${scoredN} current · ${outdatedN} product / signature outdated`
+        : scanFreshN
+          ? `${current}/${scoredN} current (${scanFreshN} last scan ≤ 24h)`
+          : `${current}/${scoredN} current — missing outdated flags counted as current`;
   }
   const upd = updMeasurable && scoredN > 0 ? clamp((current / scoredN) * 100) : null;
 

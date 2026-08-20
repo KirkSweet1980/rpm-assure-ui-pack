@@ -376,8 +376,8 @@ export function customerTree(code: string, displayName: string): NavNode {
       },
       {
         id: `${code}-tickets`,
-        label: "Customer Tickets",
-        blurb: "Freshdesk open, resolved and closed tickets",
+        label: "RPM Service Desk",
+        blurb: "Open, resolved and closed tickets",
         href: `${base}/tickets`,
         match: "prefix",
         audience: "ops",
@@ -385,7 +385,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-tickets-open`,
             label: "Open Tickets",
-            blurb: "New and in-progress Freshdesk tickets",
+            blurb: "New and in-progress tickets",
             href: `${base}/tickets/open`,
             match: "exact",
             audience: "ops",
@@ -401,7 +401,7 @@ export function customerTree(code: string, displayName: string): NavNode {
           {
             id: `${code}-tickets-closed`,
             label: "Closed Tickets",
-            blurb: "Closed Freshdesk tickets",
+            blurb: "Closed tickets",
             href: `${base}/tickets/closed`,
             match: "exact",
             audience: "ops",
@@ -457,7 +457,7 @@ export function settingsTree(): NavNode {
   if (USER_PROFILE_ENABLED) {
     accountChildren.push({
       id: "set-profile",
-      label: "My profile",
+      label: "My Profile",
       blurb: "Name, password, role",
       href: "/settings/profile",
       match: "exact",
@@ -516,7 +516,7 @@ export function settingsTree(): NavNode {
   if (accountChildren.length > 0) {
     children.push({
       id: "set-account",
-      label: "My account",
+      label: "My Account",
       blurb: "Profile and two-factor authentication",
       href: accountChildren[0]!.href,
       match: "prefix",
@@ -553,7 +553,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-chrome",
-          label: "Menu style",
+          label: "Menu Style",
           blurb: "Choose selected-tab and nav highlight",
           href: "/settings/chrome",
           match: "exact",
@@ -561,7 +561,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-nav-lab",
-          label: "Nav mockups",
+          label: "Nav Mockups",
           blurb: "Six chrome options. C is live",
           href: "/settings/nav-lab",
           match: "exact",
@@ -569,7 +569,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-theme",
-          label: "Theme tokens",
+          label: "Theme Tokens",
           blurb: "CSS variables, light/dark, palettes",
           href: "/settings/theme",
           match: "exact",
@@ -577,7 +577,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-pack",
-          label: "Download install pack",
+          label: "Download Install Pack",
           blurb: "ZIP and one-shot for the APP server",
           href: "/pack",
           match: "exact",
@@ -585,7 +585,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-uilab",
-          label: "Choose new UI",
+          label: "Choose New UI",
           blurb: "Six full-app visual directions",
           href: "/ui-lab",
           match: "exact",
@@ -601,7 +601,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-rag",
-          label: "RAG thresholds",
+          label: "RAG Thresholds",
           blurb: "Red / Amber / Green rules",
           href: "/settings/rag",
           match: "exact",
@@ -625,7 +625,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-collect",
-          label: "Collect inventory",
+          label: "Collect Inventory",
           blurb: "Last import per customer / instance",
           href: "/settings/collect",
           match: "exact",
@@ -633,7 +633,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-reports-sched",
-          label: "Report schedules",
+          label: "Report Schedules",
           blurb: "On-screen weekly & monthly packs",
           href: "/settings/reports",
           match: "exact",
@@ -659,7 +659,7 @@ export function settingsTree(): NavNode {
         },
         {
           id: "set-audit",
-          label: "Audit log",
+          label: "Audit Log",
           blurb: "Who changed platform settings",
           href: "/settings/audit",
           match: "exact",

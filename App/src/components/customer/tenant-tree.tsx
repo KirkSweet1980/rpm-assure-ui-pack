@@ -6,6 +6,7 @@ export type TenantTreeItem = {
   label: string;
   meta?: string;
   tone?: "green" | "amber" | "red" | "off";
+  icon?: ReactNode;
 };
 
 export function TenantTree({
@@ -56,6 +57,7 @@ export function StickyPickSplit({
                 onClick={() => onSelect(it.id)}
               >
                 <i data-tone={it.tone ?? "off"} />
+                {it.icon ? <span className="rpma-ttree-ico">{it.icon}</span> : null}
                 <span>
                   <strong>{it.label}</strong>
                   {it.meta ? <em>{it.meta}</em> : null}

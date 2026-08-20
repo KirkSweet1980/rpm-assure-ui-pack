@@ -50,6 +50,19 @@ function ageLabel(iso: string | null | undefined) {
   return `${d} day${d === 1 ? "" : "s"} ago`;
 }
 
+function fmtBytes(bytes: number | null | undefined): string {
+  if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "—";
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+  let v = bytes;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i += 1;
+  }
+  return `${v.toFixed(i >= 3 ? 2 : i >= 2 ? 1 : 0)} ${units[i]}`;
+}
+
 type Row = {
   id: string;
   orgId: string;
@@ -65,6 +78,16 @@ type Row = {
   last: string;
   ip: string;
   location: string;
+  os?: string;
+  patchMissing?: number | null;
+  backupStatus?: string;
+  size?: string;
+  recoveryPlan?: string;
+  lastTest?: string;
+  retention?: string;
+  lastScan?: string;
+  policy?: string;
+  infected?: string;
   device?: {
     name?: string | null;
     osName?: string | null;
@@ -73,12 +96,68 @@ type Row = {
   };
 };
 
+type Col = { key: string; label: string; wide?: boolean };
+
+const COLS: Record<EstateFocus, Col[]> = {
+  eco: [
+    { key: "orgId", label: "Org ID" },
+    { key: "org", label: "Organization", wide: true },
+    { key: "site", label: "Site", wide: true },
+    { key: "host", label: "Device / Hostname" },
+    { key: "status", label: "Status" },
+    { key: "estate", label: "Estate Type" },
+    { key: "sysproId", label: "SYSPRO ID", wide: true },
+    { key: "backup", label: "Backup" },
+    { key: "epp", label: "EPP" },
+    { key: "tickets", label: "Tickets" },
+    { key: "last", label: "Last Active" },
+    { key: "ip", label: "IP Address", wide: true },
+    { key: "location", label: "Location", wide: true },
+  ],
+  rmm: [
+    { key: "host", label: "Hostname" },
+    { key: "status", label: "Status" },
+    { key: "estate", label: "Type" },
+    { key: "os", label: "Operating System", wide: true },
+    { key: "ip", label: "IP Address", wide: true },
+    { key: "last", label: "Last Active" },
+    { key: "patch", label: "Outstanding Patches" },
+  ],
+  cove: [
+    { key: "host", label: "Backup Agent" },
+    { key: "machine", label: "Machine" },
+    { key: "backupStatus", label: "Backup Status" },
+    { key: "last", label: "Last Success" },
+    { key: "size", label: "Protected Size" },
+    { key: "recoveryPlan", label: "Recovery Plan" },
+    { key: "lastTest", label: "Last Recovery Test" },
+    { key: "retention", label: "Retention Policy" },
+  ],
+  epp: [
+    { key: "host", label: "EndPoint Agent" },
+    { key: "estate", label: "Type" },
+    { key: "os", label: "Operating System" },
+    { key: "lastScan", label: "Last Scan" },
+    { key: "last", label: "Last Seen" },
+    { key: "infected", label: "Threat Status" },
+    { key: "policy", label: "Policy" },
+  ],
+  syspro: [
+    { key: "host", label: "Hostname" },
+    { key: "status", label: "Status" },
+    { key: "os", label: "Operating System" },
+    { key: "sysproId", label: "SYSPRO Instance" },
+    { key: "last", label: "Last Active" },
+    { key: "ip", label: "IP Address" },
+  ],
+};
+
 export type EstateFocus = "eco" | "syspro" | "rmm" | "cove" | "epp";
 
 const DECK_TITLE: Record<EstateFocus, string> = {
   eco: "Customer Eco System",
   syspro: "SYSPRO Landscape",
-  rmm: "RPM Remote Management",
+  rmm: "RMM Management",
   cove: "RPM Cloud Backup",
   epp: "RPM End Point Protection",
 };
@@ -118,19 +197,80 @@ export function EstateGrid({
     const seen = new Set<string>();
     const out: Row[] = [];
 
-    function push(partial: Omit<Row, "orgId" | "org"> & { id: string }) {
+    function belongs(host: string, site?: string | null, stamped?: string | null) {
+      return tenantAssetBelongs(orgId, { host, org: site, stamped });
+    }
+
+    function push(partial: Omit<Row, "orgId" | "org"> & { id: string }, stamped?: string | null) {
       const k = keyOf(partial.host) || partial.id;
       if (seen.has(k)) return;
-      if (
-        !tenantAssetBelongs(orgId, {
-          host: partial.host,
-          org: partial.site !== org ? partial.site : null,
-        })
-      ) {
-        return;
-      }
+      if (!belongs(partial.host, partial.site, stamped ?? null)) return;
       seen.add(k);
       out.push({ ...partial, orgId, org });
+    }
+
+    if (focus === "cove") {
+      cove.forEach((c, i) => {
+        const host = c.machineName || c.deviceName || `backup-${i + 1}`;
+        if (!belongs(host, c.partnerName, null)) return;
+        const fail = /fail|error/i.test(String(c.lastBackupStatus ?? ""));
+        out.push({
+          id: String(c.accountId ?? host),
+          orgId,
+          org,
+          site: c.partnerName || org,
+          host,
+          status: fail ? "Offline" : "Online",
+          estate: c.physicality || "Agent",
+          sysproId: "—",
+          backup: fail ? "fail" : "ok",
+          epp: "—",
+          tickets: 0,
+          last: ageLabel(c.lastSuccessTime),
+          ip: "—",
+          location: c.partnerName || "—",
+          backupStatus: String(c.lastBackupStatus || "—"),
+          size: fmtBytes(c.usedBytes ?? c.selectedBytes),
+          recoveryPlan: c.recoveryPlanLabel || (c.recoveryPlanType === 1 ? "Recovery Testing" : c.recoveryPlanType === 2 ? "Standby Image" : "—"),
+          lastTest: ageLabel(c.lastRecoveryTestAt),
+          retention: c.retentionPolicy || "—",
+          os: c.deviceName || "—",
+          device: { name: host, deviceType: "Server" },
+        });
+      });
+      out.sort((a, b) => a.host.localeCompare(b.host));
+      return out;
+    }
+
+    if (focus === "epp") {
+      epp.forEach((e, i) => {
+        const host = e.deviceName || e.fqdn || `epp-${i + 1}`;
+        if (!belongs(host, null, null)) return;
+        const warn = Boolean(e.infected || e.malwareDetected || e.productOutdated || e.signatureOutdated);
+        out.push({
+          id: e.endpointId || host,
+          orgId,
+          org,
+          site: org,
+          host,
+          status: "Online",
+          estate: e.machineType === 6 ? "Server" : "Workstation",
+          sysproId: "—",
+          backup: "none",
+          epp: warn ? "Warning" : "Protected",
+          tickets: 0,
+          last: ageLabel(e.lastSeenAt || e.lastSuccessfulScanAt),
+          ip: e.ipAddress || "—",
+          location: "—",
+          os: e.operatingSystem || "—",
+          lastScan: ageLabel(e.lastSuccessfulScanAt),
+          policy: e.policyName || "—",
+          infected: e.infected || e.malwareDetected ? "Threat" : "Clean",
+          device: { name: host, osName: e.operatingSystem, deviceType: e.machineType === 6 ? "Server" : "Workstation" },
+        });
+      });
+      out.sort((a, b) => a.host.localeCompare(b.host));
+      return out;
     }
 
     rmm.forEach((d, i) => {
@@ -140,91 +280,78 @@ export function EstateGrid({
       const ep = eppBy.get(k);
       const cls = classifyRmmDevice(d);
       const estate =
-        cls === "server"
-          ? "Server"
-          : cls === "workstation"
-            ? "Workstation"
-            : d.deviceType || "Device";
-      const backup = !cv
-        ? "none"
-        : /fail|error/i.test(String(cv.lastBackupStatus ?? ""))
-          ? "fail"
-          : "ok";
-      const eppLabel = !ep
-        ? "—"
-        : ep.infected || ep.malwareDetected || ep.productOutdated || ep.signatureOutdated
-          ? "Warning"
-          : "Protected";
-      if (estate !== "Server" && focus === "syspro") return;
-      push({
-        id: d.deviceId || host,
-        site: d.organizationName || org,
-        host,
-        status: d.isOnline === false ? "Offline" : "Online",
-        estate,
-        sysproId:
-          syspro && (cls === "server" || /sql|syspro|app/i.test(host)) ? syspro : "—",
-        backup,
-        epp: eppLabel,
-        tickets: ticketsForHost(tix, host),
-        last: ageLabel(d.lastSeenOnline),
-        ip: d.ipAddress || "—",
-        location: d.organizationName || "—",
-        device: d,
-      });
-    });
-
-    cove.forEach((c, i) => {
-      const host = c.machineName || c.deviceName || `backup-${i + 1}`;
-      const k = keyOf(host);
-      if (seen.has(k)) return;
-      const ep = eppBy.get(k);
-      const estate = /server|sql|srv/i.test(host) ? "Server" : "Device";
-      if (estate !== "Server" && focus === "syspro") return;
-      push({
-        id: String(c.accountId ?? host),
-        site: c.partnerName || org,
-        host,
-        status: "Online",
-        estate,
-        sysproId: "—",
-        backup: /fail|error/i.test(String(c.lastBackupStatus ?? "")) ? "fail" : "ok",
-        epp:
-          !ep
+        cls === "server" ? "Server" : cls === "workstation" ? "Workstation" : d.deviceType || "Device";
+      if (focus === "syspro" && estate !== "Server") return;
+      if (focus === "rmm" || focus === "syspro" || focus === "eco") {
+        push({
+          id: d.deviceId || host,
+          site: d.organizationName || org,
+          host,
+          status: d.isOnline === false ? "Offline" : "Online",
+          estate,
+          sysproId: syspro && (cls === "server" || /sql|syspro|app/i.test(host)) ? syspro : "—",
+          backup: !cv ? "none" : /fail|error/i.test(String(cv.lastBackupStatus ?? "")) ? "fail" : "ok",
+          epp: !ep
             ? "—"
-            : ep.infected || ep.malwareDetected
+            : ep.infected || ep.malwareDetected || ep.productOutdated || ep.signatureOutdated
               ? "Warning"
               : "Protected",
-        tickets: ticketsForHost(tix, host),
-        last: ageLabel(c.lastSuccessTime),
-        ip: "—",
-        location: c.partnerName || "—",
-        device: { name: host, deviceType: estate },
-      });
+          tickets: ticketsForHost(tix, host),
+          last: ageLabel(d.lastSeenOnline),
+          ip: d.ipAddress || "—",
+          location: d.organizationName || "—",
+          os: d.osName || "—",
+          patchMissing: d.patchMissing ?? null,
+          device: d,
+        }, d.customerCode);
+      }
     });
 
-    epp.forEach((e, i) => {
-      const host = e.deviceName || e.fqdn || `epp-${i + 1}`;
-      const k = keyOf(host);
-      if (seen.has(k)) return;
-      const estate = e.machineType === 6 ? "Server" : "Workstation";
-      if (estate !== "Server" && focus === "syspro") return;
-      push({
-        id: e.endpointId || host,
-        site: org,
-        host,
-        status: "Online",
-        estate,
-        sysproId: "—",
-        backup: "none",
-        epp: e.infected || e.malwareDetected ? "Warning" : "Protected",
-        tickets: ticketsForHost(tix, host),
-        last: ageLabel(e.lastSeenAt || e.lastSuccessfulScanAt),
-        ip: e.ipAddress || "—",
-        location: "—",
-        device: { name: host, osName: e.operatingSystem, deviceType: estate },
+    if (focus === "eco") {
+      cove.forEach((c, i) => {
+        const host = c.machineName || c.deviceName || `backup-${i + 1}`;
+        const k = keyOf(host);
+        if (seen.has(k)) return;
+        const ep = eppBy.get(k);
+        const estate = /server|sql|srv/i.test(host) ? "Server" : "Device";
+        push({
+          id: String(c.accountId ?? host),
+          site: c.partnerName || org,
+          host,
+          status: "Online",
+          estate,
+          sysproId: "—",
+          backup: /fail|error/i.test(String(c.lastBackupStatus ?? "")) ? "fail" : "ok",
+          epp: !ep ? "—" : ep.infected || ep.malwareDetected ? "Warning" : "Protected",
+          tickets: ticketsForHost(tix, host),
+          last: ageLabel(c.lastSuccessTime),
+          ip: "—",
+          location: c.partnerName || "—",
+          device: { name: host, deviceType: estate },
+        });
       });
-    });
+      epp.forEach((e, i) => {
+        const host = e.deviceName || e.fqdn || `epp-${i + 1}`;
+        const k = keyOf(host);
+        if (seen.has(k)) return;
+        const estate = e.machineType === 6 ? "Server" : "Workstation";
+        push({
+          id: e.endpointId || host,
+          site: org,
+          host,
+          status: "Online",
+          estate,
+          sysproId: "—",
+          backup: "none",
+          epp: e.infected || e.malwareDetected ? "Warning" : "Protected",
+          tickets: ticketsForHost(tix, host),
+          last: ageLabel(e.lastSeenAt || e.lastSuccessfulScanAt),
+          ip: e.ipAddress || "—",
+          location: "—",
+          device: { name: host, osName: e.operatingSystem, deviceType: estate },
+        });
+      });
+    }
 
     out.sort((a, b) => {
       const rank = (e: string) => (e === "Server" ? 0 : e === "Workstation" ? 1 : 2);
@@ -233,8 +360,6 @@ export function EstateGrid({
       return a.host.localeCompare(b.host);
     });
     if (focus === "syspro") return out.filter((r) => r.estate === "Server");
-    if (focus === "cove") return out.filter((r) => r.backup !== "none");
-    if (focus === "epp") return out.filter((r) => r.epp !== "—");
     return out;
   }, [customer, data, focus]);
 
@@ -244,11 +369,14 @@ export function EstateGrid({
   const code = customer.customerCode;
   const base = `/customers/${code}`;
   const lastCollect = [
-    customer.lastImportAt,
-    customer.pulsewayLastImportAt,
-    customer.coveLastImportAt,
-    customer.eppLastImportAt,
-    customer.cspLastImportAt,
+    focus === "rmm" ? customer.pulsewayLastImportAt : null,
+    focus === "cove" ? customer.coveLastImportAt : null,
+    focus === "epp" ? customer.eppLastImportAt : null,
+    focus === "syspro" ? customer.lastImportAt : null,
+    focus === "eco" ? customer.lastImportAt : null,
+    focus === "eco" ? customer.pulsewayLastImportAt : null,
+    focus === "eco" ? customer.coveLastImportAt : null,
+    focus === "eco" ? customer.eppLastImportAt : null,
   ].reduce<string | null>((best, v) => {
     if (!v) return best;
     if (!best) return v;
@@ -258,14 +386,16 @@ export function EstateGrid({
   const openRisks = (data.risks ?? []).filter((r) => !/closed/i.test(String(r.status ?? "")));
   const jobs = customer.sysproJobErrorCount ?? 0;
   const dtr = customer.sysproDtrVarianceLines ?? 0;
-  const srvOn = customer.pulsewayServerOnline ?? 0;
-  const srvOff = customer.pulsewayServerOffline ?? 0;
+  const srvOn = rows.filter((r) => r.estate === "Server" && r.status === "Online").length || (customer.pulsewayServerOnline ?? 0);
+  const srvOff = rows.filter((r) => r.estate === "Server" && r.status === "Offline").length || (customer.pulsewayServerOffline ?? 0);
   const coveFail = (customer.coveFailedDeviceCount ?? 0) + (customer.coveStaleDeviceCount ?? 0);
-  const coveN = customer.coveDeviceCount ?? data.cove?.devices?.length ?? 0;
-  const eppN = customer.eppDeviceCount ?? data.epp?.devices?.length ?? 0;
+  const coveN = focus === "cove" ? rows.length : (customer.coveDeviceCount ?? data.cove?.devices?.length ?? 0);
+  const eppN = focus === "epp" ? rows.length : (customer.eppDeviceCount ?? data.epp?.devices?.length ?? 0);
   const infected = customer.bdInfectedCount ?? 0;
   const iopsN = data.rmm?.agentIops?.length ?? 0;
   const live = customerLiveStatus(code, customer, cover, data);
+  const rec = data.cove?.recovery ?? data.cove?.summary?.recovery;
+  const wsN = rows.filter((r) => r.estate === "Workstation").length;
 
   const banners = [
     {
@@ -315,6 +445,8 @@ export function EstateGrid({
     { label: "Workstations", href: `${base}/rmm/workstations`, on: cover.rmm, rag: live.modules["/rmm/workstations"]?.rag ?? "Off" },
     { label: "Patch Compliance", href: `${base}/rmm/patch`, on: cover.rmm, rag: live.modules["/rmm/patch"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Disk Performance", href: `${base}/rmm/iops`, on: cover.rmm, rag: live.modules["/rmm/iops"]?.rag ?? live.pillars.rmm?.rag },
+    { label: "Server Alerts", href: `${base}/rmm/alerts`, on: cover.rmm, rag: live.modules["/rmm/alerts"]?.rag ?? live.pillars.rmm?.rag },
+    { label: "Windows Events", href: `${base}/rmm/events`, on: cover.rmm, rag: live.modules["/rmm/events"]?.rag ?? live.pillars.rmm?.rag },
     { label: "Backup Agents", href: `${base}/cove/devices`, on: cover.cove, rag: live.modules["/cove/devices"]?.rag ?? live.pillars.cove?.rag },
     { label: "Recovery Testing", href: `${base}/cove/recovery`, on: cover.cove, rag: live.modules["/cove/recovery"]?.rag ?? live.pillars.cove?.rag },
     { label: "Backup Retention", href: `${base}/cove/retention`, on: cover.cove, rag: live.modules["/cove/retention"]?.rag ?? live.pillars.cove?.rag },
@@ -341,26 +473,28 @@ export function EstateGrid({
           { label: "Active Users", value: customer.activeUserCount, href: `${base}/syspro/operators` },
           { label: "Job Errors", value: jobs, href: `${base}/syspro/jobs` },
           { label: "FinSight OOB", value: dtr, href: `${base}/syspro/dtr` },
-          { label: "Open Tickets", value: tix.open, href: `${base}/tickets/open` },
+          { label: "Servers", value: rows.length, href: `${base}/syspro` },
         ]
       : focus === "rmm"
         ? [
             { label: "Servers Online", value: srvOn, href: `${base}/rmm/devices` },
             { label: "Servers Offline", value: srvOff, href: `${base}/rmm/devices` },
-            { label: "Workstations", value: (customer.pulsewayWorkstationOnline ?? 0) + (customer.pulsewayWorkstationOffline ?? 0), href: `${base}/rmm/workstations` },
+            { label: "Workstations", value: wsN, href: `${base}/rmm/workstations` },
             { label: "Disk Volumes", value: iopsN, href: `${base}/rmm/iops` },
           ]
         : focus === "cove"
           ? [
               { label: "Backup Agents", value: coveN, href: `${base}/cove/devices` },
               { label: "Backup Issues", value: coveFail, href: `${base}/cove/devices` },
-              { label: "Open Tickets", value: tix.open, href: `${base}/tickets/open` },
+              { label: "Recovery Testing", value: rec?.recoveryTestingCount ?? 0, href: `${base}/cove/recovery` },
+              { label: "Last Test", value: rec?.lastRecoveryTestAt ? ageLabel(rec.lastRecoveryTestAt) : "—", href: `${base}/cove/recovery` },
             ]
           : focus === "epp"
             ? [
                 { label: "EndPoint Agents", value: eppN, href: `${base}/epp/endpoints` },
                 { label: "Infected", value: infected, href: `${base}/epp/incidents` },
-                { label: "Open Tickets", value: tix.open, href: `${base}/tickets/open` },
+                { label: "Clean", value: Math.max(0, eppN - infected), href: `${base}/epp/endpoints` },
+                { label: "Policies", value: new Set(rows.map((r) => r.policy).filter((p) => p && p !== "—")).size, href: `${base}/epp/modules` },
               ]
             : [
                 { label: "Assurance", value: dormant || score == null ? "—" : `${score}%`, href: `${base}/ams` },
@@ -371,40 +505,200 @@ export function EstateGrid({
                 { label: "Backup Issues", value: cover.cove ? coveFail : "—", href: `${base}/cove/devices` },
               ];
 
+  const cols = COLS[focus];
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const safe = Math.min(page, pages);
   const slice = rows.slice((safe - 1) * PAGE, safe * PAGE);
   const from = rows.length === 0 ? 0 : (safe - 1) * PAGE + 1;
   const to = Math.min(safe * PAGE, rows.length);
+  const emptyLabel =
+    focus === "cove"
+      ? `No backup agents on last collect for ${customer.displayName}.`
+      : focus === "epp"
+        ? `No endpoint agents on last collect for ${customer.displayName}.`
+        : focus === "rmm"
+          ? `No RMM devices on last collect for ${customer.displayName}.`
+          : focus === "syspro"
+            ? `No SYSPRO servers on last collect for ${customer.displayName}.`
+            : `No estate devices on last collect for ${customer.displayName}.`;
+
+  function cell(r: Row, col: Col, i: number) {
+    switch (col.key) {
+      case "orgId":
+        return <td key={col.key} className="mono">{r.orgId}-{String((safe - 1) * PAGE + i + 1).padStart(3, "0")}</td>;
+      case "org":
+        return <td key={col.key} className="col-wide">{r.org}</td>;
+      case "site":
+        return <td key={col.key} className="col-wide">{r.site}</td>;
+      case "host":
+      case "machine":
+        return (
+          <td key={col.key} className="strong">
+            <span className="inline-flex items-center gap-2">
+              {r.device ? <ServerKindIcon device={r.device} size={18} /> : null}
+              {col.key === "machine" ? r.os || r.host : r.host}
+            </span>
+          </td>
+        );
+      case "status":
+        return (
+          <td key={col.key}>
+            <span
+              className={cn(
+                "rpma-est-st",
+                r.status === "Online" && "is-ok",
+                r.status === "Offline" && "is-bad",
+              )}
+            >
+              {r.status}
+            </span>
+          </td>
+        );
+      case "estate":
+        return <td key={col.key}>{r.estate}</td>;
+      case "sysproId":
+        return <td key={col.key} className="mono col-wide">{r.sysproId}</td>;
+      case "backup":
+        return (
+          <td key={col.key} className="center">
+            {r.backup === "ok" ? (
+              <CheckCircle2 className="rpma-est-ok" />
+            ) : r.backup === "fail" ? (
+              <XCircle className="rpma-est-bad" />
+            ) : (
+              <span className="muted">N/A</span>
+            )}
+          </td>
+        );
+      case "epp":
+        return (
+          <td key={col.key}>
+            <span
+              className={cn(
+                "rpma-est-st",
+                r.epp === "Protected" && "is-ok",
+                r.epp === "Warning" && "is-warn",
+              )}
+            >
+              {r.epp}
+            </span>
+          </td>
+        );
+      case "tickets":
+        return <td key={col.key} className={cn(r.tickets > 0 && "warn")}>{r.tickets}</td>;
+      case "last":
+        return <td key={col.key}>{r.last}</td>;
+      case "ip":
+        return <td key={col.key} className="mono col-wide">{r.ip}</td>;
+      case "location":
+        return <td key={col.key} className="col-wide">{r.location}</td>;
+      case "os":
+        return <td key={col.key} className="col-wide">{r.os || "—"}</td>;
+      case "patch":
+        return (
+          <td key={col.key} className={cn((r.patchMissing ?? 0) > 0 && "warn")}>
+            {r.patchMissing == null ? "—" : r.patchMissing}
+          </td>
+        );
+      case "backupStatus":
+        return (
+          <td key={col.key}>
+            <span className={cn("rpma-est-st", r.backup === "ok" && "is-ok", r.backup === "fail" && "is-bad")}>
+              {r.backupStatus || "—"}
+            </span>
+          </td>
+        );
+      case "size":
+        return <td key={col.key} className="mono">{r.size || "—"}</td>;
+      case "recoveryPlan":
+        return <td key={col.key}>{r.recoveryPlan || "—"}</td>;
+      case "lastTest":
+        return <td key={col.key}>{r.lastTest || "—"}</td>;
+      case "retention":
+        return <td key={col.key}>{r.retention || "—"}</td>;
+      case "lastScan":
+        return <td key={col.key}>{r.lastScan || "—"}</td>;
+      case "policy":
+        return <td key={col.key}>{r.policy || "—"}</td>;
+      case "infected":
+        return (
+          <td key={col.key}>
+            <span className={cn("rpma-est-st", r.infected === "Clean" && "is-ok", r.infected === "Threat" && "is-bad")}>
+              {r.infected || "—"}
+            </span>
+          </td>
+        );
+      default:
+        return <td key={col.key}>—</td>;
+    }
+  }
 
   return (
     <div className={cn("rpma-est", compact && "is-compact")}>
+      <header className="rpma-eco-head">
+        <div className="rpma-eco-head-row">
+          <RagBadge rag={dormant ? "Off" : customer.healthRag} title={customer.healthSummary} />
+          <div>
+            <h2>{customer.displayName}</h2>
+            <p>{DECK_TITLE[focus]} · last collect {formatSastDateTime(lastCollect)}</p>
+          </div>
+        </div>
+        {dormant && focus === "eco" ? (
+          <div className="rpma-dormant-banner" role="status">
+            <strong>Dormant customer</strong>
+            <span>
+              Tickets only — no Assure agent and no SYSPRO, RMM, Backup, or EPP cover.
+              SLA is not scored and RAG lights stay off until an agent or a covered service lands.
+            </span>
+          </div>
+        ) : null}
+        <div className="rpma-eco-kpis">
+          {kpis.map((k) => (
+            <SpaLink key={k.label} href={k.href} className="rpma-eco-kpi">
+              <em>{k.label}</em>
+              <strong>{k.value}</strong>
+            </SpaLink>
+          ))}
+        </div>
+        {focus === "eco" ? (
+          <div className="rpma-cmd-banners">
+            {banners.map((s) => (
+              <SpaLink
+                key={s.name}
+                href={s.href}
+                className={cn("rpma-cmd-banner", s.on ? "is-on" : "is-off")}
+              >
+                <i style={{ background: s.bar }} />
+                <StatusRobot rag={s.rag} title={s.name} size={18} />
+                <div>
+                  <strong>{s.name}</strong>
+                  <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
+                </div>
+                <CoverTag on={s.on} />
+              </SpaLink>
+            ))}
+          </div>
+        ) : null}
+      </header>
+
       <div className="rpma-est-focus">
         <div className="rpma-est-scroll">
           <table className="rpma-est-table">
             <thead>
               <tr>
                 <th className="w-star" />
-                <th>Org ID</th>
-                <th className="col-wide">Organization</th>
-                <th className="col-wide">Site</th>
-                <th>Device / Hostname</th>
-                <th>Status</th>
-                <th>Estate Type</th>
-                <th className="col-wide">SYSPRO ID</th>
-                <th>Backup</th>
-                <th>EPP</th>
-                <th>Tickets</th>
-                <th>Last Active</th>
-                <th className="col-wide">IP Address</th>
-                <th className="col-wide">Location</th>
+                {cols.map((c) => (
+                  <th key={c.key} className={c.wide ? "col-wide" : undefined}>
+                    {c.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {slice.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="rpma-est-empty">
-                    No estate devices on last collect for {customer.displayName}.
+                  <td colSpan={cols.length + 1} className="rpma-est-empty">
+                    {emptyLabel}
                   </td>
                 </tr>
               ) : (
@@ -420,52 +714,7 @@ export function EstateGrid({
                         <Star className="size-3.5" />
                       </button>
                     </td>
-                    <td className="mono">{r.orgId}-{String((safe - 1) * PAGE + i + 1).padStart(3, "0")}</td>
-                    <td className="col-wide">{r.org}</td>
-                    <td className="col-wide">{r.site}</td>
-                    <td className="strong">
-                      <span className="inline-flex items-center gap-2">
-                        {r.device ? <ServerKindIcon device={r.device} size={18} /> : null}
-                        {r.host}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={cn(
-                          "rpma-est-st",
-                          r.status === "Online" && "is-ok",
-                          r.status === "Offline" && "is-bad",
-                        )}
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                    <td>{r.estate}</td>
-                    <td className="mono col-wide">{r.sysproId}</td>
-                    <td className="center">
-                      {r.backup === "ok" ? (
-                        <CheckCircle2 className="rpma-est-ok" />
-                      ) : r.backup === "fail" ? (
-                        <XCircle className="rpma-est-bad" />
-                      ) : (
-                        <span className="muted">N/A</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={cn(
-                          "rpma-est-st",
-                          r.epp === "Protected" && "is-ok",
-                          r.epp === "Warning" && "is-warn",
-                        )}
-                      >
-                        {r.epp}
-                      </span>
-                    </td>
-                    <td className={cn(r.tickets > 0 && "warn")}>{r.tickets}</td>
-                    <td>{r.last}</td>
-                    <td className="mono col-wide">{r.ip}</td>
-                    <td className="col-wide">{r.location}</td>
+                    {cols.map((c) => cell(r, c, i))}
                   </tr>
                 ))
               )}
@@ -496,68 +745,22 @@ export function EstateGrid({
             </button>
           </nav>
           <label className="rpma-est-compact">
-            {compact ? "Compact" : "Comfortable"}
+            Compact
             <input
               type="checkbox"
               checked={compact}
               onChange={(e) => setCompact(e.target.checked)}
+              aria-label="Compact table"
             />
           </label>
         </footer>
       </div>
 
-      <header className="rpma-eco-head">
-        <div className="rpma-eco-head-row">
-          <RagBadge rag={dormant ? "Off" : customer.healthRag} title={customer.healthSummary} />
-          <div>
-            <h2>{customer.displayName}</h2>
-            <p>{DECK_TITLE[focus]} · last collect {formatSastDateTime(lastCollect)}</p>
-          </div>
-        </div>
-        {dormant ? (
-          <div className="rpma-dormant-banner" role="status">
-            <strong>Dormant customer</strong>
-            <span>
-              Tickets only — no Assure agent and no SYSPRO, RMM, Backup, or EPP cover.
-              SLA is not scored and RAG lights stay off until an agent or a covered service lands.
-            </span>
-          </div>
-        ) : null}
-        <div className="rpma-eco-kpis">
-          {kpis.map((k) => (
-            <SpaLink key={k.label} href={k.href} className="rpma-eco-kpi">
-              <em>{k.label}</em>
-              <strong>{k.value}</strong>
-            </SpaLink>
-          ))}
-        </div>
-        <div className="rpma-cmd-banners">
-          {(focus === "eco" ? banners : banners.filter((s) =>
-            focus === "syspro" ? s.href.includes("/syspro") :
-            focus === "rmm" ? s.href.includes("/rmm") :
-            focus === "cove" ? s.href.includes("/cove") :
-            focus === "epp" ? s.href.includes("/epp") : true,
-          )).map((s) => (
-            <SpaLink
-              key={s.name}
-              href={s.href}
-              className={cn("rpma-cmd-banner", s.on ? "is-on" : "is-off")}
-            >
-              <i style={{ background: s.bar }} />
-              <StatusRobot rag={s.rag} title={s.name} size={18} />
-              <div>
-                <strong>{s.name}</strong>
-                <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
-              </div>
-              <CoverTag on={s.on} />
-            </SpaLink>
-          ))}
-        </div>
-      </header>
-
       <div className="rpma-est-focus rpma-ams-cov">
-        <div className="rpma-ams-cov-h">AMS Coverage</div>
-        <div className="rpma-cmd-heat" aria-label="AMS Coverage">
+        <div className="rpma-ams-cov-h">
+          {focus === "eco" ? "AMS Coverage" : `${DECK_TITLE[focus]} Modules`}
+        </div>
+        <div className="rpma-cmd-heat" aria-label={focus === "eco" ? "AMS Coverage" : "Service Modules"}>
           {heatAll.filter((h) => h.on).map((h) => (
             <SpaLink key={h.label} href={h.href} className={cn("rpma-cmd-cell", `is-${h.tone}`)}>
               <em>{h.label}</em>
@@ -565,7 +768,7 @@ export function EstateGrid({
             </SpaLink>
           ))}
           {heatAll.filter((h) => h.on).length === 0 ? (
-            <p className="px-3 py-3 text-[12px] text-muted">No modules on cover for this customer.</p>
+            <p className="px-3 py-3 text-[12px] text-muted">No modules on cover for this service.</p>
           ) : null}
         </div>
       </div>

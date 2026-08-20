@@ -1,31 +1,34 @@
-/** Hostname prefix -> customer. Wins over Pulseway org / vendor partner id. */
+/** Hostname prefix -> customer. Wins over Pulseway org / vendor partner id.
+ *  Match concatenated names too (AHICFSDBPRD, RPMWINRM) — not only AHIC- / RPM-.
+ */
 const NAME_RULES: { re: RegExp; code: string }[] = [
-  { re: /^SBS[-_]/i, code: "SBS" },
-  { re: /^SBSPROD/i, code: "SBS" },
+  { re: /^SBS/i, code: "SBS" },
   { re: /^SIMPLY/i, code: "SBS" },
   { re: /^SIRZA/i, code: "SIRF" },
-  { re: /^SIRF[-_]/i, code: "SIRF" },
   { re: /^SIRFRUIT/i, code: "SIRF" },
-  { re: /^AHIC[-_]/i, code: "AHIC" },
-  { re: /^AHI[-_]/i, code: "AHIC" },
-  { re: /^RSR[-_]/i, code: "RSR" },
+  { re: /^SIRF/i, code: "SIRF" },
+  { re: /^AHIC/i, code: "AHIC" },
+  { re: /^AHI/i, code: "AHIC" },
+  { re: /^RSR/i, code: "RSR" },
   { re: /^REDSUN/i, code: "RSR" },
-  { re: /^UVSS[-_]/i, code: "UVSS" },
   { re: /^UVSS/i, code: "UVSS" },
   { re: /^RSS/i, code: "RSS" },
   { re: /^HYDRA/i, code: "HYDRA" },
-  { re: /^ABLE[-_]/i, code: "ABLE" },
+  { re: /^ABLE/i, code: "ABLE" },
   { re: /^AT[-_]/i, code: "ABLE" },
+  { re: /^ATSERVER/i, code: "ABLE" },
   { re: /^METSI/i, code: "METSI" },
-  { re: /^YLJ[-_]/i, code: "YLJ" },
+  { re: /^YLJ/i, code: "YLJ" },
   { re: /^MEDIPOS/i, code: "MEDIPOS" },
-  { re: /^BHF[-_]/i, code: "BHF" },
+  { re: /^BHF/i, code: "BHF" },
   { re: /^PCNS/i, code: "BHF" },
   { re: /^PNCS/i, code: "BHF" },
   { re: /^VAULT/i, code: "VAULT" },
   { re: /^IB[-_]/i, code: "IB" },
+  { re: /^IB(SQL|TS|APP)/i, code: "IB" },
   { re: /^INTERBRAND/i, code: "IB" },
-  { re: /^RPM[-_]/i, code: "RPMINT" },
+  { re: /^(IRONMAN|THOR|HULK|VISION)\b/i, code: "RPMINT" },
+  { re: /^RPM/i, code: "RPMINT" },
 ];
 
 /** Vendor / Pulseway org / Cove product / EPP company -> customer. */
@@ -66,6 +69,12 @@ export function tenantCodeFromOrgName(name?: string | null): string | null {
   return null;
 }
 
+function compactHost(name?: string | null): string {
+  return String(name ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
 export function tenantAssetBelongs(
   customerCode: string,
   asset: {
@@ -77,13 +86,23 @@ export function tenantAssetBelongs(
   const want = customerCode.trim().toUpperCase();
   if (!want) return false;
   const fromHost = rmmCodeFromDeviceName(asset.host);
-  if (fromHost) return fromHost.toUpperCase() === want;
-  if (asset.stamped && String(asset.stamped).trim()) {
-    return String(asset.stamped).trim().toUpperCase() === want;
-  }
+  const hostKey = compactHost(asset.host);
+  const hostPrefix = want.length >= 3 && hostKey.startsWith(want);
+  const stamped = String(asset.stamped ?? "").trim().toUpperCase();
   const fromOrg = tenantCodeFromOrgName(asset.org);
-  if (fromOrg) return fromOrg.toUpperCase() === want;
-  return false;
+
+  // Hostname of a *different* tenant always wins (RSS-PROD must not land on AHIC).
+  if (fromHost && fromHost.toUpperCase() !== want) return false;
+
+  if (fromHost && fromHost.toUpperCase() === want) return true;
+  if (hostPrefix) return true;
+  if (stamped && stamped === want) return true;
+  if (fromOrg && fromOrg.toUpperCase() === want) return true;
+  if (stamped && stamped !== want) return false;
+  if (fromOrg && fromOrg.toUpperCase() !== want) return false;
+
+  // Already SQL-scoped for this tenant (unstamped file servers, laptops, etc.).
+  return true;
 }
 
 export function rmmDeviceBelongsToCustomer(

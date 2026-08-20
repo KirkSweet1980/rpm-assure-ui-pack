@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { NoCoverPanel } from "@/components/ui/no-cover";
-import { StatCard } from "@/components/portfolio/stat-card";
+import { EcoHead, EcoKpis } from "@/components/customer/eco-kpis";
 import { buildServiceSla, type ServiceSlaPack } from "@/lib/data/service-sla";
 import { fetchCustomerSlaContract } from "@/lib/data/customer-sla-contract";
 import { kpisOnCover, withSlaKpis, type SlaKpiOverrides } from "@/lib/data/apply-sla-kpis";
@@ -19,7 +19,7 @@ const TITLES: Record<IndustryPillarKey, string> = {
   epp: "RPM EndPoint Protection · Service SLA",
   syspro: "SYSPRO · Service SLA",
   csp: "Microsoft 365 · Tenant posture",
-  tickets: "Customer Tickets · Service SLA",
+  tickets: "RPM Service Desk · Service SLA",
 };
 
 function toneClass(tone: ServiceSlaPack["lines"][number]["tone"]) {
@@ -30,86 +30,85 @@ function toneClass(tone: ServiceSlaPack["lines"][number]["tone"]) {
 }
 
 export function ServiceSlaTable({ pack }: { pack: ServiceSlaPack }) {
+  const measured = pack.lines.filter((l) => l.measured).length;
+  const miss = pack.lines.filter((l) => l.measured && (l.tone === "red" || l.tone === "amber")).length;
   return (
-    <div className="space-y-3">
-      <div className="grid gap-2 sm:grid-cols-3">
-        <StatCard
-          label="Scored vs target"
-          value={pack.overallPct != null ? `${pack.overallPct}%` : "—"}
-          tone={
-            pack.overallPct == null
-              ? "default"
-              : pack.overallPct >= (pack.lines.find((l) => l.contractual && l.targetPct)?.targetPct ?? 95)
-                ? "green"
+    <div className="rpma-exco">
+      <EcoHead
+        title={pack.title || "Service SLA"}
+        subtitle={pack.headline}
+        kpis={[
+          {
+            label: "SLA",
+            value: pack.overallPct != null ? `${pack.overallPct}%` : "—",
+            tone:
+              pack.overallPct == null
+                ? "default"
                 : pack.overallPct >= 90
-                  ? "amber"
-                  : "red"
-          }
-          hint={pack.headline}
-        />
-        <StatCard
-          label="Measured lines"
-          value={pack.lines.filter((l) => l.measured).length}
-          hint={`${pack.lines.filter((l) => !l.measured).length} not scored this period`}
-        />
-        <StatCard label="Source" value="Collect" hint={pack.source} />
+                  ? "green"
+                  : pack.overallPct >= 70
+                    ? "amber"
+                    : "red",
+          },
+          { label: "Measured", value: measured },
+          { label: "Watch / miss", value: miss, tone: miss > 0 ? "amber" : "green" },
+          { label: "Source", value: "Collect", hint: pack.source },
+        ]}
+      />
+
+      <div className="rpma-glass overflow-x-auto">
+        <p className="px-3 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+          Metrics · actual vs industry target
+        </p>
+        <table className="w-full text-left text-[12px]">
+          <thead className="rpma-table-head">
+            <tr>
+              <th className="px-2 py-1.5">Metric</th>
+              <th className="px-2 py-1.5">Target</th>
+              <th className="px-2 py-1.5">Actual</th>
+              <th className="px-2 py-1.5">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pack.lines.map((l) => (
+              <tr key={l.id} className="border-t border-border align-top">
+                <td className="px-2 py-1.5">
+                  <p className="font-semibold text-fg">{l.metric}</p>
+                  <p className="mt-0.5 max-w-[280px] text-[11px] text-subtle">{l.how}</p>
+                </td>
+                <td className="px-2 py-1.5 text-muted">{l.targetLabel}</td>
+                <td className={cn("px-2 py-1.5 font-medium", toneClass(l.tone))}>
+                  {l.actualPct != null ? `${l.actualPct}%` : "—"}
+                  <p className="mt-0.5 text-[11px] font-normal text-subtle">{l.actualLabel}</p>
+                </td>
+                <td className="px-2 py-1.5">
+                  {!l.measured ? (
+                    <Badge variant="muted">{l.badge ?? (l.excluded ? "No plan" : "Not scored")}</Badge>
+                  ) : l.tone === "green" ? (
+                    <Badge variant="green">Met</Badge>
+                  ) : l.tone === "amber" ? (
+                    <Badge variant="amber">Watch</Badge>
+                  ) : (
+                    <Badge variant="red">Miss</Badge>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <Card>
-        <CardHead>Metrics · actual vs industry target</CardHead>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-left text-[12px]">
-            <thead className="rpma-table-head">
-              <tr>
-                <th className="px-2 py-1.5">Metric</th>
-                <th className="px-2 py-1.5">Target</th>
-                <th className="px-2 py-1.5">Actual</th>
-                <th className="px-2 py-1.5">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pack.lines.map((l) => (
-                <tr key={l.id} className="border-t border-border align-top">
-                  <td className="px-2 py-1.5">
-                    <p className="font-semibold text-fg">{l.metric}</p>
-                    <p className="mt-0.5 max-w-[280px] text-[11px] text-subtle">{l.how}</p>
-                  </td>
-                  <td className="px-2 py-1.5 text-muted">{l.targetLabel}</td>
-                  <td className={cn("px-2 py-1.5 font-medium", toneClass(l.tone))}>
-                    {l.actualPct != null ? `${l.actualPct}%` : "—"}
-                    <p className="mt-0.5 text-[11px] font-normal text-subtle">{l.actualLabel}</p>
-                  </td>
-                  <td className="px-2 py-1.5">
-                    {!l.measured ? (
-                      <Badge variant="muted">{l.badge ?? (l.excluded ? "No plan" : "Not scored")}</Badge>
-                    ) : l.tone === "green" ? (
-                      <Badge variant="green">Met</Badge>
-                    ) : l.tone === "amber" ? (
-                      <Badge variant="amber">Watch</Badge>
-                    ) : (
-                      <Badge variant="red">Miss</Badge>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHead>Exclusions (not scored as downtime / miss)</CardHead>
-        <CardContent>
-          <ul className="list-disc space-y-1 pl-4 text-[12px] text-muted">
-            {pack.exclusions.map((e) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
-          <p className="mt-2 text-[11px] text-subtle">
-            {INDUSTRY_SLA_DOC}. These are operational targets, not the signed SYSPRO + AMS contract.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="rpma-glass px-3 py-2">
+        <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">Exclusions</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-muted">
+          {pack.exclusions.map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+        <p className="mt-1 text-[11px] text-subtle">
+          {INDUSTRY_SLA_DOC}. These are operational targets, not the signed SYSPRO + AMS contract.
+        </p>
+      </div>
     </div>
   );
 }
@@ -124,33 +123,26 @@ export function SlaStrip({
 }) {
   const pack = buildServiceSla(pillar, data);
   if (!pack.covered) return null;
-  return (
-    <div className="grid gap-2 sm:grid-cols-4">
-      <StatCard
-        label="SLA"
-        value={pack.overallPct != null ? `${pack.overallPct}%` : "—"}
-        tone={
-          pack.overallPct == null
-            ? "default"
-            : pack.overallPct >= 95
-              ? "green"
-              : pack.overallPct >= 85
-                ? "amber"
-                : "red"
-        }
-        hint={pack.headline}
-      />
-      {pack.lines.slice(0, 3).map((l) => (
-        <StatCard
-          key={l.id}
-          label={l.metric}
-          value={l.actualPct != null ? `${l.actualPct}%` : "—"}
-          tone={l.tone === "default" ? "default" : l.tone}
-          hint={l.actualLabel}
-        />
-      ))}
-    </div>
-  );
+  const tiles = [
+    {
+      label: "SLA",
+      value: pack.overallPct != null ? `${pack.overallPct}%` : "—",
+      tone:
+        pack.overallPct == null
+          ? ("default" as const)
+          : pack.overallPct >= 90
+            ? ("green" as const)
+            : pack.overallPct >= 70
+              ? ("amber" as const)
+              : ("red" as const),
+    },
+    ...pack.lines.slice(0, 3).map((l) => ({
+      label: l.metric,
+      value: l.actualPct != null ? `${l.actualPct}%` : "—",
+      tone: l.tone === "default" ? undefined : l.tone,
+    })),
+  ];
+  return <EcoKpis items={tiles} />;
 }
 
 export function ServiceSlaSection({
@@ -187,51 +179,73 @@ export function ServiceSlaSection({
     );
   }
   return (
-    <div className="space-y-3">
-      <div>
-        <h2 className="text-[15px] font-bold text-fg">{TITLES[pillar]}</h2>
-        <p className="text-[12px] text-muted">{pack.headline}</p>
-      </div>
-      <ServiceSlaTree pack={pack} />
+    <div className="space-y-2">
+      <ServiceSlaTree pack={pack} title={TITLES[pillar]} />
     </div>
   );
 }
 
-function ServiceSlaTree({ pack }: { pack: ServiceSlaPack }) {
+function ServiceSlaTree({ pack, title }: { pack: ServiceSlaPack; title: string }) {
   const [sel, setSel] = useState(pack.lines[0]?.id ?? "");
   const line = pack.lines.find((l) => l.id === sel) ?? pack.lines[0];
+  const measured = pack.lines.filter((l) => l.measured).length;
+  const miss = pack.lines.filter((l) => l.measured && (l.tone === "red" || l.tone === "amber")).length;
   return (
-    <TenantTree
-      title="Metrics"
-      items={pack.lines.map((l) => ({
-        id: l.id,
-        label: l.metric,
-        meta: l.actualPct != null ? `${l.actualPct}%` : l.badge ?? "—",
-        tone: l.tone === "green" || l.tone === "amber" || l.tone === "red" ? l.tone : "off",
-      }))}
-      selected={line?.id ?? ""}
-      onSelect={setSel}
-    >
-      {line ? (
-        <Card>
-          <CardHead>{line.metric}</CardHead>
-          <CardContent className="space-y-2 text-[12px]">
-            <div className="grid gap-2 sm:grid-cols-3">
-              <StatCard label="Target" value={line.targetLabel} />
-              <StatCard
-                label="Actual"
-                value={line.actualPct != null ? `${line.actualPct}%` : "—"}
-                tone={line.tone === "default" ? "default" : line.tone}
-                hint={line.actualLabel}
+    <div className="rpma-exco">
+      <EcoHead
+        title={title}
+        subtitle={pack.headline}
+        kpis={[
+          {
+            label: "SLA",
+            value: pack.overallPct != null ? `${pack.overallPct}%` : "—",
+            tone:
+              pack.overallPct == null
+                ? "default"
+                : pack.overallPct >= 90
+                  ? "green"
+                  : pack.overallPct >= 70
+                    ? "amber"
+                    : "red",
+          },
+          { label: "Measured", value: measured },
+          { label: "Watch / miss", value: miss, tone: miss > 0 ? "amber" : "green" },
+        ]}
+      />
+      <TenantTree
+        title="Metrics"
+        items={pack.lines.map((l) => ({
+          id: l.id,
+          label: l.metric,
+          meta: l.actualPct != null ? `${l.actualPct}%` : l.badge ?? "—",
+          tone: l.tone === "green" || l.tone === "amber" || l.tone === "red" ? l.tone : "off",
+        }))}
+        selected={line?.id ?? ""}
+        onSelect={setSel}
+      >
+        {line ? (
+          <Card>
+            <CardHead>{line.metric}</CardHead>
+            <CardContent className="space-y-2 text-[12px]">
+              <EcoKpis
+                items={[
+                  { label: "Target", value: line.targetLabel },
+                  {
+                    label: "Actual",
+                    value: line.actualPct != null ? `${line.actualPct}%` : "—",
+                    tone: line.tone === "default" ? undefined : line.tone,
+                    hint: line.actualLabel,
+                  },
+                  { label: "Status", value: line.measured ? line.tone : (line.badge ?? "Not scored") },
+                ]}
               />
-              <StatCard label="Status" value={line.measured ? line.tone : (line.badge ?? "Not scored")} />
-            </div>
-            <p className="text-muted">{line.how}</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <ServiceSlaTable pack={pack} />
-      )}
-    </TenantTree>
+              <p className="text-muted">{line.how}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <ServiceSlaTable pack={pack} />
+        )}
+      </TenantTree>
+    </div>
   );
 }

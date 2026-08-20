@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { EcoKpis } from "@/components/customer/eco-kpis";
 import { DataWindow } from "@/components/customer/data-window";
+import { SpaLink } from "@/components/nav/spa-link";
 import { formatSastDateTime } from "@/lib/utils";
 import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
 import {
@@ -112,7 +113,7 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
   if (s.total === 0) {
     return (
       <EmptyTickets
-        title="Customer Tickets"
+        title="RPM Service Desk"
         body="No tickets exist for this customer."
       />
     );
@@ -161,9 +162,9 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
               <PieChart>
                 <Pie
                   data={[
-                    { name: "Open", value: s.open, fill: "#ffa21d" },
-                    { name: "Resolved", value: s.resolved, fill: "#2563eb" },
-                    { name: "Closed", value: s.closed, fill: "#17c666" },
+                    { name: "Open Tickets", value: s.open, fill: "#ffa21d" },
+                    { name: "Resolved Tickets", value: s.resolved, fill: "#2563eb" },
+                    { name: "Closed Tickets", value: s.closed, fill: "#17c666" },
                   ].filter((d) => d.value > 0)}
                   dataKey="value"
                   nameKey="name"
@@ -182,7 +183,7 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
           </div>
         </div>
         <div className="rpma-glass p-3">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">SLA Clocks</p>
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">AMS SLA</p>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -207,9 +208,26 @@ export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {
           </div>
         </div>
       </div>
-      <DataWindow title="Latest Tickets" fill>
-        <TicketTable rows={rows.slice(0, 16)} empty="No tickets exist for this customer." />
-      </DataWindow>
+      <div className="rpma-eco-svcs">
+        {[
+          { label: "Open Tickets", href: `${base}/open`, n: s.open, hint: "In progress" },
+          { label: "Resolved Tickets", href: `${base}/resolved`, n: s.resolved, hint: "Awaiting close" },
+          { label: "Closed Tickets", href: `${base}/closed`, n: s.closed, hint: "Complete" },
+          {
+            label: "Service SLA",
+            href: `${base}/sla`,
+            n: sla.overallPct == null ? "—" : `${sla.overallPct}%`,
+            hint: "AMS clocks",
+          },
+        ].map((t) => (
+          <SpaLink key={t.href} href={t.href} className="rpma-eco-svc">
+            <strong>{t.label}</strong>
+            <span>
+              {t.n} · {t.hint}
+            </span>
+          </SpaLink>
+        ))}
+      </div>
     </div>
   );
 }
@@ -246,11 +264,11 @@ export function TicketsListSection({
         <div className="p-2">
           <EcoKpis
             items={[
-              { label: "Open", value: all.open, tone: all.open > 0 ? "amber" : "green", href: `${base}/open` },
-              { label: "Resolved", value: all.resolved, href: `${base}/resolved` },
-              { label: "Closed", value: all.closed, href: `${base}/closed` },
+              { label: "Open Tickets", value: all.open, tone: all.open > 0 ? "amber" : "green", href: `${base}/open` },
+              { label: "Resolved Tickets", value: all.resolved, href: `${base}/resolved` },
+              { label: "Closed Tickets", value: all.closed, href: `${base}/closed` },
               {
-                label: "SLA",
+                label: "Service SLA",
                 value: all.sla.overallPct != null ? `${all.sla.overallPct}%` : "—",
                 tone: (all.sla.overallPct ?? 100) < 90 ? "amber" : "green",
                 href: `${base}/sla`,
@@ -263,19 +281,32 @@ export function TicketsListSection({
         <DataWindow title={title} fill>
           <p className="px-3 py-4 text-[12px] text-muted">{empty}</p>
         </DataWindow>
-      ) : bucket === "resolved" ? (
-        <DataWindow title="Resolved Tickets" fill>
+      ) : bucket === "resolved" || bucket === "closed" ? (
+        <DataWindow title={title} fill>
           <div className="rpma-tix-cards">
             {rows.map((r, i) => {
               const scored = scoreTicket(r);
+              const fd = /^FD-(\d+)$/i.exec(r.externalRef || "");
               return (
-              <article key={String(r.incidentId ?? r.externalRef ?? i)} className="rpma-tix-card">
+              <article key={String(r.incidentId ?? r.externalRef ?? i)} className={`rpma-tix-card is-${bucket}`}>
                 <strong>{r.title || r.externalRef || `Ticket ${i + 1}`}</strong>
                 <em>
-                  {r.priority || r.severity || "—"} · {r.status || "Resolved"}
+                  {r.priority || r.severity || "—"} · {r.status || (bucket === "closed" ? "Closed" : "Resolved")}
                   {r.openedAt ? ` · Opened ${formatSastDateTime(r.openedAt)}` : ""}
+                  {r.resolvedAt ? ` · Resolved ${formatSastDateTime(r.resolvedAt)}` : ""}
                 </em>
-                <span>{r.externalRef || r.sourceSystem || "Service Desk"}</span>
+                {fd ? (
+                  <a
+                    href={`https://rpmresourceshelp.freshdesk.com/a/tickets/${fd[1]}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rpma-tix-ref"
+                  >
+                    {r.externalRef}
+                  </a>
+                ) : (
+                  <span>{r.externalRef || r.sourceSystem || "Service Desk"}</span>
+                )}
                 <div className="rpma-tix-sla">
                   {slaChip(scored.response)}
                   {slaChip(scored.resolve)}
@@ -307,7 +338,7 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
   if (pack.total === 0) {
     return (
       <EmptyTickets
-        title="Customer Tickets · SLA"
+        title="RPM Service Desk · SLA"
         body="No tickets exist for this customer. SLA clocks appear when tickets land."
       />
     );
@@ -317,8 +348,8 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
   return (
     <div className="rpma-win-stack">
       <DataWindow
-        title="Customer Tickets · SLA"
-        subtitle="SAST 08:00–17:00 · 90% target · open clocks are not misses"
+        title="RPM Service Desk · SLA"
+        subtitle="SAST 08:00–17:00 · 90% target · Open Clocks are not misses"
       >
         <div className="p-2">
           <EcoKpis
@@ -338,7 +369,7 @@ export function TicketsSlaSection({ data }: { data: CustomerDetailPayload }) {
                 value: pack.resolvePct != null ? `${pack.resolvePct}%` : "—",
                 tone: (pack.resolvePct ?? 100) < 90 ? "amber" : "green",
               },
-              { label: "Open", value: pack.open, tone: pack.open > 0 ? "amber" : "green", href: `${base}/open` },
+              { label: "Open Tickets", value: pack.open, tone: pack.open > 0 ? "amber" : "green", href: `${base}/open` },
               { label: "Met", value: `${pack.responseMet}/${pack.responseScored || 0}` },
               {
                 label: "Breach",

@@ -17,6 +17,7 @@ import { EcoCustomizeButton, EcoCustomizePanel } from "@/components/customer/eco
 import { SpaLink } from "@/components/nav/spa-link";
 import { ChartTooltip, CHART_TOOLTIP_CURSOR } from "@/components/portfolio/chart-tooltip";
 import { RagBadge } from "@/components/portfolio/rag-badge";
+import { EcoKpis } from "@/components/customer/eco-kpis";
 import { StatCard } from "@/components/portfolio/stat-card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { CoverTag } from "@/components/ui/status-robot";
@@ -263,21 +264,25 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
               Ecosystem overview · last collect {formatSastDateTime(lastCollect)}
             </p>
           </div>
-          <div className="ml-auto grid grid-cols-3 gap-2">
-            <StatCard
-              label="Assurance"
-              value={dormant ? "—" : `${score}%`}
-              tone={assuranceTone(score, tenantRag)}
-            />
-            <StatCard
-              label="Services on cover"
-              value={`${coverCount}/${serviceBars.length}`}
-              tone={coverCount >= 4 ? "green" : coverCount >= 2 ? "amber" : "red"}
-            />
-            <StatCard
-              label="Open risks"
-              value={openRisks.length}
-              tone={openRisks.length === 0 ? "green" : "amber"}
+          <div className="ml-auto min-w-[16rem] max-w-lg flex-1">
+            <EcoKpis
+              items={[
+                {
+                  label: "Assurance",
+                  value: dormant || score == null ? "—" : `${score}%`,
+                  tone: dormant || score == null ? "default" : assuranceTone(score, tenantRag),
+                },
+                {
+                  label: "On cover",
+                  value: `${coverCount}/${serviceBars.length}`,
+                  tone: coverCount >= 4 ? "green" : coverCount >= 2 ? "amber" : "red",
+                },
+                {
+                  label: "Open risks",
+                  value: openRisks.length,
+                  tone: openRisks.length === 0 ? "green" : "amber",
+                },
+              ]}
             />
           </div>
         </div>
@@ -301,21 +306,13 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
 
         {show("attention") ? (
         <Pane title="What needs attention" tip="Open signals across SYSPRO and AMS." {...wgt("attention")}>
-          <div className="grid grid-cols-2 gap-1.5">
-            {signalBars.map((e) => (
-              <StatCard key={e.name} label={e.name} value={e.value} />
-            ))}
-          </div>
+          <EcoKpis cols={2} items={signalBars.map((e) => ({ label: e.name, value: e.value }))} />
         </Pane>
         ) : null}
 
         {show("fleet") ? (
         <Pane title={fleetTitle} {...wgt("fleet")}>
-          <div className="grid grid-cols-2 gap-1.5">
-            {fleetPie.map((e) => (
-              <StatCard key={e.name} label={e.name} value={e.value} />
-            ))}
-          </div>
+          <EcoKpis cols={2} items={fleetPie.map((e) => ({ label: e.name, value: e.value }))} />
         </Pane>
         ) : null}
 
@@ -344,19 +341,15 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         {show("rmm") ? (
         <Pane title="RPM RMM" tip="RPM RMM agents on the latest snapshot." covered={isPillarCovered(cover, "rmm")} {...wgt("rmm")}>
           {isPillarCovered(cover, "rmm") ? (
-            <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Online" value={rmmOn} tone="green" />
-              <StatCard label="Offline" value={rmmOff} tone={rmmOff > 0 ? "red" : "green"} />
-              <StatCard
-                label="Critical"
-                value={rmmCrit}
-                tone={rmmCrit > 0 ? "red" : "green"}
-              />
-              <StatCard
-                label="Servers"
-                value={`${rmmServersOn}/${rmmServersOn + rmmServersOff}`}
-              />
-            </div>
+            <EcoKpis
+              cols={2}
+              items={[
+                { label: "Online", value: rmmOn, tone: "green" },
+                { label: "Offline", value: rmmOff, tone: rmmOff > 0 ? "red" : "green" },
+                { label: "Critical", value: rmmCrit, tone: rmmCrit > 0 ? "red" : "green" },
+                { label: "Servers", value: `${rmmServersOn}/${rmmServersOn + rmmServersOff}` },
+              ]}
+            />
           ) : (
             <p className="text-[12px] text-muted">No cover — RPM RMM is not in scope.</p>
           )}
@@ -366,10 +359,13 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         {show("backup") ? (
         <Pane title="Cloud Backup" tip="Cloud Backup devices vs 24h RPO." covered={isPillarCovered(cover, "cove")} {...wgt("backup")}>
           {isPillarCovered(cover, "cove") ? (
-            <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Healthy" value={coveOk} tone="green" />
-              <StatCard label="Failed / stale" value={coveBad} tone={coveBad > 0 ? "amber" : "green"} />
-            </div>
+            <EcoKpis
+              cols={2}
+              items={[
+                { label: "Healthy", value: coveOk, tone: "green" },
+                { label: "Failed / stale", value: coveBad, tone: coveBad > 0 ? "amber" : "green" },
+              ]}
+            />
           ) : (
             <p className="text-[12px] text-muted">No cover — Cloud Backup is not in scope.</p>
           )}
@@ -379,14 +375,13 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         {show("epp") ? (
         <Pane title="RPM EndPoint Protection" tip="Protected endpoints, incidents, and quarantine." covered={isPillarCovered(cover, "epp")} {...wgt("epp")}>
           {isPillarCovered(cover, "epp") ? (
-            <div className="grid grid-cols-2 gap-2">
-              <StatCard label="Endpoints" value={eppDevices} />
-              <StatCard
-                label="Infected"
-                value={eppInfected}
-                tone={eppInfected > 0 ? "red" : "green"}
-              />
-            </div>
+            <EcoKpis
+              cols={2}
+              items={[
+                { label: "Endpoints", value: eppDevices },
+                { label: "Infected", value: eppInfected, tone: eppInfected > 0 ? "red" : "green" },
+              ]}
+            />
           ) : (
             <p className="text-[12px] text-muted">No cover — RPM EndPoint Protection is not in scope.</p>
           )}
@@ -396,24 +391,25 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         {show("csp") ? (
         <Pane title="Microsoft CSP" tip="Tenant posture from Graph collect. Visibility only — not scored." covered={isPillarCovered(cover, "csp")} {...wgt("csp")}>
           {isPillarCovered(cover, "csp") ? (
-            <div className="grid grid-cols-2 gap-2">
-              <StatCard
-                label="Secure Score"
-                value={
-                  customer.cspSecureScorePct != null ? `${Math.round(customer.cspSecureScorePct)}%` : "—"
-                }
-              />
-              <StatCard
-                label="MFA"
-                value={
-                  customer.cspMfaRegisteredPct != null
-                    ? `${Math.round(customer.cspMfaRegisteredPct)}%`
-                    : "—"
-                }
-              />
-              <StatCard label="Users" value={customer.cspUserCount ?? 0} />
-              <StatCard label="Seats" value={customer.cspAssignedSeats ?? 0} />
-            </div>
+            <EcoKpis
+              cols={2}
+              items={[
+                {
+                  label: "Secure Score",
+                  value:
+                    customer.cspSecureScorePct != null ? `${Math.round(customer.cspSecureScorePct)}%` : "—",
+                },
+                {
+                  label: "MFA",
+                  value:
+                    customer.cspMfaRegisteredPct != null
+                      ? `${Math.round(customer.cspMfaRegisteredPct)}%`
+                      : "—",
+                },
+                { label: "Users", value: customer.cspUserCount ?? 0 },
+                { label: "Seats", value: customer.cspAssignedSeats ?? 0 },
+              ]}
+            />
           ) : (
             <p className="text-[12px] text-muted">No cover — Microsoft CSP is not in scope.</p>
           )}
@@ -421,13 +417,15 @@ export function EcoBoard({ data }: { data: CustomerDetailPayload }) {
         ) : null}
 
         {show("tickets") ? (
-        <Pane title="Customer Tickets" tip="Freshdesk tickets split open / resolved / closed." covered={true} {...wgt("tickets")}>
+        <Pane title="RPM Service Desk" tip="Open / resolved / closed tickets." covered={true} {...wgt("tickets")}>
           {tix.total > 0 ? (
-            <div className="grid grid-cols-3 gap-2">
-              <StatCard label="Open" value={tix.open} tone={tix.open > 0 ? "amber" : "green"} />
-              <StatCard label="Resolved" value={tix.resolved} />
-              <StatCard label="Closed" value={tix.closed} />
-            </div>
+            <EcoKpis
+              items={[
+                { label: "Open Tickets", value: tix.open, tone: tix.open > 0 ? "amber" : "green" },
+                { label: "Resolved Tickets", value: tix.resolved },
+                { label: "Closed Tickets", value: tix.closed },
+              ]}
+            />
           ) : (
             <p className="text-[12px] text-muted">No tickets exist for this customer.</p>
           )}

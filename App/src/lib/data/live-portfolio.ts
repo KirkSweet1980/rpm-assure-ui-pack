@@ -5497,15 +5497,27 @@ WHERE d.CustomerCode = @code`);
           ]
             .filter(Boolean)
             .join(" OR ");
+          const ownP = [
+            "UPPER(LTRIM(RTRIM(p.CustomerCode))) = UPPER(@code)",
+            ids.length ? `p.DeviceId IN (${ids.map((_, i) => `@pid${i}`).join(", ")})` : "",
+            names.length ? `UPPER(LTRIM(RTRIM(p.DeviceName))) IN (${names.map((_, i) => `UPPER(@pn${i})`).join(", ")})` : "",
+          ]
+            .filter(Boolean)
+            .join(" OR ");
           const pr = await req.query(`
 SELECT TOP 8000
-  DeviceId, DeviceName, Title, KbArticle, Status, InstalledUtc, Classification, CustomerCode
-FROM ${tbl} WITH (NOLOCK)
-WHERE SnapshotDate = (SELECT MAX(SnapshotDate) FROM ${tbl} WITH (NOLOCK))
-  AND (${own})
+  p.DeviceId, p.DeviceName, p.Title, p.KbArticle, p.Status, p.InstalledUtc, p.Classification, p.CustomerCode
+FROM ${tbl} AS p WITH (NOLOCK)
+INNER JOIN (
+  SELECT DeviceId, MAX(SnapshotDate) AS mx
+  FROM ${tbl} WITH (NOLOCK)
+  WHERE (${own})
+  GROUP BY DeviceId
+) m ON m.DeviceId = p.DeviceId AND m.mx = p.SnapshotDate
+WHERE (${ownP})
 ORDER BY
-  CASE WHEN Status = N'installed' THEN 0 WHEN Status = N'missing' THEN 1 ELSE 2 END,
-  InstalledUtc DESC, Title`);
+  CASE WHEN p.Status = N'installed' THEN 0 WHEN p.Status = N'missing' THEN 1 ELSE 2 END,
+  p.InstalledUtc DESC, p.Title`);
           items = (pr.recordset as Array<Record<string, unknown>>).map((r) => {
             const st = String(r.Status ?? "unknown").toLowerCase();
             const status =
