@@ -47,7 +47,12 @@ if (-not $FreshdeskLookbackMinutes) { $FreshdeskLookbackMinutes = 15 }
 if (-not $FreshdeskSqlUser -and $SqlUser) { $FreshdeskSqlUser = $SqlUser }
 if (-not $FreshdeskSqlPassword -and $SqlPassword) { $FreshdeskSqlPassword = $SqlPassword }
 if (-not $FreshdeskSqlUser) { $FreshdeskSqlUser = 'Rpm_collect' }
-if (-not $FreshdeskSqlPassword) { $FreshdeskSqlPassword = 'RpmCollect#AHIC2026' }
+$gp = @(
+  (Join-Path $here '..\ops\Get-RpmSqlPassword.ps1'),
+  'C:\RPM-Assure\Sql\ops\Get-RpmSqlPassword.ps1'
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if ($gp) { . $gp; $FreshdeskSqlPassword = Get-RpmSqlPassword -Current $FreshdeskSqlPassword }
+elseif ([string]::IsNullOrWhiteSpace($FreshdeskSqlPassword)) { throw 'SQL password missing — run deploy\Harden-Production.ps1' }
 
 if ($Mode -eq 'Auto') {
   $min = [int](Get-Date).Minute

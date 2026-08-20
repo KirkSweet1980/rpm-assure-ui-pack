@@ -22,7 +22,13 @@ if (-not $SqlServer -or $SqlServer -match '14333|102\.222\.21\.220') {
 if (-not $SqlServer)   { $SqlServer = '.\RPMREPORTS' }
 if (-not $SqlDatabase) { $SqlDatabase = 'RPMAssure_App' }
 if (-not $SqlUser)     { $SqlUser = 'Rpm_collect' }
-if (-not $SqlPassword) { $SqlPassword = 'RpmCollect#AHIC2026' }
+$gp = @(
+  (Join-Path $here '..\ops\Get-RpmSqlPassword.ps1'),
+  'C:\RPM-Assure\Sql\ops\Get-RpmSqlPassword.ps1',
+  'C:\RPM-Assure\deploy\ui-pack\sql\ops\Get-RpmSqlPassword.ps1'
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if ($gp) { . $gp; $SqlPassword = Get-RpmSqlPassword -Current $SqlPassword }
+elseif ([string]::IsNullOrWhiteSpace($SqlPassword)) { throw 'SQL password missing — run deploy\Harden-Production.ps1' }
 if (-not $DefaultUnmappedCode) { $DefaultUnmappedCode = '' } # set 'RPMINT' to stamp staff devices
 
 if ([string]::IsNullOrWhiteSpace($ApiKey) -or $ApiKey -like 'PASTE*') { throw 'Set $ApiKey in Bitdefender.Config.ps1' }

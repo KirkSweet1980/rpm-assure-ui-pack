@@ -184,13 +184,21 @@ if ($restamp) {
     }
   }
   if ($sqlcmd) {
-    $sqlServer = "102.222.21.220,14333"
+    $sqlServer = ".\RPMREPORTS"
+    if (-not (Get-Service -Name 'MSSQL$RPMREPORTS' -ErrorAction SilentlyContinue)) { $sqlServer = "127.0.0.1" }
+    $gp = @(
+      (Join-Path $here 'Get-RpmSqlPassword.ps1'),
+      'C:\RPM-Assure\Sql\ops\Get-RpmSqlPassword.ps1'
+    ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    $sqlPwd = $env:RPM_ASSURE_SQL_PASSWORD
+    if ($gp) { . $gp; $sqlPwd = Get-RpmSqlPassword -Current $sqlPwd }
+    if ([string]::IsNullOrWhiteSpace($sqlPwd)) { throw 'SQL password missing — run deploy\Harden-Production.ps1' }
     $outR = Join-Path $logDir ("sched_restamp_" + $stamp + "_out.txt")
     $errR = Join-Path $logDir ("sched_restamp_" + $stamp + "_err.txt")
     try {
       $p = Start-Process -FilePath $sqlcmd -ArgumentList @(
         "-S", $sqlServer, "-d", "RPMAssure_App",
-        "-U", "Rpm_collect", "-P", "RpmCollect#AHIC2026",
+        "-U", "Rpm_collect", "-P", $sqlPwd,
         "-C", "-b", "-i", $restamp
       ) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $outR -RedirectStandardError $errR
       W ("RESTAMP exit=" + [int]$p.ExitCode)

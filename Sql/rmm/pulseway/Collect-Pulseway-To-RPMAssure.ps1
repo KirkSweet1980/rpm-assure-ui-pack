@@ -36,10 +36,19 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
 $BaseUrl = $BaseUrl.TrimEnd('/')
 if ([string]::IsNullOrWhiteSpace($TokenId) -or $TokenId -like 'PASTE*') { throw 'Set TokenId in Pulseway.Config.ps1' }
 if ([string]::IsNullOrWhiteSpace($TokenSecret) -or $TokenSecret -like 'PASTE*') { throw 'Set TokenSecret in Pulseway.Config.ps1' }
-if ([string]::IsNullOrWhiteSpace($SqlServer)) { $SqlServer = '102.222.21.220,14333' }
+if ([string]::IsNullOrWhiteSpace($SqlServer) -or $SqlServer -match '14333|102\.222\.21\.220') {
+  if (Get-Service -Name 'MSSQL$RPMREPORTS' -ErrorAction SilentlyContinue) { $SqlServer = '.\RPMREPORTS' }
+}
+if ([string]::IsNullOrWhiteSpace($SqlServer)) { $SqlServer = '.\RPMREPORTS' }
 if ([string]::IsNullOrWhiteSpace($SqlDatabase)) { $SqlDatabase = 'RPMAssure_App' }
 if ([string]::IsNullOrWhiteSpace($SqlUser)) { $SqlUser = 'Rpm_collect' }
-if ([string]::IsNullOrWhiteSpace($SqlPassword)) { $SqlPassword = 'RpmCollect#AHIC2026' }
+$gp = @(
+  (Join-Path $here '..\..\ops\Get-RpmSqlPassword.ps1'),
+  (Join-Path $here '..\ops\Get-RpmSqlPassword.ps1'),
+  'C:\RPM-Assure\Sql\ops\Get-RpmSqlPassword.ps1'
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if ($gp) { . $gp; $SqlPassword = Get-RpmSqlPassword -Current $SqlPassword }
+elseif ([string]::IsNullOrWhiteSpace($SqlPassword)) { throw 'SQL password missing — run deploy\Harden-Production.ps1' }
 
 # Rate-limit runtime (Write-Log later)
 $script:PwMaxRps = [double]$MaxRequestsPerSecond

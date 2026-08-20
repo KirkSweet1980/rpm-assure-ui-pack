@@ -4,10 +4,10 @@
 # Does NOT require Dim_Customer for collect to succeed.
 
 param(
-  [string]$SqlServer = '102.222.21.220,14333',
+  [string]$SqlServer = '',
   [string]$SqlDatabase = 'RPMAssure_App',
   [string]$SqlUser = 'Rpm_collect',
-  [string]$SqlPassword = 'RpmCollect#AHIC2026',
+  [string]$SqlPassword = '',
   [string]$ConfigPath = '',
   [int]$FallbackPartnerId = 2601580
 )
@@ -32,6 +32,18 @@ if (-not $ConfigPath -or -not (Test-Path -LiteralPath $ConfigPath)) {
 . $ConfigPath
 if ([string]::IsNullOrWhiteSpace($Username) -or $Username -like 'PASTE*') { throw 'Set $Username in Cove.Config.ps1' }
 if ([string]::IsNullOrWhiteSpace($Password) -or $Password -like 'PASTE*') { throw 'Set $Password in Cove.Config.ps1' }
+if (-not $SqlServer -or $SqlServer -match '14333|102\.222\.21\.220') {
+  if (Get-Service -Name 'MSSQL$RPMREPORTS' -ErrorAction SilentlyContinue) { $SqlServer = '.\RPMREPORTS' }
+}
+if (-not $SqlServer) { $SqlServer = '.\RPMREPORTS' }
+if (-not $SqlDatabase) { $SqlDatabase = 'RPMAssure_App' }
+if (-not $SqlUser) { $SqlUser = 'Rpm_collect' }
+$gp = @(
+  (Join-Path $here '..\ops\Get-RpmSqlPassword.ps1'),
+  'C:\RPM-Assure\Sql\ops\Get-RpmSqlPassword.ps1'
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if ($gp) { . $gp; $SqlPassword = Get-RpmSqlPassword -Current $SqlPassword }
+elseif ([string]::IsNullOrWhiteSpace($SqlPassword)) { throw 'SQL password missing — run deploy\Harden-Production.ps1' }
 
 if ([string]::IsNullOrWhiteSpace($ApiUrl)) { $ApiUrl = 'https://api.backup.management/jsonapi' }
 $logDir = Join-Path $here 'logs'
