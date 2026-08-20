@@ -5,7 +5,7 @@ import { classifyRmmDevice, isStrongRmmServer } from "@/lib/data/rmm-device-clas
 import { coverFromDetail, isDormantCover } from "@/lib/data/cover";
 import { ticketStats } from "@/lib/data/ticket-feed";
 import { ServerKindIcon } from "@/components/customer/server-kind-icon";
-import type { CustomerDetailPayload, FactIncidentRow } from "@/lib/data/types";
+import type { CustomerDetailPayload } from "@/lib/data/types";
 import { SpaLink } from "@/components/nav/spa-link";
 import { CoverTag, StatusRobot } from "@/components/ui/status-robot";
 import { RagBadge } from "@/components/portfolio/rag-badge";
@@ -20,21 +20,6 @@ function keyOf(s: string | null | undefined) {
     .toLowerCase()
     .split(".")[0]
     .replace(/[^a-z0-9-]/g, "");
-}
-
-function openTickets(list: FactIncidentRow[]) {
-  return list.filter((t) => {
-    const s = String(t.status ?? "").toLowerCase();
-    return s && !s.includes("close") && !s.includes("resolv");
-  });
-}
-
-function ticketsForHost(list: FactIncidentRow[], host: string) {
-  const k = keyOf(host);
-  if (!k) return 0;
-  return openTickets(list).filter((t) =>
-    keyOf(`${t.title} ${t.externalRef ?? ""} ${t.ownerName ?? ""}`).includes(k),
-  ).length;
 }
 
 function ageLabel(iso: string | null | undefined) {
@@ -74,7 +59,7 @@ type Row = {
   sysproId: string;
   backup: "ok" | "fail" | "none";
   epp: "Protected" | "Warning" | "—";
-  tickets: number;
+  rmm: "ok" | "fail" | "none";
   last: string;
   ip: string;
   location: string;
@@ -96,7 +81,7 @@ type Row = {
   };
 };
 
-type Col = { key: string; label: string; wide?: boolean };
+type Col = { key: string; label: string; wide?: boolean; center?: boolean };
 
 const COLS: Record<EstateFocus, Col[]> = {
   eco: [
@@ -107,9 +92,9 @@ const COLS: Record<EstateFocus, Col[]> = {
     { key: "status", label: "Status" },
     { key: "estate", label: "Estate Type" },
     { key: "sysproId", label: "SYSPRO ID", wide: true },
-    { key: "backup", label: "Cloud Backup" },
+    { key: "backup", label: "Cloud Backup", center: true },
     { key: "epp", label: "End-Point Protection" },
-    { key: "tickets", label: "Tickets" },
+    { key: "rmm", label: "RPM RMM Status", center: true },
     { key: "last", label: "Last Active" },
     { key: "ip", label: "IP Address", wide: true },
     { key: "location", label: "Location", wide: true },
@@ -181,7 +166,6 @@ export function EstateGrid({
     const rmm = data.rmm?.devices ?? [];
     const cove = data.cove?.devices ?? [];
     const epp = data.epp?.devices ?? [];
-    const tix = data.incidents ?? [];
 
     const coveBy = new Map<string, (typeof cove)[0]>();
     for (const c of cove) {
@@ -225,7 +209,7 @@ export function EstateGrid({
           sysproId: "—",
           backup: fail ? "fail" : "ok",
           epp: "—",
-          tickets: 0,
+          rmm: "none",
           last: ageLabel(c.lastSuccessTime),
           ip: "—",
           location: c.partnerName || "—",
@@ -258,7 +242,7 @@ export function EstateGrid({
           sysproId: "—",
           backup: "none",
           epp: warn ? "Warning" : "Protected",
-          tickets: 0,
+          rmm: "none",
           last: ageLabel(e.lastSeenAt || e.lastSuccessfulScanAt),
           ip: e.ipAddress || "—",
           location: "—",
@@ -299,7 +283,7 @@ export function EstateGrid({
             : ep.infected || ep.malwareDetected || ep.productOutdated || ep.signatureOutdated
               ? "Warning"
               : "Protected",
-          tickets: ticketsForHost(tix, host),
+          rmm: d.isOnline === false ? "fail" : "ok",
           last: ageLabel(d.lastSeenOnline),
           ip: d.ipAddress || "—",
           location: d.organizationName || "—",
@@ -329,7 +313,7 @@ export function EstateGrid({
           sysproId: "—",
           backup: /fail|error/i.test(String(c.lastBackupStatus ?? "")) ? "fail" : "ok",
           epp: !ep ? "—" : ep.infected || ep.malwareDetected ? "Warning" : "Protected",
-          tickets: ticketsForHost(tix, host),
+          rmm: "none",
           last: ageLabel(c.lastSuccessTime),
           ip: "—",
           location: c.partnerName || "—",
@@ -351,7 +335,7 @@ export function EstateGrid({
           sysproId: "—",
           backup: "none",
           epp: e.infected || e.malwareDetected ? "Warning" : "Protected",
-          tickets: ticketsForHost(tix, host),
+          rmm: "none",
           last: ageLabel(e.lastSeenAt || e.lastSuccessfulScanAt),
           ip: e.ipAddress || "—",
           location: "—",
@@ -570,17 +554,22 @@ export function EstateGrid({
       case "sysproId":
         return <td key={col.key} className="mono col-wide">{r.sysproId}</td>;
       case "backup":
+      case "rmm": {
+        const v = col.key === "backup" ? r.backup : r.rmm;
         return (
           <td key={col.key} className="center">
-            {r.backup === "ok" ? (
-              <CheckCircle2 className="rpma-est-ok" />
-            ) : r.backup === "fail" ? (
-              <XCircle className="rpma-est-bad" />
-            ) : (
-              <span className="muted">N/A</span>
-            )}
+            <span className="rpma-est-tick">
+              {v === "ok" ? (
+                <CheckCircle2 className="rpma-est-ok" />
+              ) : v === "fail" ? (
+                <XCircle className="rpma-est-bad" />
+              ) : (
+                <span className="muted">N/A</span>
+              )}
+            </span>
           </td>
         );
+      }
       case "epp":
         return (
           <td key={col.key}>
@@ -595,8 +584,6 @@ export function EstateGrid({
             </span>
           </td>
         );
-      case "tickets":
-        return <td key={col.key} className={cn(r.tickets > 0 && "warn")}>{r.tickets}</td>;
       case "last":
         return <td key={col.key}>{r.last}</td>;
       case "ip":
@@ -704,7 +691,7 @@ export function EstateGrid({
               <tr>
                 <th className="w-star" />
                 {cols.map((c) => (
-                  <th key={c.key} className={c.wide ? "col-wide" : undefined}>
+                  <th key={c.key} className={cn(c.wide && "col-wide", c.center && "center")}>
                     {c.label}
                   </th>
                 ))}

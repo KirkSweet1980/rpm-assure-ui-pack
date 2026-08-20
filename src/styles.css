@@ -2878,6 +2878,13 @@ html.snow .rpma-eco-kpi.is-ok strong { color: #047857; }
   padding: 8px 8px;
   border-bottom: 1px solid #c5d0da;
 }
+.rpma-est-table th.center,
+.rpma-est-table td.center { text-align: center; }
+.rpma-est-tick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .rpma-est-table td {
   padding: 8px;
   border-bottom: 1px solid #e2e8ee;
