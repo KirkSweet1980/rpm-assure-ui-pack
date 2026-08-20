@@ -279,7 +279,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
                 <span className={cn("rpma-icon-pip", it.on ? "is-cover" : "is-nocover")} />
               </span>
               <em>{it.short}</em>
-              <StatusRobot rag={it.rag} title={it.hint} />
+              <StatusRobot rag={it.rag} title={it.hint} size={12} />
             </SpaLink>
           );
         })}
@@ -310,6 +310,7 @@ export function CustomerPillarRail({ code, cover, live }: Props) {
                 <StatusRobot
                   rag={flag?.rag ?? (serviceCover ? "Green" : "Off")}
                   title={flag?.hint}
+                  size={12}
                 />
               </SpaLink>
             );

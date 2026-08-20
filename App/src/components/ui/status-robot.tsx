@@ -22,7 +22,7 @@ const SRC = {
 export function StatusRobot({
   rag,
   title,
-  size = 20,
+  size = 12,
 }: {
   rag: HealthRag | "Off" | null | undefined;
   title?: string;

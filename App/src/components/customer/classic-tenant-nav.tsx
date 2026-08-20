@@ -54,7 +54,7 @@ function Row({
       <Icon className="rpma-classic-ico" style={{ color }} aria-hidden />
       <span>{label}</span>
       <CoverTag on={on} />
-      <StatusRobot rag={rag} title={hint} size={16} />
+      <StatusRobot rag={rag} title={hint} size={12} />
     </SpaLink>
   );
 }

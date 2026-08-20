@@ -275,7 +275,7 @@ export function EmpChrome({
                   {rag === "Off" ? (
                     <em className="rpma-emp-nocover">No Cover</em>
                   ) : (
-                    <StatusRobot rag={rag} title={it.label} size={14} />
+                    <StatusRobot rag={rag} title={it.label} size={12} />
                   )}
                 </SpaLink>
               );

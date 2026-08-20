@@ -674,7 +674,7 @@ export function EstateGrid({
                 data-rag={s.rag}
               >
                 <i style={{ background: s.bar }} />
-                <StatusRobot rag={s.rag} title={s.name} size={24} />
+                <StatusRobot rag={s.rag} title={s.name} size={14} />
                 <div>
                   <strong>{s.name}</strong>
                   <span>{s.on ? s.bits.join(" · ") : "No Cover"}</span>
