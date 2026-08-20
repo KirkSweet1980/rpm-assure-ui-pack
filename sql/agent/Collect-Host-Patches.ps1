@@ -12,6 +12,8 @@ $ErrorActionPreference = 'Continue'
 
 $secret = $env:RPM_ASSURE_IOPS_SECRET
 if (-not $secret) { $secret = $env:RPM_ASSURE_AGENT_SECRET }
+if (-not $secret) { $secret = [Environment]::GetEnvironmentVariable('RPM_ASSURE_IOPS_SECRET', 'Machine') }
+if (-not $secret) { $secret = [Environment]::GetEnvironmentVariable('RPM_ASSURE_AGENT_SECRET', 'Machine') }
 if (-not $secret -and (Test-Path (Join-Path $AgentRoot 'Lib-SecureConfig.ps1'))) {
   try {
     . (Join-Path $AgentRoot 'Lib-SecureConfig.ps1')
@@ -23,6 +25,23 @@ if (-not $secret -and (Test-Path (Join-Path $AgentRoot 'Lib-SecureConfig.ps1')))
 if (-not $secret -and (Test-Path (Join-Path $AgentRoot 'Agent.Settings.json'))) {
   try { $secret = [string]((Get-Content (Join-Path $AgentRoot 'Agent.Settings.json') -Raw | ConvertFrom-Json).agentSecret) } catch {}
 }
+if (-not $secret) {
+  foreach ($nssm in @(
+    (Join-Path $AgentRoot 'nssm.exe'),
+    'C:\Program Files\nssm\win64\nssm.exe',
+    'C:\Program Files\nssm\nssm.exe'
+  )) {
+    if (-not (Test-Path $nssm)) { continue }
+    try {
+      $extra = & $nssm get RPMAssure-Edge AppEnvironmentExtra 2>$null | Out-String
+      if ($extra -match 'RPM_ASSURE_IOPS_SECRET=([^\r\n]+)') { $secret = $Matches[1].Trim(); break }
+      if ($extra -match 'RPM_ASSURE_AGENT_SECRET=([^\r\n]+)') { $secret = $Matches[1].Trim(); break }
+    } catch {}
+  }
+}
+if (-not $secret) { $secret = $env:PULSEWAY_WEBHOOK_SECRET }
+# Same ingest token as Collect-Host-Iops / Collect-Host-Firewall
+if (-not $secret) { $secret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz' }
 $hostName = $env:COMPUTERNAME
 Write-Host ('PATCH agent host=' + $hostName + ' code=' + $CustomerCode)
 
