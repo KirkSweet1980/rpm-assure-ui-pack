@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.9.3"
+$AgentVersion = "2.9.4"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }

@@ -27,18 +27,9 @@ function New-RpmaIconFromPng([string]$path, [string]$fallbackHex) {
 }
 
 $trayDir = Join-Path $AgentRoot 'tray'
-$iconOn   = New-RpmaIconFromPng (Join-Path $trayDir 'robot-ok-32.png')    '#16a34a'
-if (-not (Test-Path (Join-Path $trayDir 'robot-ok-32.png'))) {
-  $iconOn = New-RpmaIconFromPng (Join-Path $trayDir 'assure-ok-32.png') '#16a34a'
-}
-$iconWait = New-RpmaIconFromPng (Join-Path $trayDir 'robot-error-32.png') '#d97706'
-if (-not (Test-Path (Join-Path $trayDir 'robot-error-32.png'))) {
-  $iconWait = New-RpmaIconFromPng (Join-Path $trayDir 'assure-error-32.png') '#d97706'
-}
-$iconOff  = New-RpmaIconFromPng (Join-Path $trayDir 'robot-off-32.png')   '#dc2626'
-if (-not (Test-Path (Join-Path $trayDir 'robot-off-32.png'))) {
-  $iconOff = New-RpmaIconFromPng (Join-Path $trayDir 'assure-off-32.png') '#dc2626'
-}
+$iconOn   = New-RpmaIconFromPng (Join-Path $trayDir 'assure-ok-32.png')    '#16a34a'
+$iconWait = New-RpmaIconFromPng (Join-Path $trayDir 'assure-error-32.png') '#d97706'
+$iconOff  = New-RpmaIconFromPng (Join-Path $trayDir 'assure-off-32.png')   '#dc2626'
 
 function Read-RpmaStatus {
   $svc = Get-Service -Name 'RPMAssure-Edge' -ErrorAction SilentlyContinue
@@ -92,9 +83,9 @@ $notify.Visible = $true
 $notify.Text = 'RPM Assure'
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
-$miTitle = $menu.Items.Add('RPM Assure Robot')
+$miTitle = $menu.Items.Add('RPM Assure Agent')
 $miTitle.Enabled = $false
-$miState = $menu.Items.Add('Robot: ...')
+$miState = $menu.Items.Add('Agent: ...')
 $miState.Enabled = $false
 $miSync = $menu.Items.Add('Last sync: ...')
 $miSync.Enabled = $false
@@ -195,7 +186,7 @@ function Update-Tray {
   if ($tip.Length -gt 63) { $tip = $tip.Substring(0, 63) }
   $notify.Text = $tip
   $notify.Icon = if ($s.kind -eq 'green') { $iconOn } elseif ($s.kind -eq 'amber') { $iconWait } else { $iconOff }
-  $miState.Text = "Robot: $($s.state)"
+  $miState.Text = "Agent: $($s.state)"
   $miSync.Text = "Last sync: $(FmtUtc $s.sync)"
 }
 
