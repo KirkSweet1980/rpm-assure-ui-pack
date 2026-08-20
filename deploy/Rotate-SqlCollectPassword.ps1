@@ -53,7 +53,8 @@ W '=== Rotate Rpm_collect start ==='
 if (-not $Apply) { W 'DRY-RUN (pass -Apply to change the login)' }
 
 $old = Get-CurrentPwd
-if (-not $old) { throw 'No current password in secrets/sql-collect.json or RPM_ASSURE_SQL_PASSWORD. Run Harden-Production.ps1 first.' }
+if ($old) { W ('current secrets pwdLength=' + $old.Length + ' (not printed)') }
+else { W 'no current secrets password - ALTER will still run with Windows auth' }
 
 # Who is on 14333 right now (do not print passwords)
 $whoSql = @"
@@ -95,10 +96,7 @@ W 'ALTER LOGIN Rpm_collect OK'
 
 $probe = Invoke-SqlFile "SET NOCOUNT ON; SELECT 'login-ok';" @('-U', 'Rpm_collect', '-P', $newPwd)
 if ($probe.Exit -ne 0 -or $probe.Out -notmatch 'login-ok') {
-  W 'New password probe failed — rolling back to previous password'
-  $escOld = $old.Replace("'", "''")
-  $rb = Invoke-SqlFile "ALTER LOGIN [Rpm_collect] WITH PASSWORD = N'$escOld'; PRINT 'rollback';" @('-E')
-  throw ("Probe failed after rotate. Rollback exit=" + $rb.Exit + ' ' + $probe.Out)
+  throw ('Probe failed after rotate (no rollback). Out=' + $probe.Out)
 }
 W 'Probe login-ok with new password'
 
@@ -109,5 +107,10 @@ $env:RPM_ASSURE_SQL_PASSWORD = $newPwd
 W 'secrets\sql-collect.json + machine env updated'
 
 W '=== rotate done ==='
-W 'Restart scheduled collect tasks if they cached the old password in-process (next run is enough).'
-W '14333 is still public. Do not firewall it until SYSPRO edge uses HTTPS ingest.'
+$fix = Join-Path $PSScriptRoot 'Fix-App-Sql-Password.ps1'
+if (Test-Path -LiteralPath $fix) {
+  W 'Syncing app Settings / NSSM from new secrets...'
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $fix
+} else {
+  W 'Fix-App-Sql-Password.ps1 missing - run it after this'
+}

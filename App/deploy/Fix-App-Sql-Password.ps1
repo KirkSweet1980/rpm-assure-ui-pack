@@ -23,12 +23,16 @@ $sqlcmd = @(
 if (-not $sqlcmd) { $sqlcmd = 'sqlcmd' }
 
 $q = 'SET NOCOUNT ON; SELECT N''login-ok'';'
+$savedEa = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 $probe = & $sqlcmd -S '127.0.0.1,14333' -d RPMAssure_App -U Rpm_collect -P $pwd -C -Q $q 2>&1 | Out-String
 if ($probe -notmatch 'login-ok') {
   $probe2 = & $sqlcmd -S '.\RPMREPORTS' -d RPMAssure_App -U Rpm_collect -P $pwd -C -Q $q 2>&1 | Out-String
-  if ($probe2 -notmatch 'login-ok') { throw ('secrets password does not log in: ' + $probe + ' ' + $probe2) }
+  $ErrorActionPreference = $savedEa
+  if ($probe2 -notmatch 'login-ok') { throw ('secrets password does not log in (pwdLength=' + $pwd.Length + '). Run Rotate-SqlCollectPassword.ps1 -Apply') }
   Write-Host 'Probe .\RPMREPORTS login-ok'
 } else {
+  $ErrorActionPreference = $savedEa
   Write-Host 'Probe 127.0.0.1,14333 login-ok'
 }
 

@@ -67,10 +67,18 @@ function Find-ExistingSqlPassword {
   return $null
 }
 
-$pwd = Find-ExistingSqlPassword
+$pwd = $null
+if (Test-Path $SecFile) {
+  try { $pwd = [string]((Get-Content $SecFile -Raw | ConvertFrom-Json).password) } catch {}
+  if ($pwd) { W 'secrets sql-collect.json kept (will not harvest Config.ps1)' }
+}
+if (-not $pwd) { $pwd = Find-ExistingSqlPassword }
 if ($pwd) {
-  $json = @{ password = $pwd; user = 'Rpm_collect'; seededUtc = [DateTime]::UtcNow.ToString('o') } | ConvertTo-Json
-  [IO.File]::WriteAllText($SecFile, $json)
+  if (-not (Test-Path $SecFile)) {
+    $json = @{ password = $pwd; user = 'Rpm_collect'; seededUtc = [DateTime]::UtcNow.ToString('o') } | ConvertTo-Json
+    [IO.File]::WriteAllText($SecFile, $json)
+    W 'sql-collect.json seeded (file not in git)'
+  }
   try {
     [Environment]::SetEnvironmentVariable('RPM_ASSURE_SQL_PASSWORD', $pwd, 'Machine')
     $env:RPM_ASSURE_SQL_PASSWORD = $pwd
@@ -78,9 +86,8 @@ if ($pwd) {
   } catch {
     W ('machine env warn ' + $_.Exception.Message)
   }
-  W 'sql-collect.json seeded (file not in git)'
 } else {
-  W 'WARN no SQL password found in Config.ps1 / env / secrets — collectors will throw until you set RPM_ASSURE_SQL_PASSWORD'
+  W 'WARN no SQL password found in secrets / env / Config.ps1'
 }
 
 [Environment]::SetEnvironmentVariable('RPM_ASSURE_BOOTSTRAP_LOCK', '1', 'Machine')
@@ -122,10 +129,10 @@ if ($nssm) {
     W ('NSSM env warn ' + $_.Exception.Message)
   }
 } else {
-  W 'NSSM not found — set service env by hand'
+  W 'NSSM not found - set service env by hand'
 }
 
-# SQL listen check (do not change firewall here — SYSPRO edge may still use 14333)
+# SQL listen check (do not change firewall here - SYSPRO edge may still use 14333)
 try {
   $tcp = Get-NetTCPConnection -LocalPort 14333 -State Listen -EA SilentlyContinue |
     Select-Object -ExpandProperty LocalAddress -Unique
@@ -194,5 +201,5 @@ try {
 
 W '=== Harden-Production done ==='
 W 'Next: Restart-Service RPMAssure-App'
-W 'Remaining: firewall 14333 after SYSPRO HTTPS ingest; rpmassure login rotate — see docs/HARDENING.md'
+W 'Remaining: firewall 14333 after SYSPRO HTTPS ingest; rpmassure login rotate - see docs/HARDENING.md'
 Write-Host "report=$Report"
