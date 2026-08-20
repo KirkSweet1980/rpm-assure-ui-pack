@@ -174,7 +174,9 @@ BEGIN
   WHEN NOT MATCHED THEN INSERT (Source, MatchKind, ExternalName, CustomerCode, Active, Notes)
     VALUES (s.Source, s.MatchKind, s.ExternalName, s.CustomerCode, 1, s.Notes);
 
-  PRINT CONCAT(N'External identity rows: ', (SELECT COUNT(*) FROM dbo.Dim_ExternalIdentity WHERE Active = 1));
+  DECLARE @n int;
+  SELECT @n = COUNT(*) FROM dbo.Dim_ExternalIdentity WHERE Active = 1;
+  PRINT CONCAT(N'External identity rows: ', @n);
 END
 GO
 
@@ -228,7 +230,8 @@ BEGIN
   WHERE d.CustomerCode IS NULL
      OR d.CustomerCode <> x.CustomerCode;
 
-  PRINT CONCAT(N'Cove rows restamped from identity: ', @@ROWCOUNT);
+  DECLARE @stamped int = @@ROWCOUNT;
+  PRINT CONCAT(N'Cove rows restamped from identity: ', @stamped);
 END
 GO
 
