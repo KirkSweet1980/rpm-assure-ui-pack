@@ -75,32 +75,36 @@ if (Test-Path $baseSrc) {
 }
 
 $custSrc = Join-Path $Pack ("Sql\customers\" + $CustomerCode)
+$custDest = Join-Path $SqlRoot ("customers\" + $CustomerCode)
+New-Item -ItemType Directory -Force -Path $custDest | Out-Null
 if (Test-Path $custSrc) {
-  $custDest = Join-Path $SqlRoot ("customers\" + $CustomerCode)
-  New-Item -ItemType Directory -Force -Path $custDest | Out-Null
   robocopy $custSrc $custDest /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 }
+$custCfg = Join-Path $custDest 'Customer.Config.ps1'
+@(
+  ('$CustomerCode = ''' + $CustomerCode + ''''),
+  ('$InstanceName = ''' + $env:COMPUTERNAME + ''''),
+  ('$SqlRoot = ''' + $SqlRoot + '''')
+) | Set-Content -LiteralPath $custCfg -Encoding ASCII
+Write-Host ('Wrote ' + $custCfg)
 
 $cfgPath = Join-Path $AgentRoot 'Agent.Config.ps1'
-if (-not (Test-Path $cfgPath)) {
-  $cfg = @(
-    '# Written by Deploy-Assure-Agent.ps1. Passwords are not stored here.',
-    ('$CustomerCode = ''' + $CustomerCode + ''''),
-    ('$DisplayName = ''' + $CustomerCode + ''''),
-    ('$InstanceName = ''' + $env:COMPUTERNAME + ''''),
-    ('$RoleTags = ''' + $RoleTags + ''''),
-    ('$CentralDataSource = ''' + $CentralDataSource + ''''),
-    ('$CentralDatabase = ''' + $CentralDatabase + ''''),
-    ('$CentralSqlUser = ''' + $CentralSqlUser + ''''),
-    ('$SqlRoot = ''' + $SqlRoot + ''''),
-    ('$AgentRoot = ''' + $AgentRoot + ''''),
-    ('$LogDir = ''' + (Join-Path $AgentRoot 'logs') + '''')
-  )
-  [IO.File]::WriteAllLines($cfgPath, $cfg)
-  Write-Host ('Wrote ' + $cfgPath)
-} else {
-  Write-Host ('Keeping ' + $cfgPath)
-}
+$cfg = @(
+  '# Written by Deploy-Assure-Agent.ps1. Passwords are not stored here.',
+  ('$CustomerCode = ''' + $CustomerCode + ''''),
+  ('$DisplayName = ''' + $CustomerCode + ''''),
+  ('$InstanceName = ''' + $env:COMPUTERNAME + ''''),
+  ('$RoleTags = ''' + $RoleTags + ''''),
+  ('$CentralDataSource = ''' + $CentralDataSource + ''''),
+  ('$CentralDatabase = ''' + $CentralDatabase + ''''),
+  ('$CentralSqlUser = ''' + $CentralSqlUser + ''''),
+  ('$SqlRoot = ''' + $SqlRoot + ''''),
+  ('$AgentRoot = ''' + $AgentRoot + ''''),
+  ('$LogDir = ''' + (Join-Path $AgentRoot 'logs') + ''''),
+  '$PreferHttps = $true'
+)
+[IO.File]::WriteAllLines($cfgPath, $cfg)
+Write-Host ('Wrote ' + $cfgPath + ' customer=' + $CustomerCode)
 
 $setPath = Join-Path $AgentRoot 'Agent.Settings.json'
 $set = [ordered]@{

@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.9.8"
+$AgentVersion = "2.9.11"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -299,9 +299,10 @@ function Get-RpmaHostCustomers {
     $out += [pscustomobject]@{ Code = $code.ToUpperInvariant(); Instance = $env:COMPUTERNAME; Path = $files[0].FullName }
   }
   if ($out.Count -eq 0 -and $CustomerCode) {
-    $one = Join-Path $SqlRoot "customers\$CustomerCode\Customer.Config.ps1"
-    if (Test-Path $one) {
-      $out += [pscustomobject]@{ Code = $CustomerCode.ToUpperInvariant(); Instance = $env:COMPUTERNAME; Path = $one }
+    $out += [pscustomobject]@{
+      Code     = $CustomerCode.ToUpperInvariant()
+      Instance = $env:COMPUTERNAME
+      Path     = $ConfigPath
     }
   }
   return $out
