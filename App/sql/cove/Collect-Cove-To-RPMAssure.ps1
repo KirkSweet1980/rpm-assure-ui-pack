@@ -513,7 +513,7 @@ try {
   $offset = 0
   $draasN = 0
   while ($offset -lt 2000) {
-    $q = 'offset={0}&limit=200&sort=last_recovery_timestamp&filter[type.in]=RECOVERY_TESTING,SELF_HOSTED,AZURE_SELF_HOSTED,ESXI_SELF_HOSTED' -f $offset
+    $q = 'offset={0}&limit=200&include=colorbar&sort=last_recovery_timestamp&filter[type.in]=RECOVERY_TESTING,SELF_HOSTED,AZURE_SELF_HOSTED,ESXI_SELF_HOSTED' -f $offset
     $uri = 'https://api.backup.management/draas/actual-statistics/v1/dashboard/?' + $q
     $resp = Invoke-WebRequest -Uri $uri -Method GET -Headers @{ Authorization = ('Bearer ' + $visa) } -UseBasicParsing -TimeoutSec 120
     $body = ConvertTo-Text $resp.Content
@@ -532,7 +532,7 @@ try {
       Index-DraasName $it ([string](Draas-Attr $it 'backup_cloud_device_machine_name'))
       $draasN++
     }
-    Write-Log ('DRaaS dashboard page offset=' + $offset + ' got=' + $items.Count + ' total=' + $draasN)
+    if ($obj.included) { Write-Log ('DRaaS included=' + @($obj.included).Count) }
     if ($offset -eq 0 -and $items.Count -gt 0) {
       $sample = $items[0]
       $attrNames = @()
@@ -559,6 +559,56 @@ try {
 } catch {
   Write-Log ('WARN DRaaS dashboard ' + $_.Exception.Message)
 }
+
+$script:DraasBarByKey = @{}
+try {
+  $planIds = New-Object System.Collections.Generic.List[string]
+  foreach ($it in @($script:DraasByAu.Values)) {
+    $pid = [string](One-Draas $it.id)
+    if ($pid) { [void]$planIds.Add($pid) }
+    $auX = [string](Draas-Attr $it 'backup_cloud_device_id')
+    if ($auX) { [void]$planIds.Add($auX) }
+  }
+  $uniq = @($planIds | Select-Object -Unique)
+  if ($uniq.Count -gt 0) {
+    $filt = 'filter[plan_device_id.in]=' + [uri]::EscapeDataString(($uniq -join ','))
+    $sUri = 'https://api.backup.management/draas/actual-statistics/v1/sessions/?limit=250&sort=-created_at&' + $filt
+    $sResp = Invoke-WebRequest -Uri $sUri -Method GET -Headers @{ Authorization = ('Bearer ' + $visa) } -UseBasicParsing -TimeoutSec 120
+    $sObj = $null
+    try { $sObj = (ConvertTo-Text $sResp.Content) | ConvertFrom-Json } catch {}
+    $sItems = @()
+    if ($sObj -and $sObj.data) { $sItems = @($sObj.data) }
+    Write-Log ('DRaaS sessions got=' + $sItems.Count)
+    if ($sItems.Count -gt 0) {
+      $sn = @()
+      try { if ($sItems[0].attributes) { $sn = @($sItems[0].attributes.PSObject.Properties.Name) } } catch {}
+      Write-Log ('session sample id=' + (One-Draas $sItems[0].id) + ' attrs=' + ($sn -join ','))
+    }
+    foreach ($s in $sItems) {
+      $keys = @(
+        [string](Draas-Attr $s 'plan_device_id'),
+        [string](Draas-Attr $s 'backup_cloud_device_id'),
+        [string](One-Draas $s.id)
+      )
+      $st = [string](Draas-Attr $s 'status')
+      if (-not $st) { $st = [string](Draas-Attr $s 'recovery_status') }
+      if (-not $st) { $st = [string](Draas-Attr $s 'last_recovery_status') }
+      if (-not $st) { $st = [string](Draas-Attr $s 'result') }
+      if ([string]::IsNullOrWhiteSpace($st)) { continue }
+      foreach ($k in $keys) {
+        if ([string]::IsNullOrWhiteSpace($k)) { continue }
+        if (-not $script:DraasBarByKey.ContainsKey($k)) { $script:DraasBarByKey[$k] = New-Object System.Collections.Generic.List[string] }
+        if ($script:DraasBarByKey[$k].Count -lt 14) { [void]$script:DraasBarByKey[$k].Add($st) }
+      }
+    }
+    $mx = 0
+    foreach ($k in @($script:DraasBarByKey.Keys)) { if ($script:DraasBarByKey[$k].Count -gt $mx) { $mx = $script:DraasBarByKey[$k].Count } }
+    Write-Log ('DRaaS session bars keys=' + $script:DraasBarByKey.Count + ' maxTicks=' + $mx)
+  }
+} catch {
+  Write-Log ('WARN DRaaS sessions ' + $_.Exception.Message)
+}
+
 function Find-Draas([string]$au, [string]$an, [string]$mn) {
   if ($au -and $script:DraasByAu.ContainsKey($au)) { return $script:DraasByAu[$au] }
   foreach ($n in @($an, $mn)) {
@@ -583,6 +633,27 @@ function Mark-DraasMatched($draas) {
   $id = [string](Draas-Attr $draas 'backup_cloud_device_id')
   if (-not $id) { $id = [string](One-Draas $draas.id) }
   if ($id) { $script:DraasMatched[$id] = $true }
+}
+function Draas-Last14($draas, [string]$auKey) {
+  $colorBar = ColorBar-Text (Draas-AttrRaw $draas 'colorbar')
+  if ($null -eq $script:DraasBarByKey) { return $colorBar }
+  $pid = [string](One-Draas $draas.id)
+  $auD = [string](Draas-Attr $draas 'backup_cloud_device_id')
+  foreach ($k in @($pid, $auD, $auKey)) {
+    if ($k -and $script:DraasBarByKey.ContainsKey([string]$k) -and $script:DraasBarByKey[[string]$k].Count -gt 0) {
+      return ($script:DraasBarByKey[[string]$k] -join ',')
+    }
+  }
+  return $colorBar
+}
+function Draas-CbTime($draas, [string]$prop) {
+  $cb = Draas-AttrRaw $draas 'colorbar'
+  if ($null -eq $cb) { return $null }
+  try {
+    $p = $cb.PSObject.Properties[$prop]
+    if ($p -and "$($p.Value)") { return [string]$p.Value }
+  } catch {}
+  return $null
 }
 
 $allRows = New-Object System.Collections.Generic.List[object]
@@ -833,10 +904,11 @@ foreach ($row in $allRows) {
     $freq = [string](Draas-Attr $draas 'device_recovery_frequency')
     if ($freq) { $planLabel = (Title-Status $freq); if ($planType -eq 0) { $planType = 1 } }
     elseif ($planName) { $planLabel = $planName; if ($planType -eq 0) { $planType = 1 } }
-    $colorBar = ColorBar-Text (Draas-AttrRaw $draas 'colorbar')
+    $colorBar = Draas-Last14 $draas $auKey
     $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
     if (-not $recStatus) { $recStatus = Title-Status ([string](Draas-Attr $draas 'current_recovery_status')) }
     $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_boot_test_status'))
+    if (-not $bootStatus) { $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_boot_status')) }
     $errRaw = Draas-Attr $draas 'last_recovery_errors_count'
     if ($null -ne $errRaw) { [void][int]::TryParse(("$errRaw"), [ref]$recErrN) }
     $durRaw = Draas-Attr $draas 'last_recovery_duration_user'
@@ -852,13 +924,23 @@ foreach ($row in $allRows) {
     elseif ($pres -eq $false -or "$pres" -eq '0') { $shotPresented = 0 }
     $rtWhen = Draas-Attr $draas 'last_recovery_timestamp'
     if ($lastTestSql -eq 'NULL' -and $rtWhen) { $lastTestSql = Epoch-ToSql ([string]$rtWhen) }
+    if ($lastTestSql -eq 'NULL') {
+      $cbRt = Draas-CbTime $draas 'recovery_session_timestamp'
+      if ($cbRt) { $lastTestSql = Epoch-ToSql $cbRt }
+    }
     $bkWhen = Draas-Attr $draas 'last_backup_session_timestamp'
     if (-not $bkWhen) { $bkWhen = Draas-Attr $draas 'last_boot_test_backup_session_timestamp' }
+    if (-not $bkWhen) { $bkWhen = Draas-CbTime $draas 'backup_session_timestamp' }
     if ($bkWhen) { $backupSessSql = Epoch-ToSql ([string]$bkWhen) }
+    if (-not $recSessId) { $recSessId = Draas-CbTime $draas 'session_id' }
+    if ($null -eq $shotPresented) {
+      $pres2 = Draas-Attr $draas 'last_recovery_screenshot_presented'
+      if ($pres2 -eq $true -or "$pres2" -eq '1' -or "$pres2" -eq 'True') { $shotPresented = 1 }
+    }
   }
   if (-not $colorBar) { $colorBar = ColorBar-Text (Get-Setting $row 'RVB') }
   if (-not $colorBar) { $colorBar = ColorBar-Text (Get-Setting $row 'F08') }
-  if (-not $colorBar -and ($rt0 + $rt1 + $rt2) -gt 0) {
+  if (-not $colorBar -and ($rt0 + $rt1 + $rt2) -gt 0 -and $rt0 -le 14 -and $rt1 -le 14 -and $rt2 -le 14) {
     $synth = New-Object System.Collections.Generic.List[string]
     $pad = 14 - [Math]::Min(14, ($rt0 + $rt1 + $rt2))
     for ($i = 0; $i -lt $pad; $i++) { [void]$synth.Add('NotStarted') }
@@ -1003,10 +1085,11 @@ if ($script:DraasByAu) {
     $freq = [string](Draas-Attr $draas 'device_recovery_frequency')
     if ($freq) { $planName = Title-Status $freq }
     if (-not $planName) { $planName = 'Recovery Testing' }
-    $colorBar = ColorBar-Text (Draas-AttrRaw $draas 'colorbar')
+    $colorBar = Draas-Last14 $draas ([string](Draas-Attr $draas 'backup_cloud_device_id'))
     $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
     if (-not $recStatus) { $recStatus = Title-Status ([string](Draas-Attr $draas 'current_recovery_status')) }
     $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_boot_test_status'))
+    if (-not $bootStatus) { $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_boot_status')) }
     $recErrN = 0
     $errRaw = Draas-Attr $draas 'last_recovery_errors_count'
     if ($null -ne $errRaw) { [void][int]::TryParse(("$errRaw"), [ref]$recErrN) }
