@@ -111,7 +111,10 @@ $len = (Get-Item $zip).Length
 if ($len -lt 1000) { throw "zip too small: $len" }
 foreach ($extra in @(
     (Join-Path $Pack 'public\downloads\Pulseway-Collect-DiskIops.ps1'),
-    (Join-Path $Pack 'public\downloads\Deploy-Assure-Agent.ps1')
+    (Join-Path $Pack 'public\downloads\Deploy-Assure-Agent.ps1'),
+    (Join-Path $Pack 'public\downloads\Collect-Host-Patches.ps1'),
+    (Join-Path $Pack 'Sql\agent\Collect-Host-Patches.ps1'),
+    (Join-Path $Pack 'sql\agent\Collect-Host-Patches.ps1')
   )) {
   if (Test-Path $extra) { [void](Copy-ShareRead $extra (Join-Path $dl (Split-Path $extra -Leaf))) }
 }

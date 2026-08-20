@@ -8,6 +8,7 @@ const ALLOW = new Set([
   "Deploy-Assure-Agent.ps1",
   "Onboard-IB-Syspro.ps1",
   "Pulseway-Collect-DiskIops.ps1",
+  "Collect-Host-Patches.ps1",
   "Update-From-Https.ps1",
   "Apply-Staged-Pack.ps1",
   "login-white-hall.jpg",
