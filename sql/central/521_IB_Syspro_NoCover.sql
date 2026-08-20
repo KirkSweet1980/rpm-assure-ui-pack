@@ -15,6 +15,14 @@ BEGIN
     VALUES (N'IB', 1, 0, SYSUTCDATETIME(), N'521_IB_syspro_nocover');
   PRINT 'IB PillarSyspro=0 (No Cover). Menu stays.';
 END
+IF OBJECT_ID(N'dbo.Agent_Registry', N'U') IS NOT NULL
+BEGIN
+  UPDATE dbo.Agent_Registry
+    SET IsEnabled = 0,
+        LastStatus = N'UNINSTALLED'
+  WHERE CustomerCode = N'IB';
+  PRINT 'IB agent registry marked UNINSTALLED';
+END
 SELECT c.CustomerCode, c.DisplayName, a.PillarSyspro, a.PillarPulseway, a.PillarCove
 FROM dbo.Dim_Customer c
 LEFT JOIN dbo.Dim_Customer_AmsConfig a ON a.CustomerCode = c.CustomerCode

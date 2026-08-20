@@ -28,7 +28,7 @@ function healthTitle(item: ConfigHealthItem) {
 }
 
 function agentStatus(row: InfraAgentRow): { label: string; tone: "green" | "amber" | "red" | "muted" } {
-  if (!row.cover.syspro) return { label: "Not required", tone: "muted" };
+  if (!row.cover.syspro) return { label: "No agent", tone: "muted" };
   const s = row.healthStatus.toUpperCase();
   if (s === "ONLINE") return { label: "Online", tone: "green" };
   if (s === "UPDATE" || s === "UPDATING" || s === "QUEUED" || s === "SYNCING") {
@@ -512,8 +512,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$Pack\\Sql\\agent\\Deploy-S
                         </SpaLink>
                       </td>
                       <td className="font-mono">
-                        {!row.cover.syspro
-                          ? "Not required"
+                        {!row.cover.syspro || !row.hostName
+                          ? "No agent"
                           : row.agentVersion
                             ? `v${row.agentVersion}`
                             : "Not installed"}

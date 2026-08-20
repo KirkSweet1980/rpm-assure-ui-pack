@@ -183,16 +183,18 @@ ORDER BY ISNULL(c.DisplayName, c.CustomerCode)`);
         cspUserCount: cspUsersBy.get(code) ?? 0,
         cspLicenseCount: cspLicBy.get(code) ?? 0,
       });
+      const needsAgent = cover.syspro;
       return {
         customerCode: String(row.CustomerCode ?? ""),
         displayName: String(row.DisplayName ?? row.CustomerCode ?? ""),
-        hostName: row.HostName != null ? String(row.HostName) : null,
-        agentVersion: row.AgentVersion != null ? String(row.AgentVersion) : null,
-        healthStatus: String(row.HealthStatus ?? "NOT_INSTALLED"),
-        lastStatus: row.LastStatus != null ? String(row.LastStatus) : null,
-        lastHeartbeatUtc: row.LastHeartbeatUtc
-          ? new Date(row.LastHeartbeatUtc as string).toISOString()
-          : null,
+        hostName: needsAgent && row.HostName != null ? String(row.HostName) : null,
+        agentVersion: needsAgent && row.AgentVersion != null ? String(row.AgentVersion) : null,
+        healthStatus: needsAgent ? String(row.HealthStatus ?? "NOT_INSTALLED") : "NOT_INSTALLED",
+        lastStatus: needsAgent && row.LastStatus != null ? String(row.LastStatus) : null,
+        lastHeartbeatUtc:
+          needsAgent && row.LastHeartbeatUtc
+            ? new Date(row.LastHeartbeatUtc as string).toISOString()
+            : null,
         cover: {
           syspro: cover.syspro,
           rmm: cover.rmm,
