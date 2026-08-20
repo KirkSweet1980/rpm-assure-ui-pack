@@ -2326,7 +2326,7 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   height: calc(100dvh - var(--pc-header-height));
   max-height: calc(100dvh - var(--pc-header-height));
   overflow: hidden;
-  padding: 8px 10px 10px;
+  padding: 22px 14px 12px;
 }
 .dk-shell.is-topnav .rpma-topnav-canvas {
   flex: 1;
@@ -2341,7 +2341,7 @@ html:not([data-theme="dark"]):not(.dark) .rpma-amx-workspace .rpma-amx-side {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 0.35rem;
+  padding: 0;
 }
 .rpma-emp {
   display: flex;
