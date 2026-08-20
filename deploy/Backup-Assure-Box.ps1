@@ -16,7 +16,7 @@ Write-Host "BACKUP DATABASE -> $bak"
 $sql = @"
 BACKUP DATABASE [RPMAssure_App]
 TO DISK = N'$($bak.Replace("'", "''"))'
-WITH COPY_ONLY, COMPRESSION, INIT, STATS = 10;
+WITH COPY_ONLY, INIT, STATS = 10;
 "@
 $f = Join-Path $dest 'backup.sql'
 [IO.File]::WriteAllText($f, $sql)
