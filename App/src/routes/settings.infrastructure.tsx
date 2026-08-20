@@ -30,8 +30,11 @@ function healthTitle(item: ConfigHealthItem) {
 function agentStatus(row: InfraAgentRow): { label: string; tone: "green" | "amber" | "red" | "muted" } {
   if (!row.cover.syspro) return { label: "No agent", tone: "muted" };
   const s = row.healthStatus.toUpperCase();
-  if (s === "ONLINE") return { label: "Online", tone: "green" };
-  if (s === "UPDATE" || s === "UPDATING" || s === "QUEUED" || s === "SYNCING") {
+  const last = (row.lastStatus ?? "").toUpperCase();
+  if (s === "ONLINE" || last === "ONLINE" || last === "OK" || last === "JOB_FAIL") {
+    return { label: "Online", tone: "green" };
+  }
+  if (s === "UPDATE" || s === "UPDATING" || s === "QUEUED" || s === "SYNCING" || last === "UPDATE" || last === "UPDATING") {
     return { label: "Busy", tone: "amber" };
   }
   if (s === "NOT_INSTALLED" || s === "NEVER") return { label: "Not installed", tone: "muted" };
@@ -48,7 +51,8 @@ function syncToneOf(
   if (phase === "done") return { label: "OK", tone: "green" };
   const last = (row.lastStatus ?? "").toUpperCase();
   const health = row.healthStatus.toUpperCase();
-  if (health === "ONLINE") return { label: "OK", tone: "green" };
+  if (last === "JOB_FAIL") return { label: "Job fail", tone: "red" };
+  if (health === "ONLINE" || last === "ONLINE" || last === "OK") return { label: "OK", tone: "green" };
   if (last === "QUEUED" || last === "SYNCING" || last === "UPDATE" || last === "UPDATING") {
     return { label: "Syncing", tone: "amber" };
   }
