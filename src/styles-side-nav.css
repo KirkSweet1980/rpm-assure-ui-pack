@@ -27,14 +27,20 @@
   min-height: 0;
 }
 .rpma-side-h {
-  margin: 12px 8px 6px;
-  font-size: 11px;
+  margin: 10px -10px 8px;
+  padding: 8px 14px;
+  background: #3a424c;
+  border-bottom: 1px solid #2c333c;
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #64748b;
+  letter-spacing: -0.015em;
+  text-transform: none;
+  line-height: 1.25;
 }
-.rpma-side-h:first-child { margin-top: 0; }
+.rpma-side-h:first-child {
+  margin-top: -12px;
+}
 .rpma-emp.is-side .rpma-emp-titles,
 .rpma-emp.is-side .rpma-emp-tools {
   display: flex !important;
@@ -162,7 +168,11 @@ html[data-theme="dark"] .rpma-emp.is-side .rpma-side {
   border-right-color: #243040;
 }
 html.dark .rpma-emp.is-side .rpma-side-h,
-html[data-theme="dark"] .rpma-emp.is-side .rpma-side-h { color: #94a3b8; }
+html[data-theme="dark"] .rpma-emp.is-side .rpma-side-h {
+  background: #3a424c;
+  border-bottom-color: #2c333c;
+  color: #ffffff;
+}
 html.dark .rpma-emp.is-side .rpma-emp-gtab,
 html.dark .rpma-emp.is-side .rpma-emp-tool,
 html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-gtab,
