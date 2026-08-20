@@ -1,4 +1,4 @@
-# Collect Bitdefender GravityZone endpoints → RPMAssure_App (EPP pillar)
+﻿# Collect Bitdefender GravityZone endpoints -> RPMAssure_App (EPP pillar)
 # Auth: Basic base64(ApiKey + ":")
 # Map: Dim_Bitdefender_NameMap patterns against Name+Fqdn; optional default RPMINT for staff
 
@@ -599,7 +599,7 @@ foreach ($key in @($epBag.Keys)) {
   $gzId = [string]$ep.id
   if (-not $gzId) { $gzId = [string]$key }
   if ($ep.isManaged -ne $true) { $detailSkip++; continue }
-  # List already has lastSuccessfulScan for most hosts — still pull details for malware/outdated.
+  # List already has lastSuccessfulScan for most hosts - still pull details for malware/outdated.
   if ($detailN -ge $detailCap) { break }
   $detailN++
   try {
@@ -655,7 +655,7 @@ foreach ($key in @($epBag.Keys)) {
 }
 Write-Log ("Endpoint detail enrich tried=$detailN ok=$detailOk skipUnmanaged=$detailSkip withScan=" + @($epBag.Values | Where-Object { $_.LastScan }).Count)
 if ($detailN -gt 0 -and $detailOk -eq 0) {
-  Write-Log 'HINT: GravityZone API key needs Network (Computers) rights. In GZ: My Account → API keys → edit key → enable Network.'
+  Write-Log 'HINT: GravityZone API key needs Network (Computers) rights. In GZ: My Account -> API keys -> edit key -> enable Network.'
 }
 
 $hasCoCols = $false
@@ -880,7 +880,7 @@ function Get-EppModulesJsonFromRaw([string]$raw) {
     $seen[$p.l] = $true
     $en = 'true'
     if (-not $on) { $en = 'false' }
-    $bits.Add(('{{"id":"{0}","label":"{1}","enabled":{2}}}' -f $k, $p.l, $en))
+    $bits.Add(('{"id":"' + $k + '","label":"' + ([string]$p.l).Replace('"','') + '","enabled":' + $en + '}'))
   }
   if ($bits.Count -eq 0) { return '[]' }
   return '[' + ($bits -join ',') + ']'
@@ -1101,7 +1101,7 @@ if ($hasDetailCols) {
   }
 }
 
-# Build id → customer map for incidents/quarantine stamping
+# Build id -> customer map for incidents/quarantine stamping
 $epCodeById = @{}
 foreach ($key in $epBag.Keys) {
   $bag = $epBag[$key]
