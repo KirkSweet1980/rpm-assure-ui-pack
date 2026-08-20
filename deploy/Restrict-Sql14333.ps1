@@ -35,7 +35,7 @@ $rules += @(Get-NetFirewallRule -EA SilentlyContinue | Where-Object {
   $_.DisplayName -match '14333|RPMREPORTS|SQL Server' -and $_.Direction -eq 'Inbound'
 })
 $rules = $rules | Sort-Object Name -Unique
-if (-not $rules) { W '  (none found by port filter — SQL may be allowed by a group rule)' }
+if (-not $rules) { W '  (none found by port filter - SQL may be allowed by a group rule)' }
 foreach ($r in $rules) {
   $addr = ($r | Get-NetFirewallAddressFilter -EA SilentlyContinue).RemoteAddress
   $port = ($r | Get-NetFirewallPortFilter -EA SilentlyContinue).LocalPort
@@ -77,7 +77,7 @@ if ($remote.Count -gt 0) {
 }
 
 if (-not $Apply) {
-  W 'Would: disable inbound Allow-from-Any on 14333; add Allow 127.0.0.1 and ::1; enable Public-profile block if missing.'
+  W 'Would: disable ALL inbound Allow rules on 14333 except loopback (including Trusted Sources IP map); add Allow 127.0.0.1 and ::1; keep Public-profile block. Will NOT enable Block-Any (that kills loopback on Windows).'
   W '=== dry-run done ==='
   return
 }
@@ -96,25 +96,28 @@ New-NetFirewallRule -Name $allow6 -DisplayName 'RPM Assure SQL 14333 loopback IP
 W 'Added loopback allow rules'
 
 foreach ($r in $rules) {
+  if ($r.Name -in @($allow4, $allow6)) { continue }
   $addr = @(($r | Get-NetFirewallAddressFilter -EA SilentlyContinue).RemoteAddress)
   $port = @(($r | Get-NetFirewallPortFilter -EA SilentlyContinue).LocalPort)
   $is14333 = ($port -contains '14333') -or ($port -contains 'Any')
-  $isAny = ($addr -contains 'Any') -or ($addr.Count -eq 0)
-  if ($r.Action -eq 'Allow' -and $r.Enabled -eq 'True' -and $is14333 -and $isAny -and $r.Name -notin @($allow4, $allow6)) {
+  if (-not $is14333) { continue }
+  $nonLoop = @($addr | Where-Object { $_ -notin @('127.0.0.1', '::1', 'Localhost') })
+  if ($r.Action -eq 'Allow' -and $r.Enabled -eq 'True' -and $nonLoop.Count -gt 0) {
     Disable-NetFirewallRule -Name $r.Name -EA SilentlyContinue
-    W ('Disabled allow-any: ' + $r.DisplayName)
+    W ('Disabled remote-allow: ' + $r.DisplayName + ' remote=' + ($addr -join ','))
   }
 }
 
-# Public profile explicit block (does not override loopback allow on Private/Domain the same way as a global Block-all)
 $blk = 'RPMAssure-SQL-14333-BlockPublic'
 Get-NetFirewallRule -Name $blk -EA SilentlyContinue | Remove-NetFirewallRule -EA SilentlyContinue
 New-NetFirewallRule -Name $blk -DisplayName 'RPM Assure SQL 14333 block Public profile' `
   -Direction Inbound -Protocol TCP -LocalPort 14333 -Action Block -Profile Public -Enabled True | Out-Null
 W 'Public-profile block on 14333 enabled'
 
-# Probe loopback still works
-$probe = & $sqlcmd -S '127.0.0.1,14333' -d RPMAssure_App -E -C -Q "SET NOCOUNT ON; SELECT 'loopback-ok';" 2>&1 | Out-String
+$savedEa = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+$probe = & $sqlcmd -S '127.0.0.1,14333' -d RPMAssure_App -E -C -Q "SET NOCOUNT ON; SELECT N'loopback-ok';" 2>&1 | Out-String
+$ErrorActionPreference = $savedEa
 if ($probe -notmatch 'loopback-ok') {
   W ('WARN loopback probe: ' + $probe.Trim())
 } else {
@@ -122,4 +125,5 @@ if ($probe -notmatch 'loopback-ok') {
 }
 
 W '=== restrict done ==='
-W 'Verify from another host: Test-NetConnection assure.rpmresources.co.za -Port 14333  (TcpTestSucceeded should be False)'
+W 'From another host: Test-NetConnection assure.rpmresources.co.za -Port 14333  (TcpTestSucceeded should be False)'
+W 'UI / collectors on this box must still work. If SYSPRO linked-server still used TCP, that site will fail until HTTPS ingest.'
