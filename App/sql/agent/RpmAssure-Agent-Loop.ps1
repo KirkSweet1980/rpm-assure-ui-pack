@@ -18,26 +18,26 @@ $logDir = Join-Path $AgentRoot "logs"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $svcLog = Join-Path $logDir "service.log"
 
-function SL([string]$m) {
+function Write-LoopLog([string]$m) {
   $line = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss") + "Z LOOP " + $m
   Add-Content -LiteralPath $svcLog -Value $line -EA SilentlyContinue
   Write-Host $line
 }
 
-SL "service start tick=${TickSeconds}s"
+Write-LoopLog "service start tick=${TickSeconds}s"
 while ($true) {
   try {
     if (-not (Test-Path -LiteralPath $cycle)) { throw "Missing $cycle" }
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $cycle -AgentRoot $AgentRoot
-    SL "cycle exit $LASTEXITCODE"
+    Write-LoopLog "cycle exit $LASTEXITCODE"
     $stage = Join-Path $AgentRoot "_next"
     if (Test-Path (Join-Path $stage "RpmAssure-Agent.ps1")) {
       robocopy $stage $AgentRoot /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json status.json request-sync.flag /XD logs _next /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
       Remove-Item $stage -Recurse -Force -EA SilentlyContinue
-      SL "applied staged agent pack"
+      Write-LoopLog "applied staged agent pack"
     }
   } catch {
-    SL ("cycle error " + $_.Exception.Message)
+    Write-LoopLog ("cycle error " + $_.Exception.Message)
   }
   Start-Sleep -Seconds $TickSeconds
 }
