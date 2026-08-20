@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.9.0"
+$AgentVersion = "2.9.1"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -42,6 +42,10 @@ function W([string]$m) {
   $line = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss") + "Z " + $m
   Add-Content -LiteralPath $log -Value $line
   Write-Host $line
+}
+$ex = Join-Path $AgentRoot 'Ensure-Assure-Exclusion.ps1'
+if (Test-Path $ex) {
+  try { & $ex -Root 'C:\RPM-Assure' } catch { W ('WARN exclusion ' + $_.Exception.Message) }
 }
 
 function Write-RpmaStatusFile {
