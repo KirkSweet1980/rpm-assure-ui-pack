@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+      Id="*"
+      Name="RPM Assure Edge Agent"
+      Language="1033"
+      Version="2.9.0"
+      Manufacturer="RPM Resources"
+      UpgradeCode="B8E91C2A-4D17-4F3E-9A6B-7C2E1F0D8A44">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64"
+             Description="HTTPS agent for RPM Assure. No Git. No public SQL." />
+    <MajorUpgrade DowngradeErrorMessage="A newer agent is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Property Id="CUSTOMERCODE" Secure="yes" />
+    <Property Id="ASSUREURL" Value="https://assure.rpmresources.co.za" Secure="yes" />
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="WindowsVolume">
+        <Directory Id="INSTALLROOT" Name="RPM-Assure">
+          <Directory Id="AGENTDIR" Name="Agent">
+            <Component Id="BootstrapExe" Guid="C3A11B44-8E20-4D55-9F01-A1B2C3D4E5F6">
+              <File Id="BootstrapFile" Source="RpmAssure-Bootstrap.exe" KeyPath="yes" />
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Condition Message="Pass CUSTOMERCODE (example msiexec /i rpm-assure-agent.msi CUSTOMERCODE=AHIC)">
+      <![CDATA[Installed OR CUSTOMERCODE]]>
+    </Condition>
+    <Feature Id="Main" Title="RPM Assure Edge" Level="1">
+      <ComponentRef Id="BootstrapExe" />
+    </Feature>
+    <CustomAction Id="RunBootstrap"
+                  FileKey="BootstrapFile"
+                  ExeCommand="-CustomerCode [CUSTOMERCODE] -Url [ASSUREURL]"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+    <InstallExecuteSequence>
+      <Custom Action="RunBootstrap" After="InstallFiles">NOT Installed</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>
