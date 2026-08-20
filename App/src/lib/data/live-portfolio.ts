@@ -285,6 +285,56 @@ function mapCoveDeviceRow(r: any): CoveDeviceRow {
   };
 }
 
+/** Same Cove ownership for every customer — code, partner map/alias, and hostname prefix. */
+function coveOwnedSql(alias: string): string {
+  return `(
+  ${alias}.CustomerCode = @code
+  OR EXISTS (
+    SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
+    WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
+      AND (
+        UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(${alias}.Product, N''))))
+        OR (
+          LEN(LTRIM(RTRIM(m.PartnerName))) >= 3
+          AND NULLIF(LTRIM(RTRIM(${alias}.Product)), N'') IS NOT NULL
+          AND (
+            UPPER(ISNULL(${alias}.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
+            OR UPPER(LTRIM(RTRIM(m.PartnerName))) LIKE N'%' + UPPER(LTRIM(RTRIM(${alias}.Product))) + N'%'
+          )
+        )
+        OR (m.PartnerId IS NOT NULL AND ${alias}.PartnerId IS NOT NULL AND m.PartnerId = ${alias}.PartnerId)
+      )
+  )
+  OR EXISTS (
+    SELECT 1 FROM dbo.Dim_Cove_PartnerAlias AS a WITH (NOLOCK)
+    WHERE a.CustomerCode = @code AND ISNULL(a.Active, 1) = 1
+      AND UPPER(LTRIM(RTRIM(a.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(${alias}.Product, N''))))
+  )
+  OR (@code = N'AHIC' AND (
+    ${alias}.DeviceName LIKE N'AHI%' OR ${alias}.MachineName LIKE N'AHI%' OR ISNULL(${alias}.Product, N'') LIKE N'AHI%'
+  ))
+  OR (@code = N'ABLE' AND (
+    ${alias}.DeviceName LIKE N'AT-%' OR ${alias}.DeviceName LIKE N'ABLE%' OR ${alias}.MachineName LIKE N'AT-%'
+    OR ISNULL(${alias}.Product, N'') LIKE N'Able%'
+  ))
+  OR (@code = N'UVSS' AND (
+    ${alias}.DeviceName LIKE N'UVSS%' OR ${alias}.MachineName LIKE N'UVSS%'
+    OR ISNULL(${alias}.Product, N'') LIKE N'UVSS%' OR ISNULL(${alias}.Product, N'') LIKE N'Unique Vent%'
+  ))
+  OR (@code = N'BHF' AND (
+    ${alias}.DeviceName LIKE N'BHF%' OR ${alias}.DeviceName LIKE N'PCNS%' OR ${alias}.DeviceName LIKE N'PNCS%'
+    OR ISNULL(${alias}.Product, N'') LIKE N'BHF%' OR ISNULL(${alias}.Product, N'') LIKE N'PCNS%'
+    OR ISNULL(${alias}.Product, N'') LIKE N'%Healthcare Funders%'
+  ))
+  OR (@code = N'HYDRA' AND (${alias}.DeviceName LIKE N'HYDRA%' OR ISNULL(${alias}.Product, N'') LIKE N'Hydra%'))
+  OR (@code = N'RSR' AND (${alias}.DeviceName LIKE N'RSR%' OR ISNULL(${alias}.Product, N'') LIKE N'Redsun%'))
+  OR (@code = N'RSS' AND (${alias}.DeviceName LIKE N'RSS%' OR ISNULL(${alias}.Product, N'') LIKE N'Remote Site%'))
+  OR (@code = N'SBS' AND (${alias}.DeviceName LIKE N'SBS%' OR ISNULL(${alias}.Product, N'') LIKE N'Simply%'))
+  OR (@code = N'RPMINT' AND (${alias}.DeviceName LIKE N'RPM%' OR ISNULL(${alias}.Product, N'') LIKE N'RPM%'))
+  OR (@code = N'IB' AND (${alias}.DeviceName LIKE N'IB%' OR ISNULL(${alias}.Product, N'') LIKE N'Interbrand%'))
+)`;
+}
+
 function mapCustomer(r: CustRow): PortfolioRow {
   const operatorCount = Number(r.OperatorCount) || 0;
   const jobErrorCount = Number(r.JobErrorCount) || 0;
@@ -6005,50 +6055,11 @@ SELECT TOP 500
   d.ScreenshotPresented,
   d.ScreenshotPath
 FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE (
-    d.CustomerCode = @code
-    OR EXISTS (
-      SELECT 1
-      FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code
-        AND ISNULL(m.Active, 1) = 1
-        AND (
-          (NULLIF(LTRIM(RTRIM(m.PartnerName)), N'') IS NOT NULL
-            AND UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
-          )
-          OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
-        )
-    )
-  )
+WHERE ${coveOwnedSql("d")}
   AND d.SnapshotDate = (
     SELECT MAX(d2.SnapshotDate)
     FROM dbo.Cove_DeviceStatistics AS d2 WITH (NOLOCK)
-    WHERE (
-      d2.CustomerCode = @code
-      OR EXISTS (
-        SELECT 1
-        FROM dbo.Dim_Cove_PartnerMap AS m2 WITH (NOLOCK)
-        WHERE m2.CustomerCode = @code
-          AND ISNULL(m2.Active, 1) = 1
-          AND (
-            (NULLIF(LTRIM(RTRIM(m2.PartnerName)), N'') IS NOT NULL
-              AND (
-                UPPER(LTRIM(RTRIM(m2.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d2.Product, N''))))
-                OR (
-                  LEN(LTRIM(RTRIM(m2.PartnerName))) >= 6
-                  AND (
-                    UPPER(ISNULL(d2.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m2.PartnerName))) + N'%'
-                    OR (
-                      LEN(LTRIM(RTRIM(ISNULL(d2.Product, N'')))) >= 6
-                      AND UPPER(LTRIM(RTRIM(m2.PartnerName))) LIKE N'%' + UPPER(LTRIM(RTRIM(d2.Product))) + N'%'
-                    )
-                  )
-                )
-              ))
-            OR (m2.PartnerId IS NOT NULL AND d2.PartnerId IS NOT NULL AND m2.PartnerId = d2.PartnerId)
-          )
-      )
-    )
+    WHERE ${coveOwnedSql("d2")}
   )
 ORDER BY d.DeviceName`);
       coveRows = q1.recordset ?? [];
@@ -6451,34 +6462,26 @@ SELECT TOP 800
   d.RecoveryDurationSec, d.RecoveryDurationLabel, d.BootStatus, d.RecoverySessionId,
   d.ScreenshotPresented, d.ScreenshotPath
 FROM dbo.Cove_DeviceStatistics AS d WITH (NOLOCK)
-WHERE d.SnapshotDate >= DATEADD(day, -6, CAST(SYSUTCDATETIME() AS date))
-  AND (
-    d.CustomerCode = @code
-    OR EXISTS (
-      SELECT 1 FROM dbo.Dim_Cove_PartnerMap AS m WITH (NOLOCK)
-      WHERE m.CustomerCode = @code AND ISNULL(m.Active, 1) = 1
-        AND (
-          (
-            UPPER(LTRIM(RTRIM(m.PartnerName))) = UPPER(LTRIM(RTRIM(ISNULL(d.Product, N''))))
-            OR (
-              LEN(LTRIM(RTRIM(m.PartnerName))) >= 6
-              AND UPPER(ISNULL(d.Product, N'')) LIKE N'%' + UPPER(LTRIM(RTRIM(m.PartnerName))) + N'%'
-            )
-          )
-          OR (m.PartnerId IS NOT NULL AND d.PartnerId IS NOT NULL AND m.PartnerId = d.PartnerId)
-        )
-    )
-  )
+WHERE d.SnapshotDate >= DATEADD(day, -14, CAST(SYSUTCDATETIME() AS date))
+  AND ${coveOwnedSql("d")}
   AND (
     ISNULL(d.RecoveryPlanType, 0) > 0
     OR d.LastRecoveryTestAt IS NOT NULL
     OR d.LastCompletedSessionAt IS NOT NULL
-    OR d.RecoveryTestStatus IN (N'Success', N'Failed', N'InProgress', N'NotStarted', N'Unknown', N'Completed')
+    OR d.RecoveryColorBar IS NOT NULL
+    OR d.BootStatus IS NOT NULL
     OR d.RecoveryStatus IS NOT NULL
+    OR d.RecoveryTestStatus IN (N'Success', N'Failed', N'InProgress', N'NotStarted', N'Unknown', N'Completed')
   )
-  AND ISNULL(d.RecoveryTestStatus, N'') <> N'NotInPlan' 
 ORDER BY d.SnapshotDate DESC, d.DeviceName, d.AccountId`);
-      cove.recoveryHistory = (rh.recordset ?? []).map(mapCoveDeviceRow);
+      cove.recoveryHistory = (rh.recordset ?? [])
+        .map(mapCoveDeviceRow)
+        .filter((d) =>
+          tenantAssetBelongs(code, {
+            host: d.machineName || d.deviceName,
+            org: d.partnerName,
+          }),
+        );
     } catch (e) {
       console.warn(
         "[rpm-assure] Cove recovery history:",

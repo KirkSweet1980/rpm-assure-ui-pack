@@ -4815,7 +4815,8 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
     }
     return out;
   };
-  const devices = latestOf(historyRows.length > 0 ? historyRows : devicesLatest);
+  const recovered = latestOf(historyRows.length > 0 ? historyRows : devicesLatest);
+  const devices = recovered.length > 0 ? recovered : latestOf(data.cove?.devices ?? []);
   const bootOk = devices.filter((d) => (d.bootStatus || "").toLowerCase().includes("success")).length;
   const bootFail = devices.filter((d) => (d.bootStatus || "").toLowerCase().includes("fail")).length;
 
@@ -4844,8 +4845,8 @@ export function CoveRecoverySection({ data }: { data: CustomerDetailPayload }) {
 
       {devices.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted">
-          No Recovery Testing devices on the latest collect. Enable Recovery Testing in Cove Continuity,
-          apply the pack, then re-run Cloud Backup collect so the DRaaS dashboard overlay can fill this grid.
+          No Cloud Backup devices for this customer yet. After the next Cloud Backup collect, Recovery Testing
+          rows from the Cove Continuity dashboard appear here for every covered customer.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">

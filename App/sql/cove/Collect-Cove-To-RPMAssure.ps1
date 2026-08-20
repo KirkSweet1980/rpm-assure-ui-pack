@@ -258,11 +258,20 @@ END
 ;WITH src AS (
   SELECT * FROM (VALUES
     (N''AHI Carriers'', N''AHIC'', 2760329),
+    (N''AHI'', N''AHIC'', 2760329),
+    (N''AHI Carrier'', N''AHIC'', 2760329),
     (N''UVSS'', N''UVSS'', 2814015),
+    (N''Unique Ventilation Systems'', N''UVSS'', 2814015),
     (N''Able Tracers'', N''ABLE'', NULL),
+    (N''Able Tracer'', N''ABLE'', NULL),
     (N''Hydra Sales'', N''HYDRA'', NULL),
+    (N''Hydra'', N''HYDRA'', NULL),
     (N''Redsun Raisins Northen Cape'', N''RSR'', NULL),
-    (N''BHF (PNCS)'', N''PCNS'', 2925801),
+    (N''Redsun Raisins'', N''RSR'', NULL),
+    (N''BHF'', N''BHF'', NULL),
+    (N''BHF (PNCS)'', N''BHF'', 2925801),
+    (N''Board of Healthcare Funders'', N''BHF'', NULL),
+    (N''PCNS'', N''BHF'', 2925801),
     (N''Remote Site Solutions (Pty) Ltd'', N''RSS'', NULL),
     (N''Simply Bright Consulting'', N''SBS'', NULL),
     (N''RPM Resources'', N''RPMINT'', 2601580)
@@ -426,10 +435,18 @@ function Format-DurationLabel($sec) {
 }
 
 $script:DraasByAu = @{}
+$script:DraasByName = @{}
+$script:DraasMatched = @{}
+$script:SeenAu = @{}
 $shotDir = 'C:\RPM-Assure\data\cove-recovery'
 try { New-Item -ItemType Directory -Force -Path $shotDir | Out-Null } catch {
   $shotDir = 'C:\RPM-Assure\downloads\cove-recovery'
   New-Item -ItemType Directory -Force -Path $shotDir | Out-Null
+}
+function Index-DraasName($it, [string]$nm) {
+  if ([string]::IsNullOrWhiteSpace($nm)) { return }
+  $k = $nm.Trim().ToLowerInvariant()
+  if (-not $script:DraasByName.ContainsKey($k)) { $script:DraasByName[$k] = $it }
 }
 try {
   $fields = @(
@@ -454,17 +471,35 @@ try {
     if ($items.Count -eq 0) { break }
     foreach ($it in $items) {
       $au = [string](Draas-Attr $it 'backup_cloud_device_id')
-      if (-not $au) { continue }
-      $script:DraasByAu[$au] = $it
+      if (-not $au -or $au -eq '') { $au = [string](One-Draas $it.id) }
+      if ($au) { $script:DraasByAu[$au] = $it }
+      Index-DraasName $it ([string](Draas-Attr $it 'backup_cloud_device_name'))
+      Index-DraasName $it ([string](Draas-Attr $it 'backup_cloud_device_alias'))
+      Index-DraasName $it ([string](Draas-Attr $it 'backup_cloud_device_machine_name'))
       $draasN++
     }
     Write-Log ('DRaaS dashboard page offset=' + $offset + ' got=' + $items.Count + ' total=' + $draasN)
     if ($items.Count -lt 200) { break }
     $offset += 200
   }
-  Write-Log ('DRaaS recovery devices=' + $script:DraasByAu.Count)
+  Write-Log ('DRaaS recovery devices=' + $script:DraasByAu.Count + ' names=' + $script:DraasByName.Count)
 } catch {
   Write-Log ('WARN DRaaS dashboard ' + $_.Exception.Message)
+}
+function Find-Draas([string]$au, [string]$an, [string]$mn) {
+  if ($au -and $script:DraasByAu.ContainsKey($au)) { return $script:DraasByAu[$au] }
+  foreach ($n in @($an, $mn)) {
+    if ([string]::IsNullOrWhiteSpace($n)) { continue }
+    $k = $n.Trim().ToLowerInvariant()
+    if ($script:DraasByName.ContainsKey($k)) { return $script:DraasByName[$k] }
+  }
+  return $null
+}
+function Mark-DraasMatched($draas) {
+  if ($null -eq $draas) { return }
+  $id = [string](Draas-Attr $draas 'backup_cloud_device_id')
+  if (-not $id) { $id = [string](One-Draas $draas.id) }
+  if ($id) { $script:DraasMatched[$id] = $true }
 }
 
 $allRows = New-Object System.Collections.Generic.List[object]
@@ -689,6 +724,7 @@ foreach ($row in $allRows) {
     }
   }
   $auKey = "$au"
+  $script:SeenAu[$auKey] = $true
   if ($script:RecoveryByAu.ContainsKey($auKey)) {
     $hit = $script:RecoveryByAu[$auKey]
     if ($lastTestSql -eq 'NULL' -and $hit.When) {
@@ -704,8 +740,8 @@ foreach ($row in $allRows) {
     if ($hit.Status -and -not $rvStatus) { $rvStatus = $hit.Status }
   }
 
-  $draas = $null
-  if ($script:DraasByAu -and $script:DraasByAu.ContainsKey($auKey)) { $draas = $script:DraasByAu[$auKey] }
+  $draas = Find-Draas $auKey ([string]$an) ([string]$mn)
+  Mark-DraasMatched $draas
   $colorBar = $null; $recStatus = $null; $bootStatus = $null
   $recErrN = $rvErr; $backupSessSql = 'NULL'; $durLabel = $null; $recDurSec = $null
   $recSessId = $null; $shotPresented = $null; $shotPath = $null
@@ -816,6 +852,8 @@ foreach ($row in $allRows) {
   if ($null -eq $script:RtPatch) { $script:RtPatch = New-Object System.Collections.Generic.List[object] }
   [void]$script:RtPatch.Add([pscustomobject]@{
     AccountId = $auKey
+    DeviceName = [string]$an
+    MachineName = [string]$mn
     ColorBar = $colorBar
     RecStatus = $recStatus
     Errors = $recErrN
@@ -861,6 +899,93 @@ foreach ($row in $allRows) {
   ))
 }
 
+# DRaaS-only recovery devices (Cove dashboard has them, EnumerateAccountStatistics missed I80)
+if ($script:DraasByAu) {
+  $extra = 0
+  foreach ($kv in @($script:DraasByAu.GetEnumerator())) {
+    $dkey = [string]$kv.Key
+    if ($script:DraasMatched.ContainsKey($dkey)) { continue }
+    if ($script:SeenAu.ContainsKey($dkey)) { continue }
+    $draas = $kv.Value
+    $anX = [string](Draas-Attr $draas 'backup_cloud_device_name')
+    $mnX = [string](Draas-Attr $draas 'backup_cloud_device_machine_name')
+    if (-not $mnX) { $mnX = [string](Draas-Attr $draas 'backup_cloud_device_alias') }
+    $pnX = [string](Draas-Attr $draas 'backup_cloud_partner_name')
+    $auNum = 0L
+    if (-not [int64]::TryParse($dkey, [ref]$auNum) -or $auNum -le 0) { continue }
+    $planName = [string](Draas-Attr $draas 'plan_name')
+    if (-not $planName) { $planName = 'Recovery Testing' }
+    $colorBar = ColorBar-Text (Draas-Attr $draas 'colorbar')
+    $recStatus = Title-Status ([string](Draas-Attr $draas 'last_recovery_status'))
+    if (-not $recStatus) { $recStatus = Title-Status ([string](Draas-Attr $draas 'current_recovery_status')) }
+    $bootStatus = Title-Status ([string](Draas-Attr $draas 'last_boot_test_status'))
+    $recErrN = 0
+    $errRaw = Draas-Attr $draas 'last_recovery_errors_count'
+    if ($null -ne $errRaw) { [void][int]::TryParse(("$errRaw"), [ref]$recErrN) }
+    $durRaw = Draas-Attr $draas 'last_recovery_duration_user'
+    $recDurSec = $null; $durLabel = $null
+    if ($durRaw) {
+      $recDurSec = Parse-DurationSec $durRaw
+      if ($null -ne $recDurSec) { $durLabel = Format-DurationLabel $recDurSec } else { $durLabel = [string]$durRaw }
+    }
+    $lastTestSql = 'NULL'
+    $rtWhen = Draas-Attr $draas 'last_recovery_timestamp'
+    if ($rtWhen) { $lastTestSql = Epoch-ToSql ([string]$rtWhen) }
+    $backupSessSql = 'NULL'
+    $bkWhen = Draas-Attr $draas 'last_backup_session_timestamp'
+    if (-not $bkWhen) { $bkWhen = Draas-Attr $draas 'last_boot_test_backup_session_timestamp' }
+    if ($bkWhen) { $backupSessSql = Epoch-ToSql ([string]$bkWhen) }
+    $recSessId = [string](Draas-Attr $draas 'last_recovery_session_id')
+    if (-not $recSessId) { $recSessId = [string](Draas-Attr $draas 'last_boot_test_session_id') }
+    $testStatus = 'Success'
+    if ($bootStatus -eq 'Failed' -or $recStatus -eq 'Failed') { $testStatus = 'Failed' }
+    elseif ($recStatus) { $testStatus = $recStatus }
+    if ($null -eq $script:RtPatch) { $script:RtPatch = New-Object System.Collections.Generic.List[object] }
+    [void]$script:RtPatch.Add([pscustomobject]@{
+      AccountId = $dkey
+      DeviceName = $anX
+      MachineName = $mnX
+      ColorBar = $colorBar
+      RecStatus = $recStatus
+      Errors = $recErrN
+      LastCompleted = $lastTestSql
+      BackupSession = $backupSessSql
+      DurSec = $recDurSec
+      DurLabel = $durLabel
+      Boot = $bootStatus
+      SessId = $recSessId
+      Shot = $null
+      ShotPath = $null
+      PlanLabel = $planName
+      TestStatus = $testStatus
+    })
+    $values.Add((
+      "({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24})" -f `
+        ("'{0}'" -f $snap),
+        $dkey,
+        'NULL',
+        (Sql-Str $pnX),
+        (Sql-Str $anX),
+        (Sql-Str $mnX),
+        'NULL',
+        'NULL',
+        'NULL',
+        (Sql-Str 'OK'),
+        1,
+        (Sql-Str $planName),
+        'NULL',
+        (Sql-Str $testStatus),
+        'NULL',
+        $lastTestSql,
+        'NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL'
+    ))
+    $script:SeenAu[$dkey] = $true
+    $script:DraasMatched[$dkey] = $true
+    $extra++
+  }
+  Write-Log ('DRaaS leftover recovery rows=' + $extra)
+}
+
 if ($values.Count -eq 0) { throw 'No device rows built for SQL insert' }
 Write-Log ("Rows to insert=" + $values.Count)
 # Diagnostic: first device with Recovery Testing plan
@@ -899,7 +1024,7 @@ CREATE TABLE #cove (
   LastSuccessTime datetime2(3) NULL,
   LastBackupStatus nvarchar(100) NULL,
   RecoveryPlanType int NULL,
-  RecoveryPlanLabel nvarchar(40) NULL,
+  RecoveryPlanLabel nvarchar(120) NULL,
   RecoveryVerification nvarchar(400) NULL,
   RecoveryTestStatus nvarchar(40) NULL,
   Physicality nvarchar(40) NULL,
@@ -930,8 +1055,22 @@ IF OBJECT_ID('tempdb..#mapped') IS NOT NULL DROP TABLE #mapped;
 SELECT c.*, m.CustomerCode
 INTO #mapped
 FROM #cove c
-LEFT JOIN dbo.Dim_Cove_PartnerMap m
-  ON m.Active = 1 AND m.PartnerName = c.PartnerName;
+OUTER APPLY (
+  SELECT TOP 1 x.CustomerCode
+  FROM dbo.Dim_Cove_PartnerMap AS x
+  WHERE x.Active = 1 AND (
+    x.PartnerName = c.PartnerName
+    OR (
+      LEN(LTRIM(RTRIM(ISNULL(x.PartnerName, N'')))) >= 3
+      AND NULLIF(LTRIM(RTRIM(c.PartnerName)), N'') IS NOT NULL
+      AND (
+        c.PartnerName LIKE x.PartnerName + N'%'
+        OR x.PartnerName LIKE c.PartnerName + N'%'
+      )
+    )
+  )
+  ORDER BY CASE WHEN x.PartnerName = c.PartnerName THEN 0 ELSE 1 END, LEN(x.PartnerName) DESC
+) m;
 
 DELETE d
 FROM dbo.Cove_DeviceStatistics d
@@ -992,7 +1131,10 @@ if ($script:RtPatch -and $script:RtPatch.Count -gt 0) {
     if ($p.PlanLabel) { $set += ('RecoveryPlanLabel = ' + (Sql-Str $p.PlanLabel)) }
     if ($p.TestStatus) { $set += ('RecoveryTestStatus = ' + (Sql-Str $p.TestStatus)) }
     if ($set.Count -eq 0) { continue }
-    [void]$up.AppendLine(('UPDATE dbo.Cove_DeviceStatistics SET ' + ($set -join ', ') + ' WHERE SnapshotDate = ''' + $snap + ''' AND AccountId = ' + $p.AccountId + ';'))
+    $namePred = ''
+    if ($p.DeviceName) { $namePred += ' OR DeviceName = ' + (Sql-Str $p.DeviceName) }
+    if ($p.MachineName) { $namePred += ' OR MachineName = ' + (Sql-Str $p.MachineName) }
+    [void]$up.AppendLine(('UPDATE dbo.Cove_DeviceStatistics SET ' + ($set -join ', ') + ' WHERE SnapshotDate = ''' + $snap + ''' AND (AccountId = ' + $p.AccountId + $namePred + ');'))
   }
   Write-Log ('DRaaS overlay updates=' + $nUp)
   if ($nUp -gt 0) {
@@ -1018,6 +1160,15 @@ if (Test-Path -LiteralPath $autoMap) {
     Invoke-SqlFile -SqlText ([IO.File]::ReadAllText($autoSql)) -Label 'automap'
   } catch {
     Write-Log ('Auto-map SQL warning: ' + $_.Exception.Message)
+  }
+}
+$restamp = Join-Path $here '465_Restamp_Cove_All_Customers.sql'
+if (Test-Path -LiteralPath $restamp) {
+  Write-Log 'Running 465 restamp all customers...'
+  try {
+    Invoke-SqlFile -SqlText ([IO.File]::ReadAllText($restamp)) -Label 'restamp465'
+  } catch {
+    Write-Log ('465 restamp warning: ' + $_.Exception.Message)
   }
 }
 

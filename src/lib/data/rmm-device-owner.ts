@@ -35,7 +35,7 @@ const NAME_RULES: { re: RegExp; code: string }[] = [
 const ORG_RULES: { re: RegExp; code: string }[] = [
   { re: /remote\s*site/i, code: "RSS" },
   { re: /\brss\b/i, code: "RSS" },
-  { re: /ahi\s*carrier/i, code: "AHIC" },
+  { re: /ahi\s*carrier|\bahi\b/i, code: "AHIC" },
   { re: /redsun/i, code: "RSR" },
   { re: /hydra/i, code: "HYDRA" },
   { re: /able\s*tracer/i, code: "ABLE" },
