@@ -20,7 +20,7 @@ if (Test-Path $lib) {
 $httpsLib = Join-Path $AgentRoot 'Lib-RpmaHttps.ps1'
 if (Test-Path $httpsLib) { . $httpsLib }
 
-$AgentVersion = "2.8.6"
+$AgentVersion = "2.8.8"
 $HostName = $env:COMPUTERNAME
 if (-not $PreferHttps) { $PreferHttps = $true }
 if (-not $CentralDataSource) { $CentralDataSource = 'https-only' }
@@ -420,21 +420,35 @@ WHERE HostName = $(Sql-Lit $HostName)
   }
   $pack = "C:\RPM-Assure\deploy\ui-pack"
   $packVerFile = Join-Path $pack "Sql\agent\VERSION"
+  if (-not (Test-Path $packVerFile)) { $packVerFile = Join-Path $pack "sql\agent\VERSION" }
   if (-not (Test-Path $packVerFile)) { $packVerFile = Join-Path $pack "VERSION" }
   $fetchStamp = Join-Path $LogDir "last_pack_fetch.txt"
   $fetchDue = $true
   if (Test-Path $fetchStamp) {
     try {
       $lf = [datetime]::Parse((Get-Content $fetchStamp -Raw).Trim(), [Globalization.CultureInfo]::InvariantCulture)
-      if (((Get-Date).ToUniversalTime() - $lf.ToUniversalTime()).TotalMinutes -lt 360) { $fetchDue = $false }
+      if (((Get-Date).ToUniversalTime() - $lf.ToUniversalTime()).TotalMinutes -lt 30) { $fetchDue = $false }
     } catch {}
   }
   $httpsBase = "https://assure.rpmresources.co.za"
   if (Get-Command Get-RpmaAssureUrl -ErrorAction SilentlyContinue) {
     try { $httpsBase = Get-RpmaAssureUrl } catch {}
   }
+  $remoteVer = $null
+  try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $wcVer = New-Object Net.WebClient
+    $wcVer.Headers['Cache-Control'] = 'no-cache'
+    $remoteVer = (($wcVer.DownloadString($httpsBase.TrimEnd('/') + '/downloads/VERSION')) -replace '\s', '')
+  } catch {
+    W ("WARN remote VERSION " + $_.Exception.Message)
+  }
+  if ($remoteVer) {
+    W ("pack VERSION local=$AgentVersion remote=$remoteVer")
+    if ($remoteVer -ne $AgentVersion) { $needUp = $true; $fetchDue = $true }
+  }
   if ($needUp -or $fetchDue) {
-    W "pack fetch HTTPS (needUp=$needUp fetchDue=$fetchDue)"
+    W "pack fetch HTTPS (needUp=$needUp fetchDue=$fetchDue remote=$remoteVer local=$AgentVersion)"
     try {
       [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
       $dlDir = "C:\RPM-Assure\downloads"
@@ -442,13 +456,23 @@ WHERE HostName = $(Sql-Lit $HostName)
       $zip = Join-Path $dlDir "rpm-assure-agent.zip"
       $uri = $httpsBase.TrimEnd('/') + "/downloads/rpm-assure-agent.zip"
       $got = $false
-      if (Get-Command Start-BitsTransfer -EA SilentlyContinue) {
-        try { Start-BitsTransfer -Source $uri -Destination $zip -ErrorAction Stop; $got = $true } catch { W ("WARN BITS " + $_.Exception.Message) }
-      }
-      if (-not $got) {
-        $wc = New-Object Net.WebClient
-        $wc.DownloadFile($uri, $zip)
-        $got = $true
+      $attempt = 0
+      while (-not $got -and $attempt -lt 3) {
+        $attempt++
+        try {
+          if (Get-Command Start-BitsTransfer -EA SilentlyContinue) {
+            Start-BitsTransfer -Source $uri -Destination $zip -ErrorAction Stop
+            $got = $true
+          }
+        } catch { W ("WARN BITS try$attempt " + $_.Exception.Message) }
+        if (-not $got) {
+          try {
+            $wc = New-Object Net.WebClient
+            $wc.Headers['Cache-Control'] = 'no-cache'
+            $wc.DownloadFile($uri, $zip)
+            $got = $true
+          } catch { W ("WARN WebClient try$attempt " + $_.Exception.Message); Start-Sleep -Seconds (2 * $attempt) }
+        }
       }
       if ((Test-Path $zip) -and (Get-Item $zip).Length -gt 1000) {
         Get-ChildItem $pack -Force -EA SilentlyContinue | Where-Object { $_.Name -ne ".git" } | Remove-Item -Recurse -Force -EA SilentlyContinue
@@ -460,7 +484,7 @@ WHERE HostName = $(Sql-Lit $HostName)
           [IO.Compression.ZipFile]::ExtractToDirectory($zip, $pack)
         }
         [IO.File]::WriteAllText($fetchStamp, (Get-Date).ToUniversalTime().ToString("o"))
-        W "pack fetch HTTPS ok"
+        W ("pack fetch HTTPS ok bytes=" + (Get-Item $zip).Length)
       } else {
         W "WARN pack fetch empty"
       }

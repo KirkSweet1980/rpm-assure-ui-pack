@@ -109,6 +109,18 @@ Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 
 $len = (Get-Item $zip).Length
 if ($len -lt 1000) { throw "zip too small: $len" }
+
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$check = [IO.Compression.ZipFile]::OpenRead($zip)
+$names = @($check.Entries | ForEach-Object { $_.FullName.Replace('\', '/').ToLowerInvariant() })
+$check.Dispose()
+function Test-ZipHas([string]$leaf) {
+  return [bool]($names | Where-Object { $_ -like ('*/' + $leaf) -or $_ -eq $leaf })
+}
+if (-not (Test-ZipHas 'collect-host-patches.ps1')) { throw 'zip missing Collect-Host-Patches.ps1 — not publishing a broken pack' }
+if (-not (Test-ZipHas 'rpmassure-agent.ps1')) { throw 'zip missing RpmAssure-Agent.ps1 — not publishing a broken pack' }
+if (-not (Test-ZipHas 'update-from-https.ps1')) { throw 'zip missing Update-From-Https.ps1 — not publishing a broken pack' }
+
 foreach ($extra in @(
     (Join-Path $Pack 'public\downloads\Pulseway-Collect-DiskIops.ps1'),
     (Join-Path $Pack 'public\downloads\Deploy-Assure-Agent.ps1'),

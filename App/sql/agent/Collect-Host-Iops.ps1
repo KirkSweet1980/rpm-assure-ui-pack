@@ -114,6 +114,43 @@ if (-not $PreferHttps) {
 }
 W ("START iops host=$HostName customer=$CustomerCode sample=${SampleSec}s https=$PreferHttps")
 
+# Bridge: this file is not locked during the agent UPDATE robocopy. If the pack
+# on disk is newer than the running RpmAssure-Agent.ps1, copy it after the cycle exits.
+try {
+  $packAgent = "C:\RPM-Assure\deploy\ui-pack\Sql\agent"
+  if (-not (Test-Path (Join-Path $packAgent "RpmAssure-Agent.ps1"))) {
+    $packAgent = "C:\RPM-Assure\deploy\ui-pack\sql\agent"
+  }
+  $want = $null
+  foreach ($vf in @(
+    (Join-Path $packAgent "VERSION"),
+    (Join-Path $AgentRoot "_next\VERSION"),
+    (Join-Path $AgentRoot "VERSION")
+  )) {
+    if (Test-Path $vf) { $want = (Get-Content $vf -Raw).Trim(); if ($want) { break } }
+  }
+  $have = $null
+  $running = Join-Path $AgentRoot "RpmAssure-Agent.ps1"
+  if (Test-Path $running) {
+    $m = Select-String -Path $running -Pattern 'AgentVersion\s*=\s*"([^"]+)"' | Select-Object -First 1
+    if ($m) { $have = [string]$m.Matches[0].Groups[1].Value }
+  }
+  $src = $packAgent
+  if (Test-Path (Join-Path $AgentRoot "_next\RpmAssure-Agent.ps1")) { $src = Join-Path $AgentRoot "_next" }
+  if ($want -and $have -and $want -ne $have -and (Test-Path (Join-Path $src "RpmAssure-Agent.ps1"))) {
+    W ("APPLY pack $want over running $have from $src (staged, no hidden cmd)")
+    $stage = Join-Path $AgentRoot "_next"
+    New-Item -ItemType Directory -Force -Path $stage | Out-Null
+    robocopy $src $stage /E /XF Agent.Secrets.bin Agent.Config.ps1 Agent.Settings.json /XD logs _next /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+    $applySrc = Join-Path $src "Apply-Staged-Pack.ps1"
+    $apply = Join-Path $AgentRoot "Apply-Staged-Pack.ps1"
+    if (Test-Path $applySrc) { Copy-Item -Force $applySrc $apply }
+    if (Test-Path $apply) {
+      schtasks /Create /TN "RPMAssure-ApplyPack" /SC MINUTE /MO 1 /RU SYSTEM /RL HIGHEST /F /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$apply`"" | Out-Null
+    }
+  }
+} catch { W ("WARN apply-bridge " + $_.Exception.Message) }
+
 # --- Windows disk performance counters (PowerShell) ---
 # Pulseway does not publish IOPS. This host must have:
 #   1) diskperf enabled  (we turn it on)
