@@ -14,7 +14,7 @@
 }
 .rpma-emp.is-side .rpma-emp-bodyrow {
   display: grid !important;
-  grid-template-columns: 228px 240px minmax(0, 1fr) !important;
+  grid-template-columns: 268px minmax(0, 1fr) !important;
   min-height: 0 !important;
   flex: 1 1 auto !important;
   overflow: hidden !important;
@@ -25,7 +25,7 @@
   background: #fff;
   border-right: 1px solid #e8edf2;
   padding: 0;
-  overflow: hidden;
+  overflow: auto;
   min-height: 0;
   min-width: 0;
 }
@@ -57,9 +57,9 @@
   padding: 8px 8px 12px !important;
   background: transparent !important;
   border: 0 !important;
-  flex: 1 1 auto !important;
+  flex: 0 0 auto !important;
   min-height: 0 !important;
-  overflow: auto !important;
+  overflow: visible !important;
 }
 .rpma-emp.is-side .rpma-emp-gtab,
 .rpma-emp.is-side .rpma-emp-tool {
@@ -289,7 +289,7 @@ html[data-theme="dark"] .rpma-emp-nocover {
 
 @media (max-width: 1180px) {
   .rpma-emp.is-side .rpma-emp-bodyrow {
-    grid-template-columns: 200px 210px minmax(0, 1fr) !important;
+    grid-template-columns: 240px minmax(0, 1fr) !important;
   }
 }
 html.dark .rpma-emp-gtab.is-nocover,

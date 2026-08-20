@@ -228,7 +228,7 @@ export function EmpChrome({
         <em>Enterprise Management Platform</em>
       </div>
       <div className="rpma-emp-bodyrow">
-        <nav className="rpma-side rpma-side-svc" aria-label="RPM Services">
+        <nav className="rpma-side" aria-label="Tenant navigation">
           <p className="rpma-side-h">RPM Services</p>
           <div className="rpma-emp-titles">
             {ALWAYS_SHOW_SERVICES.map((g) => {
@@ -254,8 +254,6 @@ export function EmpChrome({
               );
             })}
           </div>
-        </nav>
-        <nav className="rpma-side rpma-side-mod" aria-label="RPM Service Modules">
           <p className="rpma-side-h">RPM Service Modules</p>
           <div className="rpma-emp-tools">
             {group.items.map((it) => {
