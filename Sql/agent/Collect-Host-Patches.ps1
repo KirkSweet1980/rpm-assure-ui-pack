@@ -12,6 +12,17 @@ $ErrorActionPreference = 'Continue'
 
 $secret = $env:RPM_ASSURE_IOPS_SECRET
 if (-not $secret) { $secret = $env:RPM_ASSURE_AGENT_SECRET }
+if (-not $secret -and (Test-Path (Join-Path $AgentRoot 'Lib-SecureConfig.ps1'))) {
+  try {
+    . (Join-Path $AgentRoot 'Lib-SecureConfig.ps1')
+    $script:RpmaAgentRoot = $AgentRoot
+    $st = Get-RpmaAgentSettings
+    if ($st.agentSecret) { $secret = [string]$st.agentSecret }
+  } catch {}
+}
+if (-not $secret -and (Test-Path (Join-Path $AgentRoot 'Agent.Settings.json'))) {
+  try { $secret = [string]((Get-Content (Join-Path $AgentRoot 'Agent.Settings.json') -Raw | ConvertFrom-Json).agentSecret) } catch {}
+}
 $hostName = $env:COMPUTERNAME
 Write-Host ('PATCH agent host=' + $hostName + ' code=' + $CustomerCode)
 
