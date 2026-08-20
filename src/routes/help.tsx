@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
+import { Outlet, Navigate, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { CircleHelp } from "lucide-react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
@@ -12,10 +12,13 @@ export const Route = createFileRoute("/help")({
 
 function HelpLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname === "/help" || pathname === "/help/") {
+    return <Navigate to="/help/$topic" params={{ topic: "overview" }} replace />;
+  }
   return (
     <RequireAuth>
       <AppShell>
-        <div className="rpma-help">
+        <div className="rpma-help is-page">
           <aside className="rpma-help-nav" aria-label="Help topics">
             <p className="rpma-help-kicker">
               <CircleHelp className="h-3.5 w-3.5" /> Application help

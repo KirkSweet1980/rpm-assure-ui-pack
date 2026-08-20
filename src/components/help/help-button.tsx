@@ -6,7 +6,8 @@ export function HelpButton({ pathname }: { pathname?: string }) {
   const on = (pathname ?? "").startsWith("/help");
   return (
     <Link
-      to="/help"
+      to="/help/$topic"
+      params={{ topic: "overview" }}
       className={cn("dk-help-btn", on && "is-active")}
       title="Help"
       aria-label="Open application help"
