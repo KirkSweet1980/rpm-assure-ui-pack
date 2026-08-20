@@ -15,7 +15,14 @@
   --gap: 12px;
   --pane-r: 12px;
   --rail-svc-w: 220px;
-  --rail-mod-w: 220px;
+  --rail-mod-bg: #5c7a96;
+  --rail-mod-fg: #f4f8fc;
+  --pastel-teal: #7dd3c7;
+  --pastel-blue: #93c5fd;
+  --pastel-sky: #7dd3fc;
+  --pastel-red: #fca5a5;
+  --pastel-purple: #c4b5fd;
+  --pastel-amber: #fde68a;
   --header-h: 64px;
   --pc-header-height: 64px;
   --page-bg: #e8eef4;
@@ -208,7 +215,27 @@ html, body, .dk-shell.is-topnav { background: var(--page-bg) !important; }
   background: #eef2ff !important;
   color: #1d4ed8 !important;
 }
-.rpma-rail-mod { background: var(--nav-bg) !important; color: var(--nav-fg) !important; }
+.rpma-rail-mod { background: var(--rail-mod-bg) !important; color: var(--rail-mod-fg) !important; }
+.rpma-rail-mod .rpma-rail-kicker,
+.rpma-rail-mod .rpma-rail-sec { color: rgba(244,248,252,0.78) !important; }
+.rpma-rail-mod .rpma-rail-item { color: var(--rail-mod-fg) !important; }
+.rpma-rail-mod .rpma-rail-item:hover { background: rgba(255,255,255,0.12) !important; }
+.rpma-rail-mod .rpma-rail-item.is-on {
+  background: #dbe7f5 !important;
+  color: #24384c !important;
+  font-weight: 700;
+}
+.rpma-rail-svc .rpma-rail-ico,
+.rpma-rail-mod .rpma-rail-ico,
+.rpma-rail-item svg {
+  filter: saturate(0.55) brightness(1.18);
+}
+.rpma-help-nav,
+.rpma-user-tenants,
+.rpma-agent-hosts {
+  background: var(--rail-mod-bg) !important;
+  color: var(--rail-mod-fg) !important;
+}
 
 html.dark .rpma-rail-svc .rpma-rail-item.is-on,
 html[data-theme="dark"] .rpma-rail-svc .rpma-rail-item.is-on {
@@ -259,8 +286,8 @@ html[data-theme="dark"] .rpma-rail-svc .rpma-rail-item.is-on {
   height: 100% !important;
   margin: 0 12px 0 0 !important;
   overflow: auto !important;
-  background: var(--nav-bg) !important;
-  color: var(--nav-fg) !important;
+  background: var(--rail-mod-bg) !important;
+  color: var(--rail-mod-fg) !important;
   border-radius: var(--pane-r) !important;
   padding: 14px 10px 18px !important;
 }
@@ -277,7 +304,7 @@ html[data-theme="dark"] .rpma-rail-svc .rpma-rail-item.is-on {
   padding: 24px 28px !important;
 }
 .rpma-help-article { max-width: none !important; }
-.rpma-help-link { color: var(--nav-fg) !important; }
+.rpma-help-link { color: var(--rail-mod-fg) !important; }
 .rpma-help-link:hover, .rpma-help-link.is-on {
   background: var(--nav-hover-bg) !important;
   color: var(--nav-hover-fg) !important;
@@ -315,8 +342,8 @@ html[data-theme="dark"] .rpma-rail-svc .rpma-rail-item.is-on {
 .rpma-agent-hosts {
   flex: 0 0 240px;
   width: 240px;
-  background: var(--nav-bg);
-  color: var(--nav-fg);
+  background: var(--rail-mod-bg);
+  color: var(--rail-mod-fg);
 }
 .rpma-agent-detail {
   flex: 1 1 auto;
@@ -439,8 +466,8 @@ html[data-theme="dark"] .rpma-agent-cust-btn.is-on {
 .rpma-user-tenants {
   flex: 0 0 280px;
   width: 280px;
-  background: var(--nav-bg);
-  color: var(--nav-fg);
+  background: var(--rail-mod-bg);
+  color: var(--rail-mod-fg);
 }
 .rpma-user-detail {
   flex: 1 1 auto;

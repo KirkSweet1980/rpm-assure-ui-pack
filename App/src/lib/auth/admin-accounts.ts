@@ -319,6 +319,40 @@ function grantsFromCodes(codes: string[] | undefined, role: StaffRole): TenantGr
   }));
 }
 
+async function loadTenantList(
+  pool: NonNullable<Awaited<ReturnType<typeof getPool>>>,
+): Promise<Array<{ code: string; name: string }>> {
+  const sqls = [
+    `SELECT CustomerCode AS code, ISNULL(DisplayName, CustomerCode) AS name
+     FROM dbo.Dim_Customer WITH (NOLOCK)
+     WHERE ISNULL(Active, 1) = 1
+     ORDER BY ISNULL(DisplayName, CustomerCode)`,
+    `SELECT CustomerCode AS code, ISNULL(DisplayName, CustomerCode) AS name
+     FROM dbo.Dim_Customer WITH (NOLOCK)
+     ORDER BY ISNULL(DisplayName, CustomerCode)`,
+    `SELECT DISTINCT UPPER(LTRIM(RTRIM(CustomerCode))) AS code,
+            UPPER(LTRIM(RTRIM(CustomerCode))) AS name
+     FROM dbo.Agent_Registry WITH (NOLOCK)
+     WHERE CustomerCode IS NOT NULL AND LTRIM(RTRIM(CustomerCode)) <> N''
+     ORDER BY 1`,
+  ];
+  for (const q of sqls) {
+    try {
+      const r = await pool.request().query(q);
+      const rows = (r.recordset ?? [])
+        .map((row: { code?: string; name?: string }) => ({
+          code: String(row.code ?? "").trim(),
+          name: String(row.name ?? row.code ?? "").trim(),
+        }))
+        .filter((x) => x.code);
+      if (rows.length > 0) return rows;
+    } catch {
+      /* try next */
+    }
+  }
+  return [];
+}
+
 export const listManagedUsers = createServerFn({ method: "GET" }).handler(async () => {
   try {
     await requirePlatformAdmin();
@@ -465,18 +499,10 @@ export const listManagedUsers = createServerFn({ method: "GET" }).handler(async 
         }
 
         try {
-          const c = await pool.request().query(`
-            SELECT CustomerCode AS code, DisplayName AS name
-            FROM dbo.Dim_Customer
-            WHERE Active = 1
-            ORDER BY DisplayName
-          `);
-          customers = (c.recordset ?? []).map((row: { code: string; name: string }) => ({
-            code: String(row.code),
-            name: String(row.name || row.code),
-          }));
-        } catch {
+          customers = await loadTenantList(pool);
+        } catch (e) {
           customers = [];
+          console.warn("[admin-accounts] tenant list", e);
         }
       }
     } catch (e) {

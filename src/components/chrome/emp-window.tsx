@@ -41,7 +41,7 @@ export function EmpWindow({
   const item = group?.items.find((i) => i.active) ?? group?.items[0];
   return (
     <div className="rpma-amx-workspace">
-      <div className="rpma-emp is-side">
+      <div className="rpma-emp is-side is-triple">
         <div className="rpma-emp-title">
           <span className="rpma-emp-dots" aria-hidden>
             <i />
@@ -63,9 +63,9 @@ export function EmpWindow({
           </span>
         </div>
         <div className="rpma-emp-bodyrow">
-          <nav className="rpma-side" aria-label="Configuration navigation">
-            <p className="rpma-side-h">RPM Services</p>
-            <div className="rpma-emp-titles">
+          <nav className="rpma-rail rpma-rail-svc" aria-label="RPM Services">
+            <p className="rpma-rail-kicker">RPM Services</p>
+            <div className="rpma-rail-list">
               {groups.map((g) => {
                 const tone =
                   g.items.find((i) => i.rag === "Red")?.rag ??
@@ -77,33 +77,34 @@ export function EmpWindow({
                   <SpaLink
                     key={g.id}
                     href={g.items[0]?.href ?? "#"}
-                    className={cn("rpma-emp-gtab", g.on && "is-on")}
+                    className={cn("rpma-rail-item", g.on && "is-on")}
                     data-rag={tone}
                     title={`${g.title} · ${tone}`}
                   >
-                    {Icon ? <Icon className="rpma-emp-gtab-ico" style={{ color: g.color }} aria-hidden /> : null}
-                    <span className="rpma-emp-gtab-name">{g.title}</span>
+                    {Icon ? <Icon className="rpma-rail-ico" style={{ color: g.color }} aria-hidden /> : null}
+                    <span className="rpma-rail-name">{g.title}</span>
                     <RagLamps tone={tone} />
                   </SpaLink>
                 );
               })}
             </div>
-            <p className="rpma-side-h">RPM Service Modules</p>
-            <div className="rpma-emp-tools">
+          </nav>
+          <nav className="rpma-rail rpma-rail-mod" aria-label="RPM Service Modules">
+            <p className="rpma-rail-kicker">{group?.title ?? "Modules"}</p>
+            <p className="rpma-rail-sec">RPM Service Modules</p>
+            <div className="rpma-rail-list">
               {(group?.items ?? []).map((it) => {
                 const Icon = it.icon;
                 return (
                   <SpaLink
                     key={it.href + it.label}
                     href={it.href}
-                    className={cn("rpma-emp-tool", it.active && "is-on")}
+                    className={cn("rpma-rail-item", it.active && "is-on")}
                     data-rag={it.rag ?? "Off"}
                     title={it.label}
                   >
-                    <span className="rpma-emp-ico">
-                      {Icon ? <Icon className="size-5" /> : null}
-                    </span>
-                    <span>{it.label}</span>
+                    <span className="rpma-rail-ico">{Icon ? <Icon className="size-4" /> : null}</span>
+                    <span className="rpma-rail-name">{it.label}</span>
                   </SpaLink>
                 );
               })}

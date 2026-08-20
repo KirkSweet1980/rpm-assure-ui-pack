@@ -317,7 +317,7 @@ function UsersPageActive() {
             </p>
           ) : customers.length === 0 ? (
             <p className="px-2 text-[12px] opacity-80">
-              No tenants in Dim_Customer. Open Customer Eco-System once, then return.
+              No customers returned from SQL. Check Dim_Customer (or Agent_Registry) and app SQL login rights.
             </p>
           ) : (
             <>
