@@ -14,42 +14,52 @@
 }
 .rpma-emp.is-side .rpma-emp-bodyrow {
   display: grid !important;
-  grid-template-columns: 292px minmax(0, 1fr) !important;
+  grid-template-columns: 228px 240px minmax(0, 1fr) !important;
   min-height: 0 !important;
   flex: 1 1 auto !important;
   overflow: hidden !important;
 }
 .rpma-side {
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-right: 1px solid #e8edf2;
-  padding: 12px 10px 16px;
-  overflow: auto;
+  padding: 0;
+  overflow: hidden;
   min-height: 0;
+  min-width: 0;
 }
 .rpma-side-h {
-  margin: 10px -10px 8px;
+  flex: 0 0 auto;
+  margin: 0;
   padding: 8px 14px;
   background: #3a424c;
   border-bottom: 1px solid #2c333c;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: -0.015em;
   text-transform: none;
   line-height: 1.25;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 .rpma-side-h:first-child {
-  margin-top: -12px;
+  margin-top: 0;
 }
 .rpma-emp.is-side .rpma-emp-titles,
 .rpma-emp.is-side .rpma-emp-tools {
   display: flex !important;
   flex-direction: column !important;
-  gap: 4px !important;
+  gap: 3px !important;
   width: 100% !important;
-  padding: 0 !important;
+  padding: 8px 8px 12px !important;
   background: transparent !important;
   border: 0 !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
 }
 .rpma-emp.is-side .rpma-emp-gtab,
 .rpma-emp.is-side .rpma-emp-tool {
@@ -183,18 +193,35 @@
 }
 .rpma-emp-gtab.is-nocover .rpma-emp-gtab-name,
 .rpma-emp-tool.is-nocover > span:last-of-type { color: #64748b; }
-.rpma-emp.is-side .rpma-emp-gtab:hover,
-.rpma-emp.is-side .rpma-emp-tool:hover {
+.rpma-emp.is-side .rpma-emp-gtab:hover:not([data-rag="Red"]):not([data-rag="Amber"]):not([data-rag="Green"]):not([data-rag="Off"]),
+.rpma-emp.is-side .rpma-emp-tool:hover:not([data-rag="Red"]):not([data-rag="Amber"]):not([data-rag="Green"]):not([data-rag="Off"]) {
   background: #f1f5f9 !important;
   color: #0f172a !important;
 }
-.rpma-emp.is-side .rpma-emp-gtab.is-on {
+.rpma-emp.is-side .rpma-emp-gtab.is-on:not([data-rag="Red"]):not([data-rag="Amber"]) {
   background: #e8f0fe !important;
   color: #1e3a8a !important;
 }
-.rpma-emp.is-side .rpma-emp-tool.is-on {
-  background: #e7f8ee !important;
-  color: #166534 !important;
+.rpma-emp.is-side .rpma-emp-tool.is-on[data-rag="Green"] {
+  background: rgba(34, 197, 94, 0.28) !important;
+}
+.rpma-emp.is-side .rpma-emp-tool.is-on[data-rag="Amber"] {
+  background: rgba(234, 179, 8, 0.32) !important;
+}
+.rpma-emp.is-side .rpma-emp-tool.is-on[data-rag="Red"] {
+  background: rgba(239, 68, 68, 0.34) !important;
+}
+.rpma-emp.is-side .rpma-emp-tool.is-on[data-rag="Off"] {
+  background: rgba(148, 163, 184, 0.28) !important;
+}
+.rpma-emp.is-side .rpma-emp-tool[data-rag="Red"]:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+}
+.rpma-emp.is-side .rpma-emp-tool[data-rag="Amber"]:hover {
+  background: rgba(234, 179, 8, 0.28) !important;
+}
+.rpma-emp.is-side .rpma-emp-tool[data-rag="Green"]:hover {
+  background: rgba(34, 197, 94, 0.22) !important;
 }
 .rpma-emp.is-side .rpma-emp-gtab-ico,
 .rpma-emp.is-side .rpma-emp-ico {
@@ -255,9 +282,15 @@ html.dark .rpma-emp.is-side .rpma-emp-work,
 html[data-theme="dark"] .rpma-emp.is-side .rpma-emp-work { background: #0f1722 !important; }
 html.dark .rpma-emp-nocover,
 html[data-theme="dark"] .rpma-emp-nocover {
-  color: #cbd5e1;
+  color: #94a3b8;
   background: #1e293b;
   border-color: #334155;
+}
+
+@media (max-width: 1180px) {
+  .rpma-emp.is-side .rpma-emp-bodyrow {
+    grid-template-columns: 200px 210px minmax(0, 1fr) !important;
+  }
 }
 html.dark .rpma-emp-gtab.is-nocover,
 html.dark .rpma-emp-tool.is-nocover,
