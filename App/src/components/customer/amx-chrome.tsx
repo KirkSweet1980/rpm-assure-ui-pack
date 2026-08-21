@@ -1,3 +1,4 @@
+/** QUARANTINED: not mounted by production routes. Canonical chrome is AppShell + EmpChrome + EmpWindow. */
 import type { ReactNode } from "react";
 import { HelpCircle, Settings, Shield } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";

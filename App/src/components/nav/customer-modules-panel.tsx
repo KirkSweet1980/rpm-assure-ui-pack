@@ -143,7 +143,7 @@ export const CUSTOMER_PILLARS: {
   },
   {
     id: "csp",
-    title: "Microsoft 365 CSP",
+    title: "Microsoft 365",
     modulesHeading: "CSP Service Modules",
     overview: "/csp",
     icon: Mail,

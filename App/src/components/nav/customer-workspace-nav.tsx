@@ -1,3 +1,4 @@
+/** QUARANTINED: not mounted by production routes. Canonical chrome is AppShell + EmpChrome + EmpWindow. */
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import {

@@ -1,3 +1,4 @@
+/** QUARANTINED: not mounted by production routes. Canonical chrome is AppShell + EmpChrome + EmpWindow. */
 import type { ReactNode } from "react";
 import { CUSTOMER_PILLARS, ECOSYSTEM_MODULES } from "@/components/nav/customer-modules-panel";
 import { SpaLink } from "@/components/nav/spa-link";

@@ -1,5 +1,5 @@
 import { Link, Outlet, createFileRoute, Navigate, useRouterState } from "@tanstack/react-router";
-import { Bell, CircleHelp, Database, FileText, KeyRound, LayoutDashboard, Mail, Palette, Plug, Server, Shield, Sparkles, Tags, Users } from "lucide-react";
+import { Bell, Bot, CircleHelp, Database, FileText, KeyRound, LayoutDashboard, Mail, Palette, Plug, Server, Shield, Sparkles, Tags, Users } from "lucide-react";
 import { RequireAuth } from "@/components/portfolio/require-auth";
 import { AppShell } from "@/components/portfolio/app-shell";
 import { EmpWindow, type EmpGroup } from "@/components/chrome/emp-window";
@@ -23,6 +23,16 @@ const CONFIG_SERVICES: CorpService[] = [
       { label: "Collect", path: "/settings/collect", icon: Database, color: "#2563eb" },
       { label: "RAG", path: "/settings/rag", icon: Shield, color: "#d97706" },
       { label: "Vision", path: "/settings/vision", icon: Sparkles, color: "#14b8a6" },
+    ],
+  },
+  {
+    id: "agents",
+    title: "Agents",
+    overview: "/settings/agents",
+    icon: Bot,
+    color: "#0f766e",
+    modules: [
+      { label: "Agent Fleet", path: "/settings/agents", icon: Bot, color: "#0f766e" },
     ],
   },
   {

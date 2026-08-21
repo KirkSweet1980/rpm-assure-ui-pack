@@ -1,3 +1,4 @@
+/** QUARANTINED render path: CorpWorkspaceRail is unused. CorpService type remains for EmpWindow config/reporting. Canonical chrome is AppShell + EmpChrome + EmpWindow. */
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { LayoutDashboard } from "lucide-react";

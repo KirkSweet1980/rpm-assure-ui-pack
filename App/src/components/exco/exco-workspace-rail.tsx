@@ -1,3 +1,4 @@
+/** QUARANTINED: not mounted by production routes. Canonical chrome is AppShell + EmpChrome + EmpWindow. */
 import { AlertTriangle, Gauge, LayoutDashboard, Scale, Timer, Users } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import { HelpTip } from "@/components/ui/help-tip";
