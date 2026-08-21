@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { SpaLink } from "@/components/nav/spa-link";
 import type { LiveTone } from "@/lib/data/live-status";
 import { RagLamps } from "@/components/chrome/rag-lamps";
+import { RailFold } from "@/components/chrome/rail-fold";
 import { cn } from "@/lib/utils";
 
 export type EmpTool = {
@@ -63,7 +64,8 @@ export function EmpWindow({
           </span>
         </div>
         <div className="rpma-emp-bodyrow">
-          <nav className="rpma-rail rpma-rail-svc" aria-label="RPM Services">
+          <RailFold className="rpma-rail rpma-rail-svc" label={`RPM Services · ${group?.title ?? title}`}>
+            <nav aria-label="RPM Services">
             <p className="rpma-rail-kicker">RPM Services</p>
             <div className="rpma-rail-list">
               {groups.map((g) => {
@@ -88,8 +90,10 @@ export function EmpWindow({
                 );
               })}
             </div>
-          </nav>
-          <nav className="rpma-rail rpma-rail-mod" aria-label="RPM Service Modules">
+            </nav>
+          </RailFold>
+          <RailFold className="rpma-rail rpma-rail-mod" label={`${group?.title ?? "Modules"} · ${item?.label ?? title}`}>
+            <nav aria-label="RPM Service Modules">
             <p className="rpma-rail-kicker">{group?.title ?? "Modules"}</p>
             <p className="rpma-rail-sec">RPM Service Modules</p>
             <div className="rpma-rail-list">
@@ -109,7 +113,8 @@ export function EmpWindow({
                 );
               })}
             </div>
-          </nav>
+            </nav>
+          </RailFold>
           <div className="rpma-emp-work">
             <section className="rpma-win is-fill rpma-work-window">
               <header className="rpma-win-head">

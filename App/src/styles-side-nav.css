@@ -299,9 +299,10 @@ html[data-theme="dark"] .rpma-emp-nocover {
   border-color: #334155;
 }
 
-@media (max-width: 1180px) {
-  .rpma-emp.is-side .rpma-emp-bodyrow {
-    grid-template-columns: 240px minmax(0, 1fr) !important;
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
+  .rpma-emp.is-triple .rpma-emp-bodyrow {
+    grid-template-columns: 176px 176px minmax(0, 1fr) !important;
   }
 }
 html.dark .rpma-emp-gtab.is-nocover,
@@ -797,10 +798,10 @@ html[data-theme="dark"] .rpma-emp.is-side .rpma-eco-head p { color: #9aa8b5 !imp
   width: 100% !important;
   margin: 0 !important;
 }
-@media (max-width: 960px) {
+@media (max-width: 1023px) {
   .rpma-emp.is-side.is-triple .rpma-emp-bodyrow,
   .rpma-emp.is-triple .rpma-emp-bodyrow {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: auto auto minmax(40vh, 1fr) !important;
   }
 }
