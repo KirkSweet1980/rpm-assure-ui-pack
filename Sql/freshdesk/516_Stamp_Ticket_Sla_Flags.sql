@@ -52,7 +52,7 @@ OUTER APPLY (
   WHERE Active = 1
     AND Priority = COALESCE(i.Priority, i.Severity)
     AND (CustomerCode = i.CustomerCode OR CustomerCode IS NULL)
-  ORDER BY CASE WHEN CustomerCode = i.CustomerCode THEN 0 ELSE 1 END
+  ORDER BY CASE WHEN CustomerCode = i.CustomerCode THEN 0 ELSE 1 END, ISNULL(Position, 99)
 ) p;
 
 PRINT N'516 ticket SLA flags stamped';

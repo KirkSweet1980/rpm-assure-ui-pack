@@ -182,6 +182,7 @@ if (Test-Path -LiteralPath $patchTbl) {
 
 foreach ($fdRel in @(
   'freshdesk\510_Ensure_Freshdesk_Tickets.sql',
+  'freshdesk\514_Fuzzy_Map_Freshdesk_Companies.sql',
   'freshdesk\513_Sync_Freshdesk_To_Fact_Incident.sql'
 )) {
   $fd = Join-Path (Split-Path $PSScriptRoot -Parent) $fdRel

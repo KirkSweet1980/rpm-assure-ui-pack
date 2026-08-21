@@ -22,6 +22,7 @@ SET NOCOUNT ON;
     (N'Redsun Raisins Northen Cape', N'RSR'),
     (N'BHF Global',                N'BHF'),
     (N'Remote Site Solutions',     N'RSS'),
+    (N'Remote Site Solutions (Pty) Ltd', N'RSS'),
     (N'RPM Resources',             N'RPMINT'),
     (N'UVSS',                      N'UVSS'),
     (N'Unique Ventilation Systems',N'UVSS'),

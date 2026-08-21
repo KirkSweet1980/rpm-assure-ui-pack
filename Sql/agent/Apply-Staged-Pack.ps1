@@ -21,6 +21,22 @@ if (-not (Test-Path (Join-Path $src "RpmAssure-Agent.ps1"))) {
 }
 if (-not (Test-Path (Join-Path $src "RpmAssure-Agent.ps1"))) { exit 0 }
 
+foreach ($must in @(
+    'Collect-Host-Patches.ps1',
+    'Collect-Host-Iops.ps1',
+    'Collect-Host-Firewall.ps1',
+    'Collect-Windows-EventLog.ps1',
+    'Update-From-Https.ps1',
+    'Lib-RpmaHttps.ps1'
+  )) {
+  $fromMust = Join-Path $src $must
+  $toMust = Join-Path $AgentRoot $must
+  if ((Test-Path $fromMust) -and -not (Test-Path $toMust)) {
+    Copy-Item -Force $fromMust $toMust
+    L ("fill missing $must")
+  }
+}
+
 $want = $null
 $wf = Join-Path $src "VERSION"
 if (Test-Path $wf) { $want = (Get-Content $wf -Raw).Trim() }
