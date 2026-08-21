@@ -90,18 +90,12 @@ foreach ($rel in @(
 }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
-foreach ($leaf in @(
-    'Apply-UiPack.ps1',
-    'Sync-UiPack-From-Git.ps1',
-    'Publish-AgentRelease.ps1',
-    'Stage-AgentPilot.ps1',
-    'Sanitise-Downloads-DeployScript.ps1',
-    'Publish-Agent-Pack.ps1',
-    'Ensure-Caddy-Downloads.ps1'
-  )) {
-  $src = Join-Path $Pack ('deploy\' + $leaf)
-  if (Test-Path $src) { Copy-Item -Force $src (Join-Path $Root ('deploy\' + $leaf)) -EA SilentlyContinue }
-}
+# Protected release controllers live in $Root\deploy and are operator-installed.
+# The git pack is application INPUT only. Normal Apply MUST NOT copy/replace:
+#   Apply-UiPack.ps1, Sync-UiPack-From-Git.ps1, Publish-AgentRelease.ps1,
+#   Stage-AgentPilot.ps1, Publish-Agent-Pack.ps1, Publish-Agent-Pack-IfStale.ps1,
+#   Install-Publish-Agent-Pack-Task.ps1, Sanitise-Downloads-DeployScript.ps1.
+Write-Host '--- Skip copying release controllers from pack (trusted $Root\deploy is immutable here) ---'
 
 # Do NOT copy-run Install-Publish-Agent-Pack-Task.ps1.
 # Do NOT install or enable RPMAssure-Publish-AgentPack.
@@ -111,8 +105,7 @@ if ($PublishAgent) {
   Write-Host 'WARN -PublishAgent is exceptional/manual only. Delegating to Publish-AgentRelease.ps1'
   if (-not $CandidateVersion) { throw '-PublishAgent requires -CandidateVersion. Prefer invoking Publish-AgentRelease.ps1 directly.' }
   $rel = Join-Path $Root 'deploy\Publish-AgentRelease.ps1'
-  if (-not (Test-Path $rel)) { $rel = Join-Path $Pack 'deploy\Publish-AgentRelease.ps1' }
-  if (-not (Test-Path $rel)) { throw 'Publish-AgentRelease.ps1 missing' }
+  if (-not (Test-Path $rel)) { throw 'Missing trusted $Root\deploy\Publish-AgentRelease.ps1. Will not run a pack copy.' }
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $rel -Root $Root -Pack $Pack -CandidateVersion $CandidateVersion
   if ($LASTEXITCODE -ne 0) { throw "Publish-AgentRelease failed: $LASTEXITCODE" }
 } else {

@@ -44,9 +44,10 @@ if ($local -and $remote -and $local -eq $remote) {
 }
 
 W 'origin/main moved — APPLICATION Apply-UiPack only (no -PublishAgent, no Agent VERSION promote)'
-$apply = Join-Path $Pack 'deploy\Apply-UiPack.ps1'
-if (-not (Test-Path $apply)) { $apply = Join-Path $Root 'deploy\Apply-UiPack.ps1' }
-if (-not (Test-Path $apply)) { throw "Missing Apply-UiPack.ps1" }
+$apply = Join-Path $Root 'deploy\Apply-UiPack.ps1'
+if (-not (Test-Path $apply)) {
+  throw "Missing trusted controller $apply. Refusing pack Apply-UiPack.ps1. Install reviewed controllers into `$Root\deploy separately."
+}
 # Never pass -PublishAgent. Never call Publish-AgentRelease / Publish-Agent-Pack.
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $apply -Root $Root -Pack $Pack
 if ($LASTEXITCODE -ne 0) { throw "Apply-UiPack exit=$LASTEXITCODE" }

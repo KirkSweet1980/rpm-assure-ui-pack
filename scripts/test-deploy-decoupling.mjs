@@ -77,6 +77,15 @@ ok(pub.includes("exit $LASTEXITCODE") || pub.includes("No automatic retry"), "F:
 
 ok(!upd.includes("-File $pub"), "Update-AppServer no longer executes Publish-Agent-Pack");
 
+ok(!/Copy-Item[\s\S]{0,200}Apply-UiPack\.ps1/.test(apply) && !apply.includes("'Apply-UiPack.ps1'"), "H: Apply does not copy Apply-UiPack from pack");
+ok(!apply.includes("'Publish-AgentRelease.ps1'") || !/Copy-Item/.test(apply), "H: Apply does not copy Publish-AgentRelease");
+ok(!apply.includes("'Stage-AgentPilot.ps1'"), "H: Apply does not copy Stage-AgentPilot");
+ok(apply.includes("Skip copying release controllers") || apply.includes("trusted $Root\\deploy is immutable"), "H: controller-immutability comment");
+ok(!apply.includes("Join-Path $Pack 'deploy\\Publish-AgentRelease.ps1'"), "H: PublishAgent does not fall back to pack");
+ok(sync.includes("Join-Path $Root 'deploy\\Apply-UiPack.ps1'"), "H: Sync invokes only Root Apply-UiPack");
+ok(!sync.includes("Join-Path $Pack 'deploy\\Apply-UiPack.ps1'"), "H: Sync does not invoke Pack Apply-UiPack");
+ok(sync.includes("Missing trusted controller") || sync.includes("Refusing pack Apply"), "H: Sync fail-closed if Root Apply missing");
+
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rpma-ver-"));
 const verPath = path.join(tmp, "VERSION");
 fs.writeFileSync(verPath, "2.9.11\n");

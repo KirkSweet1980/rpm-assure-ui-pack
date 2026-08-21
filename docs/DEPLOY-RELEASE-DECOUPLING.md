@@ -39,3 +39,22 @@ Legacy (deprecated, not invoked by app apply/sync):
 - `Install-Publish-Agent-Pack-Task.ps1` — refuses to enable `RPMAssure-Publish-AgentPack` unless `-IUnderstandThisIsDeprecated`
 
 Scheduled tasks `RPMAssure-Publish-AgentPack` and `RPMAssure-Sync-UiPack` are **not** installed or enabled by Apply-UiPack.
+
+## Trusted controller layer
+
+`$Root\deploy` (typically `C:\RPM-Assure\deploy`) is the installed release-control layer.
+
+`$Pack` (typically `C:\RPM-Assure\deploy\ui-pack`) is application/source **input only**.
+
+Normal `Apply-UiPack` must **not** copy or replace:
+
+- Apply-UiPack.ps1
+- Sync-UiPack-From-Git.ps1
+- Publish-AgentRelease.ps1
+- Stage-AgentPilot.ps1
+- Publish-Agent-Pack.ps1
+- Publish-Agent-Pack-IfStale.ps1
+- Install-Publish-Agent-Pack-Task.ps1
+- Sanitise-Downloads-DeployScript.ps1
+
+`Sync-UiPack-From-Git` invokes **only** `$Root\deploy\Apply-UiPack.ps1` and fails closed if that file is missing. A malicious or stale `$Pack\deploy\Apply-UiPack.ps1` is ignored.

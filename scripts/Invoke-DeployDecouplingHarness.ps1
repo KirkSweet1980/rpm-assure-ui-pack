@@ -124,6 +124,19 @@ function Init-GitPack([string]$Pack) {
   } finally { Pop-Location }
 }
 
+function Install-TrustedControllers([string]$destRoot) {
+  $dep = Join-Path $destRoot 'deploy'
+  New-Item -ItemType Directory -Force -Path $dep | Out-Null
+  foreach ($leaf in @('Apply-UiPack.ps1','Sync-UiPack-From-Git.ps1','Publish-AgentRelease.ps1','Stage-AgentPilot.ps1','Publish-Agent-Pack.ps1','Publish-Agent-Pack-IfStale.ps1','Install-Publish-Agent-Pack-Task.ps1')) {
+    Copy-Item -Force (Join-Path $RepoRoot ('deploy/' + $leaf)) (Join-Path $dep $leaf)
+  }
+}
+
+function File-Hash([string]$p) {
+  if (-not (Test-Path $p)) { return 'MISSING' }
+  return (Get-FileHash -Algorithm SHA256 $p).Hash
+}
+
 function New-Root([string]$dir) {
   New-Item -ItemType Directory -Force -Path (Join-Path $dir 'downloads') | Out-Null
   New-Item -ItemType Directory -Force -Path (Join-Path $dir 'App/src') | Out-Null
@@ -170,6 +183,10 @@ Write-Host '=== TEST A APPLY APP-ONLY ==='
 $aRoot = Join-Path $tmp 'A-root'
 $aPack = Join-Path $tmp 'A-pack'
 New-Root $aRoot
+Install-TrustedControllers $aRoot
+$sentinelA = Join-Path $aRoot 'deploy/Apply-UiPack.ps1'
+$sentHashA = File-Hash $sentinelA
+$pubHashA = File-Hash (Join-Path $aRoot 'deploy/Publish-AgentRelease.ps1')
 New-Item -ItemType Directory -Force -Path $aPack | Out-Null
 New-AgentPack $aPack '2.10.1'
 Init-GitPack $aPack
@@ -180,6 +197,8 @@ Ok ($codeA -eq 0) "A exit 0 ($codeA)"
 Ok ($beforeA -eq '2.9.11') "A before=2.9.11"
 Ok ($afterA -eq '2.9.11') "A after=2.9.11"
 Ok (-not (Test-Path (Join-Path $aRoot 'downloads/pilot'))) "A no pilot dir"
+Ok ((File-Hash $sentinelA) -eq $sentHashA) "A trusted Apply-UiPack not overwritten"
+Ok ((File-Hash (Join-Path $aRoot 'deploy/Publish-AgentRelease.ps1')) -eq $pubHashA) "A trusted Publish-AgentRelease not overwritten"
 Write-Host ("A VERSION before=$beforeA after=$afterA")
 
 # ---- B ----
@@ -212,7 +231,7 @@ $localB = (& git -C $bPack rev-parse HEAD).Trim()
 $remB = (& git -C $bPack ls-remote origin refs/heads/main).ToString().Split()[0]
 if ($localB -eq $remB) { throw "B setup failed: pack already at origin/main $localB" }
 New-Root $bRoot
-Copy-Item -Force (Join-Path $RepoRoot 'deploy/Apply-UiPack.ps1') (Join-Path $bRoot 'deploy/Apply-UiPack.ps1')
+Install-TrustedControllers $bRoot
 Copy-Item -Force (Join-Path $RepoRoot 'deploy/Apply-UiPack.ps1') (Join-Path $bPack 'deploy/Apply-UiPack.ps1')
 $beforeB = Read-Ver $bRoot
 $codeB = Invoke-PwshFile (Join-Path $RepoRoot 'deploy/Sync-UiPack-From-Git.ps1') @('-Root',$bRoot,'-Pack',$bPack)
@@ -297,6 +316,114 @@ Ok ($beforeG -eq '2.9.11' -and $afterG -eq '2.9.11') "G VERSION unchanged"
 Ok (Test-Path $pilot) "G staged under pilot/2.10.1/host"
 Ok ((Get-FileHash (Join-Path $gRoot 'downloads/rpm-assure-agent.zip')).Hash -eq $zipG.Hash) "G global zip unchanged"
 Write-Host ("G VERSION before=$beforeG after=$afterG")
+
+function Write-MaliciousApply([string]$path) {
+  @"
+param([string]`$Root='C:\RPM-Assure',[string]`$Pack='',[switch]`$SkipGitReset,[switch]`$PublishAgent,[string]`$CandidateVersion='')
+`$ErrorActionPreference='Stop'
+New-Item -ItemType Directory -Force -Path (Join-Path `$Root 'downloads') | Out-Null
+Set-Content -LiteralPath (Join-Path `$Root 'downloads/VERSION') -Value '9.9.9' -Encoding ascii
+Set-Content -LiteralPath (Join-Path `$Root 'deploy/Apply-UiPack.ps1') -Value 'MALICIOUS-PACK-APPLY' -Encoding ascii
+Write-Host 'MALICIOUS PACK APPLY RAN'
+exit 0
+"@ | Set-Content -LiteralPath $path -Encoding ascii
+}
+
+# ---- H Apply cannot overwrite protected controllers ----
+Write-Host '=== TEST H CONTROLLER IMMUTABILITY ==='
+$hRoot = Join-Path $tmp 'H-root'
+$hPack = Join-Path $tmp 'H-pack'
+New-Root $hRoot
+Install-TrustedControllers $hRoot
+New-Item -ItemType Directory -Force -Path $hPack | Out-Null
+New-AgentPack $hPack '2.10.1'
+Init-GitPack $hPack
+Write-MaliciousApply (Join-Path $hPack 'deploy/Apply-UiPack.ps1')
+Write-MaliciousApply (Join-Path $hPack 'deploy/Publish-AgentRelease.ps1')
+$hBefore = @{
+  Apply = File-Hash (Join-Path $hRoot 'deploy/Apply-UiPack.ps1')
+  Pub = File-Hash (Join-Path $hRoot 'deploy/Publish-AgentRelease.ps1')
+  Sync = File-Hash (Join-Path $hRoot 'deploy/Sync-UiPack-From-Git.ps1')
+  Stage = File-Hash (Join-Path $hRoot 'deploy/Stage-AgentPilot.ps1')
+}
+$codeH = Invoke-PwshFile (Join-Path $RepoRoot 'deploy/Apply-UiPack.ps1') @('-Root',$hRoot,'-Pack',$hPack,'-SkipGitReset')
+Ok ($codeH -eq 0) "H apply exit 0 ($codeH)"
+Ok ((Read-Ver $hRoot) -eq '2.9.11') "H VERSION 2.9.11"
+Ok ((File-Hash (Join-Path $hRoot 'deploy/Apply-UiPack.ps1')) -eq $hBefore.Apply) "H Root Apply not overwritten"
+Ok ((File-Hash (Join-Path $hRoot 'deploy/Publish-AgentRelease.ps1')) -eq $hBefore.Pub) "H Root Publish-AgentRelease not overwritten"
+Ok ((File-Hash (Join-Path $hRoot 'deploy/Sync-UiPack-From-Git.ps1')) -eq $hBefore.Sync) "H Root Sync not overwritten"
+Ok ((File-Hash (Join-Path $hRoot 'deploy/Stage-AgentPilot.ps1')) -eq $hBefore.Stage) "H Root Stage not overwritten"
+Ok ((Get-Content (Join-Path $hRoot 'deploy/Apply-UiPack.ps1') -Raw) -notmatch 'MALICIOUS-PACK-APPLY') "H Root Apply not pack-malicious"
+
+# ---- I Sync ignores pack Apply ----
+Write-Host '=== TEST I SYNC IGNORES PACK APPLY ==='
+$iTmp = Join-Path $tmp 'I'
+$iOrigin = Join-Path $iTmp 'origin.git'
+$iPack = Join-Path $iTmp 'pack'
+$iRoot = Join-Path $iTmp 'root'
+New-Item -ItemType Directory -Force -Path $iTmp | Out-Null
+& git init --bare --initial-branch=main $iOrigin | Out-Null
+& git clone $iOrigin $iPack 2>&1 | Out-Null
+New-AgentPack $iPack '2.10.1'
+Push-Location $iPack
+try {
+  & git checkout -B main | Out-Null
+  & git config user.email 't@t'; & git config user.name 't'
+  & git add -A; & git commit -m c1 --quiet
+  & git push -u origin main 2>&1 | Out-Null
+} finally { Pop-Location }
+$iOther = Join-Path $iTmp 'other'
+& git clone -b main $iOrigin $iOther 2>&1 | Out-Null
+Push-Location $iOther
+try {
+  & git config user.email 't@t'; & git config user.name 't'
+  Set-Content extra.txt 'moved' -Encoding ascii
+  & git add extra.txt; & git commit -m c2 --quiet
+  & git push origin main 2>&1 | Out-Null
+} finally { Pop-Location }
+New-Root $iRoot
+Install-TrustedControllers $iRoot
+Write-MaliciousApply (Join-Path $iPack 'deploy/Apply-UiPack.ps1')
+$codeI = Invoke-PwshFile (Join-Path $RepoRoot 'deploy/Sync-UiPack-From-Git.ps1') @('-Root',$iRoot,'-Pack',$iPack)
+Ok ($codeI -eq 0) "I sync exit 0 ($codeI)"
+Ok ((Read-Ver $iRoot) -eq '2.9.11') "I VERSION 2.9.11 (pack Apply ignored)"
+Ok ((Get-Content (Join-Path $iRoot 'deploy/Apply-UiPack.ps1') -Raw) -notmatch 'MALICIOUS-PACK-APPLY') "I Root Apply still trusted"
+
+# ---- J Sync fail-closed if Root Apply missing ----
+Write-Host '=== TEST J SYNC FAIL-CLOSED MISSING ROOT APPLY ==='
+$jTmp = Join-Path $tmp 'J'
+$jOrigin = Join-Path $jTmp 'origin.git'
+$jPack = Join-Path $jTmp 'pack'
+$jRoot = Join-Path $jTmp 'root'
+New-Item -ItemType Directory -Force -Path $jTmp | Out-Null
+& git init --bare --initial-branch=main $jOrigin | Out-Null
+& git clone $jOrigin $jPack 2>&1 | Out-Null
+New-AgentPack $jPack '2.10.1'
+Push-Location $jPack
+try {
+  & git checkout -B main | Out-Null
+  & git config user.email 't@t'; & git config user.name 't'
+  & git add -A; & git commit -m c1 --quiet
+  & git push -u origin main 2>&1 | Out-Null
+} finally { Pop-Location }
+$jOther = Join-Path $jTmp 'other'
+& git clone -b main $jOrigin $jOther 2>&1 | Out-Null
+Push-Location $jOther
+try {
+  & git config user.email 't@t'; & git config user.name 't'
+  Set-Content extra.txt 'moved' -Encoding ascii
+  & git add extra.txt; & git commit -m c2 --quiet
+  & git push origin main 2>&1 | Out-Null
+} finally { Pop-Location }
+New-Root $jRoot
+Write-MaliciousApply (Join-Path $jPack 'deploy/Apply-UiPack.ps1')
+Remove-Item -Force (Join-Path $jRoot 'deploy/Apply-UiPack.ps1') -ErrorAction SilentlyContinue
+$codeJ = Invoke-PwshFile (Join-Path $RepoRoot 'deploy/Sync-UiPack-From-Git.ps1') @('-Root',$jRoot,'-Pack',$jPack)
+Ok ($codeJ -ne 0) "J missing Root Apply fails ($codeJ)"
+Ok ((Read-Ver $jRoot) -eq '2.9.11') "J VERSION unchanged"
+Ok (-not (Test-Path (Join-Path $jRoot 'deploy/Apply-UiPack.ps1')) -or ((Get-Content (Join-Path $jRoot 'deploy/Apply-UiPack.ps1') -Raw) -notmatch 'MALICIOUS')) "J pack Apply not installed"
+
+Write-Host ''
 
 Write-Host ''
 if ($failed -gt 0) {
