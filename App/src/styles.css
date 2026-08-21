@@ -1784,12 +1784,20 @@ html[data-density="comfortable"] .rpma-xls th {
   border-radius: 50%;
 }
 .rpma-bot.is-off {
-  opacity: 0.5;
+  opacity: 1;
   animation: none !important;
   filter: none !important;
 }
 .rpma-bot.is-off .rpma-bot-img {
-  filter: grayscale(1) brightness(0.55) contrast(0.8) !important;
+  display: none;
+}
+.rpma-bot-off {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #8b9098;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28);
 }
 
 .rpma-cover-tag {

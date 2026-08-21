@@ -16,7 +16,7 @@ type RibbonGroup = { id: string; title: string; match: string; color: string; ic
 const GROUP_TITLE: Record<string, string> = {
   estate: "Customer Eco-System",
   syspro: "SYSPRO Landscape",
-  rmm: "RMM Management",
+  rmm: "RPM Remote Management",
   cove: "RPM Cloud Backup",
   epp: "RPM End Point Protection",
   csp: "Microsoft 365",

@@ -15,10 +15,9 @@ const SRC = {
   green: ragGreen,
   amber: ragAmber,
   red: ragRed,
-  off: ragGreen,
 } as const;
 
-/** Glossy RAG disc. Green/Amber stay lit and still. Red flashes. */
+/** Glossy RAG disc. Green/Amber stay lit and still. Red flashes. Off is grey — never Green. */
 export function StatusRobot({
   rag,
   title,
@@ -38,14 +37,18 @@ export function StatusRobot({
       role="img"
       style={{ width: size, height: size }}
     >
-      <img
-        className="rpma-bot-img"
-        src={SRC[state]}
-        alt=""
-        width={size * 2}
-        height={size * 2}
-        draggable={false}
-      />
+      {state === "off" ? (
+        <span className="rpma-bot-off" aria-hidden />
+      ) : (
+        <img
+          className="rpma-bot-img"
+          src={SRC[state]}
+          alt=""
+          width={size * 2}
+          height={size * 2}
+          draggable={false}
+        />
+      )}
       <span role="tooltip" className="rpma-help-bubble is-left">
         {label}
       </span>

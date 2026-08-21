@@ -118,7 +118,6 @@ function SettingsLayout() {
                 label: m.label,
                 href: m.path,
                 icon: m.icon,
-                rag: pathname === m.path || pathname.startsWith(`${m.path}/`) ? "Green" : "Off",
                 active: pathname === m.path || pathname.startsWith(`${m.path}/`),
               })),
             }))}
