@@ -1,4 +1,4 @@
-/** In-app help. Keep topics aligned with live menus. */
+/** In-app Help catalogue. Customer-facing names only. Not a ticketing system. */
 
 export type HelpTopic = {
   id: string;
@@ -9,182 +9,211 @@ export type HelpTopic = {
 };
 
 export const HELP_GROUPS = [
-  "Getting started",
-  "Customer workspace",
-  "Services",
-  "Agents",
-  "SLA and tickets",
+  "Getting Started",
+  "Eco-System",
+  "SYSPRO",
+  "RPM Remote Management",
+  "RPM Cloud Backup",
+  "RPM End Point Protection",
+  "Microsoft 365",
+  "Service Desk",
+  "Reporting",
   "Configuration",
+  "Agent Status",
+  "RAG / Cover / SLA",
+  "Troubleshooting",
 ] as const;
 
 export const HELP_TOPICS: HelpTopic[] = [
   {
     id: "overview",
     title: "What RPM Assure is",
-    group: "Getting started",
-    summary: "Live estate, cover, and RAG for every customer — not a ticketing console yet.",
+    group: "Getting Started",
+    summary: "Monitoring and operational intelligence for RPM-managed customers — not a ticketing system.",
     body: [
-      "RPM Assure is the operations board for RPM-managed customers. Each tenant shows which services are on cover (SYSPRO, RMM, Cloud Backup, EPP, Microsoft 365) and the live health of those services.",
-      "Grey / Off / No Cover means that service is not contracted. It stays on the menu so you can see the gap. It must not flash and it must not score SLA.",
-      "Green, Amber, and Red are only painted when the service is on cover and live data (or a ticketed SLA clock) says so.",
+      "RPM Assure shows which services are on cover for each customer and the live health of those services. It is not a place to log, assign, or close tickets.",
+      "Each tenant is identified by CustomerCode. Open a customer from Eco-System, then use the service rail and module rail to work that tenant.",
+      "Header modes: Eco-System, Reporting, Configuration, and Help. They are areas of the same application, not separate products.",
     ],
   },
   {
     id: "navigation",
     title: "How to move around",
-    group: "Getting started",
-    summary: "Top bar: Eco-System, customer switcher, Reporting, Configuration, Help.",
+    group: "Getting Started",
+    summary: "Header modes, customer switcher, and the three-pane tenant workspace.",
     body: [
-      "Customer Eco-System is the portfolio. Open a customer to work that tenant.",
-      "Inside a customer: white rail = RPM Services, navy rail = RPM Service Modules, blue canvas = the selected page. Tables stay on a white card so they stay readable.",
-      "Configuration (cog) is platform settings — themes, email, users, SQL, agents. Help (top right) is this guide.",
-    ],
-  },
-  {
-    id: "cover",
-    title: "Cover vs No Cover",
-    group: "Customer workspace",
-    summary: "AmsConfig false is a hard off. Leftover warehouse rows are not cover.",
-    body: [
-      "SYSPRO cover needs a live Edge agent on a SYSPRO host, or an explicit PillarSyspro flag. Uninstalling the agent drops SYSPRO to No Cover even if old operators remain in SQL.",
-      "RMM, Cove, and EPP cover come from a vendor map or live devices, unless the pillar is switched off.",
-      "Microsoft 365 can show Cover for visibility. It is not on the signed SLA, so robots stay Green when covered.",
-    ],
-  },
-  {
-    id: "rag",
-    title: "RAG lights and flashing",
-    group: "Customer workspace",
-    summary: "Only red robots flash. No Cover is static grey.",
-    body: [
-      "Red = SLA miss (when armed) or a live error/offline on a covered service. The robot flashes red.",
-      "Amber and Green stay static. Module rows may be painted but they do not flash.",
-      "If a menu has No Cover, there is no flashing robot — static grey only.",
+      "Eco-System is the portfolio. The customer switcher opens a tenant. Reporting builds packs. Configuration is platform settings. Help is this catalogue.",
+      "Inside a customer: left rail is RPM Services, middle rail is RPM Service Modules, canvas is the selected page. A service with No Cover stays on the rail so the gap is visible.",
     ],
   },
   {
     id: "eco",
     title: "Customer Eco-System",
-    group: "Customer workspace",
-    summary: "Tenant overview: devices, cover banners, who can see this customer.",
+    group: "Eco-System",
+    summary: "Tenant home: cover, estate, and who may open this customer.",
     body: [
-      "The eco page is the tenant home. Device rows are the live estate (servers, backup agents, EPP).",
-      "Tenant access lists staff who may open this customer. Platform admins see every tenant. Operators see only assigned codes.",
+      "The Eco-System page lists customers. Opening one shows that tenant’s services, devices, and cover.",
+      "Tenant access follows CustomerCode. Platform administrators can open every tenant. Other roles see only assigned codes.",
     ],
   },
   {
     id: "syspro",
-    title: "SYSPRO Landscape",
-    group: "Services",
-    summary: "Jobs, FinSight DTR, operators, day-end, license — only when SYSPRO is on cover.",
+    title: "SYSPRO",
+    group: "SYSPRO",
+    summary: "Jobs, finance modules, operators, licence, SQL, and health when SYSPRO is on cover.",
     body: [
-      "Job Logging is the SYSPRO job queue. Failures turn the jobs robot red.",
-      "FinSight / DTR is out-of-balance lines. Operators, SQL, license, and hotfixes are inventory for the same landscape.",
+      "SYSPRO modules stay on the rail even when Cover is off. No Cover is grey and is not scored.",
+      "Job Logging is the SYSPRO job queue. Finance Modules (FinSight / DTR) show out-of-balance lines. Operators, licence, hotfixes, day-end, security, and SQL are inventory for the same landscape.",
     ],
   },
   {
     id: "rmm",
-    title: "RMM Management",
-    group: "Services",
-    summary: "Pulseway servers, workstations, patch, disk, alerts, events.",
+    title: "RPM Remote Management",
+    group: "RPM Remote Management",
+    summary: "Servers, workstations, patch, disk, alerts, and Windows events.",
     body: [
-      "Servers and workstations are classified from Pulseway. Offline servers are live status, not an SLA miss until helpdesk tickets are armed.",
-      "Patch Compliance is outstanding updates on reporting servers. Disk Performance is IOPS from the Edge agent.",
+      "RPM Remote Management is the customer-facing name for the remote-management service. Servers and workstations are classified from the mapped provider estate.",
+      "Offline servers are live status. They are not an SLA miss unless a valid external ticket is linked and SLA is armed. Patch Compliance and Disk Performance come from collect jobs and the Edge agent.",
     ],
   },
   {
     id: "cove",
     title: "RPM Cloud Backup",
-    group: "Services",
-    summary: "Cove devices, recovery testing, retention, 7-day history.",
+    group: "RPM Cloud Backup",
+    summary: "Backup agents, recovery testing, and retention.",
     body: [
-      "Backup Agents are Cove devices mapped to the customer. Recovery Testing uses DRaaS colour bars and last-completed sessions.",
-      "Retention is the Cove policy on the device. Screenshots from a completed recovery test open when the API stored a path.",
+      "RPM Cloud Backup lists backup agents mapped to the customer. Recovery Testing and retention are the last successful collect for that service.",
+      "No Cover stays visible and grey. Backup health is posture for this service — it does not open an external ticket by itself.",
     ],
   },
   {
     id: "epp",
-    title: "End Point Protection",
-    group: "Services",
-    summary: "Bitdefender endpoints, modules, incidents, quarantine.",
+    title: "RPM End Point Protection",
+    group: "RPM End Point Protection",
+    summary: "Endpoints, policies, incidents, and quarantine.",
     body: [
-      "Endpoints list GravityZone computers for this customer. Infected or unmanaged devices raise RAG.",
-      "Quarantine and incidents are the last GravityZone collect. Exclusion of C:\\RPM-Assure is a GravityZone policy, not this screen.",
+      "RPM End Point Protection lists endpoints mapped to the customer. Infected or unmanaged devices can raise RAG when the service is on cover.",
+      "Incidents and quarantine are the last collect. This workspace monitors protection posture; it does not replace the provider console.",
     ],
   },
   {
     id: "m365",
     title: "Microsoft 365",
-    group: "Services",
-    summary: "Posture only until it is on a signed SLA.",
+    group: "Microsoft 365",
+    summary: "Users, licences, MFA, Secure Score, and admins — posture, not RPM SLA.",
     body: [
-      "Users, licenses, MFA, Secure Score, and global admins are visibility. Robots stay Green when the tenant is on cover.",
-      "Do not treat Microsoft’s 99.9% platform SLA as RPM’s SLA.",
-    ],
-  },
-  {
-    id: "agents",
-    title: "Edge agents",
-    group: "Agents",
-    summary: "Windows service RPMAssure-Edge. HTTPS only. Customer code is the only install input.",
-    body: [
-      "Install from https://assure.rpmresources.co.za/downloads with -CustomerCode (AHIC, BHF, …). GravityZone must exclude C:\\RPM-Assure.",
-      "Heartbeat = last HTTPS ping (Online if under 45 minutes). Sync = last job (OK or Job fail). Job fail is not Disconnected.",
-      "The agent pulls a new pack when /downloads/VERSION changes. It never talks to GitHub.",
-    ],
-  },
-  {
-    id: "sla",
-    title: "SLA clocks",
-    group: "SLA and tickets",
-    summary: "Clocks start only when a matching ticket exists. Helpdesk auto-ticket is not armed yet.",
-    body: [
-      "Until HELPDESK_TICKET_SLA_ARMED is on, ticketed server availability and Service Desk RAG stay Off. Live device status still paints.",
-      "When armed: Amber/Red live alert + matching Freshdesk ticket in Assure starts the clock at ticket OpenedAt.",
+      "Microsoft 365 stays Green while the tenant is on cover until a signed RPM SLA exists for this service. Do not treat the vendor platform SLA as RPM’s SLA.",
+      "Secure Score, MFA, global admins, and licence stats are visibility. They do not start an RPM SLA clock.",
     ],
   },
   {
     id: "tickets",
     title: "Service Desk",
-    group: "SLA and tickets",
-    summary: "Freshdesk tickets mapped to the customer. Not scored until helpdesk is armed.",
+    group: "Service Desk",
+    summary: "External ticket information for the customer. RPM Assure is not the ticketing system.",
     body: [
-      "Open / resolved / closed lists are the Freshdesk feed. SMTP (Configuration → Email) is prepared so Assure can later mail or log a ticket when RAG turns Amber or Red.",
+      "Service Desk shows tickets from the mapped external service desk, grouped as open, resolved, and closed.",
+      "RPM Assure does not create, assign, or close those tickets from this workspace. External ticket creation is currently disarmed.",
+    ],
+  },
+  {
+    id: "reporting",
+    title: "Reporting",
+    group: "Reporting",
+    summary: "Customer and estate packs from production-authoritative data.",
+    body: [
+      "Reporting builds day-end, period, AMS, and estate packs for the selected customer. It is a header mode, not a separate application.",
+      "Shadow SLA figures, if shown, are labelled as not contractual. They do not replace signed SLA reporting.",
     ],
   },
   {
     id: "config",
-    title: "Configuration menu",
+    title: "Configuration",
     group: "Configuration",
-    summary: "Platform: infrastructure, email, users, UI templates, SQL, agents.",
+    summary: "Platform settings: infrastructure, integrations, users, UI, and agents.",
     body: [
-      "UI Customize chooses a template and colour palette (light/dark still toggle from the header).",
-      "Email / SMTP stores outbound mail for reports and, when enabled, future ticket alerts.",
-      "Users assign role and which customer codes a person may open. Profile is the signed-in person’s own record.",
+      "Configuration is for authorised RPM staff. It does not change customer Cover by painting a Green lamp on a menu item.",
+      "Agent Fleet is under Configuration → Agents. Application release and agent release stay separate: changing the application does not publish an agent version.",
     ],
   },
   {
     id: "users",
     title: "Users and tenant access",
     group: "Configuration",
-    summary: "Role + customer codes. Shown on each tenant’s eco page.",
+    summary: "Role plus CustomerCode grants. Shown on each tenant’s Eco-System page.",
     body: [
-      "Platform Admin sees every customer. Operator / other roles see only assigned codes.",
-      "On the customer eco page, Tenant access lists who can open that tenant. Assign codes under Configuration → Users.",
+      "Platform Admin sees every customer. Other roles see only assigned CustomerCodes.",
+      "Assign access under Configuration → Users. The tenant Eco-System page lists who may open that customer.",
     ],
   },
   {
     id: "email",
-    title: "Email (ticketing prep)",
+    title: "Email and SMTP",
     group: "Configuration",
-    summary: "SMTP for reports now; ticket-on-RAG later.",
+    summary: "Outbound mail for reports. Ticket automation is not armed.",
     body: [
-      "Set host, port, from address, and Report To. Send test before enabling ticket alerts.",
-      "Ticket alerts (Amber / Red) are stored but do not open Freshdesk until helpdesk is armed.",
+      "SMTP is used for report delivery. A test send confirms the mailbox path.",
+      "Storing SMTP does not create external tickets. Ticket automation remains disarmed.",
+    ],
+  },
+  {
+    id: "agents",
+    title: "Agent Status",
+    group: "Agent Status",
+    summary: "Heartbeat and sync are separate. App release is not agent release.",
+    body: [
+      "Heartbeat is the last successful contact. Sync is the last collection job. A failed job is not the same as disconnected.",
+      "Install with the customer’s CustomerCode. The agent updates only when the published agent version is promoted. Help does not publish agents.",
+    ],
+  },
+  {
+    id: "cover",
+    title: "Cover and No Cover",
+    group: "RAG / Cover / SLA",
+    summary: "AmsConfig false is hard Off. No Cover stays on the menu and is never Green.",
+    body: [
+      "Cover comes from AmsConfig for that customer and service. Cover=false is No Cover: the service is not scored.",
+      "No Cover remains listed so the gap is visible. The status disc is grey / Off. It must never appear Green.",
+    ],
+  },
+  {
+    id: "rag",
+    title: "RAG lights",
+    group: "RAG / Cover / SLA",
+    summary: "Green, Amber, and Red are health. Off is No Cover. Only Red flashes.",
+    body: [
+      "RAG is monitored health or posture for a covered service. Menu selection is not RAG.",
+      "Green and Amber stay still. Red may flash. Off / No Cover is a static grey disc — never the Green asset.",
+    ],
+  },
+  {
+    id: "sla",
+    title: "SLA clocks",
+    group: "RAG / Cover / SLA",
+    summary: "An SLA clock starts only when Amber or Red, a valid external ticket is linked, and SLA is armed.",
+    body: [
+      "RPM Assure is not a ticketing system. SLA is evaluated from a linked external ticket, not from a lamp alone.",
+      "A clock may start only when all of these hold: the monitored condition is Amber or Red; a valid external ticket is linked; and SLA is armed. SLA is currently disarmed, so no contractual clock starts from this application.",
+      "Microsoft 365 remains Green until a signed RPM SLA exists for that service.",
+    ],
+  },
+  {
+    id: "troubleshooting",
+    title: "Troubleshooting",
+    group: "Troubleshooting",
+    summary: "Common read-outs: No Cover, Off disc, empty modules, stale collect.",
+    body: [
+      "If a service is grey and labelled No Cover, it is not in AmsConfig for this CustomerCode. Mapping leftover rows does not turn it Green.",
+      "If Agent Status shows a failed sync but a recent heartbeat, the host is reachable and the job needs review — it is not automatically offline.",
+      "If Service Desk is empty, there is no mapped external ticket feed for that customer. That does not mean Assure should create a ticket.",
     ],
   },
 ];
 
 export function helpTopic(id: string): HelpTopic | undefined {
   return HELP_TOPICS.find((t) => t.id === id);
+}
+
+export function helpTopicsInGroup(group: string): HelpTopic[] {
+  return HELP_TOPICS.filter((t) => t.group === group);
 }

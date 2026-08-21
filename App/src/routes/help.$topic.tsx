@@ -12,15 +12,20 @@ function HelpTopicPage() {
     return (
       <article className="rpma-help-article">
         <h1>Topic not found</h1>
+        <p>That Help topic is not in the catalogue.</p>
         <p>
-          <Link to="/help">Back to help</Link>
+          <Link to="/help">Back to Help catalogue</Link>
         </p>
       </article>
     );
   }
   return (
     <article className="rpma-help-article">
-      <p className="kicker">{t.group}</p>
+      <p>
+        <Link to="/help">Help catalogue</Link>
+        <span aria-hidden> · </span>
+        <span className="kicker">{t.group}</span>
+      </p>
       <h1>{t.title}</h1>
       <p className="lead">{t.summary}</p>
       {t.body.map((p) => (

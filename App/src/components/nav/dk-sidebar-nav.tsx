@@ -3,6 +3,7 @@ import { CustomerSwitcher, type SwitcherCustomer } from "@/components/nav/custom
 import { SpaLink } from "@/components/nav/spa-link";
 import { cn } from "@/lib/utils";
 import { SETTINGS_MENU_ENABLED } from "@/lib/auth/features";
+import { helpHrefForPath } from "@/lib/help/route-map";
 
 function headerMode(pathname: string): "eco" | "reports" | "settings" | "help" | null {
   const path = pathname.replace(/\/$/, "") || "/";
@@ -24,6 +25,7 @@ export function DkSidebarNav({
   layout?: "side" | "top";
 }) {
   const mode = headerMode(pathname);
+  const helpHref = helpHrefForPath(pathname);
 
   return (
     <nav className="dk-nav is-top" aria-label="Main">
@@ -52,7 +54,7 @@ export function DkSidebarNav({
           <span className="dk-text">Configuration</span>
         </SpaLink>
       ) : null}
-      <SpaLink href="/help" className={cn("dk-link", mode === "help" && "is-active")}>
+      <SpaLink href={helpHref} className={cn("dk-link", mode === "help" && "is-active")}>
         <CircleHelp className="dk-ico" />
         <span className="dk-text">Help</span>
       </SpaLink>

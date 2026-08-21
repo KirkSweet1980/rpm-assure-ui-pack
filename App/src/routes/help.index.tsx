@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SpaLink } from "@/components/nav/spa-link";
-import { HELP_TOPICS } from "@/lib/help/catalog";
+import { HELP_GROUPS, HELP_TOPICS } from "@/lib/help/catalog";
 
 export const Route = createFileRoute("/help/")({
   component: HelpHome,
@@ -11,18 +11,24 @@ function HelpHome() {
     <article className="rpma-help-article">
       <h1>RPM Assure help</h1>
       <p className="lead">
-        How the live application works: cover, RAG, agents, services, SLA, and configuration.
+        Monitoring and operational intelligence for RPM-managed customers. This is not a ticketing
+        system. Choose a topic from the catalogue.
       </p>
-      <ul className="rpma-help-cards">
-        {HELP_TOPICS.map((t) => (
-          <li key={t.id}>
-            <SpaLink href={`/help/${t.id}`}>
-              <strong>{t.title}</strong>
-              <span>{t.summary}</span>
-            </SpaLink>
-          </li>
-        ))}
-      </ul>
+      {HELP_GROUPS.map((g) => (
+        <section key={g} className="rpma-help-group-block">
+          <h2>{g}</h2>
+          <ul className="rpma-help-cards">
+            {HELP_TOPICS.filter((t) => t.group === g).map((t) => (
+              <li key={t.id}>
+                <SpaLink href={`/help/${t.id}`}>
+                  <strong>{t.title}</strong>
+                  <span>{t.summary}</span>
+                </SpaLink>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </article>
   );
 }
