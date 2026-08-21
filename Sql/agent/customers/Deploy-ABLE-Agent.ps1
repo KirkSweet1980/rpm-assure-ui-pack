@@ -3,7 +3,7 @@
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\Deploy-ABLE-Agent.ps1
 param(
-  [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
+  [string]$AgentSecret = '',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za'
 )
 $ErrorActionPreference = 'Stop'
@@ -13,3 +13,6 @@ Invoke-WebRequest -UseBasicParsing -TimeoutSec 90 `
   -Uri ($AppHttpsUrl.TrimEnd('/') + '/downloads/Deploy-Assure-Agent.ps1') `
   -OutFile $deploy
 & $deploy -CustomerCode 'ABLE' -RoleTags 'syspro' -AgentSecret $AgentSecret -AppHttpsUrl $AppHttpsUrl
+
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_AGENT_SECRET }
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_IOPS_SECRET }

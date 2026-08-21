@@ -1,5 +1,10 @@
-# Central Assure box only. Pulls GitHub when origin/main moved, then Apply-UiPack
-# (App + SQL + agent zip + restart). Agents never talk to Git.
+# Git/app sync is not an Agent release mechanism.
+# APPLICATION RELEASE != AGENT RELEASE
+#
+# May: fetch origin/main, apply application via Apply-UiPack.ps1 (no -PublishAgent).
+# Must NOT: publish Agent ZIP/MSI, pass -PublishAgent, call Publish-Agent-Pack.ps1,
+#           call Publish-AgentRelease.ps1, change downloads/VERSION, or install
+#           RPMAssure-Publish-AgentPack.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\RPM-Assure\deploy\Sync-UiPack-From-Git.ps1
 param(
@@ -21,6 +26,10 @@ $git = 'C:\Program Files\Git\cmd\git.exe'
 if (-not (Test-Path $git)) { $git = 'git' }
 if (-not (Test-Path (Join-Path $Pack '.git'))) { throw "Missing git pack $Pack" }
 
+$verF = Join-Path $Root 'downloads\VERSION'
+$verBefore = if (Test-Path $verF) { ((Get-Content $verF -Raw) -replace '\s', '') } else { '?' }
+W ("VERSION_BEFORE=" + $verBefore)
+
 W 'fetch origin main'
 & $git -C $Pack fetch origin main
 if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
@@ -34,11 +43,19 @@ if ($local -and $remote -and $local -eq $remote) {
   exit 0
 }
 
-W 'origin/main moved — Apply-UiPack'
-$apply = Join-Path $Pack 'deploy\Apply-UiPack.ps1'
-if (-not (Test-Path $apply)) { $apply = Join-Path $Root 'deploy\Apply-UiPack.ps1' }
-if (-not (Test-Path $apply)) { throw "Missing Apply-UiPack.ps1" }
+W 'origin/main moved — APPLICATION Apply-UiPack only (no -PublishAgent, no Agent VERSION promote)'
+$apply = Join-Path $Root 'deploy\Apply-UiPack.ps1'
+if (-not (Test-Path $apply)) {
+  throw "Missing trusted controller $apply. Refusing pack Apply-UiPack.ps1. Install reviewed controllers into `$Root\deploy separately."
+}
+# Never pass -PublishAgent. Never call Publish-AgentRelease / Publish-Agent-Pack.
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $apply -Root $Root -Pack $Pack
 if ($LASTEXITCODE -ne 0) { throw "Apply-UiPack exit=$LASTEXITCODE" }
-W 'sync done'
+
+$verAfter = if (Test-Path $verF) { ((Get-Content $verF -Raw) -replace '\s', '') } else { '?' }
+W ("VERSION_AFTER=" + $verAfter)
+if ($verBefore -ne '?' -and $verAfter -ne $verBefore) {
+  throw "Sync-UiPack changed Agent VERSION ($verBefore -> $verAfter). Git/app sync is not an Agent release mechanism."
+}
+W 'sync done (Agent VERSION unchanged)'
 exit 0

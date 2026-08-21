@@ -1,21 +1,43 @@
-# Central-only apply: git pack → App + Sql + publish agent zip → restart.
-# Customers never run this. Agents pull https://assure.rpmresources.co.za/downloads only.
+# APPLICATION RELEASE ONLY.
+# Git/app sync is not an Agent release mechanism.
+# Default: deploy App + SQL, restart, health. NEVER publish Agent ZIP/MSI,
+# NEVER update downloads/VERSION, NEVER install RPMAssure-Publish-AgentPack.
+#
+# APPLICATION RELEASE != AGENT RELEASE
+#
+# Exceptional (manual only, not used by Sync-UiPack):
+#   -PublishAgent   -> delegates to Publish-AgentRelease.ps1
+# Prefer invoking Publish-AgentRelease.ps1 directly.
 param(
   [string]$Root = 'C:\RPM-Assure',
-  [string]$Pack = 'C:\RPM-Assure\deploy\ui-pack'
+  [string]$Pack = 'C:\RPM-Assure\deploy\ui-pack',
+  [switch]$PublishAgent,
+  [string]$CandidateVersion = '',
+  [switch]$SkipGitReset
 )
 
 $ErrorActionPreference = 'Stop'
 $git = 'C:\Program Files\Git\cmd\git.exe'
 if (-not (Test-Path $git)) { $git = 'git' }
 
-Write-Host '=== RPM Assure UI pack apply + agent publish ==='
+Write-Host '=== RPM Assure APPLICATION apply (Agent VERSION immutable by default) ==='
 if (-not (Test-Path (Join-Path $Pack '.git'))) { throw "Missing git pack $Pack" }
 
-& $git -C $Pack fetch origin main
-if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
-& $git -C $Pack reset --hard origin/main
-if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
+$dl = Join-Path $Root 'downloads'
+$verF = Join-Path $dl 'VERSION'
+function Read-DownloadsVersion([string]$path) {
+  if (-not (Test-Path $path)) { return '?' }
+  return ((Get-Content $path -Raw) -replace '\s', '')
+}
+$verBefore = Read-DownloadsVersion $verF
+Write-Host ("VERSION_BEFORE=" + $verBefore)
+
+if (-not $SkipGitReset) {
+  & $git -C $Pack fetch origin main
+  if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+  & $git -C $Pack reset --hard origin/main
+  if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
+}
 $head = (& $git -C $Pack log -1 --oneline | Out-String).Trim()
 Write-Host ("HEAD $head")
 
@@ -40,8 +62,25 @@ foreach ($rel in @(
     'Sql\rmm\pulseway\468_Rmm_Gold_Views.sql',
     'Sql\bitdefender\469_Epp_Gold_Views.sql',
     'Sql\freshdesk\470_Tickets_Gold.sql',
+    'Sql\agent\471_Agent_Secret_Migration.sql',
+    'Sql\agent\472_Agent_Enrollment.sql',
     'Sql\freshdesk\519_Ensure_Freshdesk_Sla.sql',
-    'Sql\central\521_IB_Syspro_NoCover.sql'
+    'Sql\central\521_IB_Syspro_NoCover.sql',
+    'Sql\central\531_App_UserCustomer_Pillars.sql',
+    'Sql\central\532_Fact_AuditEvent.sql',
+    'Sql\central\533_Dim_Service.sql',
+    'Sql\central\534_Dim_Customer_ServiceConfig.sql',
+    'Sql\central\535_Resolve_Effective_Service_Config.sql',
+    'Sql\central\536_Dim_ServiceMetric.sql',
+    'Sql\central\537_Dim_Customer_ServiceThreshold.sql',
+    'Sql\central\538_Dim_Customer_ServiceTicketPolicy.sql',
+    'Sql\central\539_Fact_ExternalTicketLink.sql',
+    'Sql\central\540_Dim_Customer_ServiceSla.sql',
+    'Sql\central\541_Dim_BusinessHoursProfile.sql',
+    'Sql\central\542_Fact_ServiceSlaEvent.sql',
+    'Sql\central\543_Seed_TicketAutomation_TestTenant.sql',
+    'Sql\central\544_ExternalTicketLink_LifecycleSync.sql',
+    'Sql\central\545_Seed_SlaEvaluation_TestTenant.sql'
   )) {
   $sf = Join-Path $Root $rel
   if (-not (Test-Path $sf)) { continue }
@@ -50,61 +89,42 @@ foreach ($rel in @(
   if ($LASTEXITCODE -ne 0) { Write-Host ("WARN " + $rel + " exit=" + $LASTEXITCODE) }
 }
 
-$pubFrom = Join-Path $Pack 'deploy\Publish-Agent-Pack.ps1'
-$pub = Join-Path $Root 'deploy\Publish-Agent-Pack.ps1'
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'deploy') | Out-Null
-if (Test-Path $pubFrom) { Copy-Item -Force $pubFrom $pub }
-Copy-Item -Force (Join-Path $Pack 'deploy\Ensure-Caddy-Downloads.ps1') (Join-Path $Root 'deploy\Ensure-Caddy-Downloads.ps1') -EA SilentlyContinue
-Copy-Item -Force (Join-Path $Pack 'deploy\Apply-UiPack.ps1') (Join-Path $Root 'deploy\Apply-UiPack.ps1') -EA SilentlyContinue
+# Protected release controllers live in $Root\deploy and are operator-installed.
+# The git pack is application INPUT only. Normal Apply MUST NOT copy/replace:
+#   Apply-UiPack.ps1, Sync-UiPack-From-Git.ps1, Publish-AgentRelease.ps1,
+#   Stage-AgentPilot.ps1, Publish-Agent-Pack.ps1, Publish-Agent-Pack-IfStale.ps1,
+#   Install-Publish-Agent-Pack-Task.ps1, Sanitise-Downloads-DeployScript.ps1.
+Write-Host '--- Skip copying release controllers from pack (trusted $Root\deploy is immutable here) ---'
 
-Write-Host '--- Publish agent pack (HTTPS downloads) ---'
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $pub -Root $Root -Pack $Pack
-if ($LASTEXITCODE -ne 0) { throw "Publish-Agent-Pack failed: $LASTEXITCODE" }
+# Do NOT copy-run Install-Publish-Agent-Pack-Task.ps1.
+# Do NOT install or enable RPMAssure-Publish-AgentPack.
+# Do NOT re-enable RPMAssure-Sync-UiPack (containment: operator-controlled).
 
-$dl = Join-Path $Root 'downloads'
-$zip = Join-Path $dl 'rpm-assure-agent.zip'
-$verF = Join-Path $dl 'VERSION'
-$patch = Join-Path $dl 'Collect-Host-Patches.ps1'
-$upd = Join-Path $dl 'Update-From-Https.ps1'
-if (-not (Test-Path $zip) -or (Get-Item $zip).Length -lt 1000) { throw "downloads zip missing after publish" }
-if (-not (Test-Path $patch)) { throw "downloads\Collect-Host-Patches.ps1 missing after publish" }
-if (-not (Test-Path $upd)) { throw "downloads\Update-From-Https.ps1 missing after publish" }
-$ver = if (Test-Path $verF) { ((Get-Content $verF -Raw) -replace '\s', '') } else { '?' }
-Write-Host ("published VERSION=$ver zip=$zip bytes=$((Get-Item $zip).Length)")
+if ($PublishAgent) {
+  Write-Host 'WARN -PublishAgent is exceptional/manual only. Delegating to Publish-AgentRelease.ps1'
+  if (-not $CandidateVersion) { throw '-PublishAgent requires -CandidateVersion. Prefer invoking Publish-AgentRelease.ps1 directly.' }
+  $rel = Join-Path $Root 'deploy\Publish-AgentRelease.ps1'
+  if (-not (Test-Path $rel)) { throw 'Missing trusted $Root\deploy\Publish-AgentRelease.ps1. Will not run a pack copy.' }
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $rel -Root $Root -Pack $Pack -CandidateVersion $CandidateVersion
+  if ($LASTEXITCODE -ne 0) { throw "Publish-AgentRelease failed: $LASTEXITCODE" }
+} else {
+  Write-Host '--- Skip Agent publish (default). Fleet pointer unchanged. ---'
+}
 
-try {
-  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  $live = (New-Object Net.WebClient).DownloadString('https://assure.rpmresources.co.za/downloads/VERSION')
-  $live = ($live -replace '\s', '')
-  Write-Host ("HTTPS /downloads/VERSION=$live")
-  if ($ver -ne '?' -and $live -and $live -ne $ver) {
-    Write-Host 'WARN Caddy is serving a stale VERSION — restart RPMAssure-Caddy'
+$verAfter = Read-DownloadsVersion $verF
+Write-Host ("VERSION_AFTER=" + $verAfter)
+if (-not $PublishAgent) {
+  if ($verBefore -ne '?' -and $verAfter -ne $verBefore) {
+    throw "VERSION changed without explicit Agent release (before=$verBefore after=$verAfter). APPLICATION RELEASE != AGENT RELEASE"
   }
-} catch {
-  Write-Host ("WARN HTTPS VERSION check " + $_.Exception.Message)
-}
-
-Restart-Service RPMAssure-App -Force
-$task = Join-Path $Pack 'deploy\Install-Publish-Agent-Pack-Task.ps1'
-if (Test-Path $task) {
-  try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $task } catch { Write-Host ("WARN publish task " + $_.Exception.Message) }
-}
-$syncTask = Join-Path $Pack 'deploy\Install-Sync-UiPack-Task.ps1'
-if (Test-Path $syncTask) {
-  try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $syncTask -Root $Root -Pack $Pack } catch { Write-Host ("WARN sync-uipack task " + $_.Exception.Message) }
-}
-
-$fdInstall = Join-Path $Root 'Sql\freshdesk\Install-Freshdesk-15min.ps1'
-if (-not (Test-Path $fdInstall)) { $fdInstall = Join-Path $Pack 'sql\freshdesk\Install-Freshdesk-15min.ps1' }
-if (-not (Test-Path $fdInstall)) { $fdInstall = Join-Path $Pack 'Sql\freshdesk\Install-Freshdesk-15min.ps1' }
-if (Test-Path $fdInstall) {
-  Write-Host '--- Freshdesk collect every 1 minute ---'
-  try {
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $fdInstall -Root $Root -Minutes 1
-  } catch {
-    Write-Host ("WARN Freshdesk 1-min task " + $_.Exception.Message)
+  if ($verAfter -ne '?' -and $verBefore -ne '?' ) {
+    Write-Host ("VERSION_IMMUTABLE " + $verBefore + " == " + $verAfter)
   }
 }
 
-Write-Host '=== apply done — agents pull /downloads on next cycle (VERSION mismatch) ==='
+Restart-Service RPMAssure-App -Force -ErrorAction SilentlyContinue
+
+Write-Host '=== application apply done — Agent VERSION not promoted ==='
 Write-Host $head
+exit 0

@@ -8,6 +8,8 @@ param(
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za'
 )
 $ErrorActionPreference = 'Stop'
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_AGENT_SECRET }
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_IOPS_SECRET }
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $deploy = Join-Path $env:TEMP 'Deploy-Assure-Agent.ps1'
 Invoke-WebRequest -UseBasicParsing -TimeoutSec 60 `

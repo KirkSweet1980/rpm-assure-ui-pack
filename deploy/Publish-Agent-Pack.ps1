@@ -1,10 +1,13 @@
-# Publish agent files to C:\RPM-Assure\downloads.
-# Zip is a clean runtime pack only - no installer Git launchers (EPP flags those).
-# Locked files (EPP / AV) are skipped so the pack still publishes.
+# DEPRECATED as a standalone release command.
+# Pack builder used ONLY by Publish-AgentRelease.ps1 (-PromoteVersion).
+# Without -PromoteVersion this script MUST NOT rewrite zip or VERSION.
+# Auto-publish (VERSION mismatch -> publish) is retired.
 
 param(
   [string]$Root = 'C:\RPM-Assure',
-  [string]$Pack = 'C:\RPM-Assure\deploy\ui-pack'
+  [string]$Pack = 'C:\RPM-Assure\deploy\ui-pack',
+  [switch]$PromoteVersion,
+  [string]$PinVersion = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,6 +24,13 @@ foreach ($vf in @(
     if ($ver) { break }
   }
 }
+
+if (-not $PromoteVersion) {
+  Write-Host 'Publish-Agent-Pack: no -PromoteVersion — refusing to rewrite zip or VERSION.'
+  Write-Host 'Use Publish-AgentRelease.ps1 to promote the fleet pointer, or Sanitise-Downloads-DeployScript.ps1 to replace Deploy-Assure-Agent.ps1 only.'
+  exit 0
+}
+if ($PinVersion) { $ver = ($PinVersion -replace '\s', '') }
 
 function Copy-ShareRead([string]$From, [string]$To) {
   $in = $null; $out = $null
@@ -116,12 +126,23 @@ $check.Dispose()
 function Test-ZipHas([string]$leaf) {
   return [bool]($names | Where-Object { $_ -like ('*/' + $leaf) -or $_ -eq $leaf })
 }
+if ($PinVersion) { $ver = ($PinVersion -replace '\s', '') }
+
 if (-not (Test-ZipHas 'collect-host-patches.ps1')) { throw 'zip missing Collect-Host-Patches.ps1 - not publishing a broken pack' }
 if (-not (Test-ZipHas 'rpmassure-agent.ps1')) { throw 'zip missing RpmAssure-Agent.ps1 - not publishing a broken pack' }
 if (-not (Test-ZipHas 'update-from-https.ps1')) { throw 'zip missing Update-From-Https.ps1 - not publishing a broken pack' }
 if (-not (Test-ZipHas 'start-agent-tray.ps1')) { throw 'zip missing Start-Agent-Tray.ps1 - not publishing a broken pack' }
 
-[IO.File]::WriteAllText((Join-Path $dl 'VERSION'), $ver)
+$verFile = Join-Path $dl 'VERSION'
+$existingVer = if (Test-Path $verFile) { ((Get-Content $verFile -Raw) -replace '\s', '') } else { '' }
+if ($PromoteVersion) {
+  [IO.File]::WriteAllText($verFile, $ver)
+  Write-Host ('PROMOTED downloads VERSION=' + $ver)
+} elseif ($existingVer) {
+  Write-Host ('KEPT downloads VERSION=' + $existingVer + ' (pass -PromoteVersion to set ' + $ver + ')')
+} else {
+  throw 'downloads\VERSION missing. Refusing to invent a fleet pointer. Restore 2.9.11 or pass -PromoteVersion.'
+}
 
 foreach ($extra in @(
     (Join-Path $Pack 'public\downloads\Pulseway-Collect-DiskIops.ps1'),

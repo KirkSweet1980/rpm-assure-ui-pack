@@ -10,12 +10,14 @@ param(
   [string]$CollectUser = 'rpmassure',
   [string]$CollectPassword = '',
   [string]$SqlInstance = '.',
-  [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
+  [string]$AgentSecret = '',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
   [string]$Root = 'C:\RPM-Assure'
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_AGENT_SECRET }
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_IOPS_SECRET }
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
   [Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $IsAdmin) { throw 'Run as Administrator on the Interbrand SYSPRO server.' }

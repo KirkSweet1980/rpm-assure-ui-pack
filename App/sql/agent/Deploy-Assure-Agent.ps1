@@ -9,7 +9,7 @@
 
 param(
   [string]$CustomerCode = '',
-  [string]$AgentSecret = 'xc9pDuhf7ldzcmkwsE+joSdgpuD5RJaz',
+  [string]$AgentSecret = '',
   [string]$AppHttpsUrl = 'https://assure.rpmresources.co.za',
   [string]$Root = 'C:\RPM-Assure',
   [string]$RoleTags = 'edge',
@@ -29,6 +29,8 @@ if (-not $CustomerCode) {
 }
 $CustomerCode = $CustomerCode.Trim().ToUpperInvariant()
 if (-not $CustomerCode) { throw 'CustomerCode is required' }
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_AGENT_SECRET }
+if (-not $AgentSecret) { $AgentSecret = [string]$env:RPM_ASSURE_IOPS_SECRET }
 if (-not $AgentSecret) { throw 'AgentSecret is required' }
 
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
