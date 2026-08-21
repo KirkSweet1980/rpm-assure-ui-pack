@@ -31,7 +31,7 @@ export const Route = createRootRoute({
     ],
     scripts: [
       {
-        children: `(function(){try{var e=document.documentElement;e.dataset.theme="dark";e.style.colorScheme="dark";e.classList.add("dark","carbon");e.classList.remove("snow");var q=new URLSearchParams(location.search).get("palette");if(q){e.dataset.palette=String(q).toLowerCase();}}catch(e){}})();`,
+        children: `(function(){try{var e=document.documentElement,pref=null,dn=null,mode="dark";try{pref=localStorage.getItem("rpma-theme")}catch(_){}try{dn=localStorage.getItem("daynight-theme")}catch(_){}if(dn==="snow"||pref==="light")mode="light";else if(dn==="carbon"||pref==="dark")mode="dark";else if(pref==="auto"||pref==="system")mode=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";e.dataset.theme=mode;e.style.colorScheme=mode;if(mode==="dark"){e.classList.add("dark","carbon");e.classList.remove("snow")}else{e.classList.add("snow");e.classList.remove("dark","carbon")}var q=new URLSearchParams(location.search).get("palette");if(q){e.dataset.palette=String(q).toLowerCase();}}catch(e){}})();`,
       },
     ],
   }),

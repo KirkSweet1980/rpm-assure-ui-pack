@@ -5,6 +5,7 @@ import { signOut } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { useStaffProfile } from "@/lib/auth/use-staff-profile";
 import { Button } from "@/components/ui/button";
+import { AppError } from "@/components/ui/app-state";
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { user, isPending: userPending } = useCurrentUserState();
@@ -47,14 +48,14 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (user && !rolePending && !profile) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-bg p-6 text-center">
-        <h1 className="text-lg font-semibold text-fg">Could not load role</h1>
-        <p className="max-w-md text-sm text-muted">
-          Signed in as {user.primaryEmail ?? user.id}, but staff profile could not be resolved. Check
-          Live SQL / App_User, or try again.
-        </p>
-        <Button type="button" variant="secondary" onClick={() => void signOut()}>
-          Sign out
-        </Button>
+        <AppError
+          title="Could not load role"
+          detail={`Signed in as ${user.primaryEmail ?? user.id}, but staff profile could not be resolved. Check Live SQL / App_User, or try again.`}
+        >
+          <Button type="button" variant="secondary" onClick={() => void signOut()}>
+            Sign out
+          </Button>
+        </AppError>
       </div>
     );
   }

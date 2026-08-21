@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { StickyPickSplit } from "@/components/customer/tenant-tree";
 import { EcoKpis } from "@/components/customer/eco-kpis";
+import { AppEmpty } from "@/components/ui/app-state";
 import { DataWindow } from "@/components/customer/data-window";
 import { SpaLink } from "@/components/nav/spa-link";
 import { formatSastDateTime } from "@/lib/utils";
@@ -98,12 +99,7 @@ function EmptyTickets({
   title: string;
   body: string;
 }) {
-  return (
-    <div className="rpma-panel px-4 py-8 text-center">
-      <p className="text-sm font-bold text-fg">{title}</p>
-      <p className="mt-2 text-[13px] text-muted">{body}</p>
-    </div>
-  );
+  return <AppEmpty title={title} detail={body} />;
 }
 
 export function TicketsHubSection({ data }: { data: CustomerDetailPayload }) {

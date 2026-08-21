@@ -6,6 +6,7 @@ import { AppShell } from "@/components/portfolio/app-shell";
 import { EmpWindow, type EmpGroup } from "@/components/chrome/emp-window";
 import type { CorpService } from "@/components/nav/corp-workspace-rail";
 import { Button } from "@/components/ui/button";
+import { AppEmpty, AppLoading } from "@/components/ui/app-state";
 import { Card, CardContent, CardHead } from "@/components/ui/card";
 import { fetchPortfolio } from "@/lib/data/portfolio";
 import {
@@ -658,10 +659,13 @@ function ReportsPage() {
                   </div>
                   {previewUrl ? (
                     <iframe title="Report preview" src={previewUrl} />
+                  ) : busy ? (
+                    <AppLoading label="Generating preview…" />
                   ) : (
-                    <div className="rpma-folio-empty">
-                      {busy ? "Generating preview…" : "Select a tenant and refresh to preview this pack."}
-                    </div>
+                    <AppEmpty
+                      title="No preview"
+                      detail="Select a tenant and refresh to preview this pack."
+                    />
                   )}
                 </div>
               </div>

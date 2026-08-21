@@ -47,6 +47,7 @@ export const THEME_TOKENS: TokenDef[] = [
   { css: "--color-fg", label: "Body", group: "ink", kind: "color", used: "Headings and primary type" },
   { css: "--color-muted", label: "Muted", group: "ink", kind: "color", used: "Subtitles, helper text" },
   { css: "--color-subtle", label: "Subtle", group: "ink", kind: "color", used: "Meta, timestamps" },
+  { css: "--rpma-state-error", label: "UI error", group: "ink", kind: "color", used: "Shared AppError — not RAG Red" },
 
   { css: "--color-border", label: "Hairline", group: "frame", kind: "color", used: "Card edges, table rules" },
   { css: "--color-border-strong", label: "Panel", group: "frame", kind: "color", used: "Strong frames" },

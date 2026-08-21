@@ -7,8 +7,8 @@
  */
 
 :root {
-  --nav-bg: #1b2838;
-  --nav-fg: #ffffff;
+  --nav-bg: var(--color-nav);
+  --nav-fg: var(--color-nav-fg, #ffffff);
   --nav-hover-bg: #c8ecd4;
   --nav-hover-fg: #0f3d24;
   --nav-selected-bg: transparent;
@@ -25,27 +25,21 @@
   --pastel-amber: #fde68a;
   --header-h: 64px;
   --pc-header-height: 64px;
-  --page-bg: #e8eef4;
-  --pane-bg: #ffffff;
-  --pane-fg: #1f2937;
-  --pane-muted: #6b7280;
-  --pane-line: #e8eaed;
+  --page-bg: var(--color-bg);
+  --pane-bg: var(--color-surface);
+  --pane-fg: var(--color-fg);
+  --pane-muted: var(--color-muted);
+  --pane-line: var(--color-border);
 }
 
 html.snow,
 html[data-theme="light"] {
   color-scheme: light;
-  --page-bg: #e8eef4;
-  --pane-bg: #ffffff;
-  --pane-fg: #1f2937;
-  --pane-muted: #6b7280;
-  --pane-line: #e8eaed;
-  --color-bg: #e8eef4;
-  --color-surface: #ffffff;
-  --color-surface-2: #eef3f7;
-  --color-fg: #101820;
-  --color-muted: #5c6b78;
-  --color-border: #d5dde5;
+  --page-bg: var(--color-bg);
+  --pane-bg: var(--color-surface);
+  --pane-fg: var(--color-fg);
+  --pane-muted: var(--color-muted);
+  --pane-line: var(--color-border);
 }
 
 html.dark,

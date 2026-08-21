@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Cloud, Database, Mail, Server, Shield } from "lucide-react";
+import { AppEmpty, AppLoading } from "@/components/ui/app-state";
 import { ListPanel, ListRow } from "@/components/nav/list-row";
 import {
   filterMasterCustomers,
@@ -73,9 +74,9 @@ export function CustomerMasterRail({ currentCode }: { currentCode: string }) {
       placeholder="Search customers…"
     >
       {loading && customers.length === 0 ? (
-        <p className="rpma-list-empty">Loading…</p>
+        <AppLoading compact />
       ) : filtered.length === 0 ? (
-        <p className="rpma-list-empty">No matches.</p>
+        <AppEmpty compact title="No matches" detail="No customers match this search." />
       ) : (
         filtered.map((c) => (
           <Row key={c.code} c={c} active={c.code.toUpperCase() === cur} />
